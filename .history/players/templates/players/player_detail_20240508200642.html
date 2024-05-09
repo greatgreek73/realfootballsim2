@@ -1,0 +1,43 @@
+<div>
+    <h1>Player Details</h1>
+    <p>First Name: {{ player.first_name }}</p>
+    <p>Last Name: {{ player.last_name }}</p>
+    <p>Age: {{ player.age }}</p>
+    <p>Club: {{ player.club.name }}</p>
+    <p>Position: {{ player.position }}</p>
+    <p>Nationality: {{ player.nationality }}</p>
+
+    <!-- Навыки и характеристики игрока -->
+    <h2>Skills</h2>
+    <ul>
+        <li>Strength: {{ player.strength }}</li>
+        <li>Stamina: {{ player.stamina }}</li>
+        <li>Pace: {{ player.pace }}</li>
+        <li>Marking: {{ player.marking }}</li>
+        <li>Tackling: {{ player.tackling }}</li>
+        <li>Work Rate: {{ player.work_rate }}</li>
+        <li>Positioning: {{ player.positioning }}</li>
+        <li>Passing: {{ player.passing }}</li>
+        <li>Crossing: {{ player.crossing }}</li>
+        <li>Dribbling: {{ player.dribbling }}</li>
+        <li>Ball Control: {{ player.ball_control }}</li>
+        <li>Heading: {{ player.heading }}</li>
+        <li>Finishing: {{ player.finishing }}</li>
+        <li>Long Range: {{ player.long_range }}</li>
+        <li>Vision: {{ player.vision }}</li>
+    </ul>
+
+    <!-- Навыки вратаря -->
+    {% if player.position == 'Goalkeeper' %}
+        <h2>Goalkeeper Skills</h2>
+        <ul>
+            <li>Handling: {{ player.handling }}</li>
+            <li>Reflexes: {{ player.reflexes }}</li>
+            <li>Aerial: {{ player.aerial }}</li>
+            <li>Jumping: {{ player.jumping }}</li>
+            <li>Command: {{ player.command }}</li>
+            <li>Throwing: {{ player.throwing }}</li>
+            <li>Kicking: {{ player.kicking }}</li>
+        </ul>
+    {% endif %}
+</div>
