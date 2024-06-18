@@ -26,7 +26,7 @@ def generate_player_stats(position):
         'Right Defensive Midfielder': {'tackling': 1.3, 'marking': 1.2, 'crossing': 2.1},
         'Right Midfielder': {'crossing': 1.3, 'pace': 1.2, 'dribbling': 2.1},
         'Central Midfielder': {'passing': 1.3, 'vision': 1.2, 'work_rate': 2.1},
-        'Left Midfielder': {'crossing': 3.3, 'pace': 3.2, 'dribbling': 2.1},
+        'Left Midfielder': {'crossing': 1.3, 'pace': 1.2, 'dribbling': 2.1},
         'Attacking Midfielder': {'dribbling': 1.3, 'finishing': 1.2, 'vision': 2.1},
         'Center Forward': {'finishing': 2.3, 'long_range': 2.2, 'heading': 2.1}
     }
@@ -66,7 +66,7 @@ def generate_player_stats(position):
             'strength': max(1, min(100, int(norm.rvs(mu, sigma)))),
             'stamina': max(1, min(100, int(norm.rvs(mu, sigma)))),
             'pace': max(1, min(100, int(norm.rvs(mu, sigma)))),
-            'positioning': max(1, min(100, int(norm.rvs(mu, sigma) * weights[position]['positioning']))),
+            'positioning': max(1, min(100, int(norm.rvs(mu, sigma)))),
         })
 
     return stats

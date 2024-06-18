@@ -3,35 +3,35 @@ from scipy.stats import norm
 def generate_player_stats(position):
     key_attributes = {
         'Goalkeeper': ['reflexes', 'handling', 'positioning'],
-        'Right Back': ['tackling', 'marking', 'crossing'],
-        'Left Back': ['tackling', 'marking', 'crossing'],
+        'Right Back': ['tackling', 'pace', 'crossing'],
+        'Left Back': ['tackling', 'pace', 'crossing'],
         'Center Back': ['marking', 'tackling', 'heading'],
-        'Defensive Midfielder': ['tackling', 'marking', 'passing'],
-        'Left Defensive Midfielder': ['tackling', 'marking', 'crossing'],
-        'Right Defensive Midfielder': ['tackling', 'marking', 'crossing'],
+        'Defensive Midfielder': ['tackling', 'positioning', 'passing'],
+        'Left Defensive Midfielder': ['tackling', 'positioning', 'passing'],
+        'Right Defensive Midfielder': ['tackling', 'positioning', 'passing'],
         'Right Midfielder': ['crossing', 'pace', 'dribbling'],
-        'Central Midfielder': ['passing', 'vision', 'work_rate'],
+        'Central Midfielder': ['passing', 'vision', 'dribbling'],
         'Left Midfielder': ['crossing', 'pace', 'dribbling'],
         'Attacking Midfielder': ['dribbling', 'finishing', 'vision'],
-        'Center Forward': ['finishing', 'long_range', 'heading']
+        'Center Forward': ['finishing', 'pace', 'heading']
     }
 
     weights = {
-        'Goalkeeper': {'reflexes': 3.3, 'handling': 3.2, 'positioning': 3.1},
-        'Right Back': {'tackling': 1.3, 'marking': 1.2, 'crossing': 2.1},
-        'Left Back': {'tackling': 1.3, 'marking': 1.2, 'crossing': 2.1},
-        'Center Back': {'marking': 1.3, 'tackling': 1.2, 'heading': 2.1},
-        'Defensive Midfielder': {'tackling': 1.3, 'marking': 1.2, 'passing': 2.1},
-        'Left Defensive Midfielder': {'tackling': 1.3, 'marking': 1.2, 'crossing': 2.1},
-        'Right Defensive Midfielder': {'tackling': 1.3, 'marking': 1.2, 'crossing': 2.1},
-        'Right Midfielder': {'crossing': 1.3, 'pace': 1.2, 'dribbling': 2.1},
-        'Central Midfielder': {'passing': 1.3, 'vision': 1.2, 'work_rate': 2.1},
-        'Left Midfielder': {'crossing': 3.3, 'pace': 3.2, 'dribbling': 2.1},
-        'Attacking Midfielder': {'dribbling': 1.3, 'finishing': 1.2, 'vision': 2.1},
-        'Center Forward': {'finishing': 2.3, 'long_range': 2.2, 'heading': 2.1}
+        'Goalkeeper': {'reflexes': 0.3, 'handling': 0.2, 'positioning': 0.1},
+        'Right Back': {'tackling': 0.3, 'pace': 0.2, 'crossing': 0.1},
+        'Left Back': {'tackling': 0.3, 'pace': 0.2, 'crossing': 0.1},
+        'Center Back': {'marking': 0.3, 'tackling': 0.2, 'heading': 0.1},
+        'Defensive Midfielder': {'tackling': 0.3, 'positioning': 0.2, 'passing': 0.1},
+        'Left Defensive Midfielder': {'tackling': 0.3, 'positioning': 0.2, 'passing': 0.1},
+        'Right Defensive Midfielder': {'tackling': 0.3, 'positioning': 0.2, 'passing': 0.1},
+        'Right Midfielder': {'crossing': 0.3, 'pace': 0.2, 'dribbling': 0.1},
+        'Central Midfielder': {'passing': 0.3, 'vision': 0.2, 'dribbling': 0.1},
+        'Left Midfielder': {'crossing': 0.3, 'pace': 0.2, 'dribbling': 0.1},
+        'Attacking Midfielder': {'dribbling': 0.3, 'finishing': 0.2, 'vision': 0.1},
+        'Center Forward': {'finishing': 0.3, 'pace': 0.2, 'heading': 0.1}
     }
 
-    mu, sigma = 50, 10
+    mu, sigma = 70, 15
 
     stats = {
         'strength': max(1, min(100, int(norm.rvs(mu, sigma)))),
@@ -66,7 +66,7 @@ def generate_player_stats(position):
             'strength': max(1, min(100, int(norm.rvs(mu, sigma)))),
             'stamina': max(1, min(100, int(norm.rvs(mu, sigma)))),
             'pace': max(1, min(100, int(norm.rvs(mu, sigma)))),
-            'positioning': max(1, min(100, int(norm.rvs(mu, sigma) * weights[position]['positioning']))),
+            'positioning': max(1, min(100, int(norm.rvs(mu, sigma)))),
         })
 
     return stats

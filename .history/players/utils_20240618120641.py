@@ -66,7 +66,7 @@ def generate_player_stats(position):
             'strength': max(1, min(100, int(norm.rvs(mu, sigma)))),
             'stamina': max(1, min(100, int(norm.rvs(mu, sigma)))),
             'pace': max(1, min(100, int(norm.rvs(mu, sigma)))),
-            'positioning': max(1, min(100, int(norm.rvs(mu, sigma) * weights[position]['positioning']))),
+            'positioning': max(1, min(100, int(norm.rvs(mu, sigma)))),
         })
 
     return stats
