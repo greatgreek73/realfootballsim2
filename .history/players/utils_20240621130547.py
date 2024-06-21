@@ -94,9 +94,9 @@ POSITIONS = {
     'Center Forward': {
         'key_attributes': ['finishing', 'long_range', 'heading'],
         'weights': [
-            ({'finishing': 3.3, 'long_range': 1.2, 'heading': 2.1}, 0.40),
+            ({'finishing': 3.3, 'long_range': 2.2, 'heading': 1.1}, 0.40),
             ({'finishing': 2.3, 'long_range': 3.2, 'heading': 1.1}, 0.35),
-            ({'finishing': 1.3, 'long_range': 2.2, 'heading': 3.1}, 0.25)
+            ({'finishing': 2.3, 'long_range': 2.2, 'heading': 2.1}, 0.25)
         ]
     }
 }

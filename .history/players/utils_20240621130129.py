@@ -14,89 +14,67 @@ POSITIONS = {
     'Right Back': {
         'key_attributes': ['tackling', 'marking', 'crossing'],
         'weights': [
-            ({'tackling': 2.3, 'marking': 2.2, 'crossing': 2.1}, 0.40),
-            ({'tackling': 1.3, 'marking': 1.2, 'crossing': 3.1}, 0.35),
-            ({'tackling': 3.3, 'marking': 1.2, 'crossing': 1.1}, 0.25)
+            ({'tackling': 1.3, 'marking': 1.2, 'crossing': 2.1}, 1.0)
         ]
     },
     'Left Back': {
         'key_attributes': ['tackling', 'marking', 'crossing'],
         'weights': [
-            ({'tackling': 2.3, 'marking': 2.2, 'crossing': 2.1}, 0.40),
-            ({'tackling': 1.3, 'marking': 1.2, 'crossing': 3.1}, 0.35),
-            ({'tackling': 3.3, 'marking': 1.2, 'crossing': 1.1}, 0.25)
+            ({'tackling': 1.3, 'marking': 1.2, 'crossing': 2.1}, 1.0)
         ]
     },
     'Center Back': {
         'key_attributes': ['marking', 'tackling', 'heading'],
         'weights': [
-            ({'marking': 3.3, 'tackling': 2.2, 'heading': 1.1}, 0.40),
-            ({'marking': 2.3, 'tackling': 3.2, 'heading': 1.1}, 0.35),
-            ({'marking': 2.3, 'tackling': 2.2, 'heading': 2.1}, 0.25)
+            ({'marking': 1.3, 'tackling': 1.2, 'heading': 2.1}, 1.0)
         ]
     },
     'Defensive Midfielder': {
         'key_attributes': ['tackling', 'marking', 'passing'],
         'weights': [
-            ({'tackling': 3.3, 'marking': 2.2, 'passing': 1.1}, 0.40),
-            ({'tackling': 2.3, 'marking': 3.2, 'passing': 1.1}, 0.35),
-            ({'tackling': 2.3, 'marking': 2.2, 'passing': 2.1}, 0.25)
+            ({'tackling': 1.3, 'marking': 1.2, 'passing': 2.1}, 1.0)
         ]
     },
     'Left Defensive Midfielder': {
         'key_attributes': ['tackling', 'marking', 'crossing'],
         'weights': [
-            ({'tackling': 2.3, 'marking': 2.2, 'crossing': 2.1}, 0.40),
-            ({'tackling': 3.3, 'marking': 1.2, 'crossing': 2.1}, 0.35),
-            ({'tackling': 1.3, 'marking': 3.2, 'crossing': 2.1}, 0.25)
+            ({'tackling': 1.3, 'marking': 1.2, 'crossing': 2.1}, 1.0)
         ]
     },
     'Right Defensive Midfielder': {
         'key_attributes': ['tackling', 'marking', 'crossing'],
         'weights': [
-            ({'tackling': 2.3, 'marking': 2.2, 'crossing': 2.1}, 0.40),
-            ({'tackling': 3.3, 'marking': 1.2, 'crossing': 2.1}, 0.35),
-            ({'tackling': 1.3, 'marking': 3.2, 'crossing': 2.1}, 0.25)
+            ({'tackling': 1.3, 'marking': 1.2, 'crossing': 2.1}, 1.0)
         ]
     },
     'Right Midfielder': {
         'key_attributes': ['crossing', 'pace', 'dribbling'],
         'weights': [
-            ({'crossing': 3.3, 'pace': 2.2, 'dribbling': 1.1}, 0.40),
-            ({'crossing': 2.3, 'pace': 3.2, 'dribbling': 1.1}, 0.35),
-            ({'crossing': 2.3, 'pace': 2.2, 'dribbling': 2.1}, 0.25)
+            ({'crossing': 1.3, 'pace': 1.2, 'dribbling': 2.1}, 1.0)
         ]
     },
     'Central Midfielder': {
         'key_attributes': ['passing', 'vision', 'work_rate'],
         'weights': [
-            ({'passing': 3.3, 'vision': 2.2, 'work_rate': 1.1}, 0.40),
-            ({'passing': 2.3, 'vision': 3.2, 'work_rate': 1.1}, 0.35),
-            ({'passing': 2.3, 'vision': 2.2, 'work_rate': 2.1}, 0.25)
+            ({'passing': 1.3, 'vision': 1.2, 'work_rate': 2.1}, 1.0)
         ]
     },
     'Left Midfielder': {
         'key_attributes': ['crossing', 'pace', 'dribbling'],
         'weights': [
-            ({'crossing': 3.3, 'pace': 2.2, 'dribbling': 1.1}, 0.40),
-            ({'crossing': 2.3, 'pace': 3.2, 'dribbling': 1.1}, 0.35),
-            ({'crossing': 2.3, 'pace': 2.2, 'dribbling': 2.1}, 0.25)
+            ({'crossing': 3.3, 'pace': 3.2, 'dribbling': 2.1}, 1.0)
         ]
     },
     'Attacking Midfielder': {
         'key_attributes': ['dribbling', 'finishing', 'vision'],
         'weights': [
-            ({'dribbling': 3.3, 'finishing': 2.2, 'vision': 1.1}, 0.40),
-            ({'dribbling': 2.3, 'finishing': 3.2, 'vision': 1.1}, 0.35),
-            ({'dribbling': 2.3, 'finishing': 2.2, 'vision': 2.1}, 0.25)
+            ({'dribbling': 1.3, 'finishing': 1.2, 'vision': 2.1}, 1.0)
         ]
     },
     'Center Forward': {
         'key_attributes': ['finishing', 'long_range', 'heading'],
         'weights': [
-            ({'finishing': 3.3, 'long_range': 1.2, 'heading': 2.1}, 0.40),
-            ({'finishing': 2.3, 'long_range': 3.2, 'heading': 1.1}, 0.35),
-            ({'finishing': 1.3, 'long_range': 2.2, 'heading': 3.1}, 0.25)
+            ({'finishing': 2.3, 'long_range': 2.2, 'heading': 2.1}, 1.0)
         ]
     }
 }
