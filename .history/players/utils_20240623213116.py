@@ -10,15 +10,11 @@ sys.path.append(current_dir)
 from player_attributes_config import POSITIONS_WEIGHTS
 
 # Constants
-BASE_ATTRIBUTES = [
+ALL_ATTRIBUTES = [
     'strength', 'stamina', 'pace', 'marking', 'tackling', 'work_rate',
     'positioning', 'passing', 'crossing', 'dribbling', 'ball_control',
-    'heading', 'finishing', 'long_range', 'vision'
-]
-
-GOALKEEPER_ATTRIBUTES = [
-    'reflexes', 'handling', 'aerial', 'jumping', 'command', 'throwing',
-    'kicking', 'strength', 'stamina', 'pace', 'positioning'
+    'heading', 'finishing', 'long_range', 'vision', 'reflexes', 'handling',
+    'aerial', 'jumping', 'command', 'throwing', 'kicking'
 ]
 
 CLASS_RANGES = {
@@ -43,13 +39,7 @@ def generate_player_stats(position, player_class):
     position_weights = POSITIONS_WEIGHTS[player_class][position]['attributes']
     
     print(f"\nGenerating stats for {position}, class {player_class}")
-    
-    if position == 'Goalkeeper':
-        attributes = GOALKEEPER_ATTRIBUTES
-    else:
-        attributes = BASE_ATTRIBUTES
-    
-    for attr in attributes:
+    for attr in ALL_ATTRIBUTES:
         if attr in position_weights:
             weight = select_weight(position_weights[attr])
             stat = generate_stat(weight)
@@ -69,17 +59,22 @@ def adjust_stats_for_class(stats, player_class):
     
     print(f"Adjusting stats. Initial total: {total}, Target total: {target_total}")
     
-    while total != target_total:
-        if total < target_total:
+    if total != target_total:
+        scale_factor = target_total / total
+        stats = {attr: max(1, min(100, int(value * scale_factor))) for attr, value in stats.items()}
+    
+    print(f"After scaling: {sum(stats.values())}")
+    
+    # Финальная корректировка
+    while sum(stats.values()) != target_total:
+        if sum(stats.values()) < target_total:
             attr = random.choice([a for a in stats if stats[a] < 100])
             stats[attr] += 1
-            total += 1
         else:
             attr = random.choice([a for a in stats if stats[a] > 1])
             stats[attr] -= 1
-            total -= 1
     
-    print(f"Final total: {total}")
+    print(f"Final total: {sum(stats.values())}")
     return stats
 
 def print_player_stats(stats):
@@ -95,15 +90,10 @@ if __name__ == "__main__":
     for _ in range(10):
         select_weight(test_weights)
     
-    print("\nGenerating a test goalkeeper:")
-    gk_stats = generate_player_stats('Goalkeeper', 1)
-    print("\nFinal goalkeeper stats:")
-    print_player_stats(gk_stats)
-    
-    print("\nGenerating a test outfield player:")
-    player_stats = generate_player_stats('Center Forward', 1)
-    print("\nFinal outfield player stats:")
-    print_player_stats(player_stats)
+    print("\nGenerating a test player:")
+    stats = generate_player_stats('Goalkeeper', 1)
+    print("\nFinal player stats:")
+    print_player_stats(stats)
 
     # Тест генерации статистики
     print("\nTest stat generation:")
