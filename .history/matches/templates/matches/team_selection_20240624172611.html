@@ -1,0 +1,81 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Selection for {{ match.home_team }} vs {{ match.away_team }}</title>
+    <style>
+        .pitch {
+            width: 600px;
+            height: 400px;
+            background-color: #4CAF50;
+            position: relative;
+            margin: 20px auto;
+        }
+        .player-slot {
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border: 2px solid #fff;
+            position: absolute;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+        }
+        .player-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .player-item {
+            width: 100px;
+            height: 50px;
+            background-color: #f1f1f1;
+            margin: 5px;
+            padding: 5px;
+            cursor: move;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            text-align: center;
+        }
+        #saveTeam {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #saveTeam:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center;">Select Your Team for {{ match.home_team }} vs {{ match.away_team }}</h1>
+    
+    <div class="pitch" id="pitch">
+        <!-- Player slots will be added here dynamically -->
+    </div>
+
+    <h2 style="text-align: center;">Available Players</h2>
+    <div class="player-list" id="playerList">
+        <!-- Available players will be added here dynamically -->
+    </div>
+
+    <button id="saveTeam">Save Team</button>
+
+    <!-- Добавляем скрытое поле с ID матча -->
+    <input type="hidden" id="matchId" value="{{ match.id }}">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+    <script src="{% static 'matches/js/team_selection.js' %}"></script>
+</body>
+</html>
