@@ -108,19 +108,19 @@ document.addEventListener('DOMContentLoaded', function() {
             new Sortable(slot, {
                 group: 'shared',
                 animation: 150,
+                max: 1,
                 onAdd: function(evt) {
                     const slotElement = evt.to;
                     const newPlayer = evt.item;
                     
-                    // Удаляем всех существующих игроков из слота
-                    slotElement.querySelectorAll('.player-item').forEach(player => {
-                        if (player !== newPlayer) {
-                            playerList.appendChild(player);
-                        }
-                    });
+                    // Если в слоте уже есть игрок, перемещаем его обратно в список игроков
+                    const existingPlayer = slotElement.querySelector('.player-item:not(.sortable-drag)');
+                    if (existingPlayer) {
+                        playerList.appendChild(existingPlayer);
+                    }
                     
-                    // Перемещаем нового игрока в слот
-                    slotElement.appendChild(newPlayer);
+                    // Перемещаем нового игрока в начало слота
+                    slotElement.insertBefore(newPlayer, slotElement.firstChild);
                     
                     autoSave();
                 }

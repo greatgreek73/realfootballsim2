@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM fully loaded');
+
     const pitch = document.getElementById('pitch');
     const playerList = document.getElementById('playerList');
     const resetButton = document.createElement('button');
@@ -11,6 +13,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.body.appendChild(saveStatus);
 
     const matchId = document.getElementById('matchId').value;
+    console.log('matchId:', matchId);
+
     let saveTimeout;
 
     // Создание слотов для игроков на поле
@@ -50,6 +54,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        console.log('Saving team selection:', selection);
+
         fetch(`/matches/${matchId}/save-team-selection/`, {
             method: 'POST',
             headers: {
@@ -58,8 +64,12 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify(selection)
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Save response status:', response.status);
+            return response.json();
+        })
         .then(data => {
+            console.log('Save response data:', data);
             if (data.success) {
                 saveStatus.textContent = 'Saved';
                 setTimeout(() => {
@@ -70,27 +80,42 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(error => {
+            console.error('Error saving team selection:', error);
             saveStatus.textContent = 'Save failed';
         });
     }
 
     function loadPreviousSelection() {
+        console.log('Loading previous selection');
         fetch(`/matches/${matchId}/get-team-selection/`)
-            .then(response => response.json())
+            .then(response => {
+                console.log('Load previous selection response status:', response.status);
+                return response.json();
+            })
             .then(data => {
+                console.log('Previous selection data:', data);
                 if (data.selection) {
                     Object.entries(data.selection).forEach(([position, playerId]) => {
                         const slot = document.querySelector(`.player-slot[data-position="${position}"]`);
                         const player = document.querySelector(`.player-item[data-player-id="${playerId}"]`);
                         if (slot && player) {
                             slot.appendChild(player);
+                            console.log(`Player ${playerId} placed in position ${position}`);
+                        } else {
+                            console.warn(`Unable to place player ${playerId} in position ${position}`);
                         }
                     });
+                } else {
+                    console.log('No previous selection found');
                 }
+            })
+            .catch(error => {
+                console.error('Error loading previous selection:', error);
             });
     }
 
     function resetSelection() {
+        console.log('Resetting selection');
         document.querySelectorAll('.player-slot .player-item').forEach(player => {
             playerList.appendChild(player);
         });
@@ -98,6 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function initializeSortable() {
+        console.log('Initializing Sortable');
         new Sortable(playerList, {
             group: 'shared',
             animation: 150,
@@ -108,19 +134,21 @@ document.addEventListener('DOMContentLoaded', function() {
             new Sortable(slot, {
                 group: 'shared',
                 animation: 150,
+                max: 1,
                 onAdd: function(evt) {
                     const slotElement = evt.to;
                     const newPlayer = evt.item;
                     
-                    // Удаляем всех существующих игроков из слота
-                    slotElement.querySelectorAll('.player-item').forEach(player => {
-                        if (player !== newPlayer) {
-                            playerList.appendChild(player);
-                        }
-                    });
+                    // Если в слоте уже есть игрок, перемещаем его обратно в список
+                    if (slotElement.children.length > 1) {
+                        const oldPlayer = slotElement.children[0];
+                        playerList.appendChild(oldPlayer);
+                        console.log('Moved existing player back to player list');
+                    }
                     
-                    // Перемещаем нового игрока в слот
-                    slotElement.appendChild(newPlayer);
+                    // Перемещаем нового игрока в начало слота
+                    slotElement.insertBefore(newPlayer, slotElement.firstChild);
+                    console.log(`Moved player ${newPlayer.dataset.playerId} to slot ${slotElement.dataset.position}`);
                     
                     autoSave();
                 }
@@ -128,30 +156,38 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    console.log('Fetching players');
     fetch(`/matches/${matchId}/get-players/`)
         .then(response => {
+            console.log('Get players response status:', response.status);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.json();
         })
         .then(players => {
+            console.log('Received players:', players);
             if (!Array.isArray(players) || players.length === 0) {
+                console.warn('No players received or invalid data format');
                 playerList.textContent = 'No players available';
                 return;
             }
             players.forEach(player => {
+                console.log('Processing player:', player);
                 const playerElem = document.createElement('div');
                 playerElem.className = 'player-item';
                 playerElem.textContent = `${player.name} (${player.position})`;
                 playerElem.dataset.playerId = player.id;
                 playerList.appendChild(playerElem);
+                console.log('Player element created:', playerElem);
             });
+            console.log('All players added to the list');
 
             initializeSortable();
             loadPreviousSelection();
         })
         .catch(error => {
+            console.error('Error loading players:', error);
             playerList.textContent = 'Error loading players. Please try again later.';
         });
 

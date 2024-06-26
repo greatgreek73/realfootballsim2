@@ -70,6 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(error => {
+            console.error('Error:', error);
             saveStatus.textContent = 'Save failed';
         });
     }
@@ -108,19 +109,19 @@ document.addEventListener('DOMContentLoaded', function() {
             new Sortable(slot, {
                 group: 'shared',
                 animation: 150,
+                max: 1,
                 onAdd: function(evt) {
                     const slotElement = evt.to;
                     const newPlayer = evt.item;
                     
-                    // Удаляем всех существующих игроков из слота
-                    slotElement.querySelectorAll('.player-item').forEach(player => {
-                        if (player !== newPlayer) {
-                            playerList.appendChild(player);
-                        }
-                    });
+                    // Если в слоте уже есть игрок, перемещаем его обратно в список
+                    if (slotElement.children.length > 1) {
+                        const oldPlayer = slotElement.children[0];
+                        playerList.appendChild(oldPlayer);
+                    }
                     
-                    // Перемещаем нового игрока в слот
-                    slotElement.appendChild(newPlayer);
+                    // Перемещаем нового игрока в начало слота
+                    slotElement.insertBefore(newPlayer, slotElement.firstChild);
                     
                     autoSave();
                 }
@@ -128,18 +129,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Создаем заголовок "Available Players"
+    const availablePlayersHeader = document.createElement('h2');
+    availablePlayersHeader.textContent = 'Available Players';
+    document.body.insertBefore(availablePlayersHeader, playerList);
+
     fetch(`/matches/${matchId}/get-players/`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
+        .then(response => response.json())
         .then(players => {
-            if (!Array.isArray(players) || players.length === 0) {
-                playerList.textContent = 'No players available';
-                return;
-            }
             players.forEach(player => {
                 const playerElem = document.createElement('div');
                 playerElem.className = 'player-item';
@@ -150,9 +147,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             initializeSortable();
             loadPreviousSelection();
-        })
-        .catch(error => {
-            playerList.textContent = 'Error loading players. Please try again later.';
         });
 
     resetButton.addEventListener('click', resetSelection);
