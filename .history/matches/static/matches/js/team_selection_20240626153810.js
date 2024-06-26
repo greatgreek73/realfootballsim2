@@ -1,37 +1,10 @@
 document.addEventListener('DOMContentLoaded', function() {
     const pitch = document.getElementById('pitch');
     const playerList = document.getElementById('playerList');
-    const resetButton = document.createElement('button');
-    resetButton.textContent = 'Reset Selection';
-    resetButton.id = 'resetTeam';
-    document.body.appendChild(resetButton);
-    
-    const saveStatus = document.createElement('span');
-    saveStatus.id = 'saveStatus';
-    document.body.appendChild(saveStatus);
-
+    const resetButton = document.getElementById('resetTeam');
+    const saveStatus = document.getElementById('saveStatus');
     const matchId = document.getElementById('matchId').value;
     let saveTimeout;
-
-    // Создание слотов для игроков на поле
-    const positions = [
-        {top: '10%', left: '50%'},  // GK
-        {top: '30%', left: '20%'}, {top: '30%', left: '40%'},  // DEF
-        {top: '30%', left: '60%'}, {top: '30%', left: '80%'},
-        {top: '60%', left: '30%'}, {top: '60%', left: '50%'},  // MID
-        {top: '60%', left: '70%'},
-        {top: '80%', left: '30%'}, {top: '80%', left: '50%'},  // FWD
-        {top: '80%', left: '70%'}
-    ];
-
-    positions.forEach((pos, index) => {
-        const slot = document.createElement('div');
-        slot.className = 'player-slot';
-        slot.style.top = pos.top;
-        slot.style.left = pos.left;
-        slot.dataset.position = index;
-        pitch.appendChild(slot);
-    });
 
     function autoSave() {
         clearTimeout(saveTimeout);

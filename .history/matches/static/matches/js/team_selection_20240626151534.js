@@ -10,37 +10,17 @@ document.addEventListener('DOMContentLoaded', function() {
     saveStatus.id = 'saveStatus';
     document.body.appendChild(saveStatus);
 
-    const matchId = document.getElementById('matchId').value;
     let saveTimeout;
 
-    // Создание слотов для игроков на поле
-    const positions = [
-        {top: '10%', left: '50%'},  // GK
-        {top: '30%', left: '20%'}, {top: '30%', left: '40%'},  // DEF
-        {top: '30%', left: '60%'}, {top: '30%', left: '80%'},
-        {top: '60%', left: '30%'}, {top: '60%', left: '50%'},  // MID
-        {top: '60%', left: '70%'},
-        {top: '80%', left: '30%'}, {top: '80%', left: '50%'},  // FWD
-        {top: '80%', left: '70%'}
-    ];
-
-    positions.forEach((pos, index) => {
-        const slot = document.createElement('div');
-        slot.className = 'player-slot';
-        slot.style.top = pos.top;
-        slot.style.left = pos.left;
-        slot.dataset.position = index;
-        pitch.appendChild(slot);
-    });
-
+    // Функция автоматического сохранения
     function autoSave() {
         clearTimeout(saveTimeout);
-        saveStatus.textContent = 'Saving...';
         saveTimeout = setTimeout(() => {
             saveTeamSelection();
-        }, 1000); // Сохраняем через 1 секунду после последнего изменения
+        }, 2000); // Сохраняем через 2 секунды после последнего изменения
     }
 
+    // Функция сохранения выбора команды
     function saveTeamSelection() {
         const selection = {};
         document.querySelectorAll('.player-slot').forEach(slot => {
@@ -49,6 +29,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 selection[slot.dataset.position] = playerElem.dataset.playerId;
             }
         });
+
+        saveStatus.textContent = 'Saving...';
 
         fetch(`/matches/${matchId}/save-team-selection/`, {
             method: 'POST',
@@ -68,13 +50,10 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 saveStatus.textContent = 'Save failed';
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            saveStatus.textContent = 'Save failed';
         });
     }
 
+    // Функция загрузки предыдущего состава
     function loadPreviousSelection() {
         fetch(`/matches/${matchId}/get-team-selection/`)
             .then(response => response.json())
@@ -91,6 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
+    // Функция сброса выбора
     function resetSelection() {
         document.querySelectorAll('.player-slot .player-item').forEach(player => {
             playerList.appendChild(player);
@@ -98,49 +78,24 @@ document.addEventListener('DOMContentLoaded', function() {
         autoSave();
     }
 
-    fetch(`/matches/${matchId}/get-players/`)
-        .then(response => response.json())
-        .then(players => {
-            players.forEach(player => {
-                const playerElem = document.createElement('div');
-                playerElem.className = 'player-item';
-                playerElem.textContent = `${player.name} (${player.position})`;
-                playerElem.dataset.playerId = player.id;
-                playerList.appendChild(playerElem);
-            });
+    // Инициализация Sortable и добавление слушателей событий
+    new Sortable(playerList, {
+        group: 'shared',
+        animation: 150,
+        onEnd: autoSave
+    });
 
-            new Sortable(playerList, {
-                group: 'shared',
-                animation: 150,
-                onEnd: autoSave
-            });
-
-            document.querySelectorAll('.player-slot').forEach(slot => {
-                new Sortable(slot, {
-                    group: 'shared',
-                    animation: 150,
-                    max: 1,
-                    onEnd: autoSave
-                });
-            });
-
-            loadPreviousSelection();
+    document.querySelectorAll('.player-slot').forEach(slot => {
+        new Sortable(slot, {
+            group: 'shared',
+            animation: 150,
+            max: 1,
+            onEnd: autoSave
         });
+    });
 
     resetButton.addEventListener('click', resetSelection);
 
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
+    // Загрузка предыдущего состава при инициализации страницы
+    loadPreviousSelection();
 });

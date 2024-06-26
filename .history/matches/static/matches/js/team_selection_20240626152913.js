@@ -33,14 +33,15 @@ document.addEventListener('DOMContentLoaded', function() {
         pitch.appendChild(slot);
     });
 
+    // Функция автоматического сохранения
     function autoSave() {
         clearTimeout(saveTimeout);
-        saveStatus.textContent = 'Saving...';
         saveTimeout = setTimeout(() => {
             saveTeamSelection();
-        }, 1000); // Сохраняем через 1 секунду после последнего изменения
+        }, 2000); // Сохраняем через 2 секунды после последнего изменения
     }
 
+    // Функция сохранения выбора команды
     function saveTeamSelection() {
         const selection = {};
         document.querySelectorAll('.player-slot').forEach(slot => {
@@ -49,6 +50,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 selection[slot.dataset.position] = playerElem.dataset.playerId;
             }
         });
+
+        saveStatus.textContent = 'Saving...';
 
         fetch(`/matches/${matchId}/save-team-selection/`, {
             method: 'POST',
@@ -68,13 +71,10 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 saveStatus.textContent = 'Save failed';
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            saveStatus.textContent = 'Save failed';
         });
     }
 
+    // Функция загрузки предыдущего состава
     function loadPreviousSelection() {
         fetch(`/matches/${matchId}/get-team-selection/`)
             .then(response => response.json())
@@ -91,6 +91,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
+    // Функция сброса выбора
     function resetSelection() {
         document.querySelectorAll('.player-slot .player-item').forEach(player => {
             playerList.appendChild(player);
@@ -98,6 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
         autoSave();
     }
 
+    // Загрузка списка игроков
     fetch(`/matches/${matchId}/get-players/`)
         .then(response => response.json())
         .then(players => {
@@ -109,12 +111,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 playerList.appendChild(playerElem);
             });
 
+            // Инициализация Sortable для списка игроков
             new Sortable(playerList, {
                 group: 'shared',
                 animation: 150,
                 onEnd: autoSave
             });
 
+            // Инициализация Sortable для слотов игроков
             document.querySelectorAll('.player-slot').forEach(slot => {
                 new Sortable(slot, {
                     group: 'shared',
@@ -124,11 +128,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
 
+            // Загрузка предыдущего состава после инициализации игроков
             loadPreviousSelection();
         });
 
     resetButton.addEventListener('click', resetSelection);
 
+    // Функция для получения CSRF токена
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {

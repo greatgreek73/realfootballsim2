@@ -34,10 +34,10 @@ class MatchEvent(models.Model):
         return f"{self.match} - {self.event_type} at {self.minute}'"
 
 class TeamSelection(models.Model):
-    match = models.ForeignKey('Match', on_delete=models.CASCADE, related_name='team_selections')  # добавьте null=True
+    match = models.ForeignKey('Match', on_delete=models.CASCADE, related_name='team_selections', null=True)  # добавьте null=True
     club = models.ForeignKey('clubs.Club', on_delete=models.CASCADE)
     selection = models.JSONField()
-    created_at = models.DateTimeField(auto_now_add=True)  # измените auto_now_add на default
+    created_at = models.DateTimeField(default=timezone.now)  # измените auto_now_add на default
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
