@@ -13,7 +13,7 @@
         <p>Owner: {{ club.owner.username }}</p>
 
         <!-- Добавляем ссылку на страницу выбора состава команды -->
-        <a href="{% url 'clubs:team_selection' club.id %}">Select Team Lineup</a>
+        <a href="{% url 'team_selection' club.id %}" class="btn btn-primary">Select Team Lineup</a>
 
         <!-- Отображение списка игроков -->
         <h2>Players in {{ club.name }}</h2>

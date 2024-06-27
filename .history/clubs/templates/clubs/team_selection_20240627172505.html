@@ -43,6 +43,18 @@
             font-size: 12px;
             text-align: center;
         }
+        #resetButton {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #saveStatus {
+            text-align: center;
+            margin-top: 10px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -51,6 +63,9 @@
     <div class="pitch" id="pitch">
         <!-- Player slots will be added here dynamically -->
     </div>
+
+    <button id="resetButton">Reset Lineup</button>
+    <div id="saveStatus"></div>
 
     <h2 style="text-align: center;">Available Players</h2>
     <div class="player-list" id="playerList">

@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     saveStatus.id = 'saveStatus';
     document.body.appendChild(saveStatus);
 
-    const matchId = document.getElementById('matchId').value;
+    const clubId = document.getElementById('clubId').value;
     let saveTimeout;
 
     // Создание слотов для игроков на поле
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        fetch(`/matches/${matchId}/save-team-selection/`, {
+        fetch(`/clubs/${clubId}/save-team-lineup/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -75,11 +75,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function loadPreviousSelection() {
-        fetch(`/matches/${matchId}/get-team-selection/`)
+        fetch(`/clubs/${clubId}/get-team-lineup/`)
             .then(response => response.json())
             .then(data => {
-                if (data.selection) {
-                    Object.entries(data.selection).forEach(([position, playerId]) => {
+                if (data.lineup) {
+                    Object.entries(data.lineup).forEach(([position, playerId]) => {
                         const slot = document.querySelector(`.player-slot[data-position="${position}"]`);
                         const player = document.querySelector(`.player-item[data-player-id="${playerId}"]`);
                         if (slot && player) {
@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    fetch(`/matches/${matchId}/get-players/`)
+    fetch(`/clubs/${clubId}/get-players/`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);

@@ -1,9 +1,12 @@
-from django.urls import path
 from . import views
+from django.contrib import admin
+from django.urls import path, include
 
 app_name = 'clubs'
 
 urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('clubs/', include(('clubs.urls', 'clubs'), namespace='clubs')),
     path('create/', views.CreateClubView.as_view(), name='create_club'),
     path('detail/<int:pk>/', views.ClubDetailView.as_view(), name='club_detail'),
     path('detail/<int:pk>/create_player/', views.create_player, name='create_player'),

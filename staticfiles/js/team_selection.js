@@ -1,17 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const pitch = document.getElementById('pitch');
     const playerList = document.getElementById('playerList');
-    const resetButton = document.createElement('button');
-    resetButton.textContent = 'Reset Selection';
-    resetButton.id = 'resetTeam';
-    document.body.appendChild(resetButton);
-    
-    const saveStatus = document.createElement('span');
-    saveStatus.id = 'saveStatus';
-    document.body.appendChild(saveStatus);
-
     const clubId = document.getElementById('clubId').value;
-    let saveTimeout;
 
     // Создание слотов для игроков на поле
     const positions = [
@@ -33,49 +23,35 @@ document.addEventListener('DOMContentLoaded', function() {
         pitch.appendChild(slot);
     });
 
-    function autoSave() {
-        clearTimeout(saveTimeout);
-        saveStatus.textContent = 'Saving...';
-        saveTimeout = setTimeout(() => {
-            saveTeamSelection();
-        }, 1000); // Сохраняем через 1 секунду после последнего изменения
-    }
-
-    function saveTeamSelection() {
-        const selection = {};
+    function saveTeamLineup() {
+        const lineup = {};
         document.querySelectorAll('.player-slot').forEach(slot => {
             const playerElem = slot.querySelector('.player-item');
             if (playerElem) {
-                selection[slot.dataset.position] = playerElem.dataset.playerId;
+                lineup[slot.dataset.position] = playerElem.dataset.playerId;
             }
         });
 
-        fetch(`/clubs/${clubId}/save-team-lineup/`, {
+        fetch(`/clubs/detail/${clubId}/save-team-lineup/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCookie('csrftoken')
             },
-            body: JSON.stringify(selection)
+            body: JSON.stringify(lineup)
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                saveStatus.textContent = 'Saved';
-                setTimeout(() => {
-                    saveStatus.textContent = '';
-                }, 2000);
+                console.log('Lineup saved successfully');
             } else {
-                saveStatus.textContent = 'Save failed';
+                console.error('Failed to save lineup');
             }
-        })
-        .catch(error => {
-            saveStatus.textContent = 'Save failed';
         });
     }
 
-    function loadPreviousSelection() {
-        fetch(`/clubs/${clubId}/get-team-lineup/`)
+    function loadTeamLineup() {
+        fetch(`/clubs/detail/${clubId}/get-team-lineup/`)
             .then(response => response.json())
             .then(data => {
                 if (data.lineup) {
@@ -90,18 +66,11 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    function resetSelection() {
-        document.querySelectorAll('.player-slot .player-item').forEach(player => {
-            playerList.appendChild(player);
-        });
-        autoSave();
-    }
-
     function initializeSortable() {
         new Sortable(playerList, {
             group: 'shared',
             animation: 150,
-            onEnd: autoSave
+            onEnd: saveTeamLineup
         });
 
         document.querySelectorAll('.player-slot').forEach(slot => {
@@ -122,24 +91,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Перемещаем нового игрока в слот
                     slotElement.appendChild(newPlayer);
                     
-                    autoSave();
+                    saveTeamLineup();
                 }
             });
         });
     }
 
-    fetch(`/clubs/${clubId}/get-players/`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
+    fetch(`/clubs/detail/${clubId}/get-players/`)
+        .then(response => response.json())
         .then(players => {
-            if (!Array.isArray(players) || players.length === 0) {
-                playerList.textContent = 'No players available';
-                return;
-            }
             players.forEach(player => {
                 const playerElem = document.createElement('div');
                 playerElem.className = 'player-item';
@@ -149,13 +109,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             initializeSortable();
-            loadPreviousSelection();
-        })
-        .catch(error => {
-            playerList.textContent = 'Error loading players. Please try again later.';
+            loadTeamLineup();
         });
-
-    resetButton.addEventListener('click', resetSelection);
 
     function getCookie(name) {
         let cookieValue = null;

@@ -4,16 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ club.name }}</title>
-    <!-- Добавьте здесь ссылки на CSS файлы и другие ресурсы, если необходимо -->
+    <<a href="{% url 'team_selection' team.id %}" class="btn btn-primary">Select Team Lineup</a>!-- Добавьте здесь ссылки на CSS файлы и другие ресурсы, если необходимо -->
 </head>
 <body>
     <div>
         <h1>{{ club.name }}</h1>
         <p>Country: {{ club.country }}</p>
         <p>Owner: {{ club.owner.username }}</p>
-
-        <!-- Добавляем ссылку на страницу выбора состава команды -->
-        <a href="{% url 'clubs:team_selection' club.id %}">Select Team Lineup</a>
 
         <!-- Отображение списка игроков -->
         <h2>Players in {{ club.name }}</h2>
