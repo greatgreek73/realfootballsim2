@@ -1,0 +1,186 @@
+{% extends 'tournaments/base.html' %}
+
+{% block tournament_content %}
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h2>{{ championship.league.name }}</h2>
+            <p class="text-muted mb-0">
+                {{ championship.league.country.name }} - Division {{ championship.league.level }}
+            </p>
+            <p class="text-muted">
+                Season: {{ championship.season.name }} | 
+                Status: {{ championship.get_status_display }}
+            </p>
+        </div>
+        {% if championship.status == 'pending' and user.is_staff %}
+        <div>
+            <a href="#" class="btn btn-primary">Generate Schedule</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <!-- Standings Table -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="card-title mb-0">League Table</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Team</th>
+                                <th>MP</th>
+                                <th>W</th>
+                                <th>D</th>
+                                <th>L</th>
+                                <th>GF</th>
+                                <th>GA</th>
+                                <th>GD</th>
+                                <th>Pts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for team in standings %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    <a href="{% url 'clubs:club_detail' team.team.id %}" class="text-decoration-none">
+                                        {{ team.team.name }}
+                                    </a>
+                                </td>
+                                <td>{{ team.matches_played }}</td>
+                                <td>{{ team.wins }}</td>
+                                <td>{{ team.draws }}</td>
+                                <td>{{ team.losses }}</td>
+                                <td>{{ team.goals_for }}</td>
+                                <td>{{ team.goals_against }}</td>
+                                <td>
+                                    {% if team.goals_difference > 0 %}+{% endif %}{{ team.goals_difference }}
+                                </td>
+                                <td><strong>{{ team.points }}</strong></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="10" class="text-center">No teams in championship yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Matches -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title mb-0">Matches</h3>
+            </div>
+            <div class="card-body">
+                {% if matches %}
+                    {% regroup matches by round as round_list %}
+                    {% for round in round_list %}
+                    <div class="mb-4">
+                        <h4 class="h5 mb-3">Round {{ round.grouper }}</h4>
+                        <div class="list-group">
+                            {% for match in round.list %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">Day {{ match.match_day }}</small>
+                                    {% if match.match.status == 'finished' %}
+                                        <span class="badge bg-success">Finished</span>
+                                    {% elif match.match.status == 'in_progress' %}
+                                        <span class="badge bg-warning">In Progress</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Scheduled</span>
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <span>{{ match.match.home_team.name }}</span>
+                                    {% if match.match.status == 'finished' %}
+                                        <strong>{{ match.match.home_score }} - {{ match.match.away_score }}</strong>
+                                    {% else %}
+                                        <span>vs</span>
+                                    {% endif %}
+                                    <span>{{ match.match.away_team.name }}</span>
+                                </div>
+                                {% if match.match.status != 'finished' %}
+                                <div class="text-center mt-2">
+                                    <a href="{% url 'matches:match_detail' match.match.id %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        Match Details
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-center">No matches scheduled yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title mb-0">Championship Statistics</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h4 class="h5">General Info</h4>
+                        <ul class="list-unstyled">
+                            <li>Total Teams: {{ championship.teams.count }}</li>
+                            <li>Foreign Players Limit: {{ championship.league.foreign_players_limit }}</li>
+                            <li>Start Date: {{ championship.start_date }}</li>
+                            <li>End Date: {{ championship.end_date }}</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h4 class="h5">Match Statistics</h4>
+                        <ul class="list-unstyled">
+                            <li>Total Matches: {{ matches|length }}</li>
+                            <li>Matches Played: {{ matches|filter:"match__status='finished'"|length }}</li>
+                            <li>Matches Remaining: {{ matches|filter:"match__status='scheduled'"|length }}</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h4 class="h5">Goals</h4>
+                        <ul class="list-unstyled">
+                            {% with total_goals=0 %}
+                            {% for team in standings %}
+                                {% with team_goals=team.goals_for %}
+                                    {% with total_goals=total_goals|add:team_goals %}{% endwith %}
+                                {% endwith %}
+                            {% endfor %}
+                            <li>Total Goals: {{ total_goals }}</li>
+                            <li>Average Goals per Match: 
+                                {% if matches|filter:"match__status='finished'"|length > 0 %}
+                                    {{ total_goals|divisibleby:matches|filter:"match__status='finished'"|length }}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </li>
+                            {% endwith %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
