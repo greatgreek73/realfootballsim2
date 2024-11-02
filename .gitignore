@@ -1,0 +1,26 @@
+# Создайте новый файл .gitignore в корне проекта со следующим содержимым:
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media
+
+# Virtual Environment
+footenv/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+.history/
+
+# OS
+.DS_Store
+Thumbs.db
