@@ -1,0 +1,135 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1>{{ club.name }}</h1>
+            <p class="text-muted">
+                Country: {{ club.country }}<br>
+                Owner: {{ club.owner.username }}
+            </p>
+            <a href="{% url 'clubs:team_selection' club.id %}" class="btn btn-primary">
+                Select Team Lineup
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title h4 mb-0">Players in {{ club.name }}</h2>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <form method="post" class="row g-3">
+                                {% csrf_token %}
+                                <div class="col-md-4">
+                                    <label for="position" class="form-label">Choose Position:</label>
+                                    <select class="form-select" id="position" name="position">
+                                        <option value="">Select a position</option>
+                                        <option value="Goalkeeper">Goalkeeper</option>
+                                        <option value="Right Back">Right Back</option>
+                                        <option value="Left Back">Left Back</option>
+                                        <option value="Center Back">Center Back</option>
+                                        <option value="Defensive Midfielder">Defensive Midfielder</option>
+                                        <option value="Right Midfielder">Right Midfielder</option>
+                                        <option value="Central Midfielder">Central Midfielder</option>
+                                        <option value="Left Midfielder">Left Midfielder</option>
+                                        <option value="Attacking Midfielder">Attacking Midfielder</option>
+                                        <option value="Center Forward">Center Forward</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="player_class" class="form-label">Choose Player Class:</label>
+                                    <select class="form-select" id="player_class" name="player_class">
+                                        <option value="">Select a class</option>
+                                        <option value="1">Class 1</option>
+                                        <option value="2">Class 2</option>
+                                        <option value="3">Class 3</option>
+                                        <option value="4">Class 4</option>
+                                    </select>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="list-group">
+                        {% for player in players %}
+                            <a href="{% url 'players:player_detail' player.pk %}" 
+                               class="list-group-item list-group-item-action">
+                                {{ player.first_name }} {{ player.last_name }} - {{ player.position }}
+                            </a>
+                        {% empty %}
+                            <div class="list-group-item">No players found</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="card-title h4 mb-0">Matches</h2>
+                    <a href="{% url 'matches:create_match' %}?home_team={{ club.id }}" 
+                       class="btn btn-primary btn-sm">
+                        Create New Match
+                    </a>
+                </div>
+                <div class="card-body">
+                    <h3 class="h5 mb-3">Upcoming Matches</h3>
+                    <div class="list-group mb-4">
+                        {% for match in club.home_matches.all|dictsortreversed:"date" %}
+                            {% if match.status == 'scheduled' %}
+                                <a href="{% url 'matches:match_detail' match.pk %}" 
+                                   class="list-group-item list-group-item-action">
+                                    {{ match.home_team.name }} vs {{ match.away_team.name }} - {{ match.date }}
+                                </a>
+                            {% endif %}
+                        {% endfor %}
+                        {% for match in club.away_matches.all|dictsortreversed:"date" %}
+                            {% if match.status == 'scheduled' %}
+                                <a href="{% url 'matches:match_detail' match.pk %}" 
+                                   class="list-group-item list-group-item-action">
+                                    {{ match.home_team.name }} vs {{ match.away_team.name }} - {{ match.date }}
+                                </a>
+                            {% endif %}
+                        {% empty %}
+                            <div class="list-group-item">No upcoming matches</div>
+                        {% endfor %}
+                    </div>
+
+                    <h3 class="h5 mb-3">Past Matches</h3>
+                    <div class="list-group">
+                        {% for match in club.home_matches.all|dictsortreversed:"date" %}
+                            {% if match.status == 'finished' %}
+                                <a href="{% url 'matches:match_detail' match.pk %}" 
+                                   class="list-group-item list-group-item-action">
+                                    {{ match.home_team.name }} {{ match.home_score }} - 
+                                    {{ match.away_score }} {{ match.away_team.name }}
+                                </a>
+                            {% endif %}
+                        {% endfor %}
+                        {% for match in club.away_matches.all|dictsortreversed:"date" %}
+                            {% if match.status == 'finished' %}
+                                <a href="{% url 'matches:match_detail' match.pk %}" 
+                                   class="list-group-item list-group-item-action">
+                                    {{ match.home_team.name }} {{ match.home_score }} - 
+                                    {{ match.away_score }} {{ match.away_team.name }}
+                                </a>
+                            {% endif %}
+                        {% empty %}
+                            <div class="list-group-item">No past matches</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
