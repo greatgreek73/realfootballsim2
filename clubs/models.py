@@ -14,6 +14,13 @@ class Club(models.Model):
         null=True,
         blank=True
     )
+    league = models.ForeignKey(
+        'tournaments.League',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='clubs'
+    )
     lineup = models.JSONField(null=True, blank=True)
     is_bot = models.BooleanField(
         default=False,
