@@ -33,6 +33,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'tournaments.timezone_middleware.TimezoneMiddleware',
 ]
 
 ROOT_URLCONF = 'realfootballsim.urls'
@@ -141,3 +142,14 @@ LOGGING = {
 
 # В конец settings.py добавьте:
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+# Доступные часовые пояса для выбора
+TOURNAMENT_TIMEZONES = [
+    ('UTC', 'UTC'),
+    ('Europe/London', 'London'),
+    ('Europe/Moscow', 'Moscow'),
+    ('America/New_York', 'New York'),
+    ('Asia/Tokyo', 'Tokyo'),
+]
+
+TEMPLATES[0]['OPTIONS']['context_processors'].append('tournaments.context_processors.timezone_context')
