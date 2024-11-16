@@ -28,13 +28,23 @@ class ChampionshipMatchInline(admin.TabularInline):
 
 @admin.register(Championship)
 class ChampionshipAdmin(admin.ModelAdmin):
-    list_display = ('league', 'season', 'status', 'start_date', 'end_date')
+    list_display = ('league', 'season', 'status', 'start_date', 'end_date', 'match_time')
     list_filter = ('status', 'season', 'league')
     search_fields = ('league__name', 'season__name')
     inlines = [ChampionshipTeamInline, ChampionshipMatchInline]
     
+    fieldsets = (
+        (None, {
+            'fields': ('season', 'league', 'status')
+        }),
+        ('Даты и время', {
+            'fields': ('start_date', 'end_date', 'match_time'),
+            'description': 'Время начала матчей указывается в UTC'
+        })
+    )
+    
     def get_readonly_fields(self, request, obj=None):
-        if obj and obj.status != 'pending':  # Если чемпионат уже начался
+        if obj and obj.status != 'pending':
             return ['season', 'league', 'start_date']
         return []
 

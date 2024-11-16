@@ -4,7 +4,8 @@ from django.utils import timezone
 from django_countries.fields import CountryField
 from clubs.models import Club
 from matches.models import Match
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
+import pytz
 
 class Season(models.Model):
     """Model for representing a game season"""
@@ -127,7 +128,6 @@ class League(models.Model):
             })
 
 class Championship(models.Model):
-    """Model for representing a championship competition"""
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('in_progress', 'In Progress'),
@@ -144,6 +144,23 @@ class Championship(models.Model):
     )
     start_date = models.DateField()
     end_date = models.DateField()
+    match_time = models.TimeField(
+        default=time(18, 0),
+        help_text="Match start time (UTC)"
+    )
+
+    class Meta:
+        unique_together = ['season', 'league']
+
+    def __str__(self):
+        return f"{self.league.name} - {self.season.name}"
+
+    def get_local_match_time(self, user_timezone=None):
+        if not user_timezone:
+            user_timezone = timezone.get_current_timezone()
+        utc_time = datetime.combine(datetime.today(), self.match_time)
+        utc_time = pytz.utc.localize(utc_time)
+        return utc_time.astimezone(user_timezone).time()
 
     class Meta:
         unique_together = ['season', 'league']
@@ -207,3 +224,4 @@ class ChampionshipMatch(models.Model):
             self.championship.start_date + timedelta(days=self.match_day - 1),
             datetime.min.time().replace(hour=18)
         )
+    

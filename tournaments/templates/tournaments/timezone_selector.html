@@ -1,0 +1,11 @@
+<form method="post" action="{% url 'tournaments:set_timezone' %}" class="timezone-form">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.path }}">
+    <select name="timezone" class="form-select form-select-sm" onchange="this.form.submit()">
+        {% for tz, name in TOURNAMENT_TIMEZONES %}
+            <option value="{{ tz }}" {% if tz == user_timezone %}selected{% endif %}>
+                {{ name }}
+            </option>
+        {% endfor %}
+    </select>
+</form>
