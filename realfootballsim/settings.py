@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -153,3 +154,14 @@ TOURNAMENT_TIMEZONES = [
 ]
 
 TEMPLATES[0]['OPTIONS']['context_processors'].append('tournaments.context_processors.timezone_context')
+
+CELERY_BEAT_SCHEDULE = {
+    'check-matches': {
+        'task': 'tournaments.check_and_simulate_matches',
+        'schedule': crontab(minute='*/1'),  # Каждую минуту
+    },
+    'check-season-end': {
+        'task': 'tournaments.check_season_end',
+        'schedule': crontab(hour=0, minute=0),  # Каждый день в полночь
+    },
+}

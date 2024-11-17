@@ -27,6 +27,14 @@ class Club(models.Model):
         verbose_name="Bot Team",
         help_text="Indicates if this team is controlled by AI"
     )
+    promoted = models.BooleanField(
+        default=False,
+        help_text="Команда повышена в классе"
+    )
+    relegated = models.BooleanField(
+        default=False,
+        help_text="Команда понижена в классе"
+    )
 
     def __str__(self):
         return self.name

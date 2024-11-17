@@ -17,6 +17,10 @@ class ChampionshipListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['active_seasons'] = Season.objects.filter(is_active=True)
+        # Убираем country из select_related
+        context['championships'] = Championship.objects.all().select_related(
+            'league', 'season'
+        ).order_by('league__level')
         return context
 
 class ChampionshipDetailView(LoginRequiredMixin, DetailView):
@@ -80,6 +84,16 @@ class LeagueListView(LoginRequiredMixin, ListView):
     template_name = 'tournaments/league_list.html'
     context_object_name = 'leagues'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Группируем лиги по странам и уровням
+        countries = {}
+        for league in self.get_queryset().order_by('country', 'level'):
+            if league.country not in countries:
+                countries[league.country] = []
+            countries[league.country].append(league)
+        context['countries'] = countries
+        return context
 def set_timezone(request):
     if request.method == 'POST':
         request.session['django_timezone'] = request.POST['timezone']

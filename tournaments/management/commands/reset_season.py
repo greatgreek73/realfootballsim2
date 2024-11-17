@@ -20,7 +20,7 @@ class Command(BaseCommand):
 
                 # 2. Создаем новый первый сезон
                 season = Season.objects.create(
-                    name="2024/2025",
+                    name="November 2024",
                     number=1,  # Первый сезон
                     start_date=date(2024, 11, 1),
                     end_date=date(2025, 5, 31),
