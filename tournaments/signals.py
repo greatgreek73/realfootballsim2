@@ -4,10 +4,122 @@ from clubs.models import Club
 from tournaments.models import Championship, ChampionshipTeam, ChampionshipMatch
 from matches.models import Match
 from django.db import transaction
+from django.db.models import Q
 import logging
 
 # Настройка логирования
 logger = logging.getLogger(__name__)
+
+def update_matches_for_replaced_team(championship, old_team_id, new_team):
+    """
+    Обновляет все матчи, заменяя old_team на new_team
+    """
+    try:
+        with transaction.atomic():
+            logger.info(
+                f"Starting match update: replacing team {old_team_id} with {new_team.name} "
+                f"in championship {championship}"
+            )
+
+            # Сначала получаем все матчи бота для анализа
+            bot_matches = Match.objects.filter(
+                championshipmatch__championship=championship
+            ).filter(
+                Q(home_team_id=old_team_id) | Q(away_team_id=old_team_id)
+            ).select_related(
+                'championshipmatch',
+                'home_team',
+                'away_team'
+            ).order_by('championshipmatch__round')
+
+            logger.info(f"Found {bot_matches.count()} matches to update")
+
+            # Группируем матчи по турам для проверки
+            matches_by_round = {}
+            for match in bot_matches:
+                round_num = match.championshipmatch.round
+                if round_num not in matches_by_round:
+                    matches_by_round[round_num] = []
+                matches_by_round[round_num].append(match)
+
+            # Анализируем матчи бота
+            logger.info(f"Analyzing matches by round:")
+            for round_num, round_matches in matches_by_round.items():
+                logger.info(f"Round {round_num}:")
+                for match in round_matches:
+                    logger.info(f"- {match.home_team.name} vs {match.away_team.name}")
+
+            # Проверяем противников бота
+            opponents = set()
+            opponent_matches = {}
+            for match in bot_matches:
+                opponent = match.away_team if match.home_team_id == old_team_id else match.home_team
+                opponents.add(opponent.id)
+                if opponent.id not in opponent_matches:
+                    opponent_matches[opponent.id] = []
+                opponent_matches[opponent.id].append(match)
+
+            logger.info(f"Found {len(opponents)} unique opponents")
+            for opponent_id, matches in opponent_matches.items():
+                logger.info(f"Games against opponent {opponent_id}: {len(matches)}")
+
+            # Обновляем матчи, проверяя правильность
+            updated_count = 0
+            unique_opponents = set()  # Для проверки уникальности противников
+            
+            for match in bot_matches:
+                before_update = f"{match.home_team.name} vs {match.away_team.name}"
+
+                # Получаем противника в этом матче
+                opponent = match.away_team if match.home_team_id == old_team_id else match.home_team
+                unique_opponents.add(opponent.id)
+                
+                # Сохраняем информацию о домашней/гостевой игре
+                was_home = match.home_team_id == old_team_id
+
+                # Обновляем команду в матче
+                if was_home:
+                    match.home_team = new_team
+                else:
+                    match.away_team = new_team
+
+                match.save()
+                updated_count += 1
+
+                logger.info(
+                    f"Updated match {match.id} (Round {match.championshipmatch.round}): "
+                    f"{before_update} -> {match.home_team.name} vs {match.away_team.name}"
+                )
+
+            # Финальные проверки
+            logger.info(f"Update completed:")
+            logger.info(f"- Total matches updated: {updated_count}")
+            logger.info(f"- Unique opponents: {len(unique_opponents)}")
+
+            # Проверяем итоговое распределение
+            final_matches = Match.objects.filter(
+                championshipmatch__championship=championship,
+                home_team=new_team
+            ).count()
+            logger.info(f"Final home matches: {final_matches}")
+
+            away_matches = Match.objects.filter(
+                championshipmatch__championship=championship,
+                away_team=new_team
+            ).count()
+            logger.info(f"Final away matches: {away_matches}")
+
+            if len(unique_opponents) < 2:
+                raise ValueError(
+                    f"Error: team has only {len(unique_opponents)} opponents. "
+                    f"Something is wrong with the schedule."
+                )
+
+            return updated_count
+
+    except Exception as e:
+        logger.error(f"Error updating matches for team {new_team.name}: {str(e)}")
+        raise
 
 @receiver(post_save, sender=Club)
 def handle_club_creation(sender, instance, created, **kwargs):
@@ -17,6 +129,8 @@ def handle_club_creation(sender, instance, created, **kwargs):
         
     try:
         with transaction.atomic():
+            logger.info(f"Processing new club creation: {instance.name}")
+            
             # Найти активный сезон и чемпионат для страны клуба
             championship = Championship.objects.select_related('season')\
                 .filter(
@@ -28,12 +142,24 @@ def handle_club_creation(sender, instance, created, **kwargs):
             if not championship:
                 logger.warning(f"No active championship found for club {instance.name}")
                 return
+            
+            logger.info(f"Found championship: {championship}")
+
+            # Проверяем, не добавлен ли уже клуб в чемпионат
+            if championship.teams.filter(id=instance.id).exists():
+                logger.info(f"Club {instance.name} is already in championship")
+                return
                 
             # Найти команду-бота для замены
             bot_team = championship.teams.filter(is_bot=True).first()
             if not bot_team:
                 logger.warning(f"No bot team found to replace in championship for club {instance.name}")
                 return
+                
+            logger.info(f"Found bot team to replace: {bot_team.name} (ID: {bot_team.id})")
+            
+            # Сохраняем ID бота перед удалением
+            bot_team_id = bot_team.id
                 
             # Получить статистику бота
             bot_stats = ChampionshipTeam.objects.get(
@@ -54,14 +180,26 @@ def handle_club_creation(sender, instance, created, **kwargs):
                 goals_against=bot_stats.goals_against
             )
             
+            logger.info(f"Created championship team record for {instance.name}")
+            
+            # Обновить все матчи, заменив бота на новый клуб
+            updated_matches = update_matches_for_replaced_team(
+                championship=championship,
+                old_team_id=bot_team_id,
+                new_team=instance
+            )
+            logger.info(f"Updated {updated_matches} matches for team {instance.name}")
+            
             # Удалить бота из чемпионата и базы данных
             bot_stats.delete()
             bot_team.delete()
+            logger.info(f"Deleted bot team {bot_team.name} (ID: {bot_team_id})")
             
             logger.info(f"Successfully replaced bot team with new club {instance.name}")
             
     except Exception as e:
         logger.error(f"Error handling club creation for {instance.name}: {str(e)}")
+        raise  # Добавляем raise для лучшей диагностики ошибок
 
 @receiver(post_save, sender=Match)
 def handle_match_result(sender, instance, **kwargs):

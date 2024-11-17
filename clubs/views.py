@@ -1,19 +1,18 @@
 from django.views.generic import CreateView, DetailView
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
 from faker import Faker
 from .models import Club
 from .forms import ClubForm
 from players.models import Player
+from tournaments.models import League, Championship
 from .country_locales import country_locales
 from players.utils import generate_player_stats
-from tournaments.models import Championship
 import json
 
 class CreateClubView(LoginRequiredMixin, CreateView):
@@ -24,17 +23,38 @@ class CreateClubView(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         try:
             with transaction.atomic():
+                # 1. Получаем данные из формы без сохранения
                 club = form.save(commit=False)
+                
+                # 2. Установить владельца и другие поля
                 club.owner = self.request.user
                 club.is_bot = False
                 club._skip_clean = True
+                
+                # 3. Найти подходящую лигу
+                league = League.objects.filter(
+                    country=club.country,
+                    level=1
+                ).first()
+                
+                if not league:
+                    messages.error(
+                        self.request,
+                        f'Не найдена лига для страны {club.country.name}'
+                    )
+                    return self.form_invalid(form)
+
+                club.league = league
+                
+                # 4. Сохраняем клуб
                 club.save()
+                messages.info(self.request, f"Клуб создан с ID: {club.id}")
                 
-                # Подождать немного, чтобы сигнал успел обработаться
+                # 5. Подождать немного, чтобы сигнал успел обработаться
                 from time import sleep
-                sleep(0.1)
+                sleep(0.2)  # Увеличиваем время ожидания
                 
-                # Проверить, был ли клуб добавлен в чемпионат
+                # 6. Проверить добавление в чемпионат
                 championship = Championship.objects.filter(
                     teams=club,
                     season__is_active=True
@@ -46,22 +66,42 @@ class CreateClubView(LoginRequiredMixin, CreateView):
                         f'Клуб "{club.name}" успешно создан и добавлен в {championship.league.name}!'
                     )
                 else:
-                    messages.warning(
-                        self.request,
-                        f'Клуб "{club.name}" создан, но не может быть добавлен в чемпионат. ' 
-                        'Возможно, в вашей стране нет активного чемпионата или нет свободных мест.'
-                    )
+                    # Проверяем причину отсутствия в чемпионате
+                    active_season = Championship.objects.filter(
+                        season__is_active=True
+                    ).exists()
+                    if not active_season:
+                        messages.warning(
+                            self.request,
+                            'Нет активного сезона в системе.'
+                        )
+                    else:
+                        messages.warning(
+                            self.request,
+                            f'Клуб "{club.name}" создан, но не добавлен в чемпионат. '
+                            'Возможно, нет свободных мест.'
+                        )
+
+                # 7. Перенаправляем только если есть ID
+                if club.id:
+                    return redirect(reverse('clubs:club_detail', kwargs={'pk': club.id}))
+                else:
+                    messages.error(self.request, "Ошибка при создании клуба: не получен ID")
+                    return self.form_invalid(form)
                     
-                return redirect(reverse('clubs:club_detail', kwargs={'pk': club.pk}))
         except Exception as e:
+            messages.error(self.request, f'Ошибка при создании клуба: {str(e)}')
             form.add_error(None, str(e))
             return self.form_invalid(form)
 
     def form_invalid(self, form):
-        messages.error(self.request, 'Ошибка при создании клуба. Пожалуйста, проверьте введенные данные.')
+        messages.error(
+            self.request, 
+            'Ошибка при создании клуба. Проверьте введенные данные.'
+        )
         return super().form_invalid(form)
 
-class ClubDetailView(LoginRequiredMixin, DetailView):
+class ClubDetailView(DetailView):
     model = Club
     template_name = 'clubs/club_detail.html'
 
@@ -81,7 +121,7 @@ class ClubDetailView(LoginRequiredMixin, DetailView):
 def get_locale_from_country_code(country_code):
     return country_locales.get(country_code, 'en_US')
 
-@login_required
+@require_http_methods(["GET"])
 def create_player(request, pk):
     club = get_object_or_404(Club, pk=pk)
     if club.owner != request.user:
@@ -156,14 +196,13 @@ def create_player(request, pk):
     messages.success(request, f'Игрок {new_player.first_name} {new_player.last_name} успешно создан!')
     return redirect(reverse('clubs:club_detail', args=[pk]))
 
-@login_required
+@require_http_methods(["GET"])
 def team_selection_view(request, pk):
     club = get_object_or_404(Club, pk=pk)
     if club.owner != request.user:
         return HttpResponse("У вас нет прав для просмотра этой страницы.", status=403)
     return render(request, 'clubs/team_selection.html', {'club': club})
 
-@login_required
 @require_http_methods(["GET"])
 def get_players(request, pk):
     club = get_object_or_404(Club, pk=pk)
@@ -177,7 +216,6 @@ def get_players(request, pk):
     } for player in players]
     return JsonResponse(player_data, safe=False)
 
-@login_required
 @require_http_methods(["POST"])
 def save_team_lineup(request, pk):
     club = get_object_or_404(Club, pk=pk)
@@ -188,7 +226,6 @@ def save_team_lineup(request, pk):
     club.save()
     return JsonResponse({'success': True})
 
-@login_required
 @require_http_methods(["GET"])
 def get_team_lineup(request, pk):
     club = get_object_or_404(Club, pk=pk)

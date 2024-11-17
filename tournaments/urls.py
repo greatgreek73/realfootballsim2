@@ -11,4 +11,5 @@ urlpatterns = [
     path('leagues/', views.LeagueListView.as_view(), name='league_list'),
     path('set-timezone/', views.set_timezone, name='set_timezone'),
     path('api/matches/<int:pk>/', views.get_championship_matches, name='api_matches'),
+    path('my-championship/', views.MyChampionshipView.as_view(), name='my_championship'),
 ]
