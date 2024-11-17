@@ -12,17 +12,15 @@
             {% endif %}
         </div>
 
-        {% regroup leagues by country.name as country_list %}
-        
-        {% for country in country_list %}
+        {% for country, leagues in countries.items %}
         <div class="card mb-4">
             <div class="card-header">
-                <h3 class="h5 mb-0">{{ country.grouper }}</h3>
+                <h3 class="h5 mb-0">{{ country.name }}</h3>
             </div>
             <div class="card-body">
                 <div class="row">
-                    {% for league in country.list %}
-                    <div class="col-md-4 mb-3">
+                    {% for league in leagues %}
+                    <div class="col-md-6 mb-3">
                         <div class="card h-100">
                             <div class="card-body">
                                 <h4 class="card-title h5">{{ league.name }}</h4>
@@ -31,7 +29,8 @@
                                 </p>
                                 <ul class="list-unstyled">
                                     <li>
-                                        <strong>Max Teams:</strong> {{ league.max_teams }}
+                                        <strong>Teams:</strong> 
+                                        {{ league.clubs.count }}/{{ league.max_teams }}
                                     </li>
                                     <li>
                                         <strong>Foreign Players Limit:</strong> 
@@ -47,7 +46,10 @@
                             </div>
                             <div class="card-footer bg-transparent">
                                 <div class="btn-group w-100">
-                                    <a href="#" class="btn btn-outline-primary">View Details</a>
+                                    {% if league.championship_set.exists %}
+                                    <a href="{% url 'tournaments:championship_detail' league.championship_set.first.id %}" 
+                                       class="btn btn-outline-primary">View Current Season</a>
+                                    {% endif %}
                                     {% if user.is_staff %}
                                     <a href="{% url 'admin:tournaments_league_change' league.id %}" 
                                        class="btn btn-outline-secondary">Edit</a>
