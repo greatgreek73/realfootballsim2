@@ -1,0 +1,189 @@
+{% extends 'tournaments/base.html' %}
+
+{% block tournament_content %}
+<div class="row">
+    <!-- Header Section -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2>{{ championship.league.name }}</h2>
+                        <p class="text-muted mb-0">
+                            {{ championship.league.country.name }} - Division {{ championship.league.level }}
+                        </p>
+                        <p class="text-muted">
+                            Season: {{ championship.season.name }} | 
+                            Status: {{ championship.get_status_display }}
+                        </p>
+                    </div>
+                    <div>
+                        <a href="{% url 'tournaments:championship_list' %}" class="btn btn-outline-primary">
+                            View All Championships
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Promotion/Relegation Info -->
+    <div class="col-12 mb-4">
+        <div class="alert alert-info">
+            {% if championship.league.level == 1 %}
+                Bottom 2 teams will be relegated to {{ championship.league.country.name }} Second Division
+            {% else %}
+                Top 2 teams will be promoted to {{ championship.league.country.name }} First Division
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Debug Information -->
+    <div class="col-12 mb-4">
+        <div class="alert alert-info">
+            <h6>Club Information:</h6>
+            <ul>
+                <li>Name: {{ debug.user_club.name }}</li>
+                <li>ID: {{ debug.user_club.id }}</li>
+                <li>League: {{ debug.user_club.league }}</li>
+            </ul>
+
+            <h6>Championship Information:</h6>
+            <ul>
+                <li>ID: {{ debug.championship.id }}</li>
+                <li>Name: {{ debug.championship.name }}</li>
+                <li>Total Teams: {{ debug.championship.team_count }}</li>
+            </ul>
+
+            <h6>All Matches Information:</h6>
+            <p>Total Championship Matches: {{ debug.all_matches.total_count }}</p>
+            {% if debug.all_matches.sample %}
+            <p>Sample Matches:</p>
+            <ul>
+            {% for match in debug.all_matches.sample %}
+                <li>Round {{ match.round }}: {{ match.home }} vs {{ match.away }} ({{ match.date }})</li>
+            {% endfor %}
+            </ul>
+            {% endif %}
+
+            <h6>Your Team's Matches:</h6>
+            <p>Home Matches: {{ debug.club_matches.home_matches.count }}</p>
+            {% if debug.club_matches.home_matches.sample %}
+            <ul>
+            {% for match in debug.club_matches.home_matches.sample %}
+                <li>Round {{ match.round }} vs {{ match.opponent }} ({{ match.date }})</li>
+            {% endfor %}
+            </ul>
+            {% endif %}
+
+            <p>Away Matches: {{ debug.club_matches.away_matches.count }}</p>
+            {% if debug.club_matches.away_matches.sample %}
+            <ul>
+            {% for match in debug.club_matches.away_matches.sample %}
+                <li>Round {{ match.round }} vs {{ match.opponent }} ({{ match.date }})</li>
+            {% endfor %}
+            </ul>
+            {% endif %}
+
+            <h6>Match Status Distribution:</h6>
+            <ul>
+            {% for status, count in debug.match_status.items %}
+                <li>{{ status }}: {{ count }}</li>
+            {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- League Table -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title h5 mb-0">League Table</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Team</th>
+                                <th>MP</th>
+                                <th>W</th>
+                                <th>D</th>
+                                <th>L</th>
+                                <th>GF</th>
+                                <th>GA</th>
+                                <th>GD</th>
+                                <th>Pts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for team in standings %}
+                            <tr {% if team.team == user.club %}class="table-active"{% endif %}>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    {{ team.team.name }}
+                                    {% if team.team == user.club %}
+                                        <span class="badge bg-primary">Your Club</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ team.matches_played }}</td>
+                                <td>{{ team.wins }}</td>
+                                <td>{{ team.draws }}</td>
+                                <td>{{ team.losses }}</td>
+                                <td>{{ team.goals_for }}</td>
+                                <td>{{ team.goals_against }}</td>
+                                <td>{% if team.goals_difference > 0 %}+{% endif %}{{ team.goals_difference }}</td>
+                                <td><strong>{{ team.points }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Matches -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title h5 mb-0">Your Team's Matches</h3>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for match in team_matches %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small>
+                                Round {{ match.round }} | {{ match.match.date|date:"d M H:i" }}
+                            </small>
+                            <span class="badge {% if match.match.status == 'finished' %}bg-success{% elif match.match.status == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                {{ match.match.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span {% if match.match.home_team == user.club %}class="fw-bold"{% endif %}>
+                                {{ match.match.home_team.name }}
+                            </span>
+                            {% if match.match.status == 'finished' %}
+                                <strong>{{ match.match.home_score }} - {{ match.match.away_score }}</strong>
+                            {% else %}
+                                <span>vs</span>
+                            {% endif %}
+                            <span {% if match.match.away_team == user.club %}class="fw-bold"{% endif %}>
+                                {{ match.match.away_team.name }}
+                            </span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="alert alert-warning">
+                        No matches found for your team.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
