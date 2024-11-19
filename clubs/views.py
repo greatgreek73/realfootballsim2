@@ -48,13 +48,19 @@ class CreateClubView(LoginRequiredMixin, CreateView):
                 
                 # 4. Сохраняем клуб
                 club.save()
+
+                # 5. Проверяем ID сразу после сохранения
+                if not club.id:
+                    messages.error(self.request, "Ошибка при создании клуба: не получен ID")
+                    return self.form_invalid(form)
+
                 messages.info(self.request, f"Клуб создан с ID: {club.id}")
                 
-                # 5. Подождать немного, чтобы сигнал успел обработаться
+                # 6. Подождать немного, чтобы сигнал успел обработаться
                 from time import sleep
-                sleep(0.2)  # Увеличиваем время ожидания
+                sleep(0.2)
                 
-                # 6. Проверить добавление в чемпионат
+                # 7. Проверить добавление в чемпионат
                 championship = Championship.objects.filter(
                     teams=club,
                     season__is_active=True
@@ -82,16 +88,11 @@ class CreateClubView(LoginRequiredMixin, CreateView):
                             'Возможно, нет свободных мест.'
                         )
 
-                # 7. Перенаправляем только если есть ID
-                if club.id:
-                    return redirect(reverse('clubs:club_detail', kwargs={'pk': club.id}))
-                else:
-                    messages.error(self.request, "Ошибка при создании клуба: не получен ID")
-                    return self.form_invalid(form)
+                # 8. Перенаправляем на страницу клуба
+                return redirect('clubs:club_detail', pk=club.id)
                     
         except Exception as e:
             messages.error(self.request, f'Ошибка при создании клуба: {str(e)}')
-            form.add_error(None, str(e))
             return self.form_invalid(form)
 
     def form_invalid(self, form):
@@ -101,6 +102,7 @@ class CreateClubView(LoginRequiredMixin, CreateView):
         )
         return super().form_invalid(form)
 
+# Остальной код остается без изменений
 class ClubDetailView(DetailView):
     model = Club
     template_name = 'clubs/club_detail.html'
@@ -194,7 +196,7 @@ def create_player(request, pk):
 
     new_player.save()
     messages.success(request, f'Игрок {new_player.first_name} {new_player.last_name} успешно создан!')
-    return redirect(reverse('clubs:club_detail', args=[pk]))
+    return redirect('clubs:club_detail', pk=pk)
 
 @require_http_methods(["GET"])
 def team_selection_view(request, pk):

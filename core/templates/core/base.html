@@ -10,21 +10,21 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="{% url 'home' %}">Football Manager</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     {% if user.is_authenticated %}
                         <li class="nav-item">
-                            {% if user.club %}
+                            {% if user.club and user.club.id %}
                                 <a class="nav-link" href="{% url 'clubs:club_detail' user.club.id %}">My Club</a>
                             {% else %}
                                 <a class="nav-link" href="{% url 'clubs:create_club' %}">Create Club</a>
                             {% endif %}
                         </li>
                         <li class="nav-item">
-                            {% if user.club %}
+                            {% if user.club and user.club.id %}
                                 <a class="nav-link" href="{% url 'tournaments:my_championship' %}">Tournaments</a>
                             {% else %}
                                 <a class="nav-link" href="{% url 'tournaments:championship_list' %}">Tournaments</a>
@@ -56,8 +56,9 @@
     <div class="container mt-4">
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}">
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
                     {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             {% endfor %}
         {% endif %}
