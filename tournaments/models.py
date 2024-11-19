@@ -29,13 +29,11 @@ class Season(models.Model):
         if not self.start_date:
             return
 
-        # Проверяем, что начало сезона - первое число месяца
         if self.start_date.day != 1:
             raise ValidationError({
                 'start_date': 'Дата начала сезона должна быть первым числом месяца'
             })
 
-        # Проверяем корректность даты окончания
         if self.start_date.month == 2:  # Февраль
             last_day = 29 if self.start_date.year % 4 == 0 else 28
         else:
@@ -108,7 +106,7 @@ class League(models.Model):
     name = models.CharField(max_length=100)
     country = CountryField()
     level = models.PositiveIntegerField()  # 1 for top division, 2 for second, etc.
-    max_teams = models.PositiveIntegerField(default=16)  # Изменено с 20 на 16
+    max_teams = models.PositiveIntegerField(default=16)
     foreign_players_limit = models.PositiveIntegerField(
         default=5, 
         help_text="Maximum number of foreign players allowed in match squad"
@@ -162,15 +160,102 @@ class Championship(models.Model):
         utc_time = pytz.utc.localize(utc_time)
         return utc_time.astimezone(user_timezone).time()
 
-    class Meta:
-        unique_together = ['season', 'league']
-
-    def __str__(self):
-        return f"{self.league.name} - {self.season.name}"
-
     def clean(self):
         if self.teams.count() != 16:
             raise ValidationError('Количество команд в чемпионате должно быть равно 16')
+
+    def can_participate_in_transitions(self) -> bool:
+        """Проверяет, может ли чемпионат участвовать в переходах"""
+        if not self.is_completed:
+            return False
+            
+        valid, error = self.validate_status()
+        if not valid:
+            return False
+            
+        if self.league.level not in [1, 2]:
+            return False
+            
+        return True
+
+    def get_teams_for_relegation(self) -> list:
+        """Возвращает две команды для понижения в дивизионе"""
+        if self.league.level != 1:
+            raise ValidationError("Relegation is only possible from the first division")
+
+        if not self.can_participate_in_transitions():
+            raise ValidationError("Championship cannot participate in transitions yet")
+            
+        return (
+            self.championshipteam_set
+            .annotate(
+                goals_diff=models.F('goals_for') - models.F('goals_against')
+            )
+            .select_related('team')
+            .order_by(
+                'points',
+                'goals_diff',
+                'goals_for'
+            )[:2]
+        )
+
+    def get_teams_for_promotion(self) -> list:
+        """Возвращает две команды для повышения в дивизионе"""
+        if self.league.level != 2:
+            raise ValidationError("Promotion is only possible from the second division")
+
+        if not self.can_participate_in_transitions():
+            raise ValidationError("Championship cannot participate in transitions yet")
+            
+        return (
+            self.championshipteam_set
+            .annotate(
+                goals_diff=models.F('goals_for') - models.F('goals_against')
+            )
+            .select_related('team')
+            .order_by(
+                '-points',
+                '-goals_diff',
+                '-goals_for'
+            )[:2]
+        )
+
+    @property
+    def is_completed(self) -> bool:
+        """Проверяет, завершены ли все матчи чемпионата"""
+        return not self.championshipmatch_set.filter(
+            ~models.Q(match__status='finished')
+        ).exists()
+
+    def get_standings(self) -> list:
+        """Возвращает отсортированную таблицу результатов"""
+        return (
+            self.championshipteam_set
+            .annotate(
+                goals_diff=models.F('goals_for') - models.F('goals_against')
+            )
+            .select_related('team')
+            .order_by(
+                '-points',
+                '-goals_diff',
+                '-goals_for'
+            )
+        )
+
+    def validate_status(self) -> tuple:
+        """
+        Проверяет текущий статус чемпионата
+        Возвращает (is_valid, error_message)
+        """
+        if self.teams.count() != 16:
+            return False, "Неверное количество команд в чемпионате"
+                
+        matches_count = self.championshipmatch_set.count()
+        expected_matches = 16 * 15  # Каждая команда играет с каждой другой дважды
+        if matches_count != expected_matches:
+            return False, f"Неверное количество матчей: {matches_count} вместо {expected_matches}"
+                
+        return True, None
 
 class ChampionshipTeam(models.Model):
     """Model for storing team statistics in championship"""
@@ -203,6 +288,34 @@ class ChampionshipTeam(models.Model):
             return round(self.points / self.matches_played, 2)
         return 0
 
+    @property
+    def position(self) -> int:
+        """Возвращает текущую позицию команды в таблице"""
+        return (
+            self.championship.championshipteam_set
+            .annotate(
+                goals_diff=models.F('goals_for') - models.F('goals_against')
+            )
+            .filter(
+                models.Q(points__gt=self.points) |
+                (models.Q(points=self.points) & models.Q(goals_diff__gt=self.goals_difference)) |
+                (models.Q(points=self.points) & 
+                 models.Q(goals_diff=self.goals_difference) & 
+                 models.Q(goals_for__gt=self.goals_for))
+            )
+            .count() + 1
+        )
+
+    @property
+    def is_relegation_zone(self) -> bool:
+        """Проверяет, находится ли команда в зоне вылета"""
+        return self.position >= 15
+
+    @property
+    def is_promotion_zone(self) -> bool:
+        """Проверяет, находится ли команда в зоне повышения"""
+        return self.position <= 2
+
 class ChampionshipMatch(models.Model):
     """Model for linking matches to championship"""
     championship = models.ForeignKey(Championship, on_delete=models.CASCADE)
@@ -224,4 +337,3 @@ class ChampionshipMatch(models.Model):
             self.championship.start_date + timedelta(days=self.match_day - 1),
             datetime.min.time().replace(hour=18)
         )
-    
