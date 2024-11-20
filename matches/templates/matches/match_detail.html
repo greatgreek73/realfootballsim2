@@ -1,35 +1,85 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Match Details</title>
-</head>
-<body>
-    <h1>Match Details</h1>
-    <h2>{{ match.home_team.name }} vs {{ match.away_team.name }}</h2>
-    <p>Date: {{ match.date }}</p>
-    <p>Status: {{ match.get_status_display }}</p>
-    
-    {% if match.status == 'finished' %}
-        <h3>Final Score</h3>
-        <p>{{ match.home_team.name }} {{ match.home_score }} - {{ match.away_score }} {{ match.away_team.name }}</p>
-    {% elif match.status == 'scheduled' %}
-        <form action="{% url 'matches:simulate_match' match.id %}" method="post">
-            {% csrf_token %}
-            <button type="submit">Simulate Match</button>
-        </form>
-    {% endif %}
-    
-    <h3>Match Events</h3>
-    <ul>
-    {% for event in match.events.all %}
-        <li>{{ event.minute }}' - {{ event.get_event_type_display }}: {{ event.description }}</li>
-    {% empty %}
-        <li>No events recorded</li>
-    {% endfor %}
-    </ul>
-    
-    <a href="{% url 'home' %}">Back to Home</a>
-</body>
-</html>
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="mb-0">Match Details</h2>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <div class="row align-items-center">
+                            <div class="col-md-5">
+                                <a href="{% url 'clubs:club_detail' match.home_team.id %}" class="text-decoration-none">
+                                    <h3>{{ match.home_team.name }}</h3>
+                                    {% if match.home_team.is_bot %}
+                                        <span class="badge bg-secondary">Bot</span>
+                                    {% endif %}
+                                </a>
+                            </div>
+                            <div class="col-md-2">
+                                {% if match.status == 'finished' %}
+                                    <h3 class="score">{{ match.home_score }} - {{ match.away_score }}</h3>
+                                {% else %}
+                                    <h3>vs</h3>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-5">
+                                <a href="{% url 'clubs:club_detail' match.away_team.id %}" class="text-decoration-none">
+                                    <h3>{{ match.away_team.name }}</h3>
+                                    {% if match.away_team.is_bot %}
+                                        <span class="badge bg-secondary">Bot</span>
+                                    {% endif %}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <p><strong>Date:</strong> {{ match.date }}</p>
+                            <p><strong>Status:</strong> 
+                                <span class="badge {% if match.status == 'finished' %}bg-success{% elif match.status == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                    {{ match.get_status_display }}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            {% if match.status == 'scheduled' and user.is_staff %}
+                                <form method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-primary">Simulate Match</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <h4>Match Events</h4>
+                    <div class="list-group">
+                        {% for event in match.events.all %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ event.minute }}'</strong> - 
+                                        {{ event.get_event_type_display }}: {{ event.description }}
+                                    </div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="list-group-item text-center text-muted">
+                                No events recorded
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <a href="{% url 'home' %}" class="btn btn-outline-primary">Back to Home</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

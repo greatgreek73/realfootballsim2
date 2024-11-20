@@ -4,35 +4,60 @@
 
 {% block content %}
 <div class="container">
+    <!-- Club Header Section -->
     <div class="row mb-4">
         <div class="col-12">
-            <h1>{{ club.name }} {% if club.is_bot %}<span class="bot-team-label">BOT</span>{% endif %}</h1>
-            <p class="text-muted">
-                Country: {{ club.country }}<br>
-                Owner: {% if club.is_bot %}AI Controller{% else %}{{ club.owner.username }}{% endif %}
-            </p>
-            {% if not club.is_bot %}
-            <a href="{% url 'clubs:team_selection' club.id %}" class="btn btn-primary">
-                Select Team Lineup
-            </a>
-            {% endif %}
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h1>
+                        {{ club.name }}
+                        {% if club.is_bot %}
+                            <span class="badge bg-secondary">BOT</span>
+                        {% endif %}
+                    </h1>
+                    <div class="club-info">
+                        <p class="mb-1">
+                            <strong>Country:</strong> {{ club.country }}
+                        </p>
+                        <p class="mb-1">
+                            <strong>League:</strong> {{ club.league.name }} (Division {{ club.league.level }})
+                        </p>
+                        <p class="mb-1">
+                            <strong>Status:</strong>
+                            {% if club.is_bot %}
+                                <span class="text-muted">AI Controlled</span>
+                            {% else %}
+                                Owned by {{ club.owner.username }}
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% if user == club.owner %}
+                <div>
+                    <a href="{% url 'clubs:team_selection' club.id %}" class="btn btn-primary">
+                        Select Team Lineup
+                    </a>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 
+    <!-- Players Section -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title h4 mb-0">Players in {{ club.name }}</h2>
+                    <h2 class="card-title h4 mb-0">Players</h2>
                 </div>
                 <div class="card-body">
-                    {% if not club.is_bot %}
+                    {% if user == club.owner %}
                     <div class="row mb-3">
                         <div class="col-12">
                             <form method="get" action="{% url 'clubs:create_player' club.id %}" class="row g-3">
                                 <div class="col-md-4">
                                     <label for="position" class="form-label">Choose Position:</label>
-                                    <select class="form-select" id="position" name="position">
+                                    <select class="form-select" id="position" name="position" required>
                                         <option value="">Select a position</option>
                                         <option value="Goalkeeper">Goalkeeper</option>
                                         <option value="Right Back">Right Back</option>
@@ -48,7 +73,7 @@
                                 </div>
                                 <div class="col-md-4">
                                     <label for="player_class" class="form-label">Choose Player Class:</label>
-                                    <select class="form-select" id="player_class" name="player_class">
+                                    <select class="form-select" id="player_class" name="player_class" required>
                                         <option value="">Select a class</option>
                                         <option value="1">Class 1</option>
                                         <option value="2">Class 2</option>
@@ -64,27 +89,57 @@
                     </div>
                     {% endif %}
                     
-                    <div class="list-group">
-                        {% for player in players %}
-                        <a href="{% url 'players:player_detail' player.pk %}" class="list-group-item list-group-item-action">
-                            {{ player.first_name }} {{ player.last_name }} - {{ player.position }}
-                        </a>
-                        {% empty %}
-                        <div class="list-group-item">No players found</div>
-                        {% endfor %}
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Position</th>
+                                    <th>Class</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for player in players %}
+                                <tr>
+                                    <td>{{ player.first_name }} {{ player.last_name }}</td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ player.position }}</span>
+                                    </td>
+                                    <td>
+                                        {% if player.player_class %}
+                                            <span class="badge bg-info">Class {{ player.player_class }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'players:player_detail' player.pk %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            View Details
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">No players found</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Matches Section -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h2 class="card-title h4 mb-0">Matches</h2>
-                    {% if not club.is_bot %}
-                    <a href="{% url 'matches:create_match' %}?home_team={{ club.id }}" class="btn btn-primary btn-sm">
+                    {% if user == club.owner %}
+                    <a href="{% url 'matches:create_match' %}?home_team={{ club.id }}" 
+                       class="btn btn-primary btn-sm">
                         Create New Match
                     </a>
                     {% endif %}
@@ -96,19 +151,22 @@
                             {% if match.status == 'scheduled' %}
                             <div class="list-group-item">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    {{ match.home_team.name }}
-                                    {% if match.home_team.is_bot %}
-                                    <span class="bot-indicator" title="Bot Team"></span>
-                                    {% endif %}
-                                    vs
-                                    {{ match.away_team.name }}
-                                    {% if match.away_team.is_bot %}
-                                    <span class="bot-indicator" title="Bot Team"></span>
-                                    {% endif %}
-                                    {{ match.date }}
-                                    <a href="{% url 'matches:match_detail' match.pk %}" class="btn btn-sm btn-outline-primary">
-                                        Details
-                                    </a>
+                                    <div>
+                                        <a href="{% url 'clubs:club_detail' match.home_team.id %}" class="text-decoration-none">
+                                            {{ match.home_team.name }}
+                                        </a>
+                                        vs
+                                        <a href="{% url 'clubs:club_detail' match.away_team.id %}" class="text-decoration-none">
+                                            {{ match.away_team.name }}
+                                        </a>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted me-2">{{ match.date }}</small>
+                                        <a href="{% url 'matches:match_detail' match.pk %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            Details
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                             {% endif %}
@@ -117,24 +175,27 @@
                             {% if match.status == 'scheduled' %}
                             <div class="list-group-item">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    {{ match.home_team.name }}
-                                    {% if match.home_team.is_bot %}
-                                    <span class="bot-indicator" title="Bot Team"></span>
-                                    {% endif %}
-                                    vs
-                                    {{ match.away_team.name }}
-                                    {% if match.away_team.is_bot %}
-                                    <span class="bot-indicator" title="Bot Team"></span>
-                                    {% endif %}
-                                    {{ match.date }}
-                                    <a href="{% url 'matches:match_detail' match.pk %}" class="btn btn-sm btn-outline-primary">
-                                        Details
-                                    </a>
+                                    <div>
+                                        <a href="{% url 'clubs:club_detail' match.home_team.id %}" class="text-decoration-none">
+                                            {{ match.home_team.name }}
+                                        </a>
+                                        vs
+                                        <a href="{% url 'clubs:club_detail' match.away_team.id %}" class="text-decoration-none">
+                                            {{ match.away_team.name }}
+                                        </a>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted me-2">{{ match.date }}</small>
+                                        <a href="{% url 'matches:match_detail' match.pk %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            Details
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                             {% endif %}
                         {% empty %}
-                        <div class="list-group-item">No upcoming matches</div>
+                            <div class="list-group-item">No upcoming matches</div>
                         {% endfor %}
                     </div>
 
@@ -144,18 +205,22 @@
                             {% if match.status == 'finished' %}
                             <div class="list-group-item">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    {{ match.home_team.name }}
-                                    {% if match.home_team.is_bot %}
-                                    <span class="bot-indicator" title="Bot Team"></span>
-                                    {% endif %}
-                                    <strong>{{ match.home_score }} - {{ match.away_score }}</strong>
-                                    {{ match.away_team.name }}
-                                    {% if match.away_team.is_bot %}
-                                    <span class="bot-indicator" title="Bot Team"></span>
-                                    {% endif %}
-                                    <a href="{% url 'matches:match_detail' match.pk %}" class="btn btn-sm btn-outline-primary">
-                                        Details
-                                    </a>
+                                    <div>
+                                        <a href="{% url 'clubs:club_detail' match.home_team.id %}" class="text-decoration-none">
+                                            {{ match.home_team.name }}
+                                        </a>
+                                        <strong>{{ match.home_score }} - {{ match.away_score }}</strong>
+                                        <a href="{% url 'clubs:club_detail' match.away_team.id %}" class="text-decoration-none">
+                                            {{ match.away_team.name }}
+                                        </a>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted me-2">{{ match.date }}</small>
+                                        <a href="{% url 'matches:match_detail' match.pk %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            Details
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                             {% endif %}
@@ -164,23 +229,27 @@
                             {% if match.status == 'finished' %}
                             <div class="list-group-item">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    {{ match.home_team.name }}
-                                    {% if match.home_team.is_bot %}
-                                    <span class="bot-indicator" title="Bot Team"></span>
-                                    {% endif %}
-                                    <strong>{{ match.home_score }} - {{ match.away_score }}</strong>
-                                    {{ match.away_team.name }}
-                                    {% if match.away_team.is_bot %}
-                                    <span class="bot-indicator" title="Bot Team"></span>
-                                    {% endif %}
-                                    <a href="{% url 'matches:match_detail' match.pk %}" class="btn btn-sm btn-outline-primary">
-                                        Details
-                                    </a>
+                                    <div>
+                                        <a href="{% url 'clubs:club_detail' match.home_team.id %}" class="text-decoration-none">
+                                            {{ match.home_team.name }}
+                                        </a>
+                                        <strong>{{ match.home_score }} - {{ match.away_score }}</strong>
+                                        <a href="{% url 'clubs:club_detail' match.away_team.id %}" class="text-decoration-none">
+                                            {{ match.away_team.name }}
+                                        </a>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted me-2">{{ match.date }}</small>
+                                        <a href="{% url 'matches:match_detail' match.pk %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            Details
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                             {% endif %}
                         {% empty %}
-                        <div class="list-group-item">No past matches</div>
+                            <div class="list-group-item">No past matches</div>
                         {% endfor %}
                     </div>
                 </div>

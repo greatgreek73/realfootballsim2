@@ -1,167 +1,155 @@
 {% extends 'tournaments/base.html' %}
-
-{% block extra_head %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.33/moment-timezone.min.js"></script>
-<link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.css' rel='stylesheet' />
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.js'></script>
 {% load static %}
-<link href="{% static 'tournaments/css/calendar.css' %}" rel="stylesheet">
-<script src="{% static 'tournaments/js/calendar.js' %}"></script>
-{% endblock %}
 
 {% block tournament_content %}
-<!-- Передача данных для календаря -->
-<script>
-   const calendarEvents = {{ calendar_events|safe }};
-</script>
-
 <div class="row">
-   <!-- Секция основной информации -->
-   <div class="col-12 mb-4">
-       <div class="card">
-           <div class="card-body">
-               <div class="d-flex justify-content-between align-items-center">
-                   <div>
-                       <h2>{{ championship.league.name }}</h2>
-                       <p class="text-muted mb-0">
-                           {{ championship.league.country.name }} - Division {{ championship.league.level }}
-                       </p>
-                       <p class="text-muted">
-                           Season: {{ championship.season.name }} | 
-                           Status: {{ championship.get_status_display }} |
-                           Match Time: <span id="match-time" data-utc-time="{{ championship.match_time|time:'H:i' }}"></span>
-                       </p>
-                   </div>
-                   <div>
-                       <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#timezonesModal">
-                           Change Timezone
-                       </button>
-                   </div>
-               </div>
-           </div>
-       </div>
-   </div>
+    <!-- Header Section - оставляем без изменений -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2>{{ championship.league.name }}</h2>
+                        <p class="text-muted mb-0">
+                            {{ championship.league.country.name }} - Division {{ championship.league.level }}
+                        </p>
+                        <p class="text-muted">
+                            Season: {{ championship.season.name }} | 
+                            Status: {{ championship.get_status_display }} |
+                            Match Time: <span id="match-time" utc-time="{{ championship.match_time|time:'H:i' }}"></span>
+                        </p>
+                    </div>
+                    <div>
+                        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#timezonesModal">
+                            Change Timezone
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-   <!-- Календарь матчей -->
-   <div class="col-12 mb-4">
-       <div class="card shadow-sm">
-           <div class="card-header">
-               <h3 class="card-title h5 mb-0">Match Calendar</h3>
-               <div class="text-muted">All times shown in your local timezone: <span id="user-timezone"></span></div>
-           </div>
-           <div class="card-body">
-               <div id="calendar"></div>
-           </div>
-       </div>
-   </div>
+    <!-- League Table -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title h5 mb-0">League Table</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Team</th>
+                                <th>MP</th>
+                                <th>W</th>
+                                <th>D</th>
+                                <th>L</th>
+                                <th>GF</th>
+                                <th>GA</th>
+                                <th>GD</th>
+                                <th>Pts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for team in standings %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    <a href="{% url 'clubs:club_detail' team.team.id %}" class="text-decoration-none">
+                                        {{ team.team.name }}
+                                        {% if team.team.is_bot %}
+                                            <small class="text-muted">(Bot)</small>
+                                        {% endif %}
+                                    </a>
+                                </td>
+                                <td>{{ team.matches_played }}</td>
+                                <td>{{ team.wins }}</td>
+                                <td>{{ team.draws }}</td>
+                                <td>{{ team.losses }}</td>
+                                <td>{{ team.goals_for }}</td>
+                                <td>{{ team.goals_against }}</td>
+                                <td>{% if team.goals_diff > 0 %}+{% endif %}{{ team.goals_diff }}</td>
+                                <td><strong>{{ team.points }}</strong></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="10" class="text-center">No teams in championship</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
-   <!-- Турнирная таблица -->
-   <div class="col-md-8">
-       <div class="card">
-           <div class="card-header">
-               <h3 class="card-title h5 mb-0">League Table</h3>
-           </div>
-           <div class="card-body">
-               <div class="table-responsive">
-                   <table class="table table-hover">
-                       <thead>
-                           <tr>
-                               <th>#</th>
-                               <th>Team</th>
-                               <th>MP</th>
-                               <th>W</th>
-                               <th>D</th>
-                               <th>L</th>
-                               <th>GF</th>
-                               <th>GA</th>
-                               <th>GD</th>
-                               <th>Pts</th>
-                           </tr>
-                       </thead>
-                       <tbody>
-                           {% for team in standings %}
-                           <tr>
-                               <td>{{ forloop.counter }}</td>
-                               <td>{{ team.team.name }}</td>
-                               <td>{{ team.matches_played }}</td>
-                               <td>{{ team.wins }}</td>
-                               <td>{{ team.draws }}</td>
-                               <td>{{ team.losses }}</td>
-                               <td>{{ team.goals_for }}</td>
-                               <td>{{ team.goals_against }}</td>
-                               <td>{% if team.goals_diff > 0 %}+{% endif %}{{ team.goals_diff }}</td>
-                               <td><strong>{{ team.points }}</strong></td>
-                           </tr>
-                           {% empty %}
-                           <tr>
-                               <td colspan="10" class="text-center">No teams in championship</td>
-                           </tr>
-                           {% endfor %}
-                       </tbody>
-                   </table>
-               </div>
-           </div>
-       </div>
-   </div>
-
-   <!-- Список матчей -->
-   <div class="col-md-4">
-       <div class="card">
-           <div class="card-header">
-               <h3 class="card-title h5 mb-0">Matches</h3>
-           </div>
-           <div class="card-body">
-               {% if matches %}
-                   {% regroup matches by round as round_list %}
-                   {% for round in round_list %}
-                   <div class="mb-4">
-                       <h4 class="h6">Round {{ round.grouper }}</h4>
-                       <div class="list-group">
-                           {% for match in round.list %}
-                           <div class="list-group-item">
-                               <div class="d-flex justify-content-between align-items-center">
-                                   <small class="text-muted match-time" data-utc="{{ match.match.date|date:'c' }}">
-                                       {{ match.match.date }}
-                                   </small>
-                                   <span class="badge {% if match.match.status == 'finished' %}bg-success{% elif match.match.status == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}">
-                                       {{ match.match.get_status_display }}
-                                   </span>
-                               </div>
-                               <div class="d-flex justify-content-between align-items-center mt-2">
-                                   <span>{{ match.match.home_team.name }}</span>
-                                   {% if match.match.status == 'finished' %}
-                                       <strong>{{ match.match.home_score }} - {{ match.match.away_score }}</strong>
-                                   {% else %}
-                                       <span>vs</span>
-                                   {% endif %}
-                                   <span>{{ match.match.away_team.name }}</span>
-                               </div>
-                           </div>
-                           {% endfor %}
-                       </div>
-                   </div>
-                   {% endfor %}
-               {% else %}
-                   <p class="text-center">No matches scheduled</p>
-               {% endif %}
-           </div>
-       </div>
-   </div>
+    <!-- Matches Section -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title h5 mb-0">Matches</h3>
+            </div>
+            <div class="card-body">
+                {% if matches %}
+                    {% regroup matches by round as round_list %}
+                    {% for round in round_list %}
+                    <div class="mb-4">
+                        <h4 class="h6">Round {{ round.grouper }}</h4>
+                        <div class="list-group">
+                            {% for match in round.list %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small>{{ match.match.date }}</small>
+                                    <span class="badge {% if match.match.status == 'finished' %}bg-success{% elif match.match.status == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                        {{ match.match.get_status_display }}
+                                    </span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <a href="{% url 'clubs:club_detail' match.match.home_team.id %}" class="text-decoration-none">
+                                        {{ match.match.home_team.name }}
+                                        {% if match.match.home_team.is_bot %}
+                                            <small>(Bot)</small>
+                                        {% endif %}
+                                    </a>
+                                    {% if match.match.status == 'finished' %}
+                                        <strong>{{ match.match.home_score }} - {{ match.match.away_score }}</strong>
+                                    {% else %}
+                                        <span>vs</span>
+                                    {% endif %}
+                                    <a href="{% url 'clubs:club_detail' match.match.away_team.id %}" class="text-decoration-none">
+                                        {{ match.match.away_team.name }}
+                                        {% if match.match.away_team.is_bot %}
+                                            <small>(Bot)</small>
+                                        {% endif %}
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-center">No matches scheduled</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Модальное окно выбора часового пояса -->
+<!-- Timezone Modal -->
 <div class="modal fade timezone-modal" id="timezonesModal" tabindex="-1">
-   <div class="modal-dialog">
-       <div class="modal-content">
-           <div class="modal-header">
-               <h5 class="modal-title">Select Timezone</h5>
-               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-           </div>
-           <div class="modal-body">
-               {% include 'tournaments/timezone_selector.html' %}
-           </div>
-       </div>
-   </div>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Select Timezone</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {% include 'tournaments/timezone_selector.html' %}
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

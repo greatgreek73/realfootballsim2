@@ -1,81 +1,208 @@
+{% extends 'core/base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team Selection for {{ club.name }}</title>
-    <style>
-        .pitch {
-            width: 600px;
-            height: 400px;
-            background-color: #4CAF50;
-            position: relative;
-            margin: 20px auto;
-        }
-        .player-slot {
-            width: 50px;
-            height: 50px;
-            background-color: rgba(255, 255, 255, 0.5);
-            border: 2px solid #fff;
-            position: absolute;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 12px;
-        }
-        .player-list {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-top: 20px;
-        }
-        .player-item {
-            width: 100px;
-            height: 50px;
-            background-color: #f1f1f1;
-            margin: 5px;
-            padding: 5px;
-            cursor: move;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 12px;
-            text-align: center;
-        }
-        #resetButton {
-            display: block;
-            margin: 20px auto;
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        #saveStatus {
-            text-align: center;
-            margin-top: 10px;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-    <h1 style="text-align: center;">Select Your Team Lineup for {{ club.name }}</h1>
-    
-    <div class="pitch" id="pitch">
-        <!-- Player slots will be added here dynamically -->
+
+{% block title %}Team Selection - {{ club.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="mb-0">Team Selection</h2>
+                        <a href="{% url 'clubs:club_detail' club.id %}" class="btn btn-outline-secondary">
+                            Back to Club
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="pitch" id="pitch">
+                        <!-- Player slots will be added here dynamically -->
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <button id="resetButton" class="btn btn-warning">Reset Lineup</button>
+                        <div id="saveStatus" class="mt-2"></div>
+                    </div>
+
+                    <div class="mt-4">
+                        <h3 class="h4 mb-3">Available Players</h3>
+                        <div class="player-list" id="playerList">
+                            <!-- Available players will be added here dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+</div>
 
-    <button id="resetButton">Reset Lineup</button>
-    <div id="saveStatus"></div>
+<!-- Добавляем скрытое поле с ID клуба -->
+<input type="hidden" id="clubId" value="{{ club.id }}">
 
-    <h2 style="text-align: center;">Available Players</h2>
-    <div class="player-list" id="playerList">
-        <!-- Available players will be added here dynamically -->
-    </div>
+<style>
+    .pitch {
+        width: 100%;
+        max-width: 800px;
+        height: 600px;
+        background-color: #4CAF50;
+        background-image: 
+            linear-gradient(#ffffff 1px, transparent 1px),
+            linear-gradient(90deg, #ffffff 1px, transparent 1px);
+        background-size: 50px 50px;
+        position: relative;
+        margin: 0 auto;
+        border: 2px solid #388E3C;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
 
-    <!-- Добавляем скрытое поле с ID клуба -->
-    <input type="hidden" id="clubId" value="{{ club.id }}">
+    .player-slot {
+        width: 70px;
+        height: 70px;
+        background-color: rgba(255, 255, 255, 0.8);
+        border: 2px solid #fff;
+        border-radius: 50%;
+        position: absolute;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 12px;
+        transition: all 0.2s ease;
+        transform: translate(-50%, -50%);
+    }
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
-    <script src="{% static 'js/team_selection.js' %}"></script>
-</body>
-</html>
+    .player-slot:hover {
+        background-color: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+
+    .player-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        min-height: 100px;
+    }
+
+    .player-item {
+        width: 130px;
+        height: 70px;
+        background-color: #fff;
+        padding: 8px;
+        cursor: move;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        font-size: 12px;
+        text-align: center;
+        border-radius: 6px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: all 0.2s ease;
+        margin: 0;
+    }
+
+    .player-item:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+
+    .player-item.goalkeeper {
+        background-color: #fff3cd;
+        border-left: 4px solid #ffc107;
+    }
+
+    .player-item.defender {
+        background-color: #cfe2ff;
+        border-left: 4px solid #0d6efd;
+    }
+
+    .player-item.midfielder {
+        background-color: #d1e7dd;
+        border-left: 4px solid #198754;
+    }
+
+    .player-item.forward {
+        background-color: #f8d7da;
+        border-left: 4px solid #dc3545;
+    }
+
+    .player-name {
+        font-weight: bold;
+        margin-bottom: 4px;
+    }
+
+    .player-position {
+        font-size: 11px;
+        color: #6c757d;
+    }
+
+    .position-label {
+        position: absolute;
+        bottom: -20px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 12px;
+        color: white;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        font-weight: bold;
+        background-color: rgba(0,0,0,0.3);
+        padding: 2px 6px;
+        border-radius: 3px;
+    }
+
+    .sortable-ghost {
+        opacity: 0.4;
+    }
+
+    .sortable-chosen {
+        opacity: 0.8;
+        transform: scale(1.05);
+    }
+
+    .sortable-drag {
+        opacity: 0.8;
+    }
+
+    #saveStatus {
+        min-height: 24px;
+        transition: all 0.3s ease;
+    }
+
+    #saveStatus.alert {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        margin: 0;
+        font-size: 14px;
+    }
+
+    /* Линии футбольного поля */
+    .pitch::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background-color: rgba(255, 255, 255, 0.5);
+    }
+
+    .pitch::after {
+        content: '';
+        position: absolute;
+        top: 25%;
+        bottom: 25%;
+        left: 50%;
+        width: 2px;
+        background-color: rgba(255, 255, 255, 0.5);
+        transform: translateX(-50%);
+    }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+<script src="{% static 'js/team_selection.js' %}"></script>
+{% endblock %}
