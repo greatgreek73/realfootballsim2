@@ -1,11 +1,94 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Home Page</title>
-</head>
-<body>
-    <h1>Welcome to Our Application</h1>
-    <p><a href="{% url 'login' %}">Login</a></p>
-    <p><a href="{% url 'register' %}">Register</a></p>
-</body>
-</html>
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="text-center mb-5">
+                <h1 class="display-4">Welcome to Football Manager</h1>
+                <p class="lead">Manage your team and compete in championships!</p>
+            </div>
+
+            {% if user.is_authenticated %}
+                {% if user.club %}
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title h5 mb-0">Your Club</h3>
+                            </div>
+                            <div class="card-body">
+                                <h4 class="h5">{{ user.club.name }}</h4>
+                                <p class="mb-2">
+                                    <strong>League:</strong> {{ user.club.league.name }}
+                                </p>
+                                <a href="{% url 'clubs:club_detail' user.club.id %}" 
+                                   class="btn btn-primary">View Club</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title h5 mb-0">Quick Actions</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <a href="{% url 'tournaments:championship_detail' user.club.championship_set.first.id %}" 
+                                       class="btn btn-outline-primary">View Championship</a>
+                                    <a href="{% url 'clubs:team_selection' user.club.id %}" 
+                                       class="btn btn-outline-primary">Select Team</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center mb-4">
+                    <a href="{% url 'clubs:create_club' %}" class="btn btn-primary btn-lg">Create Your Club</a>
+                </div>
+                {% endif %}
+            {% else %}
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h3 class="h4 mb-4">Get Started</h3>
+                            <div class="d-grid gap-3">
+                                <a href="{% url 'login' %}" class="btn btn-primary btn-lg">Login</a>
+                                <a href="{% url 'register' %}" class="btn btn-outline-primary btn-lg">Register</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if championships %}
+            <div class="mt-5">
+                <h2 class="h3 mb-4">Active Championships</h2>
+                <div class="row">
+                    {% for championship in championships %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ championship.league.name }}</h5>
+                                <p class="card-text">
+                                    <small class="text-muted">
+                                        {{ championship.league.country.name }} - 
+                                        Division {{ championship.league.level }}
+                                    </small>
+                                </p>
+                                <a href="{% url 'tournaments:championship_detail' championship.id %}" 
+                                   class="btn btn-outline-primary btn-sm">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

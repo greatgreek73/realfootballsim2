@@ -1,5 +1,4 @@
 {% extends 'tournaments/base.html' %}
-
 {% block tournament_content %}
 <div class="row">
     <div class="col-12">
@@ -23,26 +22,49 @@
                     <div class="col-md-6 mb-3">
                         <div class="card h-100">
                             <div class="card-body">
-                                <h4 class="card-title h5">{{ league.name }}</h4>
-                                <p class="card-text">
-                                    <small class="text-muted">Division {{ league.level }}</small>
-                                </p>
-                                <ul class="list-unstyled">
-                                    <li>
-                                        <strong>Teams:</strong> 
-                                        {{ league.clubs.count }}/{{ league.max_teams }}
-                                    </li>
-                                    <li>
-                                        <strong>Foreign Players Limit:</strong> 
-                                        {{ league.foreign_players_limit }}
-                                    </li>
-                                    {% with championship_count=league.championship_set.count %}
-                                    <li>
-                                        <strong>Championships:</strong> 
-                                        {{ championship_count }}
-                                    </li>
+                                <h4 class="h5 card-title">{{ league.name }}</h4>
+                                <p class="text-muted small mb-3">Division {{ league.level }}</p>
+                                
+                                <div class="mb-3">
+                                    <strong>League Info:</strong>
+                                    <ul class="list-unstyled mt-2">
+                                        <li><i class="bi bi-people"></i> Teams: {{ league.clubs.count }}/{{ league.max_teams }}</li>
+                                        <li><i class="bi bi-globe"></i> Foreign Players Limit: {{ league.foreign_players_limit }}</li>
+                                        {% with championship_count=league.championship_set.count %}
+                                        <li><i class="bi bi-trophy"></i> Championships: {{ championship_count }}</li>
+                                        {% endwith %}
+                                    </ul>
+                                </div>
+
+                                {% if league.clubs.exists %}
+                                <div class="mb-3">
+                                    <strong>Current Teams:</strong>
+                                    <div class="mt-2 small">
+                                        {% for club in league.clubs.all|slice:":5" %}
+                                        <a href="{% url 'clubs:club_detail' club.id %}" class="text-decoration-none">
+                                            {{ club.name }}
+                                            {% if club.is_bot %}<small>(Bot)</small>{% endif %}
+                                            {% if not forloop.last %}, {% endif %}
+                                        </a>
+                                        {% endfor %}
+                                        {% if league.clubs.count > 5 %}
+                                        <span class="text-muted">and {{ league.clubs.count|add:"-5" }} more...</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                {% if league.championship_set.exists %}
+                                <div class="mb-3">
+                                    <strong>Current Season:</strong>
+                                    {% with current_championship=league.championship_set.filter.first %}
+                                    <p class="small mt-2 mb-0">
+                                        {{ current_championship.season.name }}
+                                        ({{ current_championship.get_status_display }})
+                                    </p>
                                     {% endwith %}
-                                </ul>
+                                </div>
+                                {% endif %}
                             </div>
                             <div class="card-footer bg-transparent">
                                 <div class="btn-group w-100">
