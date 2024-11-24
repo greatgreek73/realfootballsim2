@@ -1,14 +1,10 @@
 from typing import Dict, List, Tuple
-from django.db import models
-from django.utils import timezone
 from .models import Match, MatchEvent
-from matches.match_preparation import PreMatchPreparation
+from .match_preparation import PreMatchPreparation
 import random
-import logging
+from django.utils import timezone
 
-logger = logging.getLogger('matches')
-
-class MatchSimulation:
+class MatchEngine:
     """Основной движок симуляции матча"""
     
     # Временные периоды матча
@@ -262,15 +258,3 @@ class MatchSimulation:
         # Завершаем матч
         self.match.status = 'finished'
         self.match.save()
-
-# Функция-обертка для обратной совместимости
-def simulate_match(match_id: int):
-    """
-    Функция для обратной совместимости со старым кодом
-    
-    Args:
-        match_id: int - ID матча для симуляции
-    """
-    match = Match.objects.get(id=match_id)
-    simulation = MatchSimulation(match)
-    simulation.simulate_match()

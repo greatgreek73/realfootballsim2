@@ -1496,6 +1496,10 @@ from players.utils import generate_player_stats
 from .country_locales import country_locales
 from .forms import ClubForm
 import json
+import random
+import logging
+
+logger = logging.getLogger(__name__)
 
 class CreateClubView(CreateView):
     model = Club
@@ -1574,6 +1578,7 @@ class CreateClubView(CreateView):
                 return redirect('clubs:club_detail', pk=club.id)
                     
         except Exception as e:
+            logger.error(f'Error creating club: {str(e)}')
             messages.error(self.request, f'Ошибка при создании клуба: {str(e)}')
             return self.form_invalid(form)
 
@@ -1601,81 +1606,69 @@ class ClubDetailView(DetailView):
         return context
 
 def get_locale_from_country_code(country_code):
+    """Возвращает локаль для заданного кода страны"""
     return country_locales.get(country_code, 'en_US')
 
 @require_http_methods(["GET"])
 def create_player(request, pk):
+    """Создает нового игрока для клуба"""
     club = get_object_or_404(Club, pk=pk)
     if club.owner != request.user:
         return HttpResponse("У вас нет прав для создания игроков в этом клубе.", status=403)
     
+    # Получаем и проверяем параметры
+    position = request.GET.get('position')
+    player_class = int(request.GET.get('player_class', 1))
+    
+    if not position:
+        return HttpResponse("Пожалуйста, выберите позицию.")
+
+    # Генерируем имя
     country_code = club.country.code
     locale = get_locale_from_country_code(country_code)
     fake = Faker(locale)
 
-    position = request.GET.get('position')
-    player_class = int(request.GET.get('player_class', 1))
-
-    if not position:
-        return HttpResponse("Пожалуйста, выберите позицию.")
-
-    while True:
+    # Генерируем уникальное имя
+    attempts = 0
+    max_attempts = 100
+    while attempts < max_attempts:
         first_name = fake.first_name_male()
         last_name = fake.last_name_male() if hasattr(fake, 'last_name_male') else fake.last_name()
         if not Player.objects.filter(first_name=first_name, last_name=last_name).exists():
             break
+        attempts += 1
+    
+    if attempts >= max_attempts:
+        messages.error(request, f'Не удалось создать уникальное имя для игрока')
+        return redirect('clubs:club_detail', pk=pk)
 
-    stats = generate_player_stats(position, player_class)
-
-    if position == 'Goalkeeper':
-        new_player = Player.objects.create(
+    # Генерируем характеристики
+    try:
+        stats = generate_player_stats(position, player_class)
+        
+        # Создаем игрока
+        player = Player.objects.create(
             club=club,
             first_name=first_name,
             last_name=last_name,
             nationality=club.country,
-            age=17,
+            age=random.randint(17, 35),
             position=position,
             player_class=player_class,
-            strength=stats['strength'],
-            stamina=stats['stamina'],
-            pace=stats['pace'],
-            positioning=stats['positioning'],
-            reflexes=stats['reflexes'],
-            handling=stats['handling'],
-            aerial=stats['aerial'],
-            jumping=stats['jumping'],
-            command=stats['command'],
-            throwing=stats['throwing'],
-            kicking=stats['kicking']
-        )
-    else:
-        new_player = Player.objects.create(
-            club=club,
-            first_name=first_name,
-            last_name=last_name,
-            nationality=club.country,
-            age=17,
-            position=position,
-            player_class=player_class,
-            strength=stats['strength'],
-            stamina=stats['stamina'],
-            pace=stats['pace'],
-            marking=stats['marking'],
-            tackling=stats['tackling'],
-            work_rate=stats['work_rate'],
-            positioning=stats['positioning'],
-            passing=stats['passing'],
-            crossing=stats['crossing'],
-            dribbling=stats['dribbling'],
-            ball_control=stats['ball_control'],
-            heading=stats['heading'],
-            finishing=stats['finishing'],
-            long_range=stats['long_range'],
-            vision=stats['vision']
+            **stats  # Передаем все сгенерированные характеристики
         )
 
-    new_player.save()
-    messages.success(request, f'Игрок {new_player.first_name} {new_player.last_name} успешно создан!')
+        messages.success(
+            request, 
+            f'Игрок {player.first_name} {player.last_name} успешно создан!'
+        )
+    except Exception as e:
+        messages.error(
+            request,
+            f'Ошибка при создании игрока: {str(e)}'
+        )
+        logger.error(f'Error creating player: {str(e)}')
+
     return redirect('clubs:club_detail', pk=pk)
 
 @require_http_methods(["GET"])
@@ -1754,6 +1747,7 @@ def save_team_lineup(request, pk):
             "error": "Некорректный формат данных"
         }, status=400)
     except Exception as e:
+        logger.error(f'Error saving team lineup: {str(e)}')
         return JsonResponse({
             "success": False,
             "error": str(e)
@@ -2883,6 +2877,71 @@ class MatchListView(ListView):
 # --- ????? ????? C:\realfootballsim\matches\__init__.py ---
 
 
+# --- ?????? ????? C:\realfootballsim\players\management\commands\update_player_attributes.py ---
+
+from django.core.management.base import BaseCommand
+from django.db import transaction
+from players.models import Player
+from players.utils import generate_player_stats
+from tqdm import tqdm
+
+class Command(BaseCommand):
+    help = 'Updates existing players with new attributes'
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--batch-size',
+            type=int,
+            default=100,
+            help='How many players to update in one batch'
+        )
+
+    def handle(self, *args, **options):
+        batch_size = options['batch_size']
+        
+        try:
+            # Получаем общее количество игроков
+            total_players = Player.objects.count()
+            self.stdout.write(f"Found {total_players} players to update")
+
+            # Используем tqdm для отображения прогресса
+            with tqdm(total=total_players) as pbar:
+                # Обрабатываем игроков батчами для экономии памяти
+                for i in range(0, total_players, batch_size):
+                    with transaction.atomic():
+                        players = Player.objects.all()[i:i+batch_size]
+                        
+                        for player in players:
+                            # Генерируем новые характеристики
+                            stats = generate_player_stats(
+                                player.position,
+                                player.player_class
+                            )
+                            
+                            # Обновляем характеристики игрока
+                            for attr, value in stats.items():
+                                setattr(player, attr, value)
+                            
+                            player.save()
+                            pbar.update(1)
+                
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f'Successfully updated {total_players} players'
+                    )
+                )
+
+        except Exception as e:
+            self.stdout.write(
+                self.style.ERROR(
+                    f'Error updating players: {str(e)}'
+                )
+            )
+            raise e
+
+# --- ????? ????? C:\realfootballsim\players\management\commands\update_player_attributes.py ---
+
+
 # --- ?????? ????? C:\realfootballsim\players\migrations\0001_initial.py ---
 
 # Generated by Django 5.0.4 on 2024-05-03 18:25
@@ -3210,6 +3269,80 @@ class Migration(migrations.Migration):
 # --- ????? ????? C:\realfootballsim\players\migrations\0003_player_player_class_alter_player_aerial_and_more.py ---
 
 
+# --- ?????? ????? C:\realfootballsim\players\migrations\0004_update_player_attributes.py ---
+
+# Generated by Django 5.0.4 on 2024-11-23 19:11
+
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ('players', '0003_player_player_class_alter_player_aerial_and_more'),
+    ]
+
+    operations = [
+        migrations.AlterModelOptions(
+            name='player',
+            options={'ordering': ['last_name', 'first_name'], 'verbose_name': 'Player', 'verbose_name_plural': 'Players'},
+        ),
+        migrations.RemoveField(
+            model_name='player',
+            name='ball_control',
+        ),
+        migrations.RemoveField(
+            model_name='player',
+            name='jumping',
+        ),
+        migrations.RemoveField(
+            model_name='player',
+            name='kicking',
+        ),
+        migrations.RemoveField(
+            model_name='player',
+            name='throwing',
+        ),
+        migrations.AddField(
+            model_name='player',
+            name='accuracy',
+            field=models.IntegerField(default=0, verbose_name='Accuracy'),
+        ),
+        migrations.AddField(
+            model_name='player',
+            name='distribution',
+            field=models.IntegerField(default=0, verbose_name='Distribution'),
+        ),
+        migrations.AddField(
+            model_name='player',
+            name='flair',
+            field=models.IntegerField(default=0, verbose_name='Flair'),
+        ),
+        migrations.AddField(
+            model_name='player',
+            name='one_on_one',
+            field=models.IntegerField(default=0, verbose_name='One on One'),
+        ),
+        migrations.AddField(
+            model_name='player',
+            name='rebound_control',
+            field=models.IntegerField(default=0, verbose_name='Rebound Control'),
+        ),
+        migrations.AddField(
+            model_name='player',
+            name='shot_reading',
+            field=models.IntegerField(default=0, verbose_name='Shot Reading'),
+        ),
+        migrations.AlterField(
+            model_name='player',
+            name='position',
+            field=models.CharField(choices=[('Goalkeeper', 'Goalkeeper'), ('Right Back', 'Right Back'), ('Left Back', 'Left Back'), ('Center Back', 'Center Back'), ('Defensive Midfielder', 'Central Defensive Midfielder'), ('Right Midfielder', 'Right Midfielder'), ('Central Midfielder', 'Central Midfielder'), ('Left Midfielder', 'Left Midfielder'), ('Attacking Midfielder', 'Attacking Midfielder'), ('Center Forward', 'Center Forward')], default='Unknown', max_length=50, verbose_name='Position'),
+        ),
+    ]
+
+# --- ????? ????? C:\realfootballsim\players\migrations\0004_update_player_attributes.py ---
+
+
 # --- ?????? ????? C:\realfootballsim\players\migrations\__init__.py ---
 
 
@@ -3232,6 +3365,7 @@ class Migration(migrations.Migration):
                     </div>
                 </div>
                 <div class="card-body">
+                    <!-- Player Info -->
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <h4 class="h5 mb-3">Player Info</h4>
@@ -3251,11 +3385,15 @@ class Migration(migrations.Migration):
                                     <span class="badge bg-info">Class {{ player.player_class }}</span>
                                 </li>
                                 {% endif %}
+                                <li class="mb-2">
+                                    <strong>Overall Rating:</strong> 
+                                    <span class="badge bg-success">{{ player.overall_rating }}</span>
+                                </li>
                             </ul>
                         </div>
                     </div>
 
-                    <h4 class="h5 mb-3">Attributes</h4>
+                    <!-- Attributes -->
                     <div class="row">
                         {% if player.position == 'Goalkeeper' %}
                             <!-- Physical Attributes -->
@@ -3288,12 +3426,11 @@ class Migration(migrations.Migration):
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Goalkeeper Skills -->
+                        <!-- Goalkeeper Core Skills -->
                             <div class="col-md-4 mb-3">
                                 <div class="card h-100">
                                     <div class="card-header">
-                                        <h5 class="card-title h6 mb-0">Goalkeeper Skills</h5>
+                                        <h5 class="card-title h6 mb-0">Core Goalkeeper Skills</h5>
                                     </div>
                                     <div class="card-body">
                                         <div class="attribute-list">
@@ -3304,15 +3441,15 @@ class Migration(migrations.Migration):
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between mb-2">
-                                                <span>Positioning:</span>
-                                                <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.positioning }}%" aria-valuenow="{{ player.positioning }}" aria-valuemin="0" aria-valuemax="100">{{ player.positioning }}</div>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex justify-content-between mb-2">
                                                 <span>Handling:</span>
                                                 <div class="progress w-50">
                                                     <div class="progress-bar" role="progressbar" style="width: {{ player.handling }}%" aria-valuenow="{{ player.handling }}" aria-valuemin="0" aria-valuemax="100">{{ player.handling }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Positioning:</span>
+                                                <div class="progress w-50">
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.positioning }}%" aria-valuenow="{{ player.positioning }}" aria-valuemin="0" aria-valuemax="100">{{ player.positioning }}</div>
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between mb-2">
@@ -3325,7 +3462,8 @@ class Migration(migrations.Migration):
                                     </div>
                                 </div>
                             </div>
-                        <!-- Additional Skills -->
+
+                            <!-- Additional Goalkeeper Skills -->
                             <div class="col-md-4 mb-3">
                                 <div class="card h-100">
                                     <div class="card-header">
@@ -3334,46 +3472,41 @@ class Migration(migrations.Migration):
                                     <div class="card-body">
                                         <div class="attribute-list">
                                             <div class="d-flex justify-content-between mb-2">
-                                                <span>Jumping:</span>
-                                                <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.jumping }}%" aria-valuenow="{{ player.jumping }}" aria-valuemin="0" aria-valuemax="100">{{ player.jumping }}</div>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex justify-content-between mb-2">
                                                 <span>Command:</span>
                                                 <div class="progress w-50">
                                                     <div class="progress-bar" role="progressbar" style="width: {{ player.command }}%" aria-valuenow="{{ player.command }}" aria-valuemin="0" aria-valuemax="100">{{ player.command }}</div>
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between mb-2">
-                                                <span>Throwing:</span>
+                                                <span>Distribution:</span>
                                                 <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.throwing }}%" aria-valuenow="{{ player.throwing }}" aria-valuemin="0" aria-valuemax="100">{{ player.throwing }}</div>
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.distribution }}%" aria-valuenow="{{ player.distribution }}" aria-valuemin="0" aria-valuemax="100">{{ player.distribution }}</div>
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between mb-2">
-                                                <span>Kicking:</span>
+                                                <span>One on One:</span>
                                                 <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.kicking }}%" aria-valuenow="{{ player.kicking }}" aria-valuemin="0" aria-valuemax="100">{{ player.kicking }}</div>
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.one_on_one }}%" aria-valuenow="{{ player.one_on_one }}" aria-valuemin="0" aria-valuemax="100">{{ player.one_on_one }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Shot Reading:</span>
+                                                <div class="progress w-50">
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.shot_reading }}%" aria-valuenow="{{ player.shot_reading }}" aria-valuemin="0" aria-valuemax="100">{{ player.shot_reading }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Rebound Control:</span>
+                                                <div class="progress w-50">
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.rebound_control }}%" aria-valuenow="{{ player.rebound_control }}" aria-valuemin="0" aria-valuemax="100">{{ player.rebound_control }}</div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Total Attributes -->
-                            <div class="col-12 mt-3">
-                                <div class="card">
-                                    <div class="card-body">
-                                        {% with total_attributes=player.strength|add:player.stamina|add:player.pace|add:player.reflexes|add:player.positioning|add:player.handling|add:player.aerial|add:player.jumping|add:player.command|add:player.throwing|add:player.kicking %}
-                                        <h4 class="mb-0">Total Attributes: {{ total_attributes }}</h4>
-                                        {% endwith %}
-                                    </div>
-                                </div>
-                            </div>
                         {% else %}
-                            <!-- Physical Attributes -->
+                    <!-- Physical Attributes -->
                             <div class="col-md-4 mb-3">
                                 <div class="card h-100">
                                     <div class="card-header">
@@ -3399,6 +3532,12 @@ class Migration(migrations.Migration):
                                                     <div class="progress-bar" role="progressbar" style="width: {{ player.pace }}%" aria-valuenow="{{ player.pace }}" aria-valuemin="0" aria-valuemax="100">{{ player.pace }}</div>
                                                 </div>
                                             </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Work Rate:</span>
+                                                <div class="progress w-50">
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.work_rate }}%" aria-valuenow="{{ player.work_rate }}" aria-valuemin="0" aria-valuemax="100">{{ player.work_rate }}</div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -3419,58 +3558,15 @@ class Migration(migrations.Migration):
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between mb-2">
-                                                <span>Marking:</span>
-                                                <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.marking }}%" aria-valuenow="{{ player.marking }}" aria-valuemin="0" aria-valuemax="100">{{ player.marking }}</div>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex justify-content-between mb-2">
-                                                <span>Tackling:</span>
-                                                <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.tackling }}%" aria-valuenow="{{ player.tackling }}" aria-valuemin="0" aria-valuemax="100">{{ player.tackling }}</div>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex justify-content-between mb-2">
-                                                <span>Work Rate:</span>
-                                                <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.work_rate }}%" aria-valuenow="{{ player.work_rate }}" aria-valuemin="0" aria-valuemax="100">{{ player.work_rate }}</div>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex justify-content-between mb-2">
-                                                <span>Positioning:</span>
-                                                <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.positioning }}%" aria-valuenow="{{ player.positioning }}" aria-valuemin="0" aria-valuemax="100">{{ player.positioning }}</div>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex justify-content-between mb-2">
-                                                <span>Crossing:</span>
-                                                <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.crossing }}%" aria-valuenow="{{ player.crossing }}" aria-valuemin="0" aria-valuemax="100">{{ player.crossing }}</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Additional Skills -->
-                            <div class="col-md-4 mb-3">
-                                <div class="card h-100">
-                                    <div class="card-header">
-                                        <h5 class="card-title h6 mb-0">Additional Skills</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="attribute-list">
-                                            <div class="d-flex justify-content-between mb-2">
                                                 <span>Dribbling:</span>
                                                 <div class="progress w-50">
                                                     <div class="progress-bar" role="progressbar" style="width: {{ player.dribbling }}%" aria-valuenow="{{ player.dribbling }}" aria-valuemin="0" aria-valuemax="100">{{ player.dribbling }}</div>
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between mb-2">
-                                                <span>Ball Control:</span>
+                                                <span>Crossing:</span>
                                                 <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.ball_control }}%" aria-valuenow="{{ player.ball_control }}" aria-valuemin="0" aria-valuemax="100">{{ player.ball_control }}</div>
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.crossing }}%" aria-valuenow="{{ player.crossing }}" aria-valuemin="0" aria-valuemax="100">{{ player.crossing }}</div>
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between mb-2">
@@ -3485,16 +3581,41 @@ class Migration(migrations.Migration):
                                                     <div class="progress-bar" role="progressbar" style="width: {{ player.finishing }}%" aria-valuenow="{{ player.finishing }}" aria-valuemin="0" aria-valuemax="100">{{ player.finishing }}</div>
                                                 </div>
                                             </div>
-                                            <div class="d-flex justify-content-between mb-2">
-                                                <span>Long Range:</span>
-                                                <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.long_range }}%" aria-valuenow="{{ player.long_range }}" aria-valuemin="0" aria-valuemax="100">{{ player.long_range }}</div>
-                                                </div>
-                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Mental & Additional Skills -->
+                            <div class="col-md-4 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        <h5 class="card-title h6 mb-0">Mental & Additional Skills</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="attribute-list">
                                             <div class="d-flex justify-content-between mb-2">
                                                 <span>Vision:</span>
                                                 <div class="progress w-50">
                                                     <div class="progress-bar" role="progressbar" style="width: {{ player.vision }}%" aria-valuenow="{{ player.vision }}" aria-valuemin="0" aria-valuemax="100">{{ player.vision }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Flair:</span>
+                                                <div class="progress w-50">
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.flair }}%" aria-valuenow="{{ player.flair }}" aria-valuemin="0" aria-valuemax="100">{{ player.flair }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Accuracy:</span>
+                                                <div class="progress w-50">
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.accuracy }}%" aria-valuenow="{{ player.accuracy }}" aria-valuemin="0" aria-valuemax="100">{{ player.accuracy }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Long Range:</span>
+                                                <div class="progress w-50">
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.long_range }}%" aria-valuenow="{{ player.long_range }}" aria-valuemin="0" aria-valuemax="100">{{ player.long_range }}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -3502,13 +3623,39 @@ class Migration(migrations.Migration):
                                 </div>
                             </div>
 
-                            <!-- Total Attributes -->
-                            <div class="col-12 mt-3">
+                            <!-- Defense Skills -->
+                            <div class="col-md-12 mb-3">
                                 <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title h6 mb-0">Defense Skills</h5>
+                                    </div>
                                     <div class="card-body">
-                                        {% with total_attributes=player.passing|add:player.strength|add:player.stamina|add:player.pace|add:player.marking|add:player.tackling|add:player.work_rate|add:player.positioning|add:player.crossing|add:player.dribbling|add:player.ball_control|add:player.heading|add:player.finishing|add:player.long_range|add:player.vision %}
-                                        <h4 class="mb-0">Total Attributes: {{ total_attributes }}</h4>
-                                        {% endwith %}
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span>Marking:</span>
+                                                    <div class="progress w-50">
+                                                        <div class="progress-bar" role="progressbar" style="width: {{ player.marking }}%" aria-valuenow="{{ player.marking }}" aria-valuemin="0" aria-valuemax="100">{{ player.marking }}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span>Tackling:</span>
+                                                    <div class="progress w-50">
+                                                        <div class="progress-bar" role="progressbar" style="width: {{ player.tackling }}%" aria-valuenow="{{ player.tackling }}" aria-valuemin="0" aria-valuemax="100">{{ player.tackling }}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span>Positioning:</span>
+                                                    <div class="progress w-50">
+                                                        <div class="progress-bar" role="progressbar" style="width: {{ player.positioning }}%" aria-valuenow="{{ player.positioning }}" aria-valuemin="0" aria-valuemax="100">{{ player.positioning }}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -3561,12 +3708,10 @@ from django_countries.fields import CountryField
 class Player(models.Model):
     POSITIONS = [
         ('Goalkeeper', 'Goalkeeper'),
-        ('Right Back', 'Right Back'),
+        ('Right Back', 'Right Back'), 
         ('Left Back', 'Left Back'),
         ('Center Back', 'Center Back'),
         ('Defensive Midfielder', 'Central Defensive Midfielder'),
-        ('Left Defensive Midfielder', 'Left Defensive Midfielder'),
-        ('Right Defensive Midfielder', 'Right Defensive Midfielder'),
         ('Right Midfielder', 'Right Midfielder'),
         ('Central Midfielder', 'Central Midfielder'),
         ('Left Midfielder', 'Left Midfielder'),
@@ -3574,6 +3719,7 @@ class Player(models.Model):
         ('Center Forward', 'Center Forward'),
     ]
 
+    # Базовая информация
     first_name = models.CharField(max_length=100, default='', verbose_name="First Name")
     last_name = models.CharField(max_length=100, default='', verbose_name="Last Name")
     age = models.PositiveIntegerField(default=17, verbose_name="Age")
@@ -3582,42 +3728,107 @@ class Player(models.Model):
     position = models.CharField(max_length=50, choices=POSITIONS, default='Unknown', verbose_name="Position")
     player_class = models.IntegerField(default=1, verbose_name="Player Class")
 
-    # Skills (характеристики для полевых игроков)
+    # Общие характеристики
     strength = models.IntegerField(default=0, verbose_name="Strength")
     stamina = models.IntegerField(default=0, verbose_name="Stamina")
     pace = models.IntegerField(default=0, verbose_name="Pace")
+    positioning = models.IntegerField(default=0, verbose_name="Positioning")
+
+    # Характеристики для вратарей
+    reflexes = models.IntegerField(default=0, verbose_name="Reflexes")
+    handling = models.IntegerField(default=0, verbose_name="Handling")
+    aerial = models.IntegerField(default=0, verbose_name="Aerial")
+    command = models.IntegerField(default=0, verbose_name="Command")
+    distribution = models.IntegerField(default=0, verbose_name="Distribution")
+    one_on_one = models.IntegerField(default=0, verbose_name="One on One")
+    rebound_control = models.IntegerField(default=0, verbose_name="Rebound Control")
+    shot_reading = models.IntegerField(default=0, verbose_name="Shot Reading")
+
+    # Характеристики для полевых игроков
     marking = models.IntegerField(default=0, verbose_name="Marking")
     tackling = models.IntegerField(default=0, verbose_name="Tackling")
     work_rate = models.IntegerField(default=0, verbose_name="Work Rate")
-    positioning = models.IntegerField(default=0, verbose_name="Positioning")
     passing = models.IntegerField(default=0, verbose_name="Passing")
     crossing = models.IntegerField(default=0, verbose_name="Crossing")
     dribbling = models.IntegerField(default=0, verbose_name="Dribbling")
-    ball_control = models.IntegerField(default=0, verbose_name="Ball Control")
+    flair = models.IntegerField(default=0, verbose_name="Flair")
     heading = models.IntegerField(default=0, verbose_name="Heading")
     finishing = models.IntegerField(default=0, verbose_name="Finishing")
     long_range = models.IntegerField(default=0, verbose_name="Long Range")
     vision = models.IntegerField(default=0, verbose_name="Vision")
-
-    # Goalkeeper-specific skills (характеристики для вратарей)
-    handling = models.IntegerField(default=0, verbose_name="Handling")
-    reflexes = models.IntegerField(default=0, verbose_name="Reflexes")
-    aerial = models.IntegerField(default=0, verbose_name="Aerial")
-    jumping = models.IntegerField(default=0, verbose_name="Jumping")
-    command = models.IntegerField(default=0, verbose_name="Command")
-    throwing = models.IntegerField(default=0, verbose_name="Throwing")
-    kicking = models.IntegerField(default=0, verbose_name="Kicking")
+    accuracy = models.IntegerField(default=0, verbose_name="Accuracy")
 
     class Meta:
         unique_together = ('first_name', 'last_name')
+        verbose_name = 'Player'
+        verbose_name_plural = 'Players'
+        ordering = ['last_name', 'first_name']
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name} ({self.club.name}) - {self.position} - Class: {self.player_class}"
+        return f"{self.first_name} {self.last_name} ({self.club.name if self.club else 'No Club'}) - {self.position}"
 
     def save(self, *args, **kwargs):
-        if not self.nationality:
+        if not self.nationality and self.club:
             self.nationality = self.club.country
-        super(Player, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+    @property
+    def is_goalkeeper(self):
+        return self.position == 'Goalkeeper'
+
+    @property
+    def overall_rating(self):
+        """Вычисляет общий рейтинг игрока на основе его характеристик"""
+        if self.is_goalkeeper:
+            attributes = [
+                self.reflexes, self.handling, self.aerial,
+                self.command, self.distribution, self.one_on_one,
+                self.rebound_control, self.shot_reading,
+                self.strength, self.stamina, self.pace, self.positioning
+            ]
+        else:
+            attributes = [
+                self.strength, self.stamina, self.pace,
+                self.marking, self.tackling, self.work_rate,
+                self.positioning, self.passing, self.crossing,
+                self.dribbling, self.flair, self.heading,
+                self.finishing, self.long_range, self.vision,
+                self.accuracy
+            ]
+        return sum(attributes) // len(attributes)
+
+    def get_position_specific_attributes(self):
+        """Возвращает атрибуты, специфичные для позиции игрока"""
+        if self.is_goalkeeper:
+            return {
+                'reflexes': self.reflexes,
+                'handling': self.handling,
+                'aerial': self.aerial,
+                'command': self.command,
+                'distribution': self.distribution,
+                'one_on_one': self.one_on_one,
+                'rebound_control': self.rebound_control,
+                'shot_reading': self.shot_reading
+            }
+        else:
+            return {
+                'marking': self.marking,
+                'tackling': self.tackling,
+                'work_rate': self.work_rate,
+                'passing': self.passing,
+                'crossing': self.crossing,
+                'dribbling': self.dribbling,
+                'flair': self.flair,
+                'heading': self.heading,
+                'finishing': self.finishing,
+                'long_range': self.long_range,
+                'vision': self.vision,
+                'accuracy': self.accuracy
+            }
 
 # --- ????? ????? C:\realfootballsim\players\models.py ---
 
@@ -4461,114 +4672,109 @@ import random
 import sys
 import os
 
-# Добавляем текущую директорию в путь поиска модулей
-current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(current_dir)
-
-from player_attributes_config import POSITIONS_WEIGHTS
-
-# Constants
-BASE_ATTRIBUTES = [
-    'strength', 'stamina', 'pace', 'marking', 'tackling', 'work_rate',
-    'positioning', 'passing', 'crossing', 'dribbling', 'ball_control',
-    'heading', 'finishing', 'long_range', 'vision'
-]
-
-GOALKEEPER_ATTRIBUTES = [
-    'reflexes', 'handling', 'aerial', 'jumping', 'command', 'throwing',
-    'kicking', 'strength', 'stamina', 'pace', 'positioning'
-]
-
-CLASS_RANGES = {
-    1: (550, 590),
-    2: (470, 490),
-    3: (380, 400),
-    4: (290, 320)
-}
-
-def select_weight(attribute_weights):
-    weights, probabilities = zip(*attribute_weights)
-    selected = random.choices(weights, probabilities)[0]
-    print(f"select_weight called with: {attribute_weights}")
-    print(f"Selected weight: {selected}")
-    return selected
-
 def generate_stat(weight=1):
-    return max(1, min(100, int(norm.rvs(50, 10))))
+    """Генерирует базовую характеристику"""
+    base_value = norm.rvs(50, 10)
+    weighted_value = base_value * weight
+    return max(1, min(99, int(weighted_value)))
 
 def generate_player_stats(position, player_class):
-    stats = {}
-    position_weights = POSITIONS_WEIGHTS[player_class][position]['attributes']
-    
-    print(f"\nGenerating stats for {position}, class {player_class}")
-    
-    if position == 'Goalkeeper':
-        attributes = GOALKEEPER_ATTRIBUTES
-    else:
-        attributes = BASE_ATTRIBUTES
-    
-    for attr in attributes:
-        if attr in position_weights:
-            weight = select_weight(position_weights[attr])
-            stat = generate_stat(weight)
-            print(f"{attr}: weight = {weight}, stat = {stat}")
-        else:
-            stat = generate_stat()
-            print(f"{attr}: no weight, stat = {stat}")
-        stats[attr] = stat
-    
-    print(f"Initial total: {sum(stats.values())}")
-    return adjust_stats_for_class(stats, player_class)
+    """Генерирует характеристики игрока в зависимости от позиции"""
+    # Базовые характеристики
+    base_stats = {
+        'strength': generate_stat(),
+        'stamina': generate_stat(),
+        'pace': generate_stat(),
+        'positioning': generate_stat(),
+    }
 
-def adjust_stats_for_class(stats, player_class):
-    total = sum(stats.values())
-    min_total, max_total = CLASS_RANGES[player_class]
-    target_total = random.randint(min_total, max_total)
-    
-    print(f"Adjusting stats. Initial total: {total}, Target total: {target_total}")
-    
-    while total != target_total:
-        if total < target_total:
-            attr = random.choice([a for a in stats if stats[a] < 100])
-            stats[attr] += 1
-            total += 1
-        else:
-            attr = random.choice([a for a in stats if stats[a] > 1])
-            stats[attr] -= 1
-            total -= 1
-    
-    print(f"Final total: {total}")
+    if position == 'Goalkeeper':
+        # Характеристики вратаря
+        gk_stats = {
+            'reflexes': generate_stat(),
+            'handling': generate_stat(),
+            'aerial': generate_stat(),
+            'command': generate_stat(),
+            'distribution': generate_stat(),
+            'one_on_one': generate_stat(),
+            'rebound_control': generate_stat(),
+            'shot_reading': generate_stat()
+        }
+        stats = {**base_stats, **gk_stats}
+    else:
+        # Характеристики полевого игрока
+        field_stats = {
+            'marking': generate_stat(),
+            'tackling': generate_stat(),
+            'work_rate': generate_stat(),
+            'passing': generate_stat(),
+            'crossing': generate_stat(),
+            'dribbling': generate_stat(),
+            'flair': generate_stat(),
+            'heading': generate_stat(),
+            'finishing': generate_stat(),
+            'long_range': generate_stat(),
+            'vision': generate_stat(),
+            'accuracy': generate_stat()
+        }
+        stats = {**base_stats, **field_stats}
+
+        # Модификаторы позиций
+        position_modifiers = {
+            'Center Back': {
+                'marking': 1.2, 'tackling': 1.2, 'heading': 1.1,
+                'strength': 1.1, 'finishing': 0.8, 'dribbling': 0.8
+            },
+            'Right Back': {
+                'pace': 1.1, 'crossing': 1.1, 'stamina': 1.1,
+                'tackling': 1.1, 'marking': 1.1
+            },
+            'Left Back': {
+                'pace': 1.1, 'crossing': 1.1, 'stamina': 1.1,
+                'tackling': 1.1, 'marking': 1.1
+            },
+            'Defensive Midfielder': {
+                'tackling': 1.2, 'marking': 1.1, 'passing': 1.1,
+                'work_rate': 1.2, 'vision': 1.1
+            },
+            'Central Midfielder': {
+                'passing': 1.2, 'vision': 1.2, 'work_rate': 1.1,
+                'stamina': 1.1, 'positioning': 1.1
+            },
+            'Attacking Midfielder': {
+                'vision': 1.2, 'passing': 1.2, 'dribbling': 1.1,
+                'flair': 1.2, 'finishing': 1.1
+            },
+            'Center Forward': {
+                'finishing': 1.3, 'heading': 1.2, 'positioning': 1.2,
+                'strength': 1.1, 'dribbling': 1.1
+            }
+        }
+
+        # Применяем модификаторы позиции
+        if position in position_modifiers:
+            for attr, mod in position_modifiers[position].items():
+                if attr in stats:
+                    stats[attr] = min(99, int(stats[attr] * mod))
+
+    # Модификатор класса игрока
+    class_modifier = (5 - player_class) * 0.1  # +10% за каждый класс выше 1
+    for key in stats:
+        stats[key] = min(99, int(stats[key] * (1 + class_modifier)))
+
     return stats
 
 def print_player_stats(stats):
-    total = sum(stats.values())
-    print(f"Total sum of attributes: {total}")
+    """Вспомогательная функция для вывода характеристик"""
+    print("\nХарактеристики игрока:")
+    total = 0
+    count = 0
     for attr, value in sorted(stats.items()):
         print(f"{attr}: {value}")
-
-if __name__ == "__main__":
-    # Тест функции select_weight
-    test_weights = [(1.0, 0.40), (1.0, 0.35), (1.0, 0.25)]
-    print("Testing select_weight function:")
-    for _ in range(10):
-        select_weight(test_weights)
-    
-    print("\nGenerating a test goalkeeper:")
-    gk_stats = generate_player_stats('Goalkeeper', 1)
-    print("\nFinal goalkeeper stats:")
-    print_player_stats(gk_stats)
-    
-    print("\nGenerating a test outfield player:")
-    player_stats = generate_player_stats('Center Forward', 1)
-    print("\nFinal outfield player stats:")
-    print_player_stats(player_stats)
-
-    # Тест генерации статистики
-    print("\nTest stat generation:")
-    test_values = [generate_stat() for _ in range(1000)]
-    print(f"Average: {sum(test_values) / len(test_values)}")
-    print(f"Min: {min(test_values)}")
-    print(f"Max: {max(test_values)}")
+        total += value
+        count += 1
+    if count > 0:
+        print(f"\nСредний рейтинг: {total/count:.1f}")
 
 # --- ????? ????? C:\realfootballsim\players\utils.py ---
 
