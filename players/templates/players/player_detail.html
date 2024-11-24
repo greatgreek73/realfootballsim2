@@ -12,6 +12,7 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    <!-- Player Info -->
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <h4 class="h5 mb-3">Player Info</h4>
@@ -31,11 +32,15 @@
                                     <span class="badge bg-info">Class {{ player.player_class }}</span>
                                 </li>
                                 {% endif %}
+                                <li class="mb-2">
+                                    <strong>Overall Rating:</strong> 
+                                    <span class="badge bg-success">{{ player.overall_rating }}</span>
+                                </li>
                             </ul>
                         </div>
                     </div>
 
-                    <h4 class="h5 mb-3">Attributes</h4>
+                    <!-- Attributes -->
                     <div class="row">
                         {% if player.position == 'Goalkeeper' %}
                             <!-- Physical Attributes -->
@@ -68,12 +73,11 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Goalkeeper Skills -->
+                        <!-- Goalkeeper Core Skills -->
                             <div class="col-md-4 mb-3">
                                 <div class="card h-100">
                                     <div class="card-header">
-                                        <h5 class="card-title h6 mb-0">Goalkeeper Skills</h5>
+                                        <h5 class="card-title h6 mb-0">Core Goalkeeper Skills</h5>
                                     </div>
                                     <div class="card-body">
                                         <div class="attribute-list">
@@ -84,15 +88,15 @@
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between mb-2">
-                                                <span>Positioning:</span>
-                                                <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.positioning }}%" aria-valuenow="{{ player.positioning }}" aria-valuemin="0" aria-valuemax="100">{{ player.positioning }}</div>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex justify-content-between mb-2">
                                                 <span>Handling:</span>
                                                 <div class="progress w-50">
                                                     <div class="progress-bar" role="progressbar" style="width: {{ player.handling }}%" aria-valuenow="{{ player.handling }}" aria-valuemin="0" aria-valuemax="100">{{ player.handling }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Positioning:</span>
+                                                <div class="progress w-50">
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.positioning }}%" aria-valuenow="{{ player.positioning }}" aria-valuemin="0" aria-valuemax="100">{{ player.positioning }}</div>
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between mb-2">
@@ -105,7 +109,8 @@
                                     </div>
                                 </div>
                             </div>
-                        <!-- Additional Skills -->
+
+                            <!-- Additional Goalkeeper Skills -->
                             <div class="col-md-4 mb-3">
                                 <div class="card h-100">
                                     <div class="card-header">
@@ -114,46 +119,41 @@
                                     <div class="card-body">
                                         <div class="attribute-list">
                                             <div class="d-flex justify-content-between mb-2">
-                                                <span>Jumping:</span>
-                                                <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.jumping }}%" aria-valuenow="{{ player.jumping }}" aria-valuemin="0" aria-valuemax="100">{{ player.jumping }}</div>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex justify-content-between mb-2">
                                                 <span>Command:</span>
                                                 <div class="progress w-50">
                                                     <div class="progress-bar" role="progressbar" style="width: {{ player.command }}%" aria-valuenow="{{ player.command }}" aria-valuemin="0" aria-valuemax="100">{{ player.command }}</div>
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between mb-2">
-                                                <span>Throwing:</span>
+                                                <span>Distribution:</span>
                                                 <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.throwing }}%" aria-valuenow="{{ player.throwing }}" aria-valuemin="0" aria-valuemax="100">{{ player.throwing }}</div>
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.distribution }}%" aria-valuenow="{{ player.distribution }}" aria-valuemin="0" aria-valuemax="100">{{ player.distribution }}</div>
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between mb-2">
-                                                <span>Kicking:</span>
+                                                <span>One on One:</span>
                                                 <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.kicking }}%" aria-valuenow="{{ player.kicking }}" aria-valuemin="0" aria-valuemax="100">{{ player.kicking }}</div>
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.one_on_one }}%" aria-valuenow="{{ player.one_on_one }}" aria-valuemin="0" aria-valuemax="100">{{ player.one_on_one }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Shot Reading:</span>
+                                                <div class="progress w-50">
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.shot_reading }}%" aria-valuenow="{{ player.shot_reading }}" aria-valuemin="0" aria-valuemax="100">{{ player.shot_reading }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Rebound Control:</span>
+                                                <div class="progress w-50">
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.rebound_control }}%" aria-valuenow="{{ player.rebound_control }}" aria-valuemin="0" aria-valuemax="100">{{ player.rebound_control }}</div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Total Attributes -->
-                            <div class="col-12 mt-3">
-                                <div class="card">
-                                    <div class="card-body">
-                                        {% with total_attributes=player.strength|add:player.stamina|add:player.pace|add:player.reflexes|add:player.positioning|add:player.handling|add:player.aerial|add:player.jumping|add:player.command|add:player.throwing|add:player.kicking %}
-                                        <h4 class="mb-0">Total Attributes: {{ total_attributes }}</h4>
-                                        {% endwith %}
-                                    </div>
-                                </div>
-                            </div>
                         {% else %}
-                            <!-- Physical Attributes -->
+                    <!-- Physical Attributes -->
                             <div class="col-md-4 mb-3">
                                 <div class="card h-100">
                                     <div class="card-header">
@@ -179,6 +179,12 @@
                                                     <div class="progress-bar" role="progressbar" style="width: {{ player.pace }}%" aria-valuenow="{{ player.pace }}" aria-valuemin="0" aria-valuemax="100">{{ player.pace }}</div>
                                                 </div>
                                             </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Work Rate:</span>
+                                                <div class="progress w-50">
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.work_rate }}%" aria-valuenow="{{ player.work_rate }}" aria-valuemin="0" aria-valuemax="100">{{ player.work_rate }}</div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -199,58 +205,15 @@
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between mb-2">
-                                                <span>Marking:</span>
-                                                <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.marking }}%" aria-valuenow="{{ player.marking }}" aria-valuemin="0" aria-valuemax="100">{{ player.marking }}</div>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex justify-content-between mb-2">
-                                                <span>Tackling:</span>
-                                                <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.tackling }}%" aria-valuenow="{{ player.tackling }}" aria-valuemin="0" aria-valuemax="100">{{ player.tackling }}</div>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex justify-content-between mb-2">
-                                                <span>Work Rate:</span>
-                                                <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.work_rate }}%" aria-valuenow="{{ player.work_rate }}" aria-valuemin="0" aria-valuemax="100">{{ player.work_rate }}</div>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex justify-content-between mb-2">
-                                                <span>Positioning:</span>
-                                                <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.positioning }}%" aria-valuenow="{{ player.positioning }}" aria-valuemin="0" aria-valuemax="100">{{ player.positioning }}</div>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex justify-content-between mb-2">
-                                                <span>Crossing:</span>
-                                                <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.crossing }}%" aria-valuenow="{{ player.crossing }}" aria-valuemin="0" aria-valuemax="100">{{ player.crossing }}</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Additional Skills -->
-                            <div class="col-md-4 mb-3">
-                                <div class="card h-100">
-                                    <div class="card-header">
-                                        <h5 class="card-title h6 mb-0">Additional Skills</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="attribute-list">
-                                            <div class="d-flex justify-content-between mb-2">
                                                 <span>Dribbling:</span>
                                                 <div class="progress w-50">
                                                     <div class="progress-bar" role="progressbar" style="width: {{ player.dribbling }}%" aria-valuenow="{{ player.dribbling }}" aria-valuemin="0" aria-valuemax="100">{{ player.dribbling }}</div>
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between mb-2">
-                                                <span>Ball Control:</span>
+                                                <span>Crossing:</span>
                                                 <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.ball_control }}%" aria-valuenow="{{ player.ball_control }}" aria-valuemin="0" aria-valuemax="100">{{ player.ball_control }}</div>
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.crossing }}%" aria-valuenow="{{ player.crossing }}" aria-valuemin="0" aria-valuemax="100">{{ player.crossing }}</div>
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between mb-2">
@@ -265,16 +228,41 @@
                                                     <div class="progress-bar" role="progressbar" style="width: {{ player.finishing }}%" aria-valuenow="{{ player.finishing }}" aria-valuemin="0" aria-valuemax="100">{{ player.finishing }}</div>
                                                 </div>
                                             </div>
-                                            <div class="d-flex justify-content-between mb-2">
-                                                <span>Long Range:</span>
-                                                <div class="progress w-50">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.long_range }}%" aria-valuenow="{{ player.long_range }}" aria-valuemin="0" aria-valuemax="100">{{ player.long_range }}</div>
-                                                </div>
-                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Mental & Additional Skills -->
+                            <div class="col-md-4 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        <h5 class="card-title h6 mb-0">Mental & Additional Skills</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="attribute-list">
                                             <div class="d-flex justify-content-between mb-2">
                                                 <span>Vision:</span>
                                                 <div class="progress w-50">
                                                     <div class="progress-bar" role="progressbar" style="width: {{ player.vision }}%" aria-valuenow="{{ player.vision }}" aria-valuemin="0" aria-valuemax="100">{{ player.vision }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Flair:</span>
+                                                <div class="progress w-50">
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.flair }}%" aria-valuenow="{{ player.flair }}" aria-valuemin="0" aria-valuemax="100">{{ player.flair }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Accuracy:</span>
+                                                <div class="progress w-50">
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.accuracy }}%" aria-valuenow="{{ player.accuracy }}" aria-valuemin="0" aria-valuemax="100">{{ player.accuracy }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Long Range:</span>
+                                                <div class="progress w-50">
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ player.long_range }}%" aria-valuenow="{{ player.long_range }}" aria-valuemin="0" aria-valuemax="100">{{ player.long_range }}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -282,13 +270,39 @@
                                 </div>
                             </div>
 
-                            <!-- Total Attributes -->
-                            <div class="col-12 mt-3">
+                            <!-- Defense Skills -->
+                            <div class="col-md-12 mb-3">
                                 <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title h6 mb-0">Defense Skills</h5>
+                                    </div>
                                     <div class="card-body">
-                                        {% with total_attributes=player.passing|add:player.strength|add:player.stamina|add:player.pace|add:player.marking|add:player.tackling|add:player.work_rate|add:player.positioning|add:player.crossing|add:player.dribbling|add:player.ball_control|add:player.heading|add:player.finishing|add:player.long_range|add:player.vision %}
-                                        <h4 class="mb-0">Total Attributes: {{ total_attributes }}</h4>
-                                        {% endwith %}
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span>Marking:</span>
+                                                    <div class="progress w-50">
+                                                        <div class="progress-bar" role="progressbar" style="width: {{ player.marking }}%" aria-valuenow="{{ player.marking }}" aria-valuemin="0" aria-valuemax="100">{{ player.marking }}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span>Tackling:</span>
+                                                    <div class="progress w-50">
+                                                        <div class="progress-bar" role="progressbar" style="width: {{ player.tackling }}%" aria-valuenow="{{ player.tackling }}" aria-valuemin="0" aria-valuemax="100">{{ player.tackling }}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span>Positioning:</span>
+                                                    <div class="progress w-50">
+                                                        <div class="progress-bar" role="progressbar" style="width: {{ player.positioning }}%" aria-valuenow="{{ player.positioning }}" aria-valuemin="0" aria-valuemax="100">{{ player.positioning }}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

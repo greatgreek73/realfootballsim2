@@ -12,6 +12,10 @@ from players.utils import generate_player_stats
 from .country_locales import country_locales
 from .forms import ClubForm
 import json
+import random
+import logging
+
+logger = logging.getLogger(__name__)
 
 class CreateClubView(CreateView):
     model = Club
@@ -90,6 +94,7 @@ class CreateClubView(CreateView):
                 return redirect('clubs:club_detail', pk=club.id)
                     
         except Exception as e:
+            logger.error(f'Error creating club: {str(e)}')
             messages.error(self.request, f'Ошибка при создании клуба: {str(e)}')
             return self.form_invalid(form)
 
@@ -117,81 +122,69 @@ class ClubDetailView(DetailView):
         return context
 
 def get_locale_from_country_code(country_code):
+    """Возвращает локаль для заданного кода страны"""
     return country_locales.get(country_code, 'en_US')
 
 @require_http_methods(["GET"])
 def create_player(request, pk):
+    """Создает нового игрока для клуба"""
     club = get_object_or_404(Club, pk=pk)
     if club.owner != request.user:
         return HttpResponse("У вас нет прав для создания игроков в этом клубе.", status=403)
     
+    # Получаем и проверяем параметры
+    position = request.GET.get('position')
+    player_class = int(request.GET.get('player_class', 1))
+    
+    if not position:
+        return HttpResponse("Пожалуйста, выберите позицию.")
+
+    # Генерируем имя
     country_code = club.country.code
     locale = get_locale_from_country_code(country_code)
     fake = Faker(locale)
 
-    position = request.GET.get('position')
-    player_class = int(request.GET.get('player_class', 1))
-
-    if not position:
-        return HttpResponse("Пожалуйста, выберите позицию.")
-
-    while True:
+    # Генерируем уникальное имя
+    attempts = 0
+    max_attempts = 100
+    while attempts < max_attempts:
         first_name = fake.first_name_male()
         last_name = fake.last_name_male() if hasattr(fake, 'last_name_male') else fake.last_name()
         if not Player.objects.filter(first_name=first_name, last_name=last_name).exists():
             break
+        attempts += 1
+    
+    if attempts >= max_attempts:
+        messages.error(request, f'Не удалось создать уникальное имя для игрока')
+        return redirect('clubs:club_detail', pk=pk)
 
-    stats = generate_player_stats(position, player_class)
-
-    if position == 'Goalkeeper':
-        new_player = Player.objects.create(
+    # Генерируем характеристики
+    try:
+        stats = generate_player_stats(position, player_class)
+        
+        # Создаем игрока
+        player = Player.objects.create(
             club=club,
             first_name=first_name,
             last_name=last_name,
             nationality=club.country,
-            age=17,
+            age=random.randint(17, 35),
             position=position,
             player_class=player_class,
-            strength=stats['strength'],
-            stamina=stats['stamina'],
-            pace=stats['pace'],
-            positioning=stats['positioning'],
-            reflexes=stats['reflexes'],
-            handling=stats['handling'],
-            aerial=stats['aerial'],
-            jumping=stats['jumping'],
-            command=stats['command'],
-            throwing=stats['throwing'],
-            kicking=stats['kicking']
-        )
-    else:
-        new_player = Player.objects.create(
-            club=club,
-            first_name=first_name,
-            last_name=last_name,
-            nationality=club.country,
-            age=17,
-            position=position,
-            player_class=player_class,
-            strength=stats['strength'],
-            stamina=stats['stamina'],
-            pace=stats['pace'],
-            marking=stats['marking'],
-            tackling=stats['tackling'],
-            work_rate=stats['work_rate'],
-            positioning=stats['positioning'],
-            passing=stats['passing'],
-            crossing=stats['crossing'],
-            dribbling=stats['dribbling'],
-            ball_control=stats['ball_control'],
-            heading=stats['heading'],
-            finishing=stats['finishing'],
-            long_range=stats['long_range'],
-            vision=stats['vision']
+            **stats  # Передаем все сгенерированные характеристики
         )
 
-    new_player.save()
-    messages.success(request, f'Игрок {new_player.first_name} {new_player.last_name} успешно создан!')
+        messages.success(
+            request, 
+            f'Игрок {player.first_name} {player.last_name} успешно создан!'
+        )
+    except Exception as e:
+        messages.error(
+            request,
+            f'Ошибка при создании игрока: {str(e)}'
+        )
+        logger.error(f'Error creating player: {str(e)}')
+
     return redirect('clubs:club_detail', pk=pk)
 
 @require_http_methods(["GET"])
@@ -270,6 +263,7 @@ def save_team_lineup(request, pk):
             "error": "Некорректный формат данных"
         }, status=400)
     except Exception as e:
+        logger.error(f'Error saving team lineup: {str(e)}')
         return JsonResponse({
             "success": False,
             "error": str(e)

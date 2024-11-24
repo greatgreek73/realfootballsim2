@@ -3,111 +3,106 @@ import random
 import sys
 import os
 
-# Добавляем текущую директорию в путь поиска модулей
-current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(current_dir)
-
-from player_attributes_config import POSITIONS_WEIGHTS
-
-# Constants
-BASE_ATTRIBUTES = [
-    'strength', 'stamina', 'pace', 'marking', 'tackling', 'work_rate',
-    'positioning', 'passing', 'crossing', 'dribbling', 'ball_control',
-    'heading', 'finishing', 'long_range', 'vision'
-]
-
-GOALKEEPER_ATTRIBUTES = [
-    'reflexes', 'handling', 'aerial', 'jumping', 'command', 'throwing',
-    'kicking', 'strength', 'stamina', 'pace', 'positioning'
-]
-
-CLASS_RANGES = {
-    1: (550, 590),
-    2: (470, 490),
-    3: (380, 400),
-    4: (290, 320)
-}
-
-def select_weight(attribute_weights):
-    weights, probabilities = zip(*attribute_weights)
-    selected = random.choices(weights, probabilities)[0]
-    print(f"select_weight called with: {attribute_weights}")
-    print(f"Selected weight: {selected}")
-    return selected
-
 def generate_stat(weight=1):
-    return max(1, min(100, int(norm.rvs(50, 10))))
+    """Генерирует базовую характеристику"""
+    base_value = norm.rvs(50, 10)
+    weighted_value = base_value * weight
+    return max(1, min(99, int(weighted_value)))
 
 def generate_player_stats(position, player_class):
-    stats = {}
-    position_weights = POSITIONS_WEIGHTS[player_class][position]['attributes']
-    
-    print(f"\nGenerating stats for {position}, class {player_class}")
-    
-    if position == 'Goalkeeper':
-        attributes = GOALKEEPER_ATTRIBUTES
-    else:
-        attributes = BASE_ATTRIBUTES
-    
-    for attr in attributes:
-        if attr in position_weights:
-            weight = select_weight(position_weights[attr])
-            stat = generate_stat(weight)
-            print(f"{attr}: weight = {weight}, stat = {stat}")
-        else:
-            stat = generate_stat()
-            print(f"{attr}: no weight, stat = {stat}")
-        stats[attr] = stat
-    
-    print(f"Initial total: {sum(stats.values())}")
-    return adjust_stats_for_class(stats, player_class)
+    """Генерирует характеристики игрока в зависимости от позиции"""
+    # Базовые характеристики
+    base_stats = {
+        'strength': generate_stat(),
+        'stamina': generate_stat(),
+        'pace': generate_stat(),
+        'positioning': generate_stat(),
+    }
 
-def adjust_stats_for_class(stats, player_class):
-    total = sum(stats.values())
-    min_total, max_total = CLASS_RANGES[player_class]
-    target_total = random.randint(min_total, max_total)
-    
-    print(f"Adjusting stats. Initial total: {total}, Target total: {target_total}")
-    
-    while total != target_total:
-        if total < target_total:
-            attr = random.choice([a for a in stats if stats[a] < 100])
-            stats[attr] += 1
-            total += 1
-        else:
-            attr = random.choice([a for a in stats if stats[a] > 1])
-            stats[attr] -= 1
-            total -= 1
-    
-    print(f"Final total: {total}")
+    if position == 'Goalkeeper':
+        # Характеристики вратаря
+        gk_stats = {
+            'reflexes': generate_stat(),
+            'handling': generate_stat(),
+            'aerial': generate_stat(),
+            'command': generate_stat(),
+            'distribution': generate_stat(),
+            'one_on_one': generate_stat(),
+            'rebound_control': generate_stat(),
+            'shot_reading': generate_stat()
+        }
+        stats = {**base_stats, **gk_stats}
+    else:
+        # Характеристики полевого игрока
+        field_stats = {
+            'marking': generate_stat(),
+            'tackling': generate_stat(),
+            'work_rate': generate_stat(),
+            'passing': generate_stat(),
+            'crossing': generate_stat(),
+            'dribbling': generate_stat(),
+            'flair': generate_stat(),
+            'heading': generate_stat(),
+            'finishing': generate_stat(),
+            'long_range': generate_stat(),
+            'vision': generate_stat(),
+            'accuracy': generate_stat()
+        }
+        stats = {**base_stats, **field_stats}
+
+        # Модификаторы позиций
+        position_modifiers = {
+            'Center Back': {
+                'marking': 1.2, 'tackling': 1.2, 'heading': 1.1,
+                'strength': 1.1, 'finishing': 0.8, 'dribbling': 0.8
+            },
+            'Right Back': {
+                'pace': 1.1, 'crossing': 1.1, 'stamina': 1.1,
+                'tackling': 1.1, 'marking': 1.1
+            },
+            'Left Back': {
+                'pace': 1.1, 'crossing': 1.1, 'stamina': 1.1,
+                'tackling': 1.1, 'marking': 1.1
+            },
+            'Defensive Midfielder': {
+                'tackling': 1.2, 'marking': 1.1, 'passing': 1.1,
+                'work_rate': 1.2, 'vision': 1.1
+            },
+            'Central Midfielder': {
+                'passing': 1.2, 'vision': 1.2, 'work_rate': 1.1,
+                'stamina': 1.1, 'positioning': 1.1
+            },
+            'Attacking Midfielder': {
+                'vision': 1.2, 'passing': 1.2, 'dribbling': 1.1,
+                'flair': 1.2, 'finishing': 1.1
+            },
+            'Center Forward': {
+                'finishing': 1.3, 'heading': 1.2, 'positioning': 1.2,
+                'strength': 1.1, 'dribbling': 1.1
+            }
+        }
+
+        # Применяем модификаторы позиции
+        if position in position_modifiers:
+            for attr, mod in position_modifiers[position].items():
+                if attr in stats:
+                    stats[attr] = min(99, int(stats[attr] * mod))
+
+    # Модификатор класса игрока
+    class_modifier = (5 - player_class) * 0.1  # +10% за каждый класс выше 1
+    for key in stats:
+        stats[key] = min(99, int(stats[key] * (1 + class_modifier)))
+
     return stats
 
 def print_player_stats(stats):
-    total = sum(stats.values())
-    print(f"Total sum of attributes: {total}")
+    """Вспомогательная функция для вывода характеристик"""
+    print("\nХарактеристики игрока:")
+    total = 0
+    count = 0
     for attr, value in sorted(stats.items()):
         print(f"{attr}: {value}")
-
-if __name__ == "__main__":
-    # Тест функции select_weight
-    test_weights = [(1.0, 0.40), (1.0, 0.35), (1.0, 0.25)]
-    print("Testing select_weight function:")
-    for _ in range(10):
-        select_weight(test_weights)
-    
-    print("\nGenerating a test goalkeeper:")
-    gk_stats = generate_player_stats('Goalkeeper', 1)
-    print("\nFinal goalkeeper stats:")
-    print_player_stats(gk_stats)
-    
-    print("\nGenerating a test outfield player:")
-    player_stats = generate_player_stats('Center Forward', 1)
-    print("\nFinal outfield player stats:")
-    print_player_stats(player_stats)
-
-    # Тест генерации статистики
-    print("\nTest stat generation:")
-    test_values = [generate_stat() for _ in range(1000)]
-    print(f"Average: {sum(test_values) / len(test_values)}")
-    print(f"Min: {min(test_values)}")
-    print(f"Max: {max(test_values)}")
+        total += value
+        count += 1
+    if count > 0:
+        print(f"\nСредний рейтинг: {total/count:.1f}")
