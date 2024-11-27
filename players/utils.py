@@ -20,7 +20,7 @@ def generate_player_stats(position, player_class):
     }
 
     if position == 'Goalkeeper':
-        # Характеристики вратаря
+        # Характеристики вратаря (12 характеристик)
         gk_stats = {
             'reflexes': generate_stat(),
             'handling': generate_stat(),
@@ -33,7 +33,7 @@ def generate_player_stats(position, player_class):
         }
         stats = {**base_stats, **gk_stats}
     else:
-        # Характеристики полевого игрока
+        # Характеристики полевого игрока (16 характеристик)
         field_stats = {
             'marking': generate_stat(),
             'tackling': generate_stat(),
