@@ -164,53 +164,55 @@ class Command(BaseCommand):
                 break
 
         stats = generate_player_stats(position, random.randint(1, 4))
-        
+        player_class = random.randint(1, 4)
+
+        # Базовые характеристики для всех игроков
+        base_stats = {
+            'club': club,
+            'first_name': first_name,
+            'last_name': last_name,
+            'nationality': club.country,
+            'age': random.randint(17, 35),
+            'position': position,
+            'player_class': player_class,
+            'strength': stats['strength'],
+            'stamina': stats['stamina'],
+            'pace': stats['pace'],
+            'positioning': stats['positioning'],
+        }
+
         if position == 'Goalkeeper':
-            Player.objects.create(
-                club=club,
-                first_name=first_name,
-                last_name=last_name,
-                nationality=club.country,
-                age=random.randint(17, 35),
-                position=position,
-                player_class=random.randint(1, 4),
-                strength=stats['strength'],
-                stamina=stats['stamina'],
-                pace=stats['pace'],
-                positioning=stats['positioning'],
-                reflexes=stats['reflexes'],
-                handling=stats['handling'],
-                aerial=stats['aerial'],
-                jumping=stats['jumping'],
-                command=stats['command'],
-                throwing=stats['throwing'],
-                kicking=stats['kicking']
-            )
+            # Добавляем характеристики вратаря
+            goalkeeper_stats = {
+                'reflexes': stats['reflexes'],
+                'handling': stats['handling'],
+                'aerial': stats['aerial'],
+                'command': stats['command'],
+                'distribution': stats['distribution'],
+                'one_on_one': stats['one_on_one'],
+                'rebound_control': stats['rebound_control'],
+                'shot_reading': stats['shot_reading']
+            }
+            player_stats = {**base_stats, **goalkeeper_stats}
         else:
-            Player.objects.create(
-                club=club,
-                first_name=first_name,
-                last_name=last_name,
-                nationality=club.country,
-                age=random.randint(17, 35),
-                position=position,
-                player_class=random.randint(1, 4),
-                strength=stats['strength'],
-                stamina=stats['stamina'],
-                pace=stats['pace'],
-                marking=stats['marking'],
-                tackling=stats['tackling'],
-                work_rate=stats['work_rate'],
-                positioning=stats['positioning'],
-                passing=stats['passing'],
-                crossing=stats['crossing'],
-                dribbling=stats['dribbling'],
-                ball_control=stats['ball_control'],
-                heading=stats['heading'],
-                finishing=stats['finishing'],
-                long_range=stats['long_range'],
-                vision=stats['vision']
-            )
+            # Добавляем характеристики полевого игрока
+            field_stats = {
+                'marking': stats['marking'],
+                'tackling': stats['tackling'],
+                'work_rate': stats['work_rate'],
+                'passing': stats['passing'],
+                'crossing': stats['crossing'],
+                'dribbling': stats['dribbling'],
+                'flair': stats['flair'],
+                'heading': stats['heading'],
+                'finishing': stats['finishing'],
+                'long_range': stats['long_range'],
+                'vision': stats['vision'],
+                'accuracy': stats['accuracy']
+            }
+            player_stats = {**base_stats, **field_stats}
+
+        Player.objects.create(**player_stats)
 
     def create_season_and_championships(self):
         """Создает сезон и чемпионаты"""
