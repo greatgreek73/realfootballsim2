@@ -72,6 +72,20 @@ class Command(BaseCommand):
             'Academy', 'Warriors', 'Legion', 'Phoenix', 'Union'
         ]
         self.team_suffixes = ['FC', 'CF', 'SC', 'AF']
+        
+        # Определяем структуру команды и количество игроков каждого класса на позицию
+        self.team_structure = {
+            "Goalkeeper": {"count": 3, "class_distribution": [1, 2, 3]},  # 3 вратаря разных классов
+            "Right Back": {"count": 2, "class_distribution": [2, 3]},
+            "Center Back": {"count": 4, "class_distribution": [1, 2, 3, 4]},
+            "Left Back": {"count": 2, "class_distribution": [2, 3]},
+            "Defensive Midfielder": {"count": 2, "class_distribution": [2, 3]},
+            "Central Midfielder": {"count": 3, "class_distribution": [1, 2, 3]},
+            "Attacking Midfielder": {"count": 2, "class_distribution": [2, 3]},
+            "Right Midfielder": {"count": 2, "class_distribution": [2, 3]},
+            "Left Midfielder": {"count": 2, "class_distribution": [2, 3]},
+            "Center Forward": {"count": 3, "class_distribution": [1, 2, 3]}
+        }
 
     def generate_team_name(self, fake):
         """Генерирует уникальное название команды"""
@@ -127,44 +141,36 @@ class Command(BaseCommand):
             self.stdout.write(f"Created 16 teams for {league.name}")
 
     def create_players(self):
-        """Создает игроков для всех команд"""
+        """Создает игроков для всех команд с заданным распределением по позициям и классам"""
         self.stdout.write("Creating players...")
-        positions = [
-            "Goalkeeper",
-            "Right Back",
-            "Center Back",
-            "Left Back",
-            "Defensive Midfielder",
-            "Central Midfielder",
-            "Attacking Midfielder",
-            "Right Midfielder",
-            "Left Midfielder",
-            "Center Forward"
-        ]
-
+        
         for club in Club.objects.all():
             fake = Faker(['en_GB'])
+            players_created = 0
             
-            # Создаем вратаря
-            self.create_player(club, "Goalkeeper", fake)
+            # Создаем игроков согласно структуре команды
+            for position, details in self.team_structure.items():
+                count = details["count"]
+                class_distribution = details["class_distribution"]
+                
+                # Создаем указанное количество игроков на позицию
+                for i in range(count):
+                    # Выбираем класс игрока из распределения
+                    player_class = class_distribution[i % len(class_distribution)]
+                    self.create_player(club, position, fake, player_class)
+                    players_created += 1
             
-            # Создаем остальных игроков
-            for _ in range(24):  # 24 полевых игрока
-                position = random.choice(positions)
-                self.create_player(club, position, fake)
-            
-            self.stdout.write(f"Created 25 players for {club.name}")
+            self.stdout.write(f"Created {players_created} players for {club.name}")
 
-    def create_player(self, club, position, fake):
-        """Создает одного игрока"""
+    def create_player(self, club, position, fake, player_class):
+        """Создает одного игрока заданного класса"""
         while True:
             first_name = fake.first_name_male()
             last_name = fake.last_name_male()
             if not Player.objects.filter(first_name=first_name, last_name=last_name).exists():
                 break
 
-        stats = generate_player_stats(position, random.randint(1, 4))
-        player_class = random.randint(1, 4)
+        stats = generate_player_stats(position, player_class)
 
         # Базовые характеристики для всех игроков
         base_stats = {
