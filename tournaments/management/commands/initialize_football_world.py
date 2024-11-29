@@ -8,6 +8,9 @@ from players.utils import generate_player_stats
 from faker import Faker
 import random
 from datetime import datetime, timedelta
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
     help = 'Initialize complete football world with leagues, teams, and players'
@@ -73,9 +76,9 @@ class Command(BaseCommand):
         ]
         self.team_suffixes = ['FC', 'CF', 'SC', 'AF']
         
-        # Определяем структуру команды и количество игроков каждого класса на позицию
+        # Определяем структуру команды
         self.team_structure = {
-            "Goalkeeper": {"count": 3, "class_distribution": [1, 2, 3]},  # 3 вратаря разных классов
+            "Goalkeeper": {"count": 3, "class_distribution": [1, 2, 3]},
             "Right Back": {"count": 2, "class_distribution": [2, 3]},
             "Center Back": {"count": 4, "class_distribution": [1, 2, 3, 4]},
             "Left Back": {"count": 2, "class_distribution": [2, 3]},
@@ -105,65 +108,53 @@ class Command(BaseCommand):
     def create_league_structure(self):
         """Создает структуру лиг"""
         self.stdout.write("Creating league structure...")
-        for league_info in self.TOP_LEAGUES:
-            # Первый дивизион
-            League.objects.create(
-                name=f"{league_info['country']} {league_info['div1_name']}",
-                country=league_info['country'],
-                level=1,
-                max_teams=16,
-                foreign_players_limit=5
-            )
-            
-            # Второй дивизион
-            League.objects.create(
-                name=f"{league_info['country']} {league_info['div2_name']}",
-                country=league_info['country'],
-                level=2,
-                max_teams=16,
-                foreign_players_limit=5
-            )
-        self.stdout.write(self.style.SUCCESS(f"Created {len(self.TOP_LEAGUES) * 2} leagues"))
+        try:
+            for league_info in self.TOP_LEAGUES:
+                # Первый дивизион
+                League.objects.create(
+                    name=f"{league_info['country']} {league_info['div1_name']}",
+                    country=league_info['country'],
+                    level=1,
+                    max_teams=16,
+                    foreign_players_limit=5
+                )
+                
+                # Второй дивизион
+                League.objects.create(
+                    name=f"{league_info['country']} {league_info['div2_name']}",
+                    country=league_info['country'],
+                    level=2,
+                    max_teams=16,
+                    foreign_players_limit=5
+                )
+            self.stdout.write(self.style.SUCCESS(f"Created {len(self.TOP_LEAGUES) * 2} leagues"))
+            return True
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"Error creating leagues: {str(e)}"))
+            return False
 
     def create_teams(self):
         """Создает команды для всех лиг"""
         self.stdout.write("Creating teams...")
-        for league in League.objects.all():
-            fake = Faker(['en_GB'])
-            for _ in range(16):  # 16 команд в каждой лиге
-                team_name = self.generate_team_name(fake)
-                Club.objects.create(
-                    name=team_name,
-                    country=league.country,
-                    league=league,
-                    is_bot=True
-                )
-            self.stdout.write(f"Created 16 teams for {league.name}")
-
-    def create_players(self):
-        """Создает игроков для всех команд с заданным распределением по позициям и классам"""
-        self.stdout.write("Creating players...")
-        
-        for club in Club.objects.all():
-            fake = Faker(['en_GB'])
-            players_created = 0
-            
-            # Создаем игроков согласно структуре команды
-            for position, details in self.team_structure.items():
-                count = details["count"]
-                class_distribution = details["class_distribution"]
-                
-                # Создаем указанное количество игроков на позицию
-                for i in range(count):
-                    # Выбираем класс игрока из распределения
-                    player_class = class_distribution[i % len(class_distribution)]
-                    self.create_player(club, position, fake, player_class)
-                    players_created += 1
-            
-            self.stdout.write(f"Created {players_created} players for {club.name}")
+        try:
+            for league in League.objects.all():
+                fake = Faker(['en_GB'])
+                for _ in range(16):  # 16 команд в каждой лиге
+                    team_name = self.generate_team_name(fake)
+                    Club.objects.create(
+                        name=team_name,
+                        country=league.country,
+                        league=league,
+                        is_bot=True
+                    )
+                self.stdout.write(f"Created 16 teams for {league.name}")
+            return True
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"Error creating teams: {str(e)}"))
+            return False
 
     def create_player(self, club, position, fake, player_class):
-        """Создает одного игрока заданного класса"""
+        """Создает одного игрока"""
         while True:
             first_name = fake.first_name_male()
             last_name = fake.last_name_male()
@@ -218,57 +209,91 @@ class Command(BaseCommand):
             }
             player_stats = {**base_stats, **field_stats}
 
-        Player.objects.create(**player_stats)
+        return Player.objects.create(**player_stats)
+
+    def create_players(self):
+        """Создает игроков для всех команд"""
+        self.stdout.write("Creating players...")
+        try:
+            for club in Club.objects.all():
+                fake = Faker(['en_GB'])
+                players_created = 0
+                
+                # Создаем игроков согласно структуре команды
+                for position, details in self.team_structure.items():
+                    count = details["count"]
+                    class_distribution = details["class_distribution"]
+                    
+                    # Создаем указанное количество игроков на позицию
+                    for i in range(count):
+                        # Выбираем класс игрока из распределения
+                        player_class = class_distribution[i % len(class_distribution)]
+                        self.create_player(club, position, fake, player_class)
+                        players_created += 1
+                
+                self.stdout.write(f"Created {players_created} players for {club.name}")
+            return True
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"Error creating players: {str(e)}"))
+            return False
 
     def create_season_and_championships(self):
         """Создает сезон и чемпионаты"""
         self.stdout.write("Creating season and championships...")
-        
-        # Создаем сезон
-        season = Season.objects.create(
-            name="2024/2025",
-            number=1,
-            start_date=datetime(2024, 11, 1).date(),
-            end_date=datetime(2025, 5, 31).date(),
-            is_active=True
-        )
-
-        # Создаем чемпионаты для всех лиг
-        for league in League.objects.all():
-            championship = Championship.objects.create(
-                season=season,
-                league=league,
-                status='in_progress',
-                start_date=season.start_date,
-                end_date=season.end_date,
-                match_time=timezone.now().time().replace(hour=18, minute=0)
+        try:
+            # Создаем сезон
+            season = Season.objects.create(
+                name="2024/2025",
+                number=1,
+                start_date=datetime(2024, 11, 1).date(),
+                end_date=datetime(2025, 5, 31).date(),
+                is_active=True
             )
-            
-            # Добавляем команды в чемпионат
-            teams = Club.objects.filter(league=league)
-            for team in teams:
-                championship.teams.add(team)
 
-            self.stdout.write(f"Created championship for {league.name}")
+            # Создаем чемпионаты для всех лиг
+            for league in League.objects.all():
+                championship = Championship.objects.create(
+                    season=season,
+                    league=league,
+                    status='in_progress',
+                    start_date=season.start_date,
+                    end_date=season.end_date,
+                    match_time=timezone.now().time().replace(hour=18, minute=0)
+                )
+                
+                # Добавляем команды в чемпионат
+                teams = Club.objects.filter(league=league)
+                for team in teams:
+                    championship.teams.add(team)
+
+                self.stdout.write(f"Created championship for {league.name}")
+            return True
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"Error creating season and championships: {str(e)}"))
+            return False
 
     def handle(self, *args, **options):
+        self.stdout.write("Starting football world initialization...")
+        
+        # Пошаговое выполнение с проверками
+        if not self.create_league_structure():
+            return
+            
+        if not self.create_teams():
+            return
+            
+        if not self.create_players():
+            return
+            
+        if not self.create_season_and_championships():
+            return
+            
+        # Генерируем матчи через существующую команду
         try:
-            with transaction.atomic():
-                self.stdout.write("Starting football world initialization...")
-                
-                self.create_league_structure()
-                self.create_teams()
-                self.create_players()
-                self.create_season_and_championships()
-                
-                # Генерируем матчи через существующую команду
-                from django.core.management import call_command
-                call_command('generate_all_matches')
-                
-                self.stdout.write(self.style.SUCCESS("Football world initialization completed!"))
-                
+            from django.core.management import call_command
+            call_command('generate_all_matches')
+            self.stdout.write(self.style.SUCCESS("Football world initialization completed!"))
         except Exception as e:
             self.stdout.write(
-                self.style.ERROR(f'Error during initialization: {str(e)}')
+                self.style.ERROR(f'Error generating matches: {str(e)}')
             )
-            raise e
