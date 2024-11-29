@@ -42,7 +42,7 @@ ROOT_URLCONF = 'realfootballsim.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],  # Добавлено для поиска шаблонов в корневой директории
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -61,6 +61,11 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        'OPTIONS': {
+            'timeout': 60,  # Увеличиваем таймаут до 60 секунд
+            'isolation_level': 'IMMEDIATE'  # Уровень изоляции
+        },
+        'ATOMIC_REQUESTS': False,  # Отключаем автоматические транзакции
     }
 }
 
@@ -87,11 +92,9 @@ USE_I18N = True
 
 USE_TZ = True
 
-# Настройки статических файлов
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Для сбора статических файлов при деплое
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Дополнительные директории для поиска статических файлов
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
@@ -100,17 +103,24 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
-# В конец файла добавить:
 LOGIN_REDIRECT_URL = 'clubs:club_detail'
 LOGIN_URL = 'accounts:login'
 LOGOUT_REDIRECT_URL = 'accounts:login'
 
+# Настройки Celery с увеличенным временем ожидания
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_TASK_TIME_LIMIT = 300  # 5 минут на выполнение задачи
+CELERY_TASK_SOFT_TIME_LIMIT = 240  # Мягкий лимит в 4 минуты
+
+# Добавляем настройки для пула воркеров
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 50
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 
 LOGGING = {
     'version': 1,
@@ -133,7 +143,17 @@ LOGGING = {
         },
     },
     'loggers': {
-        'clubs': {  # используйте имя вашего приложения
+        'clubs': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'matches': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'tournaments': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
             'propagate': True,
@@ -141,10 +161,6 @@ LOGGING = {
     },
 }
 
-# В конец settings.py добавьте:
-CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
-
-# Доступные часовые пояса для выбора
 TOURNAMENT_TIMEZONES = [
     ('UTC', 'UTC'),
     ('Europe/London', 'London'),
@@ -155,10 +171,14 @@ TOURNAMENT_TIMEZONES = [
 
 TEMPLATES[0]['OPTIONS']['context_processors'].append('tournaments.context_processors.timezone_context')
 
+# Настройки периодических задач
 CELERY_BEAT_SCHEDULE = {
     'check-matches': {
         'task': 'tournaments.check_and_simulate_matches',
         'schedule': crontab(minute='*/1'),  # Каждую минуту
+        'options': {
+            'expires': 50  # Задача истекает через 50 секунд
+        }
     },
     'check-season-end': {
         'task': 'tournaments.check_season_end',
