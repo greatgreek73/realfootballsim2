@@ -11,4 +11,5 @@ urlpatterns = [
     path('detail/<int:pk>/get-players/', views.get_players, name='get_players'),
     path('detail/<int:pk>/save-team-lineup/', views.save_team_lineup, name='save_team_lineup'),
     path('detail/<int:pk>/get-team-lineup/', views.get_team_lineup, name='get_team_lineup'),
+    
 ]
