@@ -50,6 +50,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'tournaments.context_processors.timezone_context',
             ],
         },
     },
@@ -122,6 +123,18 @@ CELERY_TASK_SOFT_TIME_LIMIT = 240  # Мягкий лимит в 4 минуты
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 50
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 
+# Настройки периодических задач
+CELERY_BEAT_SCHEDULE = {
+    'check-matches': {
+        'task': 'tournaments.check_and_simulate_matches',
+        'schedule': crontab(minute='*'),  # Каждую минуту
+    },
+    'check-season-end': {
+        'task': 'tournaments.check_season_end',
+        'schedule': crontab(hour=0, minute=0),  # Каждый день в полночь
+    },
+}
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -168,20 +181,3 @@ TOURNAMENT_TIMEZONES = [
     ('America/New_York', 'New York'),
     ('Asia/Tokyo', 'Tokyo'),
 ]
-
-TEMPLATES[0]['OPTIONS']['context_processors'].append('tournaments.context_processors.timezone_context')
-
-# Настройки периодических задач
-CELERY_BEAT_SCHEDULE = {
-    'check-matches': {
-        'task': 'tournaments.check_and_simulate_matches',
-        'schedule': crontab(minute='*/1'),  # Каждую минуту
-        'options': {
-            'expires': 50  # Задача истекает через 50 секунд
-        }
-    },
-    'check-season-end': {
-        'task': 'tournaments.check_season_end',
-        'schedule': crontab(hour=0, minute=0),  # Каждый день в полночь
-    },
-}

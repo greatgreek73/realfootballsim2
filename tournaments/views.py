@@ -45,7 +45,7 @@ class ChampionshipDetailView(LoginRequiredMixin, DetailView):
             'match', 
             'match__home_team', 
             'match__away_team'
-        ).order_by('round', 'match__date')
+        ).order_by('round', 'match__datetime')
         
         context['matches'] = matches
         
@@ -54,7 +54,7 @@ class ChampionshipDetailView(LoginRequiredMixin, DetailView):
             calendar_events.append({
                 'id': match.id,
                 'title': f"{match.match.home_team} vs {match.match.away_team}",
-                'start': match.match.date.isoformat(),
+                'start': match.match.datetime.isoformat(),
                 'status': match.match.status,
                 'score': f"{match.match.home_score} - {match.match.away_score}" if match.match.status == 'finished' else None,
                 'url': reverse('matches:match_detail', args=[match.match.id]),
@@ -109,7 +109,7 @@ class MyChampionshipView(LoginRequiredMixin, DetailView):
             'match', 
             'match__home_team', 
             'match__away_team'
-        ).order_by('match__date')
+        ).order_by('match__datetime')
 
         return context
 
@@ -160,7 +160,7 @@ def get_championship_matches(request, pk):
     match_data = [{
         'id': match.id,
         'round': match.round,
-        'date': match.match.date.isoformat(),
+        'date': match.match.datetime.isoformat(),
         'home_team': match.match.home_team.name,
         'away_team': match.match.away_team.name,
         'status': match.match.status,

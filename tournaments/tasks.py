@@ -32,11 +32,12 @@ def retry_on_db_lock(func, max_attempts=3, delay=1):
     name='tournaments.check_and_simulate_matches',
     bind=True,
     autoretry_for=(Exception,),
-    retry_kwargs={'max_retries': 5, 'countdown': 60},
-    default_retry_delay=300
+    retry_kwargs={'max_retries': 3, 'countdown': 60}
 )
 def check_and_simulate_matches(self):
-    """Проверяет и симулирует матчи для обоих дивизионов"""
+    """
+    Проверяет и симулирует все несыгранные матчи в хронологическом порядке.
+    """
     try:
         now = timezone.now()
         logger.info(f"Starting match check at {now}")
@@ -46,38 +47,25 @@ def check_and_simulate_matches(self):
             logger.warning("No active season found, skipping match simulation")
             return "No active season found"
         
-        # Получаем только матчи, которые имеют связанный championshipmatch
+        # Получаем все несыгранные матчи
         matches = Match.objects.filter(
             status='scheduled',
-            date__lte=now,
-            championshipmatch__isnull=False  # Добавили этот фильтр
+            datetime__lte=now,
+            championshipmatch__isnull=False,
+            processed=False
         ).select_related(
             'home_team', 
             'away_team',
             'championshipmatch',
             'championshipmatch__championship',
             'championshipmatch__championship__league'
-        ).order_by('date')
-        
-        # Находим проблемные матчи и помечаем их как отмененные
-        problematic_matches = Match.objects.filter(
-            status='scheduled',
-            date__lte=now,
-            championshipmatch__isnull=True
-        )
-        
-        if problematic_matches.exists():
-            logger.warning(f"Found {problematic_matches.count()} matches without championshipmatch")
-            problematic_matches.update(
-                status='cancelled',
-                updated_at=timezone.now()
-            )
+        ).order_by('datetime')  # Сортируем по времени матча
         
         if not matches.exists():
-            logger.info("No valid matches to simulate")
+            logger.info("No matches to simulate")
             return "No matches to simulate"
         
-        logger.info(f"Found {matches.count()} valid matches to simulate")
+        logger.info(f"Found {matches.count()} matches to simulate")
         
         simulated_count = {'div1': 0, 'div2': 0}
         errors_count = 0
@@ -100,7 +88,7 @@ def check_and_simulate_matches(self):
                 logger.info(
                     f"Simulating Division {division} match: "
                     f"{match.home_team} vs {match.away_team} "
-                    f"(ID: {match.id})"
+                    f"(ID: {match.id}, scheduled: {match.datetime})"
                 )
                 
                 simulate_match_with_retry(match.id)
@@ -110,13 +98,14 @@ def check_and_simulate_matches(self):
                 else:
                     simulated_count['div2'] += 1
                 
-                time.sleep(0.05)
+                # Помечаем матч как обработанный
+                match.processed = True
+                match.save(update_fields=['processed'])
+                
+                time.sleep(0.05)  # Небольшая пауза между матчами
                 
             except ObjectDoesNotExist as e:
                 logger.error(f"Match {match.id} has invalid references: {str(e)}")
-                # Помечаем матч как отмененный
-                match.status = 'cancelled'
-                match.save()
                 continue
                 
             except Exception as e:
