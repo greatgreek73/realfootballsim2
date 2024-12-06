@@ -131,7 +131,7 @@ def create_championship_matches(championship: Championship) -> None:
                 match = Match.objects.create(
                     home_team=home_team,
                     away_team=away_team,
-                    date=match_datetime,
+                    datetime=match_datetime,  # Исправлено с date на datetime
                     status='scheduled'
                 )
 
