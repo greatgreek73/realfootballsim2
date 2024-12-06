@@ -10,7 +10,7 @@ from .match_simulation import simulate_match
 
 class CreateMatchView(CreateView):
     model = Match
-    fields = ['home_team', 'away_team', 'date']
+    fields = ['home_team', 'away_team', 'datetime']  # Исправлено с date на datetime
     template_name = 'matches/create_match.html'
 
     def form_valid(self, form):
@@ -41,7 +41,7 @@ def simulate_match_view(request, match_id):
         match = Match.objects.create(
             home_team=club,
             away_team=opponent,
-            date=timezone.now(),
+            datetime=timezone.now(),  # Исправлено с date на datetime
             status='scheduled'
         )
         match_id = match.id
