@@ -43,11 +43,17 @@ class MatchEvent(models.Model):
     minute = models.PositiveIntegerField()
     event_type = models.CharField(max_length=20, choices=[
         ('goal', 'Goal'),
+        ('miss', 'Miss'),
+        ('possession', 'Possession Change'),
+        ('defense_to_midfield', 'Defense to Midfield Transition'),
+        ('midfield_to_attack', 'Midfield to Attack Transition'),
+        ('attack_to_shot', 'Attack to Shot Opportunity'),
+        ('interception', 'Interception'),
         ('yellow_card', 'Yellow Card'),
         ('red_card', 'Red Card'),
         ('substitution', 'Substitution')
     ])
-    player = models.ForeignKey(Player, on_delete=models.CASCADE)
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, null=True, blank=True)
     description = models.TextField()
 
     def __str__(self):
