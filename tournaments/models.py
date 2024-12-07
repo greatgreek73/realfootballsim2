@@ -7,7 +7,7 @@ from matches.models import Match
 from datetime import datetime, timedelta, time
 import pytz
 import calendar
-from .utils import get_next_season_dates
+from .date_utils import get_next_season_dates  # Изменен импорт
 
 class Season(models.Model):
     """Model for representing a game season"""
@@ -15,7 +15,7 @@ class Season(models.Model):
         unique=True, 
         help_text="Порядковый номер сезона"
     )
-    name = models.CharField(max_length=100)  # Оставляем для обратной совместимости
+    name = models.CharField(max_length=100)
     start_date = models.DateField()
     end_date = models.DateField()
     is_active = models.BooleanField(default=False)
@@ -89,7 +89,6 @@ class Season(models.Model):
         season.save()
         return season
 
-# Остальные классы без изменений
 class League(models.Model):
     """Model for representing a league/division"""
     name = models.CharField(max_length=100)

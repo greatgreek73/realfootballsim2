@@ -1,38 +1,8 @@
 from typing import List, Tuple, Dict
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 from django.utils import timezone
 from django.db import models, transaction
-from .models import Championship, ChampionshipMatch, Season
-from matches.models import Match
 import calendar
-
-def get_next_season_dates() -> Tuple[date, date]:
-    """
-    Вычисляет даты начала и конца следующего сезона.
-    Использует реальное количество дней в каждом месяце.
-    Возвращает кортеж (start_date, end_date).
-    """
-    today = timezone.now().date()
-    
-    # Определяем начало сезона - первое число следующего месяца
-    if today.day != 1:
-        year = today.year
-        month = today.month
-        if month == 12:
-            month = 1
-            year += 1
-        else:
-            month += 1
-        start_date = date(year, month, 1)
-    else:
-        # Если сегодня 1 число, начинаем сезон сегодня
-        start_date = today
-
-    # Определяем последний день месяца используя calendar.monthrange
-    _, last_day = calendar.monthrange(start_date.year, start_date.month)
-    end_date = start_date.replace(day=last_day)
-    
-    return start_date, end_date
 
 def check_consecutive_matches(schedule: List[Tuple], team, is_home: bool) -> int:
     """
@@ -79,10 +49,12 @@ def validate_schedule_balance(schedule: List[Tuple], teams: List) -> Dict:
 
     return balance
 
-def generate_league_schedule(championship: Championship) -> List[Tuple]:
+def generate_league_schedule(championship) -> List[Tuple]:
     """
     Генерирует сбалансированное расписание матчей по принципу кругового турнира.
     """
+    from .models import Championship  # Импорт внутри функции
+    
     teams = list(championship.teams.all())
     if len(teams) != 16:
         raise ValueError(f"Требуется ровно 16 команд, сейчас: {len(teams)}")
@@ -125,10 +97,13 @@ def generate_league_schedule(championship: Championship) -> List[Tuple]:
     
     return schedule
 
-def create_championship_matches(championship: Championship) -> None:
+def create_championship_matches(championship) -> None:
     """
     Создает матчи чемпионата на основе сгенерированного расписания.
     """
+    from .models import ChampionshipMatch  # Импорт внутри функции
+    from matches.models import Match  # Импорт внутри функции
+    
     with transaction.atomic():
         ChampionshipMatch.objects.filter(championship=championship).delete()
 
@@ -173,11 +148,13 @@ def create_championship_matches(championship: Championship) -> None:
 
             current_date += timedelta(days=1)
 
-def validate_championship_schedule(championship: Championship) -> bool:
+def validate_championship_schedule(championship) -> bool:
     """
     Проверяет корректность расписания чемпионата.
     """
-    matches = ChampionshipMatch.objects.filter(championship=championship).select_related('match')
+    from .models import Championship  # Импорт внутри функции
+    
+    matches = championship.championshipmatch_set.select_related('match')
     teams = list(championship.teams.all())
 
     # Проверка количества матчей
