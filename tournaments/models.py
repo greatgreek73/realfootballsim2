@@ -6,6 +6,8 @@ from clubs.models import Club
 from matches.models import Match
 from datetime import datetime, timedelta, time
 import pytz
+import calendar
+from .utils import get_next_season_dates
 
 class Season(models.Model):
     """Model for representing a game season"""
@@ -34,12 +36,10 @@ class Season(models.Model):
                 'start_date': 'Дата начала сезона должна быть первым числом месяца'
             })
 
-        if self.start_date.month == 2:  # Февраль
-            last_day = 29 if self.start_date.year % 4 == 0 else 28
-        else:
-            last_day = 30  # Для всех остальных месяцев используем 30 дней
-        
+        # Определяем последний день месяца используя calendar.monthrange
+        _, last_day = calendar.monthrange(self.start_date.year, self.start_date.month)
         expected_end_date = self.start_date.replace(day=last_day)
+        
         if self.end_date != expected_end_date:
             raise ValidationError({
                 'end_date': f'Дата окончания сезона должна быть {last_day}-м числом месяца'
@@ -53,11 +53,11 @@ class Season(models.Model):
     @property
     def needs_double_matchday(self) -> bool:
         """Определяет, нужны ли двойные туры в этом сезоне"""
-        return self.is_february
+        return self.is_february and calendar.monthrange(self.start_date.year, 2)[1] == 28
 
     def get_double_matchday_dates(self) -> list:
         """Возвращает даты для двойных туров"""
-        if not self.is_february:
+        if not self.needs_double_matchday:
             return []
         
         dates = [self.start_date.replace(day=15)]
@@ -76,20 +76,8 @@ class Season(models.Model):
         last_season = cls.objects.order_by('-number').first()
         new_season_number = 1 if not last_season else last_season.number + 1
 
-        today = timezone.now().date()
-        if today.day == 1:
-            start_date = today
-        else:
-            if today.month == 12:
-                start_date = today.replace(year=today.year + 1, month=1, day=1)
-            else:
-                start_date = today.replace(month=today.month + 1, day=1)
-
-        if start_date.month == 2:
-            last_day = 29 if start_date.year % 4 == 0 else 28
-        else:
-            last_day = 30
-        end_date = start_date.replace(day=last_day)
+        # Получаем даты следующего сезона
+        start_date, end_date = get_next_season_dates()
 
         season = cls(
             number=new_season_number,
@@ -101,6 +89,7 @@ class Season(models.Model):
         season.save()
         return season
 
+# Остальные классы без изменений
 class League(models.Model):
     """Model for representing a league/division"""
     name = models.CharField(max_length=100)

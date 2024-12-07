@@ -148,7 +148,19 @@ def check_season_end(self):
             
             logger.info(f"Checking season {current_season.number} (end date: {current_season.end_date})")
             
-            if today > current_season.end_date:
+            # Проверяем оба условия: конец месяца и все матчи сыграны
+            is_end_date_passed = today > current_season.end_date
+            
+            finished_matches_count = Match.objects.filter(
+                championshipmatch__championship__season=current_season,
+                status='finished'
+            ).count()
+
+            required_matches = len(Championship.objects.filter(season=current_season)) * (16 * 15)  # Количество команд * количество матчей
+            all_matches_played = finished_matches_count >= required_matches
+
+            # Сезон заканчивается только если оба условия выполнены
+            if is_end_date_passed and all_matches_played:
                 logger.info(f"Season {current_season.number} has ended. Starting end-season process...")
                 
                 unfinished_matches = Match.objects.filter(
@@ -196,7 +208,11 @@ def check_season_end(self):
                     logger.error(error_msg)
                     raise Exception(error_msg)
             
-            return f"Season {current_season.number} is still active until {current_season.end_date}"
+            if not all_matches_played:
+                return f"Season {current_season.number} is waiting for matches completion ({finished_matches_count}/{required_matches})"
+            if not is_end_date_passed:
+                return f"Season {current_season.number} is still active until {current_season.end_date}"
+            return f"Season {current_season.number} needs both end date and all matches to end"
             
     except Season.DoesNotExist:
         logger.warning("No active season found")

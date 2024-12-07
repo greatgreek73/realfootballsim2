@@ -1,9 +1,38 @@
 from typing import List, Tuple, Dict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from django.utils import timezone
 from django.db import models, transaction
 from .models import Championship, ChampionshipMatch, Season
 from matches.models import Match
+import calendar
+
+def get_next_season_dates() -> Tuple[date, date]:
+    """
+    Вычисляет даты начала и конца следующего сезона.
+    Использует реальное количество дней в каждом месяце.
+    Возвращает кортеж (start_date, end_date).
+    """
+    today = timezone.now().date()
+    
+    # Определяем начало сезона - первое число следующего месяца
+    if today.day != 1:
+        year = today.year
+        month = today.month
+        if month == 12:
+            month = 1
+            year += 1
+        else:
+            month += 1
+        start_date = date(year, month, 1)
+    else:
+        # Если сегодня 1 число, начинаем сезон сегодня
+        start_date = today
+
+    # Определяем последний день месяца используя calendar.monthrange
+    _, last_day = calendar.monthrange(start_date.year, start_date.month)
+    end_date = start_date.replace(day=last_day)
+    
+    return start_date, end_date
 
 def check_consecutive_matches(schedule: List[Tuple], team, is_home: bool) -> int:
     """
@@ -131,7 +160,7 @@ def create_championship_matches(championship: Championship) -> None:
                 match = Match.objects.create(
                     home_team=home_team,
                     away_team=away_team,
-                    datetime=match_datetime,  # Исправлено с date на datetime
+                    datetime=match_datetime,
                     status='scheduled'
                 )
 
