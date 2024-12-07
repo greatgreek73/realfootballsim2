@@ -241,11 +241,11 @@ class Command(BaseCommand):
         """Создает сезон и чемпионаты"""
         self.stdout.write("Creating season and championships...")
         try:
-            # Создаем сезон
+            # Создаем сезон (изменено начало на 1 декабря)
             season = Season.objects.create(
                 name="2024/2025",
                 number=1,
-                start_date=datetime(2024, 11, 1).date(),
+                start_date=datetime(2024, 12, 1).date(),  # Изменено с 11, 1 на 12, 1
                 end_date=datetime(2025, 5, 31).date(),
                 is_active=True
             )
@@ -256,7 +256,7 @@ class Command(BaseCommand):
                     season=season,
                     league=league,
                     status='in_progress',
-                    start_date=season.start_date,
+                    start_date=season.start_date,  # Используется новая дата начала
                     end_date=season.end_date,
                     match_time=timezone.now().time().replace(hour=18, minute=0)
                 )

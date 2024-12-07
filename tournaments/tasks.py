@@ -14,7 +14,6 @@ from django.core.exceptions import ObjectDoesNotExist
 logger = logging.getLogger(__name__)
 
 def retry_on_db_lock(func, max_attempts=3, delay=1):
-    """Декоратор для повторных попыток при блокировке базы данных"""
     def wrapper(*args, **kwargs):
         attempts = 0
         while attempts < max_attempts:
@@ -42,15 +41,22 @@ def check_and_simulate_matches(self):
         now = timezone.now()
         logger.info(f"Starting match check at {now}")
         
-        # Проверяем наличие активного сезона
         if not Season.objects.filter(is_active=True).exists():
             logger.warning("No active season found, skipping match simulation")
             return "No active season found"
         
-        # Получаем все несыгранные матчи
+        # Определяем время для проверки матчей (18:00 текущего дня)
+        today_6pm = timezone.make_aware(
+            timezone.datetime.combine(
+                now.date(),
+                timezone.datetime.strptime("18:00", "%H:%M").time()
+            )
+        )
+        
+        # Получаем все несыгранные матчи до текущего момента
         matches = Match.objects.filter(
             status='scheduled',
-            datetime__lte=now,
+            datetime__lte=today_6pm,  # Все матчи до 18:00 текущего дня
             championshipmatch__isnull=False,
             processed=False
         ).select_related(
@@ -80,7 +86,6 @@ def check_and_simulate_matches(self):
                 championship_match = match.championshipmatch
                 division = championship_match.championship.league.level
                 
-                # Дополнительные проверки
                 if not championship_match.championship.season.is_active:
                     logger.warning(f"Match {match.id} belongs to inactive season, skipping")
                     continue
@@ -98,11 +103,10 @@ def check_and_simulate_matches(self):
                 else:
                     simulated_count['div2'] += 1
                 
-                # Помечаем матч как обработанный
                 match.processed = True
                 match.save(update_fields=['processed'])
                 
-                time.sleep(0.05)  # Небольшая пауза между матчами
+                time.sleep(0.05)
                 
             except ObjectDoesNotExist as e:
                 logger.error(f"Match {match.id} has invalid references: {str(e)}")
@@ -111,7 +115,7 @@ def check_and_simulate_matches(self):
             except Exception as e:
                 errors_count += 1
                 logger.error(f"Error simulating match {match.id}: {str(e)}")
-                if errors_count >= 10:  # Увеличили порог ошибок
+                if errors_count >= 10:
                     raise Exception(f"Too many simulation errors: {str(e)}")
                 continue
         
@@ -139,17 +143,14 @@ def check_season_end(self):
     """Проверяет окончание сезона и запускает необходимые процессы"""
     try:
         with transaction.atomic():
-            # Блокируем текущий сезон для изменений
             current_season = Season.objects.select_for_update().get(is_active=True)
             today = timezone.now().date()
             
             logger.info(f"Checking season {current_season.number} (end date: {current_season.end_date})")
             
-            # Проверяем, закончился ли сезон
             if today > current_season.end_date:
                 logger.info(f"Season {current_season.number} has ended. Starting end-season process...")
                 
-                # 1. Проверяем незавершенные матчи
                 unfinished_matches = Match.objects.filter(
                     championshipmatch__championship__season=current_season,
                     status__in=['scheduled', 'in_progress']
@@ -164,25 +165,20 @@ def check_season_end(self):
                     return (f"Season {current_season.number} has "
                            f"{unfinished_count} unfinished matches")
                 
-                # 2. Обрабатываем переходы между дивизионами
                 logger.info("Processing teams transitions between divisions...")
                 call_command('handle_season_transitions')
                 
-                # 3. Деактивируем текущий сезон
                 current_season.is_active = False
                 current_season.save()
                 logger.info(f"Deactivated season {current_season.number}")
                 
-                # 4. Создаём новый сезон через команду
                 logger.info("Creating new season...")
                 call_command('create_new_season')
                 
-                # 5. Проверяем успешность создания нового сезона
                 try:
                     new_season = Season.objects.get(is_active=True)
                     logger.info(f"Successfully created new season {new_season.number}")
                     
-                    # Подсчитываем количество чемпионатов и команд
                     championships = Championship.objects.filter(season=new_season)
                     total_teams = sum(c.teams.count() for c in championships)
                     
