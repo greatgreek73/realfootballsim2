@@ -246,7 +246,7 @@ class Command(BaseCommand):
                 name="2024/2025",
                 number=1,
                 start_date=datetime(2024, 12, 1).date(),  # Изменено с 11, 1 на 12, 1
-                end_date=datetime(2025, 5, 31).date(),
+                end_date=datetime(2024, 12, 31).date(),
                 is_active=True
             )
 
