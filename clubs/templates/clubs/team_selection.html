@@ -17,6 +17,18 @@
                     </div>
                 </div>
                 <div class="card-body">
+
+                    <!-- Добавляем секцию для выбора тактики -->
+                    <div class="tactics-section">
+                        <label for="tacticSelect"><strong>Select Tactic:</strong></label>
+                        <select id="tacticSelect">
+                            <option value="attacking">Attacking</option>
+                            <option value="balanced" selected>Balanced</option>
+                            <option value="defensive">Defensive</option>
+                        </select>
+                    </div>
+                    <!-- Конец секции выбора тактики -->
+
                     <div class="pitch" id="pitch">
                         <!-- Player slots will be added here dynamically -->
                     </div>
@@ -180,7 +192,6 @@
         font-size: 14px;
     }
 
-    /* Линии футбольного поля */
     .pitch::before {
         content: '';
         position: absolute;

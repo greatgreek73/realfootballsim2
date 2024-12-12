@@ -7,6 +7,9 @@ class MatchSimulation:
     def __init__(self, match):
         self.match = match
         
+        # Предположим, что тактика команд может быть сохранена в модели,
+        # или в данном примере просто зададим их явно.
+        # В реальности вы можете загрузить тактику из базы, параметров матча или выбора пользователя.
         self.match_stats = {
             'home': {
                 'possession': 50, 
@@ -16,7 +19,8 @@ class MatchSimulation:
                 'tackles': 0,
                 'team_attack': self._calculate_team_parameter(match.home_team, 'attack'),
                 'team_defense': self._calculate_team_parameter(match.home_team, 'defense'),
-                'team_midfield': self._calculate_team_parameter(match.home_team, 'midfield')
+                'team_midfield': self._calculate_team_parameter(match.home_team, 'midfield'),
+                'tactics': 'attacking'  # Пример: домашняя команда играет атакующе
             },
             'away': {
                 'possession': 50, 
@@ -26,7 +30,8 @@ class MatchSimulation:
                 'tackles': 0,
                 'team_attack': self._calculate_team_parameter(match.away_team, 'attack'),
                 'team_defense': self._calculate_team_parameter(match.away_team, 'defense'),
-                'team_midfield': self._calculate_team_parameter(match.away_team, 'midfield')
+                'team_midfield': self._calculate_team_parameter(match.away_team, 'midfield'),
+                'tactics': 'defensive' # Пример: гостевая команда обороняется
             }
         }
 
@@ -51,38 +56,35 @@ class MatchSimulation:
         count = 0
         
         for player in players:
+            # Учитываем опыт, например +1% за единицу опыта
+            experience_multiplier = 1 + player.experience * 0.01
+
             if parameter_type == 'attack':
-                # Изменения для нападения:
-                # Нападающие и атакующие полузащитники: finishing + heading + long_range (вместо positioning)
-                # Остальные: finishing + long_range (вместо positioning)
                 if player.position in ['Center Forward', 'Attacking Midfielder']:
-                    value = player.finishing + player.heading + player.long_range
+                    base_value = player.finishing + player.heading + player.long_range
                     weight = 1.5
                 else:
-                    value = player.finishing + player.long_range
+                    base_value = player.finishing + player.long_range
                     weight = 1.0
-
             elif parameter_type == 'defense':
-                # Изменения для защиты:
-                # Основные защитные позиции: marking + tackling + heading (вместо positioning)
-                # Остальные: marking + tackling (вместо marking + positioning)
                 if player.position in ['Center Back', 'Right Back', 'Left Back', 'Defensive Midfielder']:
-                    value = player.marking + player.tackling + player.heading
+                    base_value = player.marking + player.tackling + player.heading
                     weight = 1.5
                 else:
-                    value = player.marking + player.tackling
+                    base_value = player.marking + player.tackling
+                    weight = 1.0
+            else:  # midfield
+                if player.position in ['Central Midfielder', 'Defensive Midfielder', 'Attacking Midfielder']:
+                    base_value = player.passing + player.vision + player.work_rate
+                    weight = 1.5
+                else:
+                    base_value = player.passing + player.work_rate
                     weight = 1.0
 
-            else:  # midfield
-                # Полузащита без изменений
-                if player.position in ['Central Midfielder', 'Defensive Midfielder', 'Attacking Midfielder']:
-                    value = player.passing + player.vision + player.work_rate
-                    weight = 1.5
-                else:
-                    value = player.passing + player.work_rate
-                    weight = 1.0
-            
-            total += value * weight
+            # Применяем опытный множитель
+            final_value = base_value * experience_multiplier
+
+            total += final_value * weight
             count += weight
             
         return round(total / count) if count > 0 else 50
@@ -132,6 +134,28 @@ class MatchSimulation:
         elif self.current_zone == 'midfield':
             self.current_zone = 'attack'
 
+    def _apply_tactics_to_pass(self, team_type, pass_success, intercept_chance):
+        tactics = self.match_stats[team_type]['tactics']
+
+        if tactics == 'attacking':
+            pass_success = min(1.0, pass_success + 0.1)
+            intercept_chance = min(1.0, intercept_chance + 0.1)
+        elif tactics == 'defensive':
+            pass_success = max(0.0, pass_success - 0.1)
+            intercept_chance = min(1.0, intercept_chance + 0.05)
+        # balanced - без изменений
+
+        return pass_success, intercept_chance
+
+    def _apply_tactics_to_shot(self, team_type, shot_chance):
+        tactics = self.match_stats[team_type]['tactics']
+
+        if tactics == 'attacking':
+            shot_chance = min(1.0, shot_chance + 0.1)
+        elif tactics == 'defensive':
+            shot_chance = max(0.0, shot_chance - 0.05)
+        return shot_chance
+
     def attempt_pass(self, minute, team_type):
         if not self.ball_owner:
             return False
@@ -146,6 +170,9 @@ class MatchSimulation:
         defense_factor = self.match_stats[defending_team]['team_defense']
         attack_factor = self.match_stats[team_type]['team_attack']
         intercept_chance = 0.3 if defense_factor > attack_factor else 0.15
+
+        # Применяем тактику к пасу
+        pass_success, intercept_chance = self._apply_tactics_to_pass(team_type, pass_success, intercept_chance)
 
         if random.random() < intercept_chance:
             self.match_stats[defending_team]['tackles'] += 1
@@ -174,16 +201,26 @@ class MatchSimulation:
             return False
             
         shooter = self.player_agents[team_type][owner_pid]
-        chance = min(1.0, (self.match_stats[team_type]['team_attack']/100)*1.2)
+        shot_chance = min(1.0, (self.match_stats[team_type]['team_attack']/100)*1.2)
+
+        # Применяем тактику к удару
+        shot_chance = self._apply_tactics_to_shot(team_type, shot_chance)
 
         defending_team = 'away' if team_type == 'home' else 'home'
-        if random.random() < 0.5:
+
+        # Если соперник оборонительный, выше шанс блока
+        if self.match_stats[defending_team]['tactics'] == 'defensive':
+            block_chance = 0.6
+        else:
+            block_chance = 0.5
+
+        if random.random() < block_chance:
             self.match_stats[defending_team]['tackles'] += 1
             self.clear_ball_owner()
             self.create_match_event(minute, 'info', None, "Shot blocked by a defender!")
             return False
 
-        if random.random() < chance:
+        if random.random() < shot_chance:
             self.match_stats[team_type]['goals'] += 1
             self.match_stats[team_type]['shots'] += 1
             if team_type == 'home':

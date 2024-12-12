@@ -132,19 +132,16 @@ def create_player(request, pk):
     if club.owner != request.user:
         return HttpResponse("У вас нет прав для создания игроков в этом клубе.", status=403)
     
-    # Получаем и проверяем параметры
     position = request.GET.get('position')
     player_class = int(request.GET.get('player_class', 1))
     
     if not position:
         return HttpResponse("Пожалуйста, выберите позицию.")
 
-    # Генерируем имя
     country_code = club.country.code
     locale = get_locale_from_country_code(country_code)
     fake = Faker(locale)
 
-    # Генерируем уникальное имя
     attempts = 0
     max_attempts = 100
     while attempts < max_attempts:
@@ -158,11 +155,9 @@ def create_player(request, pk):
         messages.error(request, f'Не удалось создать уникальное имя для игрока')
         return redirect('clubs:club_detail', pk=pk)
 
-    # Генерируем характеристики
     try:
         stats = generate_player_stats(position, player_class)
         
-        # Создаем игрока
         player = Player.objects.create(
             club=club,
             first_name=first_name,
@@ -171,7 +166,7 @@ def create_player(request, pk):
             age=random.randint(17, 35),
             position=position,
             player_class=player_class,
-            **stats  # Передаем все сгенерированные характеристики
+            **stats
         )
 
         messages.success(
@@ -199,6 +194,7 @@ def team_selection_view(request, pk):
         'club': club,
         'current_section': 'team_selection'
     }
+    # Рендерим шаблон командного выбора, где уже есть select для тактики
     return render(request, 'clubs/team_selection.html', context)
 
 @require_http_methods(["GET"])
@@ -224,15 +220,16 @@ def get_players(request, pk):
 
 @require_http_methods(["POST"])
 def save_team_lineup(request, pk):
-    """Сохранение состава команды"""
+    """Сохранение состава команды и тактики"""
     club = get_object_or_404(Club, pk=pk)
     if club.owner != request.user:
         return JsonResponse({"error": "Доступ запрещен"}, status=403)
     
     try:
-        lineup = json.loads(request.body)
-        
-        # Проверка корректности состава
+        data = json.loads(request.body)
+        lineup = data.get('lineup', {})
+        tactic = data.get('tactic', 'balanced')  # По умолчанию сбалансированная тактика
+
         if len(lineup) > 11:
             return JsonResponse({
                 "success": False,
@@ -240,21 +237,27 @@ def save_team_lineup(request, pk):
             })
 
         # Проверка наличия вратаря
-        goalkeeper_positions = [pos for pos, player_id in lineup.items() 
-                              if Player.objects.get(id=player_id).position == 'Goalkeeper']
+        goalkeeper_positions = [
+            pos for pos, player_id in lineup.items() 
+            if Player.objects.get(id=player_id).position == 'Goalkeeper'
+        ]
         if not goalkeeper_positions:
             return JsonResponse({
                 "success": False,
                 "error": "В составе должен быть вратарь"
             })
 
-        # Сохранение состава
-        club.lineup = lineup
+        # Сохраняем состав и тактику в клуб
+        # Представим, что club.lineup - JSONField или TextField, где мы можем хранить словарь
+        club.lineup = {
+            'lineup': lineup,
+            'tactic': tactic
+        }
         club.save()
         
         return JsonResponse({
             "success": True,
-            "message": "Состав успешно сохранен"
+            "message": "Состав и тактика успешно сохранены"
         })
         
     except json.JSONDecodeError:
@@ -271,16 +274,18 @@ def save_team_lineup(request, pk):
 
 @require_http_methods(["GET"])
 def get_team_lineup(request, pk):
-    """Получение текущего состава команды"""
+    """Получение текущего состава команды и тактики"""
     club = get_object_or_404(Club, pk=pk)
     if club.owner != request.user:
         return JsonResponse({"error": "Доступ запрещен"}, status=403)
     
-    lineup = club.lineup or {}
-    
-    # Добавляем дополнительную информацию об игроках в составе
+    data = club.lineup or {}
+    lineup = data.get('lineup', {})
+    tactic = data.get('tactic', 'balanced')
+
     lineup_data = {
         'lineup': lineup,
+        'tactic': tactic,
         'players': {}
     }
     
