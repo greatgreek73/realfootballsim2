@@ -43,10 +43,27 @@
             font-size: 12px;
             text-align: center;
         }
+        .tactics-section {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .tactics-section select {
+            font-size: 14px;
+            padding: 5px;
+        }
     </style>
 </head>
 <body>
     <h1 style="text-align: center;">Select Your Team Lineup for {{ club.name }}</h1>
+
+    <div class="tactics-section">
+        <label for="tacticSelect"><strong>Select Tactic:</strong></label>
+        <select id="tacticSelect">
+            <option value="attacking">Attacking</option>
+            <option value="balanced" selected>Balanced</option>
+            <option value="defensive">Defensive</option>
+        </select>
+    </div>
     
     <div class="pitch" id="pitch">
         <!-- Player slots will be added here dynamically -->
@@ -59,6 +76,9 @@
 
     <!-- Добавляем скрытое поле с ID клуба -->
     <input type="hidden" id="clubId" value="{{ club.id }}">
+
+    <button id="resetTeam" style="display:block;margin:20px auto;">Reset Selection</button>
+    <span id="saveStatus" style="display:block;text-align:center;"></span>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
     <script src="{% static 'js/team_selection.js' %}"></script>

@@ -54,6 +54,9 @@ class Player(models.Model):
     vision = models.IntegerField(default=0, verbose_name="Vision")
     accuracy = models.IntegerField(default=0, verbose_name="Accuracy")
 
+    # Новое поле опыта
+    experience = models.FloatField(default=0.0, verbose_name="Experience")
+
     class Meta:
         unique_together = ('first_name', 'last_name')
         verbose_name = 'Player'
@@ -78,7 +81,12 @@ class Player(models.Model):
 
     @property
     def overall_rating(self):
-        """Вычисляет общий рейтинг игрока на основе его характеристик"""
+        """Вычисляет общий рейтинг игрока на основе его характеристик,
+        учитывая опыт. Допустим, за каждый 1.0 опыта характеристики растут на 1%."""
+
+        # Коэффициент влияния опыта (1% за единицу опыта)
+        experience_multiplier = 1 + self.experience * 0.01
+
         if self.is_goalkeeper:
             attributes = [
                 self.reflexes, self.handling, self.aerial,
@@ -95,7 +103,11 @@ class Player(models.Model):
                 self.finishing, self.long_range, self.vision,
                 self.accuracy
             ]
-        return sum(attributes) // len(attributes)
+
+        # Применяем опытный множитель к каждой характеристике
+        adjusted_attributes = [int(attr * experience_multiplier) for attr in attributes]
+
+        return sum(adjusted_attributes) // len(adjusted_attributes)
 
     def get_position_specific_attributes(self):
         """Возвращает атрибуты, специфичные для позиции игрока"""
