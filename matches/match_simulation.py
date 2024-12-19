@@ -2,14 +2,18 @@ from django.utils import timezone
 from .models import Match, MatchEvent
 from .player_agent import PlayerAgent
 import random
+import logging
+
+logger = logging.getLogger(__name__)
+
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 class MatchSimulation:
     def __init__(self, match):
         self.match = match
         
-        # Предположим, что тактика команд может быть сохранена в модели,
-        # или в данном примере просто зададим их явно.
-        # В реальности вы можете загрузить тактику из базы, параметров матча или выбора пользователя.
+        # Инициализация параметров матча
         self.match_stats = {
             'home': {
                 'possession': 50, 
@@ -20,7 +24,7 @@ class MatchSimulation:
                 'team_attack': self._calculate_team_parameter(match.home_team, 'attack'),
                 'team_defense': self._calculate_team_parameter(match.home_team, 'defense'),
                 'team_midfield': self._calculate_team_parameter(match.home_team, 'midfield'),
-                'tactics': 'attacking'  # Пример: домашняя команда играет атакующе
+                'tactics': 'attacking'
             },
             'away': {
                 'possession': 50, 
@@ -31,7 +35,7 @@ class MatchSimulation:
                 'team_attack': self._calculate_team_parameter(match.away_team, 'attack'),
                 'team_defense': self._calculate_team_parameter(match.away_team, 'defense'),
                 'team_midfield': self._calculate_team_parameter(match.away_team, 'midfield'),
-                'tactics': 'defensive' # Пример: гостевая команда обороняется
+                'tactics': 'defensive'
             }
         }
 
@@ -47,8 +51,11 @@ class MatchSimulation:
         self.current_zone = None
 
         self._setup_moments()
-        self.match.home_score = 0
-        self.match.away_score = 0
+
+        # Устанавливаем счет в 0, так как матч идет пошагово
+        self.match.home_score = self.match.home_score or 0
+        self.match.away_score = self.match.away_score or 0
+        self.match.save()
 
     def _calculate_team_parameter(self, team, parameter_type):
         players = team.player_set.all()
@@ -56,7 +63,6 @@ class MatchSimulation:
         count = 0
         
         for player in players:
-            # Учитываем опыт, например +1% за единицу опыта
             experience_multiplier = 1 + player.experience * 0.01
 
             if parameter_type == 'attack':
@@ -81,9 +87,7 @@ class MatchSimulation:
                     base_value = player.passing + player.work_rate
                     weight = 1.0
 
-            # Применяем опытный множитель
             final_value = base_value * experience_multiplier
-
             total += final_value * weight
             count += weight
             
@@ -143,8 +147,6 @@ class MatchSimulation:
         elif tactics == 'defensive':
             pass_success = max(0.0, pass_success - 0.1)
             intercept_chance = min(1.0, intercept_chance + 0.05)
-        # balanced - без изменений
-
         return pass_success, intercept_chance
 
     def _apply_tactics_to_shot(self, team_type, shot_chance):
@@ -171,7 +173,6 @@ class MatchSimulation:
         attack_factor = self.match_stats[team_type]['team_attack']
         intercept_chance = 0.3 if defense_factor > attack_factor else 0.15
 
-        # Применяем тактику к пасу
         pass_success, intercept_chance = self._apply_tactics_to_pass(team_type, pass_success, intercept_chance)
 
         if random.random() < intercept_chance:
@@ -203,12 +204,10 @@ class MatchSimulation:
         shooter = self.player_agents[team_type][owner_pid]
         shot_chance = min(1.0, (self.match_stats[team_type]['team_attack']/100)*1.2)
 
-        # Применяем тактику к удару
         shot_chance = self._apply_tactics_to_shot(team_type, shot_chance)
 
         defending_team = 'away' if team_type == 'home' else 'home'
 
-        # Если соперник оборонительный, выше шанс блока
         if self.match_stats[defending_team]['tactics'] == 'defensive':
             block_chance = 0.6
         else:
@@ -264,6 +263,7 @@ class MatchSimulation:
         self.away_moments_minutes = sorted(all_minutes[home_chances:home_chances+away_chances])
 
     def simulate_minute(self, minute):
+        # Симуляция одной минуты матча
         if minute in self.home_moments_minutes:
             attacking_team = 'home'
         elif minute in self.away_moments_minutes:
@@ -295,32 +295,42 @@ class MatchSimulation:
                 if not self.attempt_pass(minute, attacking_team):
                     break
 
-    def simulate_match(self):
-        print("\n=== MATCH START ===\n")
-        print(f"Match: {self.match.home_team.name} vs {self.match.away_team.name}")
-
-        self.match.home_score = 0
-        self.match.away_score = 0
-        self.match.status = 'in_progress'
-        self.match.save()
-        
-        for minute in range(90):
-            if minute % 5 == 0:
-                print(f"\n=== MINUTE {minute} ===")
-                print(f"Score: {self.match.home_score} - {self.match.away_score}")
-            
-            self.simulate_minute(minute)
-            
-        self.match.status = 'finished'
-        self.match.save()
-
-        print("\n=== FINAL STATISTICS ===")
-        print(f"Final score: {self.match.home_score} - {self.match.away_score}")
-        print(f"Shots: {self.match_stats['home']['shots']} - {self.match_stats['away']['shots']}")
-        print(f"Passes: {self.match_stats['home']['passes']} - {self.match_stats['away']['passes']}")
-        print(f"Tackles: {self.match_stats['home']['tackles']} - {self.match_stats['away']['tackles']}")
-
-def simulate_match(match_id: int):
+def simulate_one_minute(match_id: int):
+    """
+    Симулирует одну игровую минуту для матча.
+    Если current_minute < 90, increment и simulate_minute.
+    Если достигаем 90, завершаем матч.
+    После обновления состояния отправляем данные по WebSocket.
+    """
     match = Match.objects.get(id=match_id)
-    simulation = MatchSimulation(match)
-    simulation.simulate_match()
+    if match.status == 'in_progress':
+        if match.current_minute < 90:
+            sim = MatchSimulation(match)
+            sim.simulate_minute(match.current_minute + 1)
+            match.current_minute += 1
+            if match.current_minute >= 90:
+                match.status = 'finished'
+            match.save()
+
+            # Отправляем обновление по WebSocket
+            layer = get_channel_layer()
+            data = {
+                "minute": match.current_minute,
+                "home_score": match.home_score,
+                "away_score": match.away_score,
+                "events": list(match.events.filter(minute=match.current_minute).values('minute', 'event_type', 'description'))
+            }
+            async_to_sync(layer.group_send)(
+                f"match_{match_id}",
+                {
+                    "type": "match_update",
+                    "data": data
+                }
+            )
+        else:
+            # уже 90 минут прошло, ставим finished если нет
+            if match.status != 'finished':
+                match.status = 'finished'
+                match.save()
+    else:
+        logger.info(f"Match {match_id} is not in progress, skipping simulate_one_minute.")

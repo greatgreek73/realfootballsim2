@@ -89,7 +89,10 @@
                     <div class="list-group-item">
                         <div class="d-flex justify-content-between align-items-center">
                             <small>
-                                Round {{ match.round }} | {{ match.match.datetime|date:"d M H:i" }}
+                                Round {{ match.round }} | 
+                                <a href="{% url 'matches:match_detail' match.match.id %}">
+                                    {{ match.match.datetime|date:"d M H:i" }}
+                                </a>
                             </small>
                             <span class="badge {% if match.match.status == 'finished' %}bg-success{% elif match.match.status == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}">
                                 {{ match.match.get_status_display }}

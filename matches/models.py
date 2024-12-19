@@ -1,7 +1,6 @@
 from django.db import models
 from django.conf import settings
 from clubs.models import Club
-from players.models import Player
 from django.utils import timezone
 
 class Match(models.Model):
@@ -34,9 +33,11 @@ class Match(models.Model):
     home_lineup = models.JSONField(null=True, blank=True)
     away_lineup = models.JSONField(null=True, blank=True)
 
+    # Новое поле для отслеживания текущей минуты матча
+    current_minute = models.PositiveIntegerField(default=0)
+
     def __str__(self):
         return f"{self.home_team} vs {self.away_team} - {self.datetime}"
-
 
 class MatchEvent(models.Model):
     match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name='events')
@@ -53,7 +54,7 @@ class MatchEvent(models.Model):
         ('red_card', 'Red Card'),
         ('substitution', 'Substitution')
     ])
-    player = models.ForeignKey(Player, on_delete=models.CASCADE, null=True, blank=True)
+    player = models.ForeignKey('players.Player', on_delete=models.CASCADE, null=True, blank=True)
     description = models.TextField()
 
     def __str__(self):

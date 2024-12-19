@@ -3,7 +3,7 @@ from django.utils import timezone
 from django.db import transaction, OperationalError
 from django.core.management import call_command
 from matches.models import Match
-from matches.match_simulation import simulate_match
+from matches.match_simulation import simulate_one_minute
 from django.db import models
 from .models import Season, Championship, League
 import logging
@@ -27,111 +27,46 @@ def retry_on_db_lock(func, max_attempts=3, delay=1):
                 raise
     return wrapper
 
+# Старую задачу check_and_simulate_matches, которая полную симуляцию делала, удаляем или комментируем,
+# так как она использует simulate_match (старую логику):
+#
+# @shared_task(
+#     name='tournaments.check_and_simulate_matches',
+#     bind=True,
+#     autoretry_for=(Exception,),
+#     retry_kwargs={'max_retries': 3, 'countdown': 60}
+# )
+# def check_and_simulate_matches(self):
+#     # СТАРАЯ ЛОГИКА - УДАЛЕНО/ЗАКОММЕНТИРОВАНО
+#     pass
+
 @shared_task(
-    name='tournaments.check_and_simulate_matches',
+    name='tournaments.simulate_active_matches',
     bind=True,
     autoretry_for=(Exception,),
     retry_kwargs={'max_retries': 3, 'countdown': 60}
 )
-def check_and_simulate_matches(self):
+def simulate_active_matches(self):
     """
-    Проверяет и симулирует все несыгранные матчи в хронологическом порядке.
+    Новая задача: каждые 5 секунд симулирует 1 игровую минуту для всех матчей в процессе.
     """
-    try:
-        now = timezone.now()
-        logger.info(f"Starting match check at {now}")
-        
-        if not Season.objects.filter(is_active=True).exists():
-            logger.warning("No active season found, skipping match simulation")
-            return "No active season found"
-        
-        # Определяем время для проверки матчей (18:00 текущего дня)
-        today_6pm = timezone.make_aware(
-            timezone.datetime.combine(
-                now.date(),
-                timezone.datetime.strptime("18:00", "%H:%M").time()
-            )
-        )
-        
-        # Получаем все несыгранные матчи до текущего момента
-        matches = Match.objects.filter(
-            status='scheduled',
-            datetime__lte=today_6pm,  # Все матчи до 18:00 текущего дня
-            championshipmatch__isnull=False,
-            processed=False
-        ).select_related(
-            'home_team', 
-            'away_team',
-            'championshipmatch',
-            'championshipmatch__championship',
-            'championshipmatch__championship__league'
-        ).order_by('datetime')  # Сортируем по времени матча
-        
-        if not matches.exists():
-            logger.info("No matches to simulate")
-            return "No matches to simulate"
-        
-        logger.info(f"Found {matches.count()} matches to simulate")
-        
-        simulated_count = {'div1': 0, 'div2': 0}
-        errors_count = 0
-        
-        @retry_on_db_lock
-        def simulate_match_with_retry(match_id):
-            with transaction.atomic():
-                simulate_match(match_id)
-        
-        for match in matches:
-            try:
-                championship_match = match.championshipmatch
-                division = championship_match.championship.league.level
-                
-                if not championship_match.championship.season.is_active:
-                    logger.warning(f"Match {match.id} belongs to inactive season, skipping")
-                    continue
-                
-                logger.info(
-                    f"Simulating Division {division} match: "
-                    f"{match.home_team} vs {match.away_team} "
-                    f"(ID: {match.id}, scheduled: {match.datetime})"
-                )
-                
-                simulate_match_with_retry(match.id)
-                
-                if division == 1:
-                    simulated_count['div1'] += 1
-                else:
-                    simulated_count['div2'] += 1
-                
-                match.processed = True
-                match.save(update_fields=['processed'])
-                
-                time.sleep(0.05)
-                
-            except ObjectDoesNotExist as e:
-                logger.error(f"Match {match.id} has invalid references: {str(e)}")
-                continue
-                
-            except Exception as e:
-                errors_count += 1
-                logger.error(f"Error simulating match {match.id}: {str(e)}")
-                if errors_count >= 10:
-                    raise Exception(f"Too many simulation errors: {str(e)}")
-                continue
-        
-        result_message = (
-            f"Simulated {sum(simulated_count.values())} matches "
-            f"({simulated_count['div1']} in Div1, {simulated_count['div2']} in Div2)"
-        )
-        if errors_count > 0:
-            result_message += f" with {errors_count} errors"
-            
-        logger.info(result_message)
-        return result_message
-        
-    except Exception as e:
-        logger.error(f"Task failed: {str(e)}")
-        raise
+    now = timezone.now()
+    logger.info(f"Starting active matches simulation at {now}")
+
+    # Получаем все матчи, которые идут сейчас
+    matches = Match.objects.filter(status='in_progress')
+    if not matches.exists():
+        logger.info("No matches in progress at the moment.")
+        return "No matches in progress"
+
+    for match in matches:
+        # Симулируем одну минуту матча
+        simulate_one_minute(match.id)
+        logger.info(f"Simulated one minute for match {match.id} "
+                    f"({match.home_team} vs {match.away_team}, current_minute={match.current_minute})")
+
+    return f"Simulated one minute for {matches.count()} matches"
+
 
 @shared_task(
     name='tournaments.check_season_end',
@@ -156,10 +91,13 @@ def check_season_end(self):
                 status='finished'
             ).count()
 
-            required_matches = len(Championship.objects.filter(season=current_season)) * (16 * 15)  # Количество команд * количество матчей
+            required_matches = len(Championship.objects.filter(season=current_season)) * (16 * 15)  
+            # Каждая лига: 16 команд, каждая играет 30 матчей (дома/в гостях против 15 соперников), итого 16*15 = 240 матчей, 
+            # но это общее количество матчей для всех команд, нужно убедиться что расчет верен. 
+            # Предположим, что логика осталась вашей прежней.
+            
             all_matches_played = finished_matches_count >= required_matches
 
-            # Сезон заканчивается только если оба условия выполнены
             if is_end_date_passed and all_matches_played:
                 logger.info(f"Season {current_season.number} has ended. Starting end-season process...")
                 
@@ -174,8 +112,7 @@ def check_season_end(self):
                         f"Found {unfinished_count} unfinished matches. "
                         "Season cannot end with unfinished matches."
                     )
-                    return (f"Season {current_season.number} has "
-                           f"{unfinished_count} unfinished matches")
+                    return (f"Season {current_season.number} has {unfinished_count} unfinished matches")
                 
                 logger.info("Processing teams transitions between divisions...")
                 call_command('handle_season_transitions')
