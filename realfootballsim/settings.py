@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     'matches',
     'tournaments.apps.TournamentsConfig',
     'django_celery_beat',
+    'channels',  # Добавляем channels
 ]
 
 MIDDLEWARE = [
@@ -58,15 +59,18 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'realfootballsim.wsgi.application'
 
+# Добавляем ASGI_APPLICATION для channels
+ASGI_APPLICATION = 'realfootballsim.asgi.application'
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
         'OPTIONS': {
-            'timeout': 60,  # Увеличиваем таймаут до 60 секунд
-            'isolation_level': 'IMMEDIATE'  # Уровень изоляции
+            'timeout': 60,
+            'isolation_level': 'IMMEDIATE'
         },
-        'ATOMIC_REQUESTS': False,  # Отключаем автоматические транзакции
+        'ATOMIC_REQUESTS': False,
     }
 }
 
@@ -108,7 +112,7 @@ LOGIN_REDIRECT_URL = 'clubs:club_detail'
 LOGIN_URL = 'accounts:login'
 LOGOUT_REDIRECT_URL = 'accounts:login'
 
-# Настройки Celery с увеличенным временем ожидания
+# Настройки Celery
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
@@ -116,22 +120,22 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
-CELERY_TASK_TIME_LIMIT = 300  # 5 минут на выполнение задачи
-CELERY_TASK_SOFT_TIME_LIMIT = 240  # Мягкий лимит в 4 минуты
+CELERY_TASK_TIME_LIMIT = 300
+CELERY_TASK_SOFT_TIME_LIMIT = 240
 
-# Добавляем настройки для пула воркеров
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 50
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 
-# Настройки периодических задач
+# Обновляем расписание задач Celery Beat
 CELERY_BEAT_SCHEDULE = {
-    'check-matches': {
-        'task': 'tournaments.check_and_simulate_matches',
-        'schedule': crontab(minute='*'),  # Каждую минуту
+    # Удаляем старую задачу check-matches, добавляем новую
+    'simulate-every-5-seconds': {
+        'task': 'tournaments.simulate_active_matches',
+        'schedule': 5.0,  # Каждые 5 секунд
     },
     'check-season-end': {
         'task': 'tournaments.check_season_end',
-        'schedule': crontab(hour=0, minute=0),  # Каждый день в полночь
+        'schedule': crontab(hour=0, minute=0),
     },
 }
 
@@ -181,3 +185,13 @@ TOURNAMENT_TIMEZONES = [
     ('America/New_York', 'New York'),
     ('Asia/Tokyo', 'Tokyo'),
 ]
+
+# Настройка Channels
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}

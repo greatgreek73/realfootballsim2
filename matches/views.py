@@ -6,7 +6,7 @@ from django.utils.decorators import method_decorator
 from django.utils import timezone
 from .models import Match, MatchEvent
 from clubs.models import Club
-from .match_simulation import simulate_match
+#from .match_simulation import simulate_match
 
 class CreateMatchView(CreateView):
     model = Match
