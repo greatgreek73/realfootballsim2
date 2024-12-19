@@ -59,7 +59,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'realfootballsim.wsgi.application'
 
-# Добавляем ASGI_APPLICATION для channels
+# Настройка Channels
 ASGI_APPLICATION = 'realfootballsim.asgi.application'
 
 DATABASES = {
@@ -128,7 +128,6 @@ CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 
 # Обновляем расписание задач Celery Beat
 CELERY_BEAT_SCHEDULE = {
-    # Удаляем старую задачу check-matches, добавляем новую
     'simulate-every-5-seconds': {
         'task': 'tournaments.simulate_active_matches',
         'schedule': 5.0,  # Каждые 5 секунд
@@ -136,6 +135,10 @@ CELERY_BEAT_SCHEDULE = {
     'check-season-end': {
         'task': 'tournaments.check_season_end',
         'schedule': crontab(hour=0, minute=0),
+    },
+    'start-scheduled-matches-every-minute': {
+        'task': 'tournaments.start_scheduled_matches',
+        'schedule': crontab(minute='*'),  # Каждый 1 мин
     },
 }
 
@@ -186,7 +189,6 @@ TOURNAMENT_TIMEZONES = [
     ('Asia/Tokyo', 'Tokyo'),
 ]
 
-# Настройка Channels
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",

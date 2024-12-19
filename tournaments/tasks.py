@@ -3,7 +3,6 @@ from django.utils import timezone
 from django.db import transaction, OperationalError
 from django.core.management import call_command
 from matches.models import Match
-from matches.match_simulation import simulate_one_minute
 from django.db import models
 from .models import Season, Championship, League
 import logging
@@ -27,19 +26,6 @@ def retry_on_db_lock(func, max_attempts=3, delay=1):
                 raise
     return wrapper
 
-# Старую задачу check_and_simulate_matches, которая полную симуляцию делала, удаляем или комментируем,
-# так как она использует simulate_match (старую логику):
-#
-# @shared_task(
-#     name='tournaments.check_and_simulate_matches',
-#     bind=True,
-#     autoretry_for=(Exception,),
-#     retry_kwargs={'max_retries': 3, 'countdown': 60}
-# )
-# def check_and_simulate_matches(self):
-#     # СТАРАЯ ЛОГИКА - УДАЛЕНО/ЗАКОММЕНТИРОВАНО
-#     pass
-
 @shared_task(
     name='tournaments.simulate_active_matches',
     bind=True,
@@ -48,19 +34,21 @@ def retry_on_db_lock(func, max_attempts=3, delay=1):
 )
 def simulate_active_matches(self):
     """
-    Новая задача: каждые 5 секунд симулирует 1 игровую минуту для всех матчей в процессе.
+    Пошаговая симуляция матчей.
+    Каждые 5 секунд (или другой интервал) задача проверяет матчи, находящиеся в статусе 'in_progress',
+    и симулирует одну игровую минуту для каждого такого матча.
     """
     now = timezone.now()
     logger.info(f"Starting active matches simulation at {now}")
 
-    # Получаем все матчи, которые идут сейчас
     matches = Match.objects.filter(status='in_progress')
     if not matches.exists():
         logger.info("No matches in progress at the moment.")
         return "No matches in progress"
 
+    from matches.match_simulation import simulate_one_minute
+
     for match in matches:
-        # Симулируем одну минуту матча
         simulate_one_minute(match.id)
         logger.info(f"Simulated one minute for match {match.id} "
                     f"({match.home_team} vs {match.away_team}, current_minute={match.current_minute})")
@@ -75,7 +63,10 @@ def simulate_active_matches(self):
     retry_kwargs={'max_retries': 3, 'countdown': 60}
 )
 def check_season_end(self):
-    """Проверяет окончание сезона и запускает необходимые процессы"""
+    """
+    Проверяет окончание сезона и при необходимости завершает его,
+    затем создаёт новый сезон.
+    """
     try:
         with transaction.atomic():
             current_season = Season.objects.select_for_update().get(is_active=True)
@@ -83,7 +74,6 @@ def check_season_end(self):
             
             logger.info(f"Checking season {current_season.number} (end date: {current_season.end_date})")
             
-            # Проверяем оба условия: конец месяца и все матчи сыграны
             is_end_date_passed = today > current_season.end_date
             
             finished_matches_count = Match.objects.filter(
@@ -91,10 +81,7 @@ def check_season_end(self):
                 status='finished'
             ).count()
 
-            required_matches = len(Championship.objects.filter(season=current_season)) * (16 * 15)  
-            # Каждая лига: 16 команд, каждая играет 30 матчей (дома/в гостях против 15 соперников), итого 16*15 = 240 матчей, 
-            # но это общее количество матчей для всех команд, нужно убедиться что расчет верен. 
-            # Предположим, что логика осталась вашей прежней.
+            required_matches = len(Championship.objects.filter(season=current_season)) * (16 * 15)
             
             all_matches_played = finished_matches_count >= required_matches
 
@@ -157,3 +144,25 @@ def check_season_end(self):
     except Exception as e:
         logger.error(f"Error in season end check: {str(e)}")
         raise
+
+
+@shared_task(name='tournaments.start_scheduled_matches')
+def start_scheduled_matches():
+    """
+    Переводит матчи, для которых время уже наступило, из scheduled в in_progress.
+    Таким образом, если есть прошлые или текущие матчи, которые не начались (хотя должны были),
+    они теперь начнутся, и simulate_active_matches сможет их симулировать.
+    """
+    now = timezone.now()
+    with transaction.atomic():
+        matches = Match.objects.select_for_update().filter(
+            status='scheduled',
+            datetime__lte=now
+        )
+        count = matches.count()
+        if count > 0:
+            logger.info(f"Found {count} scheduled matches ready to start.")
+            matches.update(status='in_progress')
+        else:
+            logger.info("No scheduled matches ready to start.")
+    return f"{count} matches started."
