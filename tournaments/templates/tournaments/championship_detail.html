@@ -3,7 +3,7 @@
 
 {% block tournament_content %}
 <div class="row">
-    <!-- Header Section - оставляем без изменений -->
+    <!-- Header Section -->
     <div class="col-12 mb-4">
         <div class="card">
             <div class="card-body">
@@ -32,8 +32,11 @@
     <!-- League Table -->
     <div class="col-md-8">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="card-title h5 mb-0">League Table</h3>
+                <a href="{% url 'matches:championship_matches' championship.id %}" class="btn btn-primary btn-sm">
+                    View All Matches
+                </a>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -89,7 +92,7 @@
     <div class="col-md-4">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title h5 mb-0">Matches</h3>
+                <h3 class="card-title h5 mb-0">Recent Matches</h3>
             </div>
             <div class="card-body">
                 {% if matches %}
@@ -99,33 +102,33 @@
                         <h4 class="h6">Round {{ round.grouper }}</h4>
                         <div class="list-group">
                             {% for match in round.list %}
-                            <div class="list-group-item">
+                            <a href="{% url 'matches:match_detail' match.match.id %}" class="list-group-item list-group-item-action">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <small>{{ match.match.date }}</small>
+                                    <small>{{ match.match.datetime|date:"d M Y H:i" }}</small>
                                     <span class="badge {% if match.match.status == 'finished' %}bg-success{% elif match.match.status == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}">
                                         {{ match.match.get_status_display }}
                                     </span>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mt-2">
-                                    <a href="{% url 'clubs:club_detail' match.match.home_team.id %}" class="text-decoration-none">
+                                    <span class="{% if match.match.home_team == user.club %}fw-bold{% endif %}">
                                         {{ match.match.home_team.name }}
                                         {% if match.match.home_team.is_bot %}
                                             <small>(Bot)</small>
                                         {% endif %}
-                                    </a>
+                                    </span>
                                     {% if match.match.status == 'finished' %}
                                         <strong>{{ match.match.home_score }} - {{ match.match.away_score }}</strong>
                                     {% else %}
                                         <span>vs</span>
                                     {% endif %}
-                                    <a href="{% url 'clubs:club_detail' match.match.away_team.id %}" class="text-decoration-none">
+                                    <span class="{% if match.match.away_team == user.club %}fw-bold{% endif %}">
                                         {{ match.match.away_team.name }}
                                         {% if match.match.away_team.is_bot %}
                                             <small>(Bot)</small>
                                         {% endif %}
-                                    </a>
+                                    </span>
                                 </div>
-                            </div>
+                            </a>
                             {% endfor %}
                         </div>
                     </div>
@@ -133,6 +136,11 @@
                 {% else %}
                     <p class="text-center">No matches scheduled</p>
                 {% endif %}
+                <div class="text-center mt-3">
+                    <a href="{% url 'matches:championship_matches' championship.id %}" class="btn btn-outline-primary">
+                        View All Matches
+                    </a>
+                </div>
             </div>
         </div>
     </div>
