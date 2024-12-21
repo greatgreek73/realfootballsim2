@@ -1,10 +1,12 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
 {% block content %}
 <div class="container">
     <div class="row">
         <div class="col-12">
-            <div class="card mb-4">
+            <!-- Основная информация о матче -->
+            <div class="card mb-4" id="matchInfoArea" data-match-id="{{ match.id }}">
                 <div class="card-header">
                     <h2 class="mb-0">Match Details</h2>
                 </div>
@@ -21,9 +23,8 @@
                             </div>
                             <div class="col-md-2">
                                 {% if match.status == 'finished' %}
-                                    <h3 class="score" id="score">{{ match.home_score }} - {{ match.away_score }}</h3>
+                                    <h3 class="score" id="finalScore">{{ match.home_score }} - {{ match.away_score }}</h3>
                                 {% else %}
-                                    <!-- Пока матч идет, мы можем динамически обновлять счет -->
                                     <h3 class="score" id="score">{{ match.home_score }} - {{ match.away_score }}</h3>
                                 {% endif %}
                             </div>
@@ -40,93 +41,90 @@
 
                     <div class="row mb-4">
                         <div class="col-md-6">
-                            <p><strong>Date:</strong> {{ match.date }}</p>
+                            <p><strong>Date:</strong> {{ match.datetime|date:"d M Y H:i" }}</p>
                             <p><strong>Status:</strong> 
                                 <span class="badge {% if match.status == 'finished' %}bg-success{% elif match.status == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}">
                                     {{ match.get_status_display }}
                                 </span>
                             </p>
-                            <!-- Отображаем текущую минуту матча (будет обновляться в реальном времени) -->
-                            <p><strong>Minute:</strong> <span id="minute">{{ match.current_minute }}</span></p>
                         </div>
-                        <div class="col-md-6 text-md-end">
-                            {% if match.status == 'scheduled' and user.is_staff %}
-                                <form method="post" class="d-inline">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-primary">Simulate Match</button>
-                                </form>
+                        <div class="col-md-6 text-end">
+                            {% if match.status == 'finished' %}
+                                <button id="startReplayBtn" class="btn btn-primary">Watch Replay</button>
                             {% endif %}
                         </div>
                     </div>
 
-                    <h4>Match Events</h4>
-                    <!-- Изначальный список событий из БД -->
-                    <div class="list-group mb-3">
-                        {% for event in match.events.all %}
-                            <div class="list-group-item">
+                    <!-- Область реплея -->
+                    <div id="replayArea" style="display: none;">
+                        <div class="card mb-4">
+                            <div class="card-header">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <strong>{{ event.minute }}'</strong> - 
-                                        {{ event.get_event_type_display }}: {{ event.description }}
-                                    </div>
+                                    <h4 class="mb-0" id="replayTime">0'</h4>
+                                    <h4 class="mb-0" id="replayScore"></h4>
                                 </div>
                             </div>
-                        {% empty %}
-                            <div class="list-group-item text-center text-muted">
-                                No events recorded
+                            <div class="card-body">
+                                <div id="replayEvents" class="list-group">
+                                    <!-- События реплея будут добавляться сюда -->
+                                </div>
                             </div>
-                        {% endfor %}
+                        </div>
                     </div>
 
-                    <!-- Контейнер для событий, поступающих в реальном времени -->
-                    <h5>Live Events</h5>
-                    <div id="live-events" class="list-group">
-                        <!-- Новые события, поступающие через WebSocket, будут добавляться сюда -->
+                    <!-- Изначальный список событий -->
+                    <div id="originalEvents">
+                        <h4>Match Events</h4>
+                        <div class="list-group">
+                            {% for event in match_events %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>{{ event.minute }}'</strong> - 
+                                            {{ event.get_event_type_display }}: {{ event.description }}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <div class="list-group-item text-center text-muted">
+                                    No events recorded
+                                </div>
+                            {% endfor %}
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="text-center">
-                <a href="{% url 'home' %}" class="btn btn-outline-primary">Back to Home</a>
+                <a href="{% url 'matches:match_list' %}" class="btn btn-outline-primary">Back to Matches</a>
             </div>
         </div>
     </div>
 </div>
 
-<!-- JS для WebSocket соединения -->
-<script>
-    var matchId = "{{ match.id }}";
-
-    var socket = new WebSocket("ws://" + window.location.host + "/ws/match/" + matchId + "/");
-
-    socket.onmessage = function(e) {
-        var data = JSON.parse(e.data);
-        // Обновляем счет
-        document.getElementById('score').textContent = data.home_score + " - " + data.away_score;
-        // Обновляем текущую минуту
-        document.getElementById('minute').textContent = data.minute;
-
-        // Обновляем события
-        var liveEventsContainer = document.getElementById('live-events');
-        liveEventsContainer.innerHTML = ''; // Очищаем перед добавлением новых
-        data.events.forEach(function(event) {
-            var div = document.createElement('div');
-            div.className = 'list-group-item';
-            div.textContent = event.minute + "' " + event.event_type.toUpperCase() + ": " + event.description;
-            liveEventsContainer.appendChild(div);
-        });
-    };
-
-    socket.onopen = function() {
-        console.log("WebSocket connection established for match " + matchId);
-    };
-
-    socket.onclose = function() {
-        console.log("WebSocket connection closed for match " + matchId);
-    };
-
-    socket.onerror = function(error) {
-        console.log("WebSocket error: ", error);
-    };
-</script>
+<!-- Подключаем JavaScript для реплея -->
+{% block extra_js %}
+<script src="{% static 'matches/js/match_replay.js' %}"></script>
+<style>
+    .match-event {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+        animation: fadeIn 0.5s;
+    }
+    
+    .event-time {
+        font-weight: bold;
+        margin-right: 10px;
+    }
+    
+    .event-icon {
+        margin-right: 10px;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
 {% endblock %}
