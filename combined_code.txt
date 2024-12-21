@@ -2445,6 +2445,73 @@ document.addEventListener('DOMContentLoaded', function() {
 # ---  ÓÌÂˆ Ù‡ÈÎ‡ C:\realfootballsim\matches\templates\matches\match_detail.html ---
 
 
+# --- Õ‡˜‡ÎÓ Ù‡ÈÎ‡ C:\realfootballsim\matches\templates\matches\match_list.html ---
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title mb-0">
+                {% if championship %}
+                    Matches - {{ championship.league.name }} ({{ championship.season.name }})
+                {% else %}
+                    Your Team's Matches
+                {% endif %}
+            </h2>
+        </div>
+        <div class="card-body">
+            {% if matches %}
+                {% regroup matches by championshipmatch.round as rounds_list %}
+                {% for round in rounds_list %}
+                    <div class="mb-4">
+                        <h4 class="mb-3">Round {{ round.grouper }}</h4>
+                        <div class="list-group">
+                            {% for match in round.list %}
+                                <a href="{% url 'matches:match_detail' match.id %}" 
+                                   class="list-group-item list-group-item-action">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <span class="{% if match.home_team == user.club %}fw-bold{% endif %}">
+                                                {{ match.home_team.name }}
+                                            </span>
+                                            {% if match.status == 'finished' %}
+                                                <strong>{{ match.home_score }} - {{ match.away_score }}</strong>
+                                            {% else %}
+                                                vs
+                                            {% endif %}
+                                            <span class="{% if match.away_team == user.club %}fw-bold{% endif %}">
+                                                {{ match.away_team.name }}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span class="badge {% if match.status == 'finished' %}bg-success{% else %}bg-secondary{% endif %}">
+                                                {{ match.get_status_display }}
+                                            </span>
+                                            <small class="text-muted ms-2">
+                                                {{ match.datetime|date:"d M Y H:i" }}
+                                            </small>
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="text-muted">No matches found.</p>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">No matches found.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+# ---  ÓÌÂˆ Ù‡ÈÎ‡ C:\realfootballsim\matches\templates\matches\match_list.html ---
+
+
 # --- Õ‡˜‡ÎÓ Ù‡ÈÎ‡ C:\realfootballsim\matches\templates\matches\team_selection.html ---
 
 {% load static %}
@@ -3686,6 +3753,7 @@ urlpatterns = [
     path('create/', views.CreateMatchView.as_view(), name='create_match'),
     path('<int:pk>/', views.MatchDetailView.as_view(), name='match_detail'),
     path('<int:match_id>/simulate/', views.simulate_match_view, name='simulate_match'),
+    path('championship/<int:championship_id>/matches/', views.MatchListView.as_view(), name='championship_matches'),
 ]
 
 # ---  ÓÌÂˆ Ù‡ÈÎ‡ C:\realfootballsim\matches\urls.py ---
@@ -3695,31 +3763,53 @@ urlpatterns = [
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import CreateView, DetailView, ListView
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.utils import timezone
+from django.db.models import Q
 from .models import Match, MatchEvent
 from clubs.models import Club
-#from .match_simulation import simulate_match
 
 class CreateMatchView(CreateView):
     model = Match
-    fields = ['home_team', 'away_team', 'datetime']  # –ò—Å–ø—Ä–∞–≤–ª–µ–Ω–æ —Å date –Ω–∞ datetime
+    fields = ['home_team', 'away_team', 'datetime']
     template_name = 'matches/create_match.html'
 
     def form_valid(self, form):
         match = form.save()
         return redirect(reverse('matches:match_detail', kwargs={'pk': match.pk}))
 
-class MatchDetailView(DetailView):
+class MatchDetailView(LoginRequiredMixin, DetailView):
     model = Match
     template_name = 'matches/match_detail.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['match_events'] = MatchEvent.objects.filter(match=self.object).order_by('minute')
+        context['is_user_team'] = (
+            self.request.user.club == self.object.home_team or 
+            self.request.user.club == self.object.away_team
+        )
         return context
+
+class MatchListView(LoginRequiredMixin, ListView):
+    model = Match
+    template_name = 'matches/match_list.html'
+    context_object_name = 'matches'
+
+    def get_queryset(self):
+        championship_id = self.kwargs.get('championship_id')
+        if championship_id:
+            return Match.objects.filter(
+                championshipmatch__championship_id=championship_id
+            ).order_by('championshipmatch__round', 'datetime')
+        # –ï—Å–ª–∏ –Ω–µ—Ç championship_id, –ø–æ–∫–∞–∑—ã–≤–∞–µ–º –º–∞—Ç—á–∏ –∫–æ–º–∞–Ω–¥—ã –ø–æ–ª—å–∑–æ–≤–∞—Ç–µ–ª—è
+        return Match.objects.filter(
+            Q(home_team=self.request.user.club) | 
+            Q(away_team=self.request.user.club)
+        )
 
 @login_required
 def simulate_match_view(request, match_id):
@@ -3736,7 +3826,7 @@ def simulate_match_view(request, match_id):
         match = Match.objects.create(
             home_team=club,
             away_team=opponent,
-            datetime=timezone.now(),  # –ò—Å–ø—Ä–∞–≤–ª–µ–Ω–æ —Å date –Ω–∞ datetime
+            datetime=timezone.now(),
             status='scheduled'
         )
         match_id = match.id
@@ -3753,16 +3843,6 @@ def simulate_match_view(request, match_id):
         'match': match,
         'match_events': match_events,
     })
-
-@method_decorator(login_required, name='dispatch')
-class MatchListView(ListView):
-    model = Match
-    template_name = 'matches/match_list.html'
-    context_object_name = 'matches'
-
-    def get_queryset(self):
-        return Match.objects.filter(home_team=self.request.user.club) | \
-               Match.objects.filter(away_team=self.request.user.club)
 
 # ---  ÓÌÂˆ Ù‡ÈÎ‡ C:\realfootballsim\matches\views.py ---
 
@@ -8004,7 +8084,7 @@ function updateMatchTimes(timezone) {
 
 {% block tournament_content %}
 <div class="row">
-    <!-- Header Section - –æ—Å—Ç–∞–≤–ª—è–µ–º –±–µ–∑ –∏–∑–º–µ–Ω–µ–Ω–∏–π -->
+    <!-- Header Section -->
     <div class="col-12 mb-4">
         <div class="card">
             <div class="card-body">
@@ -8033,8 +8113,11 @@ function updateMatchTimes(timezone) {
     <!-- League Table -->
     <div class="col-md-8">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="card-title h5 mb-0">League Table</h3>
+                <a href="{% url 'matches:championship_matches' championship.id %}" class="btn btn-primary btn-sm">
+                    View All Matches
+                </a>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -8090,7 +8173,7 @@ function updateMatchTimes(timezone) {
     <div class="col-md-4">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title h5 mb-0">Matches</h3>
+                <h3 class="card-title h5 mb-0">Recent Matches</h3>
             </div>
             <div class="card-body">
                 {% if matches %}
@@ -8100,33 +8183,33 @@ function updateMatchTimes(timezone) {
                         <h4 class="h6">Round {{ round.grouper }}</h4>
                         <div class="list-group">
                             {% for match in round.list %}
-                            <div class="list-group-item">
+                            <a href="{% url 'matches:match_detail' match.match.id %}" class="list-group-item list-group-item-action">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <small>{{ match.match.date }}</small>
+                                    <small>{{ match.match.datetime|date:"d M Y H:i" }}</small>
                                     <span class="badge {% if match.match.status == 'finished' %}bg-success{% elif match.match.status == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}">
                                         {{ match.match.get_status_display }}
                                     </span>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mt-2">
-                                    <a href="{% url 'clubs:club_detail' match.match.home_team.id %}" class="text-decoration-none">
+                                    <span class="{% if match.match.home_team == user.club %}fw-bold{% endif %}">
                                         {{ match.match.home_team.name }}
                                         {% if match.match.home_team.is_bot %}
                                             <small>(Bot)</small>
                                         {% endif %}
-                                    </a>
+                                    </span>
                                     {% if match.match.status == 'finished' %}
                                         <strong>{{ match.match.home_score }} - {{ match.match.away_score }}</strong>
                                     {% else %}
                                         <span>vs</span>
                                     {% endif %}
-                                    <a href="{% url 'clubs:club_detail' match.match.away_team.id %}" class="text-decoration-none">
+                                    <span class="{% if match.match.away_team == user.club %}fw-bold{% endif %}">
                                         {{ match.match.away_team.name }}
                                         {% if match.match.away_team.is_bot %}
                                             <small>(Bot)</small>
                                         {% endif %}
-                                    </a>
+                                    </span>
                                 </div>
-                            </div>
+                            </a>
                             {% endfor %}
                         </div>
                     </div>
@@ -8134,6 +8217,11 @@ function updateMatchTimes(timezone) {
                 {% else %}
                     <p class="text-center">No matches scheduled</p>
                 {% endif %}
+                <div class="text-center mt-3">
+                    <a href="{% url 'matches:championship_matches' championship.id %}" class="btn btn-outline-primary">
+                        View All Matches
+                    </a>
+                </div>
             </div>
         </div>
     </div>

@@ -1,8 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import CreateView, DetailView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.urls import reverse
 from django.contrib.auth.decorators import login_required
+from django.urls import reverse
+from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.utils import timezone
 from django.db.models import Q
@@ -24,7 +25,7 @@ class MatchDetailView(LoginRequiredMixin, DetailView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['match_events'] = MatchEvent.objects.filter(match=self.object).order_by('minute')
+        context['match_events'] = self.object.events.order_by('minute')
         context['is_user_team'] = (
             self.request.user.club == self.object.home_team or 
             self.request.user.club == self.object.away_team
@@ -47,6 +48,22 @@ class MatchListView(LoginRequiredMixin, ListView):
             Q(home_team=self.request.user.club) | 
             Q(away_team=self.request.user.club)
         )
+
+@login_required
+def get_match_events(request, match_id):
+    match = get_object_or_404(Match, id=match_id)
+    events = match.events.order_by('minute').values('minute', 'event_type', 'description')
+    return JsonResponse({
+        'events': list(events), 
+        'match': {
+            'home_team': match.home_team.name,
+            'away_team': match.away_team.name,
+            'final_score': {
+                'home': match.home_score,
+                'away': match.away_score
+            }
+        }
+    })
 
 @login_required
 def simulate_match_view(request, match_id):
