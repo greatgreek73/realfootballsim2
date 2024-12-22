@@ -1,33 +1,74 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
-from django.db import models
-from matches.models import Match, MatchEvent
+from channels.db import database_sync_to_async
+from .models import Match, MatchEvent
 
 class MatchConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        print("WebSocket connect attempt...")
         self.match_id = self.scope['url_route']['kwargs']['match_id']
         self.group_name = f"match_{self.match_id}"
 
-        # Присоединяемся к группе
-        await self.channel_layer.group_add(
-            self.group_name,
-            self.channel_name
-        )
+        # Debug prints
+        print(f"Match ID: {self.match_id}")
+        print(f"Group name: {self.group_name}")
+        
+        try:
+            await self.channel_layer.group_add(
+                self.group_name,
+                self.channel_name
+            )
+            print("Successfully added to channel group")
+            
+            await self.accept()
+            print("WebSocket connection accepted")
 
-        await self.accept()
+            # Получаем последние данные матча и сразу отправляем их
+            match = await self.get_match_data()
+            if match:
+                await self.send(text_data=json.dumps({
+                    "minute": match["current_minute"],
+                    "home_score": match["home_score"],
+                    "away_score": match["away_score"],
+                    "events": match["events"]
+                }))
+                print("Initial match data sent")
+            
+        except Exception as e:
+            print(f"Error in connect: {str(e)}")
+            raise
 
     async def disconnect(self, close_code):
-        # Покидаем группу
-        await self.channel_layer.group_discard(
-            self.group_name,
-            self.channel_name
-        )
+        print(f"WebSocket disconnecting... Code: {close_code}")
+        try:
+            await self.channel_layer.group_discard(
+                self.group_name,
+                self.channel_name
+            )
+            print("Successfully removed from channel group")
+        except Exception as e:
+            print(f"Error in disconnect: {str(e)}")
 
-    async def receive(self, text_data):
-        # Обычно клиент не посылает ничего, либо мы можем обработать при необходимости
-        pass
-
-    # Метод для отправки сообщений в WebSocket
     async def match_update(self, event):
-        # event содержит 'type': 'match_update' и 'data': словарь с информацией
-        await self.send(json.dumps(event['data']))
+        print(f"Received match update: {event}")
+        try:
+            await self.send(text_data=json.dumps(event['data']))
+            print("Successfully sent match update to client")
+        except Exception as e:
+            print(f"Error sending match update: {str(e)}")
+
+    @database_sync_to_async
+    def get_match_data(self):
+        try:
+            match = Match.objects.get(id=self.match_id)
+            return {
+                "current_minute": match.current_minute,
+                "home_score": match.home_score,
+                "away_score": match.away_score,
+                "events": list(match.events.all().values('minute', 'event_type', 'description'))
+            }
+        except Match.DoesNotExist:
+            return None
+        except Exception as e:
+            print(f"Error getting match data: {str(e)}")
+            return None
