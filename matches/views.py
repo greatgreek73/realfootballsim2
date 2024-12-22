@@ -76,24 +76,15 @@ def simulate_match_view(request, match_id):
         if not opponent:
             return render(request, 'matches/no_opponent.html', {'club': club})
         
-        # Создаем новый матч
+        # Создаем новый матч и сразу ставим его in_progress
         match = Match.objects.create(
             home_team=club,
             away_team=opponent,
             datetime=timezone.now(),
-            status='scheduled'
+            status='in_progress',
+            current_minute=0
         )
         match_id = match.id
     
-    # Запускаем симуляцию матча
-    simulate_match(match_id)
-    
-    # Получаем обновленный матч и события
-    match = get_object_or_404(Match, id=match_id)
-    match_events = MatchEvent.objects.filter(match=match).order_by('minute')
-    
-    # Отображаем страницу с результатами матча
-    return render(request, 'matches/match_detail.html', {
-        'match': match,
-        'match_events': match_events,
-    })
+    # Редирект на страницу матча
+    return redirect('matches:match_detail', pk=match_id)

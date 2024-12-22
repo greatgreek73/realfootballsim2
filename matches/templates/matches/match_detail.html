@@ -6,7 +6,7 @@
     <div class="row">
         <div class="col-12">
             <!-- Основная информация о матче -->
-            <div class="card mb-4" id="matchInfoArea" data-match-id="{{ match.id }}">
+            <div class="card mb-4" id="matchInfoArea" data-match-id="{{ match.id }}" data-match-status="{{ match.status }}">
                 <div class="card-header">
                     <h2 class="mb-0">Match Details</h2>
                 </div>
@@ -47,6 +47,7 @@
                                     {{ match.get_status_display }}
                                 </span>
                             </p>
+                            <p><strong>Time:</strong> <span id="matchTime">{% if match.status == 'in_progress' %}{{ match.current_minute }}'{% else %}90'{% endif %}</span></p>
                         </div>
                         <div class="col-md-6 text-end">
                             {% if match.status == 'finished' %}
@@ -81,7 +82,7 @@
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
                                             <strong>{{ event.minute }}'</strong> - 
-                                            {{ event.get_event_type_display }}: {{ event.description }}
+                                            {{ event.event_type }}: {{ event.description }}
                                         </div>
                                     </div>
                                 </div>
@@ -102,9 +103,11 @@
     </div>
 </div>
 
-<!-- Подключаем JavaScript для реплея -->
 {% block extra_js %}
 <script src="{% static 'matches/js/match_replay.js' %}"></script>
+{% if match.status == 'in_progress' %}
+<script src="{% static 'matches/js/live_match.js' %}"></script>
+{% endif %}
 <style>
     .match-event {
         padding: 10px;

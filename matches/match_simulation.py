@@ -3,11 +3,10 @@ from .models import Match, MatchEvent
 from .player_agent import PlayerAgent
 import random
 import logging
-
-logger = logging.getLogger(__name__)
-
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+
+logger = logging.getLogger(__name__)
 
 class MatchSimulation:
     def __init__(self, match):
@@ -51,11 +50,6 @@ class MatchSimulation:
         self.current_zone = None
 
         self._setup_moments()
-
-        # Устанавливаем счет в 0, так как матч идет пошагово
-        self.match.home_score = self.match.home_score or 0
-        self.match.away_score = self.match.away_score or 0
-        self.match.save()
 
     def _calculate_team_parameter(self, team, parameter_type):
         players = team.player_set.all()
@@ -103,148 +97,6 @@ class MatchSimulation:
             description=description
         )
 
-    def get_random_agent(self, team_type, positions=None):
-        agents = list(self.player_agents[team_type].values())
-        if positions:
-            agents = [agent for agent in agents if any(pos in agent.position for pos in positions)]
-        return random.choice(agents) if agents else None
-
-    def set_ball_owner(self, team_type, player_id):
-        self.ball_owner = (team_type, player_id)
-
-    def clear_ball_owner(self):
-        self.ball_owner = None
-        self.current_zone = None
-
-    def assign_ball_to_defender(self, team_type):
-        positions_priority = ['Defensive Midfielder', 'Center Back', 'Right Back', 'Left Back', 'Central Midfielder']
-        candidates = []
-        for pid, agent in self.player_agents[team_type].items():
-            if any(pos in agent.position for pos in positions_priority):
-                candidates.append(pid)
-        if candidates:
-            chosen = random.choice(candidates)
-            self.set_ball_owner(team_type, chosen)
-            self.current_zone = 'defense'
-        else:
-            all_pids = list(self.player_agents[team_type].keys())
-            chosen = random.choice(all_pids)
-            self.set_ball_owner(team_type, chosen)
-            self.current_zone = 'defense'
-
-    def advance_zone(self, team_type):
-        if self.current_zone == 'defense':
-            self.current_zone = 'midfield'
-        elif self.current_zone == 'midfield':
-            self.current_zone = 'attack'
-
-    def _apply_tactics_to_pass(self, team_type, pass_success, intercept_chance):
-        tactics = self.match_stats[team_type]['tactics']
-
-        if tactics == 'attacking':
-            pass_success = min(1.0, pass_success + 0.1)
-            intercept_chance = min(1.0, intercept_chance + 0.1)
-        elif tactics == 'defensive':
-            pass_success = max(0.0, pass_success - 0.1)
-            intercept_chance = min(1.0, intercept_chance + 0.05)
-        return pass_success, intercept_chance
-
-    def _apply_tactics_to_shot(self, team_type, shot_chance):
-        tactics = self.match_stats[team_type]['tactics']
-
-        if tactics == 'attacking':
-            shot_chance = min(1.0, shot_chance + 0.1)
-        elif tactics == 'defensive':
-            shot_chance = max(0.0, shot_chance - 0.05)
-        return shot_chance
-
-    def attempt_pass(self, minute, team_type):
-        if not self.ball_owner:
-            return False
-        owner_team, owner_pid = self.ball_owner
-        if owner_team != team_type:
-            return False
-
-        passer_agent = self.player_agents[team_type][owner_pid]
-        pass_success = min(1.0, (self.match_stats[team_type]['team_midfield']/100)*1.5)
-
-        defending_team = 'away' if team_type == 'home' else 'home'
-        defense_factor = self.match_stats[defending_team]['team_defense']
-        attack_factor = self.match_stats[team_type]['team_attack']
-        intercept_chance = 0.3 if defense_factor > attack_factor else 0.15
-
-        pass_success, intercept_chance = self._apply_tactics_to_pass(team_type, pass_success, intercept_chance)
-
-        if random.random() < intercept_chance:
-            self.match_stats[defending_team]['tackles'] += 1
-            self.clear_ball_owner()
-            self.create_match_event(minute, 'info', None, "Pass intercepted by defenders!")
-            return False
-
-        if random.random() < pass_success:
-            self.match_stats[team_type]['passes'] += 1
-            self.create_match_event(minute, 'info', passer_agent, f"{passer_agent.full_name} passes forward")
-            self.advance_zone(team_type)
-            new_owner = self.get_random_agent(team_type)
-            if new_owner:
-                self.set_ball_owner(team_type, new_owner.player_model.id)
-            return True
-        else:
-            self.clear_ball_owner()
-            self.create_match_event(minute, 'info', passer_agent, f"{passer_agent.full_name}'s pass goes wide")
-            return False
-
-    def attempt_shot(self, minute, team_type):
-        if not self.ball_owner:
-            return False
-        owner_team, owner_pid = self.ball_owner
-        if owner_team != team_type:
-            return False
-            
-        shooter = self.player_agents[team_type][owner_pid]
-        shot_chance = min(1.0, (self.match_stats[team_type]['team_attack']/100)*1.2)
-
-        shot_chance = self._apply_tactics_to_shot(team_type, shot_chance)
-
-        defending_team = 'away' if team_type == 'home' else 'home'
-
-        if self.match_stats[defending_team]['tactics'] == 'defensive':
-            block_chance = 0.6
-        else:
-            block_chance = 0.5
-
-        if random.random() < block_chance:
-            self.match_stats[defending_team]['tackles'] += 1
-            self.clear_ball_owner()
-            self.create_match_event(minute, 'info', None, "Shot blocked by a defender!")
-            return False
-
-        if random.random() < shot_chance:
-            self.match_stats[team_type]['goals'] += 1
-            self.match_stats[team_type]['shots'] += 1
-            if team_type == 'home':
-                self.match.home_score += 1
-            else:
-                self.match.away_score += 1
-            self.match.save()
-
-            self.create_match_event(minute, 'goal', shooter, f"GOAL! {shooter.full_name} scores!")
-            self.clear_ball_owner()
-            return True
-        else:
-            self.match_stats[team_type]['shots'] += 1
-            self.create_match_event(minute, 'info', shooter, f"{shooter.full_name}'s shot goes wide")
-            self.clear_ball_owner()
-            return False
-
-    def _determine_attacking_team(self):
-        home_mid = self.match_stats['home']['team_midfield']
-        away_mid = self.match_stats['away']['team_midfield']
-        if (home_mid + away_mid) == 0:
-            return 'home' if random.random() < 0.5 else 'away'
-        home_chance = home_mid / (home_mid + away_mid)
-        return 'home' if random.random() < home_chance else 'away'
-
     def _setup_moments(self):
         base_min, base_max = 10, 20
         home_strength = (self.match_stats['home']['team_attack'] + self.match_stats['home']['team_midfield']) / 2
@@ -275,62 +127,89 @@ class MatchSimulation:
         self.create_match_event(minute, 'info', None, f"MOMENT at minute {minute}: {attacking_team.upper()} tries to attack!")
         self.create_match_event(minute, 'info', None, "==============================")
 
-        self.assign_ball_to_defender(attacking_team)
+        self.ball_owner = (attacking_team, random.choice(list(self.player_agents[attacking_team].keys())))
 
         if self.ball_owner:
             owner_team, owner_pid = self.ball_owner
             owner_agent = self.player_agents[owner_team][owner_pid]
-            self.create_match_event(minute, 'info', None, f"Ball currently owned by {owner_team.upper()} player {owner_agent.full_name} in {self.current_zone} zone.")
+            self.create_match_event(minute, 'info', owner_agent, f"Ball currently owned by {owner_team.upper()} player {owner_agent.full_name}")
 
-        if not self.attempt_pass(minute, attacking_team):
-            return
-
-        for _ in range(3):
-            if not self.ball_owner or self.ball_owner[0] != attacking_team:
-                break
-            if self.current_zone == 'attack':
-                self.attempt_shot(minute, attacking_team)
-                break
+        # Симуляция атаки
+        if random.random() < 0.3:  # 30% шанс забить гол
+            scorer_agent = self.player_agents[attacking_team][random.choice(list(self.player_agents[attacking_team].keys()))]
+            self.match_stats[attacking_team]['goals'] += 1
+            if attacking_team == 'home':
+                self.match.home_score += 1
             else:
-                if not self.attempt_pass(minute, attacking_team):
-                    break
+                self.match.away_score += 1
+            self.match.save()
+            self.create_match_event(minute, 'goal', scorer_agent, f"GOAL! {scorer_agent.full_name} scores!")
+        else:
+            failed_agent = self.player_agents[attacking_team][random.choice(list(self.player_agents[attacking_team].keys()))]
+            self.create_match_event(minute, 'info', failed_agent, "Shot blocked by defenders!")
+
 
 def simulate_one_minute(match_id: int):
     """
     Симулирует одну игровую минуту для матча.
-    Если current_minute < 90, increment и simulate_minute.
-    Если достигаем 90, завершаем матч.
-    После обновления состояния отправляем данные по WebSocket.
     """
-    match = Match.objects.get(id=match_id)
-    if match.status == 'in_progress':
-        if match.current_minute < 90:
-            sim = MatchSimulation(match)
-            sim.simulate_minute(match.current_minute + 1)
-            match.current_minute += 1
-            if match.current_minute >= 90:
-                match.status = 'finished'
-            match.save()
-
-            # Отправляем обновление по WebSocket
-            layer = get_channel_layer()
-            data = {
-                "minute": match.current_minute,
-                "home_score": match.home_score,
-                "away_score": match.away_score,
-                "events": list(match.events.filter(minute=match.current_minute).values('minute', 'event_type', 'description'))
-            }
-            async_to_sync(layer.group_send)(
-                f"match_{match_id}",
-                {
-                    "type": "match_update",
-                    "data": data
-                }
-            )
-        else:
-            # уже 90 минут прошло, ставим finished если нет
+    try:
+        match = Match.objects.get(id=match_id)
+        
+        if match.status != 'in_progress':
+            logger.info(f"Match {match_id} is not in progress, skipping simulate_one_minute.")
+            return
+            
+        if match.current_minute >= 90:
             if match.status != 'finished':
                 match.status = 'finished'
                 match.save()
-    else:
-        logger.info(f"Match {match_id} is not in progress, skipping simulate_one_minute.")
+            return
+
+        # Симуляция минуты
+        sim = MatchSimulation(match)
+        sim.simulate_minute(match.current_minute + 1)
+        match.current_minute += 1
+        
+        # Проверяем окончание матча
+        if match.current_minute >= 90:
+            match.status = 'finished'
+        match.save()
+
+        # Подготовка данных для отправки
+        try:
+            # Получаем события этой минуты
+            new_events = list(match.events.filter(
+                minute=match.current_minute
+            ).values('minute', 'event_type', 'description'))
+
+            # Подготавливаем данные для отправки
+            update_data = {
+                "minute": match.current_minute,
+                "home_score": match.home_score,
+                "away_score": match.away_score,
+                "status": match.status,
+                "events": new_events
+            }
+            logger.debug(f"Prepared update data for match {match_id}: {update_data}")
+
+            # Отправляем через WebSocket
+            channel_layer = get_channel_layer()
+            logger.info(f"Sending update to match_{match_id} group")
+            
+            async_to_sync(channel_layer.group_send)(
+                f"match_{match_id}",
+                {
+                    "type": "match_update",
+                    "data": update_data
+                }
+            )
+            logger.info(f"Successfully sent update to match_{match_id} group")
+            
+        except Exception as e:
+            logger.error(f"Error sending WebSocket update for match {match_id}: {str(e)}")
+            raise
+
+    except Exception as e:
+        logger.error(f"Error in simulate_one_minute for match {match_id}: {str(e)}")
+        raise
