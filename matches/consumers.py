@@ -1,7 +1,7 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from .models import Match, MatchEvent
+from .models import Match
 
 class MatchConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -50,6 +50,16 @@ class MatchConsumer(AsyncWebsocketConsumer):
             print(f"Error in disconnect: {str(e)}")
 
     async def match_update(self, event):
+        """
+        Стандартное событие для отправки «полного» обновления матча:
+          data = {
+             "minute": ...,
+             "home_score": ...,
+             "away_score": ...,
+             "events": [...],
+             ...
+          }
+        """
         print(f"Received match update: {event}")
         try:
             await self.send(text_data=json.dumps(event['data']))
@@ -57,15 +67,35 @@ class MatchConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             print(f"Error sending match update: {str(e)}")
 
+    async def match_partial_update(self, event):
+        """
+        Событие для «порционного» (частичного) обновления.
+        Предполагается, что event['data'] может содержать часть событий
+        (например, за один из "подотрезков" внутри минуты).
+        """
+        print(f"Received partial match update: {event}")
+        try:
+            await self.send(text_data=json.dumps(event['data']))
+            print("Successfully sent partial update to client")
+        except Exception as e:
+            print(f"Error sending partial update: {str(e)}")
+
     @database_sync_to_async
     def get_match_data(self):
+        """
+        Извлекает из БД основные данные матча + все события,
+        чтобы при подключении WebSocket клиент сразу их увидел.
+        """
+        from .models import MatchEvent  # локальный импорт, если нужно
         try:
             match = Match.objects.get(id=self.match_id)
             return {
                 "current_minute": match.current_minute,
                 "home_score": match.home_score,
                 "away_score": match.away_score,
-                "events": list(match.events.all().values('minute', 'event_type', 'description'))
+                "events": list(
+                    match.events.all().values('minute', 'event_type', 'description')
+                ),
             }
         except Match.DoesNotExist:
             return None
