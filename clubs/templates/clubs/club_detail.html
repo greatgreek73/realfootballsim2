@@ -30,6 +30,12 @@
                                 Owned by {{ club.owner.username }}
                             {% endif %}
                         </p>
+                        {% if user == club.owner %}
+                            <!-- Отображение текущего баланса токенов, если владелец клуба = текущий пользователь -->
+                            <p class="mb-1">
+                                <strong>Your tokens:</strong> {{ user.tokens }}
+                            </p>
+                        {% endif %}
                     </div>
                 </div>
                 {% if user == club.owner %}
