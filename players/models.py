@@ -4,7 +4,7 @@ from django_countries.fields import CountryField
 class Player(models.Model):
     POSITIONS = [
         ('Goalkeeper', 'Goalkeeper'),
-        ('Right Back', 'Right Back'), 
+        ('Right Back', 'Right Back'),
         ('Left Back', 'Left Back'),
         ('Center Back', 'Center Back'),
         ('Defensive Midfielder', 'Central Defensive Midfielder'),
@@ -19,10 +19,28 @@ class Player(models.Model):
     first_name = models.CharField(max_length=100, default='', verbose_name="First Name")
     last_name = models.CharField(max_length=100, default='', verbose_name="Last Name")
     age = models.PositiveIntegerField(default=17, verbose_name="Age")
-    club = models.ForeignKey('clubs.Club', on_delete=models.CASCADE, verbose_name="Club", null=True, blank=True)
-    nationality = CountryField(blank_label='(select country)', verbose_name="Nationality", default="Unknown")
-    position = models.CharField(max_length=50, choices=POSITIONS, default='Unknown', verbose_name="Position")
-    player_class = models.IntegerField(default=1, verbose_name="Player Class")
+    club = models.ForeignKey(
+        'clubs.Club',
+        on_delete=models.CASCADE,
+        verbose_name="Club",
+        null=True,
+        blank=True
+    )
+    nationality = CountryField(
+        blank_label='(select country)',
+        verbose_name="Nationality",
+        default="Unknown"
+    )
+    position = models.CharField(
+        max_length=50,
+        choices=POSITIONS,
+        default='Unknown',
+        verbose_name="Position"
+    )
+    player_class = models.IntegerField(
+        default=1,
+        verbose_name="Player Class"
+    )
 
     # Общие характеристики
     strength = models.IntegerField(default=0, verbose_name="Strength")
@@ -57,14 +75,50 @@ class Player(models.Model):
     # Новое поле опыта
     experience = models.FloatField(default=0.0, verbose_name="Experience")
 
+    # Счётчик, сколько раз уже прокачивали игрока за токены
+    boost_count = models.PositiveIntegerField(
+        default=0,
+        help_text="How many times this player was boosted via tokens."
+    )
+
     class Meta:
         unique_together = ('first_name', 'last_name')
         verbose_name = 'Player'
         verbose_name_plural = 'Players'
         ordering = ['last_name', 'first_name']
 
+    # === Группы характеристик (полевые игроки) ===
+    FIELD_PLAYER_GROUPS = {
+        # Физические
+        'physical': ('strength', 'stamina', 'pace'),
+        # Защитные
+        'defensive': ('marking', 'tackling', 'heading'),
+        # Атакующие
+        'attacking': ('finishing', 'heading', 'long_range'),
+        # Ментальные
+        'mental': ('vision', 'flair'),
+        # Технические
+        'technical': ('dribbling', 'crossing', 'passing'),
+        # Тактические
+        'tactical': ('work_rate', 'positioning', 'accuracy'),
+    }
+
+    # === Группы характеристик (вратари) ===
+    GOALKEEPER_GROUPS = {
+        'physical': ('strength', 'stamina', 'pace'),
+        'core_gk_skills': ('reflexes', 'handling', 'positioning', 'aerial'),
+        'additional_gk_skills': (
+            'command',
+            'distribution',
+            'one_on_one',
+            'shot_reading',
+            'rebound_control'
+        ),
+    }
+
     def __str__(self):
-        return f"{self.first_name} {self.last_name} ({self.club.name if self.club else 'No Club'}) - {self.position}"
+        club_name = self.club.name if self.club else 'No Club'
+        return f"{self.first_name} {self.last_name} ({club_name}) - {self.position}"
 
     def save(self, *args, **kwargs):
         if not self.nationality and self.club:
@@ -81,9 +135,10 @@ class Player(models.Model):
 
     @property
     def overall_rating(self):
-        """Вычисляет общий рейтинг игрока на основе его характеристик,
-        учитывая опыт. Допустим, за каждый 1.0 опыта характеристики растут на 1%."""
-
+        """
+        Вычисляет общий рейтинг игрока на основе его характеристик,
+        учитывая опыт. Допустим, за каждый 1.0 опыта характеристики растут на 1%.
+        """
         # Коэффициент влияния опыта (1% за единицу опыта)
         experience_multiplier = 1 + self.experience * 0.01
 
@@ -104,13 +159,12 @@ class Player(models.Model):
                 self.accuracy
             ]
 
-        # Применяем опытный множитель к каждой характеристике
+        # Применяем опытный множитель
         adjusted_attributes = [int(attr * experience_multiplier) for attr in attributes]
-
         return sum(adjusted_attributes) // len(adjusted_attributes)
 
     def get_position_specific_attributes(self):
-        """Возвращает атрибуты, специфичные для позиции игрока"""
+        """Возвращает атрибуты, специфичные для позиции игрока."""
         if self.is_goalkeeper:
             return {
                 'reflexes': self.reflexes,
@@ -137,3 +191,19 @@ class Player(models.Model):
                 'vision': self.vision,
                 'accuracy': self.accuracy
             }
+
+    def get_boost_cost(self) -> int:
+        """
+        Возвращает стоимость (в токенах) следующей «платной» тренировки:
+          1-я тренировка: 0 токенов
+          2-я тренировка: 1 токен
+          3-я тренировка: 2 токена
+          4-я тренировка: 4 токенов
+          5-я тренировка: 8 токенов
+          ...
+        """
+        # Если ещё не было прокачек (boost_count=0), значит первая прокачка бесплатна
+        if self.boost_count == 0:
+            return 0
+        # Если boost_count=1 => следующая (вторая) тренировка = 2^(1-1)=1, и т.д.
+        return 2 ** (self.boost_count - 1)
