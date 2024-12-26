@@ -61,14 +61,15 @@ WSGI_APPLICATION = 'realfootballsim.wsgi.application'
 # Настройка Channels
 ASGI_APPLICATION = 'realfootballsim.asgi.application'
 
+# --- ВАЖНО: Заменяем SQLite на PostgreSQL ---
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-        'OPTIONS': {
-            'timeout': 60,
-            'isolation_level': 'IMMEDIATE'
-        },
+        'ENGINE': 'django.db.backends.postgresql',  # движок PostgreSQL
+        'NAME': 'rfsim',                            # название вашей базы
+        'USER': 'nikos',                            # пользователь
+        'PASSWORD': '5x9t8zy5',           # пароль (поставьте свой)
+        'HOST': 'localhost',                        # обычно localhost
+        'PORT': '5432',                             # порт PostgreSQL по умолчанию
         'ATOMIC_REQUESTS': False,
     }
 }
@@ -89,11 +90,9 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
 
 USE_I18N = True
-
 USE_TZ = True
 
 STATIC_URL = '/static/'
