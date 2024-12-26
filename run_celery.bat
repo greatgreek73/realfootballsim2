@@ -9,7 +9,7 @@ echo [%date% %time%] Starting Celery processes...
 echo =====================================
 
 :: Активация виртуального окружения
-call footenv\Scripts\activate.bat
+call venv310\Scripts\activate.bat
 
 :: Запускаем worker в отдельном окне без перенаправления в файл
 echo [%date% %time%] Starting Celery Worker...
