@@ -30,14 +30,21 @@ class Match(models.Model):
         default='scheduled',
         db_index=True
     )
+    
+    # Составы команд
     home_lineup = models.JSONField(null=True, blank=True)
     away_lineup = models.JSONField(null=True, blank=True)
 
-    # Новое поле для отслеживания текущей минуты матча
+    # Тактики команд
+    home_tactic = models.CharField(max_length=20, default='balanced')
+    away_tactic = models.CharField(max_length=20, default='balanced')
+
+    # Текущая минута матча
     current_minute = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return f"{self.home_team} vs {self.away_team} - {self.datetime}"
+
 
 class MatchEvent(models.Model):
     match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name='events')
