@@ -56,7 +56,7 @@
                         </div>
                     </div>
 
-                    <!-- Область реплея -->
+                    <!-- Область реплея (скрыта, если match.status != 'finished') -->
                     <div id="replayArea" style="display: none;">
                         <div class="card mb-4">
                             <div class="card-header">
@@ -67,7 +67,7 @@
                             </div>
                             <div class="card-body">
                                 <div id="replayEvents" class="list-group">
-                                    <!-- События реплея будут добавляться сюда -->
+                                    <!-- События реплея будут добавляться сюда динамически -->
                                 </div>
                             </div>
                         </div>
@@ -96,6 +96,53 @@
                 </div>
             </div>
 
+            <!-- Добавляем РАЗДЕЛ ДЛЯ ВЫВОДА СОСТАВОВ -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="mb-0 h5">Home Lineup</h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <ul class="list-group list-group-flush">
+                                {% for slot, player in home_lineup_list %}
+                                <li class="list-group-item">
+                                    Slot {{ slot }}:
+                                    {% if player %}
+                                        {{ player.first_name }} {{ player.last_name }} ({{ player.position }})
+                                    {% else %}
+                                        <em class="text-muted">No player assigned</em>
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div><!-- /.col-md-6 -->
+
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="mb-0 h5">Away Lineup</h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <ul class="list-group list-group-flush">
+                                {% for slot, player in away_lineup_list %}
+                                <li class="list-group-item">
+                                    Slot {{ slot }}:
+                                    {% if player %}
+                                        {{ player.first_name }} {{ player.last_name }} ({{ player.position }})
+                                    {% else %}
+                                        <em class="text-muted">No player assigned</em>
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div><!-- /.col-md-6 -->
+            </div>
+
             <div class="text-center">
                 <a href="{% url 'matches:match_list' %}" class="btn btn-outline-primary">Back to Matches</a>
             </div>
@@ -108,6 +155,7 @@
 {% if match.status == 'in_progress' %}
 <script src="{% static 'matches/js/live_match.js' %}"></script>
 {% endif %}
+
 <style>
     .match-event {
         padding: 10px;

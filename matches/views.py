@@ -14,6 +14,11 @@ from clubs.models import Club
 # Импорт Celery-задач
 from .tasks import simulate_match_minute, broadcast_minute_events_in_chunks
 
+##############################
+#  ВАЖНО: добавим импорт Player
+##############################
+from players.models import Player
+
 
 class CreateMatchView(CreateView):
     model = Match
@@ -31,13 +36,57 @@ class MatchDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['match_events'] = self.object.events.order_by('minute')
+        match = self.object  # Текущий матч
+
+        # События матча (у вас уже было)
+        context['match_events'] = match.events.order_by('minute')
+
+        # Проверяем, относится ли клуб пользователя к одному из участников матча
         context['is_user_team'] = (
-            self.request.user.is_authenticated and (
-                self.request.user.club == self.object.home_team or 
-                self.request.user.club == self.object.away_team
+            self.request.user.is_authenticated
+            and (
+                self.request.user.club == match.home_team
+                or self.request.user.club == match.away_team
             )
         )
+
+        ############################################################
+        # Новый блок: загрузка составов (home_lineup / away_lineup)
+        ############################################################
+        home_lineup_list = []
+        away_lineup_list = []
+
+        # HOME LINEUP
+        if match.home_lineup and isinstance(match.home_lineup, dict):
+            # Получаем id игроков (в JSON лежат строки "101", "102"...)
+            home_ids = [int(val) for val in match.home_lineup.values()]
+            # Тянем объекты Player одним запросом
+            home_players_qs = Player.objects.filter(id__in=home_ids)
+            home_dict = {p.id: p for p in home_players_qs}
+            
+            # Собираем в порядке слотов "0".."10"
+            for slot_key, pid_str in sorted(match.home_lineup.items(), key=lambda x: x[0]):
+                pid = int(pid_str)
+                player_obj = home_dict.get(pid)
+                # (slot_key, player_obj) => например ("0", Player(...))
+                home_lineup_list.append((slot_key, player_obj))
+
+        # AWAY LINEUP
+        if match.away_lineup and isinstance(match.away_lineup, dict):
+            away_ids = [int(val) for val in match.away_lineup.values()]
+            away_players_qs = Player.objects.filter(id__in=away_ids)
+            away_dict = {p.id: p for p in away_players_qs}
+
+            for slot_key, pid_str in sorted(match.away_lineup.items(), key=lambda x: x[0]):
+                pid = int(pid_str)
+                player_obj = away_dict.get(pid)
+                away_lineup_list.append((slot_key, player_obj))
+
+        # Передаём в шаблон
+        context['home_lineup_list'] = home_lineup_list
+        context['away_lineup_list'] = away_lineup_list
+        ############################################################
+
         return context
 
 
@@ -52,6 +101,7 @@ class MatchListView(LoginRequiredMixin, ListView):
             return Match.objects.filter(
                 championshipmatch__championship_id=championship_id
             ).order_by('championshipmatch__round', 'datetime')
+
         # Если нет championship_id, показываем матчи команды пользователя
         return Match.objects.filter(
             Q(home_team=self.request.user.club) | 
@@ -120,10 +170,9 @@ def simulate_match_minute_view(request, match_id):
     # Запускаем задачу симуляции одной минуты
     simulate_match_minute.delay(match_id)
 
-    # В этот момент match.current_minute ещё старый (до симуляции), 
+    # В этот момент match.current_minute ещё старый (до симуляции),
     # но мы предполагаем, что за "текущую" минуту (match.current_minute+1)
     # будут созданы события.
-    # Для упрощения считаем, что Celery всё сделает асинхронно.
     next_minute = match.current_minute + 1
 
     # Запускаем задачу "пошаговой" рассылки событий этой минуты
