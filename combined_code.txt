@@ -2088,6 +2088,33 @@ class Migration(migrations.Migration):
 # --- ����� ����� C:\realfootballsim\matches\migrations\0004_match_current_minute.py ---
 
 
+# --- ������ ����� C:\realfootballsim\matches\migrations\0005_add_tactic_fields.py ---
+
+# Generated manually
+
+from django.db import migrations, models
+
+class Migration(migrations.Migration):
+    dependencies = [
+        ('matches', '0004_match_current_minute'),
+    ]
+
+    operations = [
+        migrations.AddField(
+            model_name='match',
+            name='home_tactic',
+            field=models.CharField(max_length=20, default='balanced'),
+        ),
+        migrations.AddField(
+            model_name='match',
+            name='away_tactic',
+            field=models.CharField(max_length=20, default='balanced'),
+        ),
+    ]
+
+# --- ����� ����� C:\realfootballsim\matches\migrations\0005_add_tactic_fields.py ---
+
+
 # --- ������ ����� C:\realfootballsim\matches\migrations\__init__.py ---
 
 
@@ -2601,7 +2628,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
 
-                    <!-- Область реплея -->
+                    <!-- Область реплея (скрыта, если match.status != 'finished') -->
                     <div id="replayArea" style="display: none;">
                         <div class="card mb-4">
                             <div class="card-header">
@@ -2612,7 +2639,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                             <div class="card-body">
                                 <div id="replayEvents" class="list-group">
-                                    <!-- События реплея будут добавляться сюда -->
+                                    <!-- События реплея будут добавляться сюда динамически -->
                                 </div>
                             </div>
                         </div>
@@ -2641,6 +2668,53 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
 
+            <!-- Добавляем РАЗДЕЛ ДЛЯ ВЫВОДА СОСТАВОВ -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="mb-0 h5">Home Lineup</h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <ul class="list-group list-group-flush">
+                                {% for slot, player in home_lineup_list %}
+                                <li class="list-group-item">
+                                    Slot {{ slot }}:
+                                    {% if player %}
+                                        {{ player.first_name }} {{ player.last_name }} ({{ player.position }})
+                                    {% else %}
+                                        <em class="text-muted">No player assigned</em>
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div><!-- /.col-md-6 -->
+
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="mb-0 h5">Away Lineup</h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <ul class="list-group list-group-flush">
+                                {% for slot, player in away_lineup_list %}
+                                <li class="list-group-item">
+                                    Slot {{ slot }}:
+                                    {% if player %}
+                                        {{ player.first_name }} {{ player.last_name }} ({{ player.position }})
+                                    {% else %}
+                                        <em class="text-muted">No player assigned</em>
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div><!-- /.col-md-6 -->
+            </div>
+
             <div class="text-center">
                 <a href="{% url 'matches:match_list' %}" class="btn btn-outline-primary">Back to Matches</a>
             </div>
@@ -2653,6 +2727,7 @@ document.addEventListener('DOMContentLoaded', function() {
 {% if match.status == 'in_progress' %}
 <script src="{% static 'matches/js/live_match.js' %}"></script>
 {% endif %}
+
 <style>
     .match-event {
         padding: 10px;
@@ -3306,9 +3381,6 @@ from .models import Match, MatchEvent
 from .player_agent import PlayerAgent
 from players.models import Player
 
-# from .tasks import broadcast_minute_events_in_chunks
-# (если нужно, раскомментируйте импорт выше)
-
 logger = logging.getLogger(__name__)
 
 
@@ -3316,7 +3388,7 @@ class MatchSimulation:
     def __init__(self, match: Match):
         self.match = match
 
-        # Инициализация «статов» матча для home/away (пример)
+        # Инициализация «статов» матча для home/away
         self.match_stats = {
             'home': {
                 'possession': 50,
@@ -3348,23 +3420,35 @@ class MatchSimulation:
             'away': {}
         }
 
-        # --- ВАЖНЕЙШЕЕ ИЗМЕНЕНИЕ:
-        # Вместо "team.player_set.all()" берём только ID из match.home_lineup / match.away_lineup
+        # Получаем ID игроков из составов
         home_lineup_ids = []
         away_lineup_ids = []
 
         if self.match.home_lineup and isinstance(self.match.home_lineup, dict):
-            # self.match.home_lineup — это dict вида {"0": 123, "1": 456, ...}
-            home_lineup_ids = list(self.match.home_lineup.values())
+            # Проверяем, есть ли вложенный словарь "lineup"
+            if "lineup" in self.match.home_lineup:
+                home_lineup = self.match.home_lineup["lineup"]
+            else:
+                home_lineup = self.match.home_lineup
+            # Берём только значения (ID игроков)
+            home_lineup_ids = list(map(str, home_lineup.values()))
 
         if self.match.away_lineup and isinstance(self.match.away_lineup, dict):
-            away_lineup_ids = list(self.match.away_lineup.values())
+            # То же самое для away_lineup
+            if "lineup" in self.match.away_lineup:
+                away_lineup = self.match.away_lineup["lineup"]
+            else:
+                away_lineup = self.match.away_lineup
+            away_lineup_ids = list(map(str, away_lineup.values()))
 
-        # Достаём объекты игроков (только 11, если lineup корректный)
+        logger.info(f"Home lineup IDs: {home_lineup_ids}")
+        logger.info(f"Away lineup IDs: {away_lineup_ids}")
+
+        # Получаем объекты игроков по их ID
         home_players = Player.objects.filter(pk__in=home_lineup_ids)
         away_players = Player.objects.filter(pk__in=away_lineup_ids)
 
-        # Заполняем словари "агентов"
+        # Создаем агентов для каждого игрока
         for player in home_players:
             agent = PlayerAgent(player)
             self.player_agents['home'][player.id] = agent
@@ -3382,9 +3466,7 @@ class MatchSimulation:
 
     def _calculate_team_parameter(self, team, parameter_type):
         """
-        Примерная функция, которая усредняет характеристики команды:
-        - здесь по-прежнему берём вообще всех игроков клуба (как было у вас).
-        - если хотите жёстко зависеть только от 11, используйте аналогичный Filter.
+        Примерная функция, которая усредняет характеристики команды
         """
         players = team.player_set.all()
         total = 0
@@ -3552,16 +3634,6 @@ def simulate_one_minute(match_id: int):
 
         match.save()
 
-        # Если хотите "тиковую" рассылку, раскомментируйте:
-        """
-        from .tasks import broadcast_minute_events_in_chunks
-        broadcast_minute_events_in_chunks.delay(
-            match_id,
-            match.current_minute,
-            duration=10
-        )
-        """
-
     except Exception as e:
         logger.error(f"Error in simulate_one_minute for match {match_id}: {str(e)}")
         raise
@@ -3603,14 +3675,21 @@ class Match(models.Model):
         default='scheduled',
         db_index=True
     )
+    
+    # Составы команд
     home_lineup = models.JSONField(null=True, blank=True)
     away_lineup = models.JSONField(null=True, blank=True)
 
-    # Новое поле для отслеживания текущей минуты матча
+    # Тактики команд
+    home_tactic = models.CharField(max_length=20, default='balanced')
+    away_tactic = models.CharField(max_length=20, default='balanced')
+
+    # Текущая минута матча
     current_minute = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return f"{self.home_team} vs {self.away_team} - {self.datetime}"
+
 
 class MatchEvent(models.Model):
     match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name='events')
@@ -3995,7 +4074,7 @@ app_name = 'matches'
 urlpatterns = [
     path('', views.MatchListView.as_view(), name='match_list'),
     path('create/', views.CreateMatchView.as_view(), name='create_match'),
-    path('<int:pk>/', views.MatchDetailView.as_view(), name='match_detail'),
+    path('<int:pk>/', views.match_detail, name='match_detail'),  # Изменили на функцию
     path('<int:match_id>/simulate/', views.simulate_match_view, name='simulate_match'),
     path('championship/<int:championship_id>/matches/', views.MatchListView.as_view(), name='championship_matches'),
     path('<int:match_id>/events-json/', views.get_match_events, name='match_events_json'),
@@ -4018,9 +4097,93 @@ from django.db.models import Q
 
 from .models import Match, MatchEvent
 from clubs.models import Club
+from players.models import Player
 
 # Импорт Celery-задач
 from .tasks import simulate_match_minute, broadcast_minute_events_in_chunks
+
+
+def get_match_lineups(match):
+    """
+    Получает составы матча и связанных игроков оптимизированным способом.
+    """
+    home_lineup_list = []
+    away_lineup_list = []
+
+    # Домашний состав
+    if match.home_lineup and isinstance(match.home_lineup, dict):
+        # Если это вложенный словарь с 'lineup'
+        if 'lineup' in match.home_lineup:
+            lineup_dict = match.home_lineup['lineup']
+        else:
+            lineup_dict = match.home_lineup
+        
+        # Получаем ID игроков и объекты одним запросом
+        home_ids = [int(val) for val in lineup_dict.values()]
+        home_players = {str(p.id): p for p in Player.objects.filter(id__in=home_ids)}
+        
+        # Формируем список в нужном порядке
+        for slot_num in range(11):
+            slot_key = str(slot_num)
+            player_id = lineup_dict.get(slot_key)
+            player_obj = home_players.get(str(player_id)) if player_id else None
+            home_lineup_list.append((slot_key, player_obj))
+
+    # Гостевой состав
+    if match.away_lineup and isinstance(match.away_lineup, dict):
+        # Если это вложенный словарь с 'lineup'
+        if 'lineup' in match.away_lineup:
+            lineup_dict = match.away_lineup['lineup']
+        else:
+            lineup_dict = match.away_lineup
+
+        # Получаем ID игроков и объекты одним запросом
+        away_ids = [int(val) for val in lineup_dict.values()]
+        away_players = {str(p.id): p for p in Player.objects.filter(id__in=away_ids)}
+        
+        # Формируем список в нужном порядке
+        for slot_num in range(11):
+            slot_key = str(slot_num)
+            player_id = lineup_dict.get(slot_key)
+            player_obj = away_players.get(str(player_id)) if player_id else None
+            away_lineup_list.append((slot_key, player_obj))
+
+    return home_lineup_list, away_lineup_list
+
+
+@login_required
+def match_detail(request, pk):
+    match = get_object_or_404(Match, pk=pk)
+    
+    # Получаем события матча
+    match_events = match.events.order_by('minute')
+    
+    # Получаем составы и добавляем отладочный вывод
+    home_lineup_list, away_lineup_list = get_match_lineups(match)
+    print(f"\nDEBUG Match {match.id}")
+    print("Raw home_lineup:", match.home_lineup)
+    print("Raw away_lineup:", match.away_lineup)
+    print("Processed home_lineup:", [(slot, player.first_name if player else 'Empty') for slot, player in home_lineup_list])
+    print("Processed away_lineup:", [(slot, player.first_name if player else 'Empty') for slot, player in away_lineup_list])
+    
+    # Проверяем, является ли пользователь членом одной из команд
+    is_user_team = (
+        request.user.is_authenticated
+        and (
+            request.user.club == match.home_team
+            or request.user.club == match.away_team
+        )
+    )
+    
+    context = {
+        'match': match,
+        'match_events': match_events,
+        'is_user_team': is_user_team,
+        'home_lineup_list': home_lineup_list,
+        'away_lineup_list': away_lineup_list
+    }
+    
+    return render(request, 'matches/match_detail.html', context)
 
 
 class CreateMatchView(CreateView):
@@ -4031,22 +4194,6 @@ class CreateMatchView(CreateView):
     def form_valid(self, form):
         match = form.save()
         return redirect(reverse('matches:match_detail', kwargs={'pk': match.pk}))
-
-
-class MatchDetailView(LoginRequiredMixin, DetailView):
-    model = Match
-    template_name = 'matches/match_detail.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['match_events'] = self.object.events.order_by('minute')
-        context['is_user_team'] = (
-            self.request.user.is_authenticated and (
-                self.request.user.club == self.object.home_team or 
-                self.request.user.club == self.object.away_team
-            )
-        )
-        return context
 
 
 class MatchListView(LoginRequiredMixin, ListView):
@@ -4060,7 +4207,7 @@ class MatchListView(LoginRequiredMixin, ListView):
             return Match.objects.filter(
                 championshipmatch__championship_id=championship_id
             ).order_by('championshipmatch__round', 'datetime')
-        # Если нет championship_id, показываем матчи команды пользователя
+
         return Match.objects.filter(
             Q(home_team=self.request.user.club) | 
             Q(away_team=self.request.user.club)
@@ -4086,55 +4233,35 @@ def get_match_events(request, match_id):
 
 @login_required
 def simulate_match_view(request, match_id):
-    """
-    Создаёт тестовый матч, если match_id=0.
-    Иначе просто редиректит на страницу матча.
-    """
     if match_id == 0:
-        # Получаем клуб пользователя
         club = request.user.club
-        # Выбираем случайного бота-соперника
         opponent = Club.objects.filter(is_bot=True).exclude(id=club.id).order_by('?').first()
         if not opponent:
             return render(request, 'matches/no_opponent.html', {'club': club})
         
-        # Создаем новый матч и сразу ставим его in_progress
         match = Match.objects.create(
             home_team=club,
             away_team=opponent,
             datetime=timezone.now(),
             status='in_progress',
-            current_minute=0
+            current_minute=0,
+            # Добавляем тактики
+            home_tactic='balanced',
+            away_tactic='balanced',
         )
         match_id = match.id
     
-    # Редирект на страницу матча
     return redirect('matches:match_detail', pk=match_id)
 
 
 @login_required
 def simulate_match_minute_view(request, match_id):
-    """
-    Пример ручного вызова симуляции ОДНОЙ виртуальной минуты:
-      1) Запустить задачу Celery на simulate_match_minute
-      2) Запустить задачу Celery на "chunked" broadcast (за 10 секунд) 
-         событий этой минуты
-    """
     if request.method != 'POST':
         return HttpResponseNotAllowed(['POST'], "This endpoint requires POST request")
 
     match = get_object_or_404(Match, id=match_id)
-
-    # Запускаем задачу симуляции одной минуты
     simulate_match_minute.delay(match_id)
-
-    # В этот момент match.current_minute ещё старый (до симуляции), 
-    # но мы предполагаем, что за "текущую" минуту (match.current_minute+1)
-    # будут созданы события.
-    # Для упрощения считаем, что Celery всё сделает асинхронно.
     next_minute = match.current_minute + 1
-
-    # Запускаем задачу "пошаговой" рассылки событий этой минуты
     broadcast_minute_events_in_chunks.delay(match_id, next_minute, duration=10)
 
     return JsonResponse({
@@ -10958,15 +11085,20 @@ from django.utils import timezone
 from django.db import transaction, OperationalError
 from django.core.management import call_command
 from matches.models import Match
+from players.models import Player
 from .models import Season, Championship, League
 import logging
-from datetime import timedelta
 import time
+from datetime import timedelta
 from django.core.exceptions import ObjectDoesNotExist
+import random
 
 logger = logging.getLogger(__name__)
 
 def retry_on_db_lock(func, max_attempts=3, delay=1):
+    """
+    Декоратор для повторных попыток в случае Database is locked (SQLite).
+    """
     def wrapper(*args, **kwargs):
         attempts = 0
         while attempts < max_attempts:
@@ -10985,8 +11117,6 @@ def retry_on_db_lock(func, max_attempts=3, delay=1):
 def simulate_active_matches(self):
     """
     Пошаговая симуляция матчей.
-    Каждые 5 секунд (или другой интервал) задача проверяет матчи, находящиеся в статусе 'in_progress',
-    и симулирует одну игровую минуту для каждого такого матча.
     """
     now = timezone.now()
     logger.info(f"Starting active matches simulation at {now}")
@@ -11011,11 +11141,8 @@ def simulate_active_matches(self):
 @shared_task(name='tournaments.check_season_end', bind=True)
 def check_season_end(self):
     """
-    Проверяет окончание сезона и при необходимости завершает его,
-    затем создаёт новый сезон.
+    Проверяет окончание сезона и создаёт новый при необходимости.
     """
-    from django.db import transaction
-
     try:
         with transaction.atomic():
             current_season = Season.objects.select_for_update().get(is_active=True)
@@ -11026,9 +11153,6 @@ def check_season_end(self):
             )
 
             is_end_date_passed = today > current_season.end_date
-
-            from matches.models import Match
-            from tournaments.models import Championship
             finished_matches_count = Match.objects.filter(
                 championshipmatch__championship__season=current_season,
                 status='finished'
@@ -11037,70 +11161,39 @@ def check_season_end(self):
             required_matches = (
                 len(Championship.objects.filter(season=current_season)) * (16 * 15)
             )
-
             all_matches_played = finished_matches_count >= required_matches
 
             if is_end_date_passed and all_matches_played:
-                logger.info(
-                    f"Season {current_season.number} has ended. Starting end-season process..."
-                )
+                logger.info(f"Season {current_season.number} has ended. Starting end-season process...")
 
                 unfinished_matches = Match.objects.filter(
                     championshipmatch__championship__season=current_season,
                     status__in=['scheduled', 'in_progress']
-                )
-
-                unfinished_count = unfinished_matches.count()
-                if unfinished_count > 0:
-                    logger.warning(
-                        f"Found {unfinished_count} unfinished matches. "
-                        "Season cannot end with unfinished matches."
-                    )
-                    return (
-                        f"Season {current_season.number} has {unfinished_count} unfinished matches"
-                    )
+                ).count()
+                
+                if unfinished_matches > 0:
+                    return f"Season {current_season.number} has {unfinished_matches} unfinished matches"
 
                 logger.info("Processing teams transitions between divisions...")
                 call_command('handle_season_transitions')
 
                 current_season.is_active = False
                 current_season.save()
-                logger.info(f"Deactivated season {current_season.number}")
 
                 logger.info("Creating new season...")
                 call_command('create_new_season')
 
-                try:
-                    new_season = Season.objects.get(is_active=True)
-                    logger.info(f"Successfully created new season {new_season.number}")
+                new_season = Season.objects.get(is_active=True)
+                championships = Championship.objects.filter(season=new_season)
+                total_teams = sum(c.teams.count() for c in championships)
 
-                    championships = Championship.objects.filter(season=new_season)
-                    total_teams = sum(c.teams.count() for c in championships)
-
-                    return (
-                        f"Season {current_season.number} ended successfully. "
-                        f"Created new season {new_season.number} with "
-                        f"{championships.count()} championships and {total_teams} teams"
-                    )
-                except Season.DoesNotExist:
-                    error_msg = "Failed to create new season"
-                    logger.error(error_msg)
-                    raise Exception(error_msg)
-                except Season.MultipleObjectsReturned:
-                    error_msg = "Multiple active seasons found after creation"
-                    logger.error(error_msg)
-                    raise Exception(error_msg)
-
-            if not all_matches_played:
                 return (
-                    f"Season {current_season.number} is waiting for matches completion "
-                    f"({finished_matches_count}/{required_matches})"
+                    f"Season {current_season.number} ended successfully. "
+                    f"Created new season {new_season.number} with "
+                    f"{championships.count()} championships and {total_teams} teams"
                 )
-            if not is_end_date_passed:
-                return f"Season {current_season.number} is still active until {current_season.end_date}"
-            return (
-                f"Season {current_season.number} needs both end date and all matches to end"
-            )
+
+            return f"Season {current_season.number} is still active"
 
     except Season.DoesNotExist:
         logger.warning("No active season found")
@@ -11113,55 +11206,90 @@ def check_season_end(self):
 @shared_task(name='tournaments.start_scheduled_matches')
 def start_scheduled_matches():
     """
-    Переводит матчи, для которых время уже наступило, из scheduled в in_progress.
-    Таким образом, если есть прошлые или текущие матчи, которые не начались (хотя должны были),
-    они теперь начнутся, и simulate_active_matches сможет их симулировать.
-
-    ### NEW CODE: тут же копируем составы (club.lineup) в match.home_lineup / match.away_lineup,
-    ### если они ещё None (или null).
+    Переводит матчи из scheduled в in_progress и копирует составы команд.
+    Автоматически дополняет неполные составы случайными игроками из клуба.
     """
     from clubs.models import Club
-    from django.db import transaction
-
+    
+    def complete_lineup(club, current_lineup):
+        """Дополняет неполный состав случайными игроками из клуба"""
+        # Конвертируем текущий состав в список id игроков
+        used_players = set(str(id) for id in current_lineup.values())
+        
+        # Получаем всех доступных игроков клуба
+        available_players = list(Player.objects.filter(club=club)
+                               .exclude(id__in=used_players)
+                               .values_list('id', flat=True))
+        
+        # Определяем сколько игроков нужно добавить
+        slots_needed = 11 - len(current_lineup)
+        
+        # Проверяем, достаточно ли у нас игроков
+        if len(available_players) >= slots_needed:
+            # Выбираем случайных игроков
+            random_players = random.sample(available_players, slots_needed)
+            
+            # Добавляем их на свободные позиции
+            next_pos = len(current_lineup)
+            for player_id in random_players:
+                current_lineup[str(next_pos)] = str(player_id)
+                next_pos += 1
+                
+            return current_lineup
+        else:
+            return None  # Недостаточно игроков в клубе
+    
     now = timezone.now()
+    logger.info("===== STARTING start_scheduled_matches TASK =====")
+    
     with transaction.atomic():
-        # Находим матчи со статусом scheduled и datetime <= now
         matches = Match.objects.select_for_update().filter(
             status='scheduled',
             datetime__lte=now
         )
         count = matches.count()
-        if count > 0:
-            logger.info(f"Found {count} scheduled matches ready to start.")
-
-            # Обновляем статус:
-            matches.update(status='in_progress')
-
-            # Пробегаемся по каждому матчу и копируем состав (если пуст)
-            for match in matches:
-                # home_lineup
-                if not match.home_lineup:
-                    club_lineup = match.home_team.lineup  # Это JSONField у Club
-                    if club_lineup and isinstance(club_lineup, dict):
-                        # Извлекаем поле "lineup" (словарь с ключами '0'..'10') и tactic
-                        # ВАЖНО: убедитесь, что у Club.lineup именно такой же формат
-                        raw_lineup = club_lineup.get('lineup', {})
-                        if len(raw_lineup) == 11:  # Минимальная проверка на 11
-                            match.home_lineup = raw_lineup
-
-                # away_lineup
-                if not match.away_lineup:
-                    club_lineup = match.away_team.lineup
-                    if club_lineup and isinstance(club_lineup, dict):
-                        raw_lineup = club_lineup.get('lineup', {})
-                        if len(raw_lineup) == 11:
-                            match.away_lineup = raw_lineup
-
-                match.save()
-
-        else:
+        
+        if count == 0:
             logger.info("No scheduled matches ready to start.")
-
+            return "0 matches started."
+        
+        logger.info(f"Found {count} scheduled matches ready to start.")
+        
+        for match in matches:
+            logger.info(f"Processing match ID={match.id}: {match.home_team} vs {match.away_team}")
+            
+            # Обработка состава домашней команды
+            home_data = match.home_team.lineup
+            if home_data and isinstance(home_data, dict):
+                home_lineup = home_data.get('lineup', {})
+                if len(home_lineup) < 11:
+                    home_lineup = complete_lineup(match.home_team, home_lineup)
+                    if home_lineup is None:
+                        return '0 matches started: not enough players in home team'
+                match.home_lineup = home_lineup
+                match.home_tactic = home_data.get('tactic', 'balanced')
+            
+            # Обработка состава гостевой команды
+            away_data = match.away_team.lineup
+            if away_data and isinstance(away_data, dict):
+                away_lineup = away_data.get('lineup', {})
+                if len(away_lineup) < 11:
+                    away_lineup = complete_lineup(match.away_team, away_lineup)
+                    if away_lineup is None:
+                        return '0 matches started: not enough players in away team'
+                match.away_lineup = away_lineup
+                match.away_tactic = away_data.get('tactic', 'balanced')
+            
+            # Обновляем статус и сохраняем
+            match.status = 'in_progress'
+            match.save()
+            
+            logger.info(
+                f"Match {match.id} is now in_progress. "
+                f"home_lineup={match.home_lineup}, away_lineup={match.away_lineup} "
+                f"home_tactic={match.home_tactic}, away_tactic={match.away_tactic}"
+            )
+    
     return f"{count} matches started."
 
 # --- ����� ����� C:\realfootballsim\tournaments\tasks.py ---

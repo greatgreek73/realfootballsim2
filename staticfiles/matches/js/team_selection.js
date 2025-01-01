@@ -1,15 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
     const pitch = document.getElementById('pitch');
     const playerList = document.getElementById('playerList');
-    const resetButton = document.createElement('button');
-    resetButton.textContent = 'Reset Selection';
-    resetButton.id = 'resetTeam';
-    document.body.appendChild(resetButton);
-    
-    const saveStatus = document.createElement('span');
-    saveStatus.id = 'saveStatus';
-    document.body.appendChild(saveStatus);
-
+    const resetButton = document.getElementById('resetTeam');
+    const saveStatus = document.getElementById('saveStatus');
+    const tacticSelect = document.getElementById('tacticSelect');
     const clubId = document.getElementById('clubId').value;
     let saveTimeout;
 
@@ -50,13 +44,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        // Добавляем тактику к отправляемым данным
+        const tactic = tacticSelect.value;
+
+        const payload = {
+            lineup: selection,
+            tactic: tactic
+        };
+
         fetch(`/clubs/${clubId}/save-team-lineup/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCookie('csrftoken')
             },
-            body: JSON.stringify(selection)
+            body: JSON.stringify(payload)
         })
         .then(response => response.json())
         .then(data => {
@@ -87,6 +89,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     });
                 }
+
+                // Если в данных есть тактика, выбираем её
+                if (data.tactic) {
+                    tacticSelect.value = data.tactic;
+                }
             });
     }
 
@@ -111,17 +118,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 onAdd: function(evt) {
                     const slotElement = evt.to;
                     const newPlayer = evt.item;
-                    
+
                     // Удаляем всех существующих игроков из слота
                     slotElement.querySelectorAll('.player-item').forEach(player => {
                         if (player !== newPlayer) {
                             playerList.appendChild(player);
                         }
                     });
-                    
+
                     // Перемещаем нового игрока в слот
                     slotElement.appendChild(newPlayer);
-                    
+
                     autoSave();
                 }
             });
@@ -156,6 +163,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
     resetButton.addEventListener('click', resetSelection);
+
+    tacticSelect.addEventListener('change', autoSave);
 
     function getCookie(name) {
         let cookieValue = null;
