@@ -9,31 +9,22 @@ class MatchConsumer(AsyncWebsocketConsumer):
         self.match_id = self.scope['url_route']['kwargs']['match_id']
         self.group_name = f"match_{self.match_id}"
 
-        # Debug prints
-        print(f"Match ID: {self.match_id}")
-        print(f"Group name: {self.group_name}")
-        
         try:
             await self.channel_layer.group_add(
                 self.group_name,
                 self.channel_name
             )
-            print("Successfully added to channel group")
             
             await self.accept()
-            print("WebSocket connection accepted")
-
-            # Получаем последние данные матча и сразу отправляем их
+            
+            # Получаем и отправляем начальные данные
             match = await self.get_match_data()
             if match:
-                await self.send(text_data=json.dumps({
-                    "minute": match["current_minute"],
-                    "home_score": match["home_score"],
-                    "away_score": match["away_score"],
-                    "events": match["events"]
-                }))
+                await self.send(text_data=json.dumps(match))
                 print("Initial match data sent")
-            
+            else:
+                print(f"No match data found for ID: {self.match_id}")
+                
         except Exception as e:
             print(f"Error in connect: {str(e)}")
             raise
@@ -50,54 +41,49 @@ class MatchConsumer(AsyncWebsocketConsumer):
             print(f"Error in disconnect: {str(e)}")
 
     async def match_update(self, event):
-        """
-        Стандартное событие для отправки «полного» обновления матча:
-          data = {
-             "minute": ...,
-             "home_score": ...,
-             "away_score": ...,
-             "events": [...],
-             ...
-          }
-        """
-        print(f"Received match update: {event}")
+        """Стандартное событие для отправки полного обновления матча"""
         try:
-            await self.send(text_data=json.dumps(event['data']))
+            data = event['data']
+            # Проверяем наличие всех необходимых полей
+            required_fields = ['minute', 'home_score', 'away_score', 'events', 'status']
+            if not all(field in data for field in required_fields):
+                print(f"Warning: missing required fields in update. Got: {data.keys()}")
+                # Получаем недостающие данные из БД
+                match_data = await self.get_match_data()
+                if match_data:
+                    # Обновляем только новые данные
+                    match_data.update(data)
+                    data = match_data
+
+            await self.send(text_data=json.dumps(data))
             print("Successfully sent match update to client")
+            
         except Exception as e:
-            print(f"Error sending match update: {str(e)}")
+            print(f"Error in match_update: {str(e)}")
 
     async def match_partial_update(self, event):
-        """
-        Событие для «порционного» (частичного) обновления.
-        Предполагается, что event['data'] может содержать часть событий
-        (например, за один из "подотрезков" внутри минуты).
-        """
-        print(f"Received partial match update: {event}")
-        try:
-            await self.send(text_data=json.dumps(event['data']))
-            print("Successfully sent partial update to client")
-        except Exception as e:
-            print(f"Error sending partial update: {str(e)}")
+        """Частичное обновление тоже должно содержать все поля"""
+        await self.match_update(event)
 
     @database_sync_to_async
     def get_match_data(self):
-        """
-        Извлекает из БД основные данные матча + все события,
-        чтобы при подключении WebSocket клиент сразу их увидел.
-        """
-        from .models import MatchEvent  # локальный импорт, если нужно
         try:
             match = Match.objects.get(id=self.match_id)
             return {
-                "current_minute": match.current_minute,
+                "minute": match.current_minute,
                 "home_score": match.home_score,
                 "away_score": match.away_score,
                 "events": list(
-                    match.events.all().values('minute', 'event_type', 'description')
+                    match.events.all().values(
+                        'minute', 
+                        'event_type', 
+                        'description'
+                    ).order_by('-minute')[:10]  # Последние 10 событий
                 ),
+                "status": match.status
             }
         except Match.DoesNotExist:
+            print(f"Match {self.match_id} not found")
             return None
         except Exception as e:
             print(f"Error getting match data: {str(e)}")

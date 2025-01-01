@@ -262,6 +262,33 @@ def simulate_one_minute(match_id: int):
 
         match.save()
 
+        # Отправляем обновление через WebSocket
+        channel_layer = get_channel_layer()
+        if channel_layer is not None:
+            # Получаем последние события матча
+            latest_events = list(match.events.order_by('-minute')[:10].values(
+                'minute', 'event_type', 'description'
+            ))
+            
+            # Формируем данные для отправки
+            match_data = {
+                "minute": match.current_minute,
+                "home_score": match.home_score,
+                "away_score": match.away_score,
+                "status": match.status,
+                "events": latest_events
+            }
+            
+            # Отправляем в группу WebSocket
+            async_to_sync(channel_layer.group_send)(
+                f"match_{match.id}",
+                {
+                    "type": "match_update",
+                    "data": match_data
+                }
+            )
+            logger.info(f"WebSocket update sent for match {match_id}")
+
     except Exception as e:
         logger.error(f"Error in simulate_one_minute for match {match_id}: {str(e)}")
         raise
