@@ -1,28 +1,46 @@
-# Создайте новый файл .gitignore в корне проекта со следующим содержимым:
-# Python
+# Virtual Environment
+venv310/
+footenv/
+
+# Python cache
 __pycache__/
 *.py[cod]
 *$py.class
 
 # Django
 *.log
-local_settings.py
+*.pot
+*.pyc
 db.sqlite3
-db.sqlite3-journal
-media
+staticfiles/
+media/
 
-# Virtual Environment
-footenv/
-venv/
-ENV/
+# Environment variables
+.env
+.env.*
 
-# IDE
-.idea/
+# IDE settings
 .vscode/
-.history/
+.idea/
+*.sublime-workspace
+*.sublime-project
 
-# OS
+# Operating System
 .DS_Store
 Thumbs.db
-.aider*
-.env
+
+# Dependencies
+node_modules/
+
+# Local development settings
+local_settings.py
+
+# Coverage reports
+.coverage
+coverage/
+htmlcov/
+
+# Temporary files
+*.swp
+*.swo
+*~
