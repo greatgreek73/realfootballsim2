@@ -44,3 +44,5 @@ htmlcov/
 *.swp
 *.swo
 *~
+
+realfootballsim/production.py
