@@ -10,14 +10,93 @@ from django.db.models import Q
 
 from .models import Match, MatchEvent
 from clubs.models import Club
+from players.models import Player
 
 # Импорт Celery-задач
 from .tasks import simulate_match_minute, broadcast_minute_events_in_chunks
 
-##############################
-#  ВАЖНО: добавим импорт Player
-##############################
-from players.models import Player
+
+def get_match_lineups(match):
+    """
+    Получает составы матча и связанных игроков оптимизированным способом.
+    """
+    home_lineup_list = []
+    away_lineup_list = []
+
+    # Домашний состав
+    if match.home_lineup and isinstance(match.home_lineup, dict):
+        # Если это вложенный словарь с 'lineup'
+        if 'lineup' in match.home_lineup:
+            lineup_dict = match.home_lineup['lineup']
+        else:
+            lineup_dict = match.home_lineup
+        
+        # Получаем ID игроков и объекты одним запросом
+        home_ids = [int(val) for val in lineup_dict.values()]
+        home_players = {str(p.id): p for p in Player.objects.filter(id__in=home_ids)}
+        
+        # Формируем список в нужном порядке
+        for slot_num in range(11):
+            slot_key = str(slot_num)
+            player_id = lineup_dict.get(slot_key)
+            player_obj = home_players.get(str(player_id)) if player_id else None
+            home_lineup_list.append((slot_key, player_obj))
+
+    # Гостевой состав
+    if match.away_lineup and isinstance(match.away_lineup, dict):
+        # Если это вложенный словарь с 'lineup'
+        if 'lineup' in match.away_lineup:
+            lineup_dict = match.away_lineup['lineup']
+        else:
+            lineup_dict = match.away_lineup
+
+        # Получаем ID игроков и объекты одним запросом
+        away_ids = [int(val) for val in lineup_dict.values()]
+        away_players = {str(p.id): p for p in Player.objects.filter(id__in=away_ids)}
+        
+        # Формируем список в нужном порядке
+        for slot_num in range(11):
+            slot_key = str(slot_num)
+            player_id = lineup_dict.get(slot_key)
+            player_obj = away_players.get(str(player_id)) if player_id else None
+            away_lineup_list.append((slot_key, player_obj))
+
+    return home_lineup_list, away_lineup_list
+
+
+@login_required
+def match_detail(request, pk):
+    match = get_object_or_404(Match, pk=pk)
+    
+    # Получаем события матча
+    match_events = match.events.order_by('minute')
+    
+    # Получаем составы и добавляем отладочный вывод
+    home_lineup_list, away_lineup_list = get_match_lineups(match)
+    print(f"\nDEBUG Match {match.id}")
+    print("Raw home_lineup:", match.home_lineup)
+    print("Raw away_lineup:", match.away_lineup)
+    print("Processed home_lineup:", [(slot, player.first_name if player else 'Empty') for slot, player in home_lineup_list])
+    print("Processed away_lineup:", [(slot, player.first_name if player else 'Empty') for slot, player in away_lineup_list])
+    
+    # Проверяем, является ли пользователь членом одной из команд
+    is_user_team = (
+        request.user.is_authenticated
+        and (
+            request.user.club == match.home_team
+            or request.user.club == match.away_team
+        )
+    )
+    
+    context = {
+        'match': match,
+        'match_events': match_events,
+        'is_user_team': is_user_team,
+        'home_lineup_list': home_lineup_list,
+        'away_lineup_list': away_lineup_list
+    }
+    
+    return render(request, 'matches/match_detail.html', context)
 
 
 class CreateMatchView(CreateView):
@@ -28,66 +107,6 @@ class CreateMatchView(CreateView):
     def form_valid(self, form):
         match = form.save()
         return redirect(reverse('matches:match_detail', kwargs={'pk': match.pk}))
-
-
-class MatchDetailView(LoginRequiredMixin, DetailView):
-    model = Match
-    template_name = 'matches/match_detail.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        match = self.object  # Текущий матч
-
-        # События матча (у вас уже было)
-        context['match_events'] = match.events.order_by('minute')
-
-        # Проверяем, относится ли клуб пользователя к одному из участников матча
-        context['is_user_team'] = (
-            self.request.user.is_authenticated
-            and (
-                self.request.user.club == match.home_team
-                or self.request.user.club == match.away_team
-            )
-        )
-
-        ############################################################
-        # Новый блок: загрузка составов (home_lineup / away_lineup)
-        ############################################################
-        home_lineup_list = []
-        away_lineup_list = []
-
-        # HOME LINEUP
-        if match.home_lineup and isinstance(match.home_lineup, dict):
-            # Получаем id игроков (в JSON лежат строки "101", "102"...)
-            home_ids = [int(val) for val in match.home_lineup.values()]
-            # Тянем объекты Player одним запросом
-            home_players_qs = Player.objects.filter(id__in=home_ids)
-            home_dict = {p.id: p for p in home_players_qs}
-            
-            # Собираем в порядке слотов "0".."10"
-            for slot_key, pid_str in sorted(match.home_lineup.items(), key=lambda x: x[0]):
-                pid = int(pid_str)
-                player_obj = home_dict.get(pid)
-                # (slot_key, player_obj) => например ("0", Player(...))
-                home_lineup_list.append((slot_key, player_obj))
-
-        # AWAY LINEUP
-        if match.away_lineup and isinstance(match.away_lineup, dict):
-            away_ids = [int(val) for val in match.away_lineup.values()]
-            away_players_qs = Player.objects.filter(id__in=away_ids)
-            away_dict = {p.id: p for p in away_players_qs}
-
-            for slot_key, pid_str in sorted(match.away_lineup.items(), key=lambda x: x[0]):
-                pid = int(pid_str)
-                player_obj = away_dict.get(pid)
-                away_lineup_list.append((slot_key, player_obj))
-
-        # Передаём в шаблон
-        context['home_lineup_list'] = home_lineup_list
-        context['away_lineup_list'] = away_lineup_list
-        ############################################################
-
-        return context
 
 
 class MatchListView(LoginRequiredMixin, ListView):
@@ -102,7 +121,6 @@ class MatchListView(LoginRequiredMixin, ListView):
                 championshipmatch__championship_id=championship_id
             ).order_by('championshipmatch__round', 'datetime')
 
-        # Если нет championship_id, показываем матчи команды пользователя
         return Match.objects.filter(
             Q(home_team=self.request.user.club) | 
             Q(away_team=self.request.user.club)
@@ -128,54 +146,35 @@ def get_match_events(request, match_id):
 
 @login_required
 def simulate_match_view(request, match_id):
-    """
-    Создаёт тестовый матч, если match_id=0.
-    Иначе просто редиректит на страницу матча.
-    """
     if match_id == 0:
-        # Получаем клуб пользователя
         club = request.user.club
-        # Выбираем случайного бота-соперника
         opponent = Club.objects.filter(is_bot=True).exclude(id=club.id).order_by('?').first()
         if not opponent:
             return render(request, 'matches/no_opponent.html', {'club': club})
         
-        # Создаем новый матч и сразу ставим его in_progress
         match = Match.objects.create(
             home_team=club,
             away_team=opponent,
             datetime=timezone.now(),
             status='in_progress',
-            current_minute=0
+            current_minute=0,
+            # Добавляем тактики
+            home_tactic='balanced',
+            away_tactic='balanced',
         )
         match_id = match.id
     
-    # Редирект на страницу матча
     return redirect('matches:match_detail', pk=match_id)
 
 
 @login_required
 def simulate_match_minute_view(request, match_id):
-    """
-    Пример ручного вызова симуляции ОДНОЙ виртуальной минуты:
-      1) Запустить задачу Celery на simulate_match_minute
-      2) Запустить задачу Celery на "chunked" broadcast (за 10 секунд) 
-         событий этой минуты
-    """
     if request.method != 'POST':
         return HttpResponseNotAllowed(['POST'], "This endpoint requires POST request")
 
     match = get_object_or_404(Match, id=match_id)
-
-    # Запускаем задачу симуляции одной минуты
     simulate_match_minute.delay(match_id)
-
-    # В этот момент match.current_minute ещё старый (до симуляции),
-    # но мы предполагаем, что за "текущую" минуту (match.current_minute+1)
-    # будут созданы события.
     next_minute = match.current_minute + 1
-
-    # Запускаем задачу "пошаговой" рассылки событий этой минуты
     broadcast_minute_events_in_chunks.delay(match_id, next_minute, duration=10)
 
     return JsonResponse({
