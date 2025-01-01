@@ -395,3 +395,8 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+try:
+    from .production import *
+except ImportError:
+    pass
