@@ -83,7 +83,7 @@ if IS_PRODUCTION == '1':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'rfsim',
+            'NAME': 'rfsimdb',
             'USER': 'nikos',
             'PASSWORD': '5x9t8zy5',
             'HOST': 'localhost',
