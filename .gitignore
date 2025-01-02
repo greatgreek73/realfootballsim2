@@ -46,3 +46,4 @@ htmlcov/
 *~
 
 realfootballsim/production.py
+realfootballsim/settings.py
