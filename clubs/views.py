@@ -222,6 +222,8 @@ def get_players(request, pk):
 def save_team_lineup(request, pk):
     """Сохранение состава команды и тактики"""
     club = get_object_or_404(Club, pk=pk)
+    logger.debug(f"Club owner: {club.owner}, Request user: {request.user}, CSRF OK: {request.csrf_processing_done}")
+
     if club.owner != request.user:
         return JsonResponse({"error": "Доступ запрещен"}, status=403)
     
@@ -248,7 +250,6 @@ def save_team_lineup(request, pk):
             })
 
         # Сохраняем состав и тактику в клуб
-        # Представим, что club.lineup - JSONField или TextField, где мы можем хранить словарь
         club.lineup = {
             'lineup': lineup,
             'tactic': tactic
