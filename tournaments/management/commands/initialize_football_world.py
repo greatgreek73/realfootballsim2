@@ -243,10 +243,10 @@ class Command(BaseCommand):
         try:
             # Создаем сезон (изменено начало на 1 декабря)
             season = Season.objects.create(
-                name="2024/2025",
+                name="Season 1",
                 number=1,
-                start_date=datetime(2024, 12, 1).date(),  # Изменено с 11, 1 на 12, 1
-                end_date=datetime(2024, 12, 31).date(),
+                start_date=datetime(2025, 1, 1).date(),  # Изменено с 11, 1 на 12, 1
+                end_date=datetime(2024, 1, 31).date(),
                 is_active=True
             )
 
