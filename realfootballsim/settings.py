@@ -15,7 +15,7 @@ ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 # If production environment variable is set, override specific settings
 if IS_PRODUCTION == '1':
     DEBUG = False
-    ALLOWED_HOSTS = ['128.199.49.228', '.realfootballsim.com']
+    ALLOWED_HOSTS = ['128.199.49.228', 'www.realfootballsim.com', 'realfootballsim.com']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
