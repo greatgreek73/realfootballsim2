@@ -25,20 +25,16 @@ class CreateClubView(CreateView):
     def form_valid(self, form):
         try:
             with transaction.atomic():
-                # 1. Получаем данные из формы без сохранения
                 club = form.save(commit=False)
-                
-                # 2. Установить владельца и другие поля
                 club.owner = self.request.user
                 club.is_bot = False
                 club._skip_clean = True
-                
-                # 3. Найти подходящую лигу
+
                 league = League.objects.filter(
                     country=club.country,
                     level=1
                 ).first()
-                
+
                 if not league:
                     messages.error(
                         self.request,
@@ -47,34 +43,28 @@ class CreateClubView(CreateView):
                     return self.form_invalid(form)
 
                 club.league = league
-                
-                # 4. Сохраняем клуб
                 club.save()
 
-                # 5. Проверяем ID сразу после сохранения
                 if not club.id:
                     messages.error(self.request, "Ошибка при создании клуба: не получен ID")
                     return self.form_invalid(form)
 
                 messages.info(self.request, f"Клуб создан с ID: {club.id}")
-                
-                # 6. Подождать немного, чтобы сигнал успел обработаться
+
                 from time import sleep
                 sleep(0.2)
-                
-                # 7. Проверить добавление в чемпионат
+
                 championship = Championship.objects.filter(
                     teams=club,
                     season__is_active=True
                 ).first()
-                
+
                 if championship:
                     messages.success(
                         self.request,
                         f'Клуб "{club.name}" успешно создан и добавлен в {championship.league.name}!'
                     )
                 else:
-                    # Проверяем причину отсутствия в чемпионате
                     active_season = Championship.objects.filter(
                         season__is_active=True
                     ).exists()
@@ -90,9 +80,8 @@ class CreateClubView(CreateView):
                             'Возможно, нет свободных мест.'
                         )
 
-                # 8. Перенаправляем на страницу клуба
                 return redirect('clubs:club_detail', pk=club.id)
-                    
+
         except Exception as e:
             logger.error(f'Error creating club: {str(e)}')
             messages.error(self.request, f'Ошибка при создании клуба: {str(e)}')
@@ -100,7 +89,7 @@ class CreateClubView(CreateView):
 
     def form_invalid(self, form):
         messages.error(
-            self.request, 
+            self.request,
             'Ошибка при создании клуба. Проверьте введенные данные.'
         )
         return super().form_invalid(form)
@@ -125,62 +114,72 @@ def get_locale_from_country_code(country_code):
     """Возвращает локаль для заданного кода страны"""
     return country_locales.get(country_code, 'en_US')
 
-@require_http_methods(["GET"])
-def create_player(request, pk):
-    """Создает нового игрока для клуба"""
+@require_http_methods(["POST"])
+def save_team_lineup(request, pk):
+    """Сохранение состава команды и тактики"""
+    # Расширенное логирование для отладки
+    logger.debug(f"Request method: {request.method}")
+    logger.debug(f"Content-Type: {request.headers.get('Content-Type')}")
+    logger.debug(f"CSRF Token in header: {request.headers.get('X-CSRFToken')}")
+    logger.debug(f"CSRF Token in cookies: {request.COOKIES.get('csrftoken')}")
+    logger.debug(f"Session cookie: {request.COOKIES.get('sessionid')}")
+
     club = get_object_or_404(Club, pk=pk)
+
+    logger.debug(f"Club owner: {club.owner}, Request user: {request.user}, CSRF OK: {request.csrf_processing_done}")
+
     if club.owner != request.user:
-        return HttpResponse("У вас нет прав для создания игроков в этом клубе.", status=403)
+        logger.debug("User is not the owner of the club. Returning 403 Forbidden.")
+        return JsonResponse({"error": "Доступ запрещен"}, status=403)
     
-    position = request.GET.get('position')
-    player_class = int(request.GET.get('player_class', 1))
-    
-    if not position:
-        return HttpResponse("Пожалуйста, выберите позицию.")
-
-    country_code = club.country.code
-    locale = get_locale_from_country_code(country_code)
-    fake = Faker(locale)
-
-    attempts = 0
-    max_attempts = 100
-    while attempts < max_attempts:
-        first_name = fake.first_name_male()
-        last_name = fake.last_name_male() if hasattr(fake, 'last_name_male') else fake.last_name()
-        if not Player.objects.filter(first_name=first_name, last_name=last_name).exists():
-            break
-        attempts += 1
-    
-    if attempts >= max_attempts:
-        messages.error(request, f'Не удалось создать уникальное имя для игрока')
-        return redirect('clubs:club_detail', pk=pk)
-
     try:
-        stats = generate_player_stats(position, player_class)
+        logger.debug(f"Request body (raw): {request.body}")
+        data = json.loads(request.body)
         
-        player = Player.objects.create(
-            club=club,
-            first_name=first_name,
-            last_name=last_name,
-            nationality=club.country,
-            age=random.randint(17, 35),
-            position=position,
-            player_class=player_class,
-            **stats
-        )
+        lineup = data.get('lineup', {})
+        tactic = data.get('tactic', 'balanced')  # По умолчанию сбалансированная тактика
 
-        messages.success(
-            request, 
-            f'Игрок {player.first_name} {player.last_name} успешно создан!'
-        )
+        if len(lineup) > 11:
+            return JsonResponse({
+                "success": False,
+                "error": "В составе не может быть больше 11 игроков"
+            })
+
+        # Проверка наличия вратаря
+        goalkeeper_positions = [
+            pos for pos, player_id in lineup.items() 
+            if Player.objects.get(id=player_id).position == 'Goalkeeper'
+        ]
+        if not goalkeeper_positions:
+            return JsonResponse({
+                "success": False,
+                "error": "В составе должен быть вратарь"
+            })
+
+        # Сохраняем состав и тактику в клуб
+        club.lineup = {
+            'lineup': lineup,
+            'tactic': tactic
+        }
+        club.save()
+        
+        return JsonResponse({
+            "success": True,
+            "message": "Состав и тактика успешно сохранены"
+        })
+        
+    except json.JSONDecodeError:
+        logger.error("JSONDecodeError: Невозможно декодировать JSON из тела запроса")
+        return JsonResponse({
+            "success": False,
+            "error": "Некорректный формат данных"
+        }, status=400)
     except Exception as e:
-        messages.error(
-            request,
-            f'Ошибка при создании игрока: {str(e)}'
-        )
-        logger.error(f'Error creating player: {str(e)}')
-
-    return redirect('clubs:club_detail', pk=pk)
+        logger.error(f'Error saving team lineup: {str(e)}')
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        }, status=500)
 
 @require_http_methods(["GET"])
 def team_selection_view(request, pk):
@@ -217,61 +216,6 @@ def get_players(request, pk):
         }
     } for player in players]
     return JsonResponse(player_data, safe=False)
-
-@require_http_methods(["POST"])
-def save_team_lineup(request, pk):
-    """Сохранение состава команды и тактики"""
-    club = get_object_or_404(Club, pk=pk)
-    logger.debug(f"Club owner: {club.owner}, Request user: {request.user}, CSRF OK: {request.csrf_processing_done}")
-
-    if club.owner != request.user:
-        return JsonResponse({"error": "Доступ запрещен"}, status=403)
-    
-    try:
-        data = json.loads(request.body)
-        lineup = data.get('lineup', {})
-        tactic = data.get('tactic', 'balanced')  # По умолчанию сбалансированная тактика
-
-        if len(lineup) > 11:
-            return JsonResponse({
-                "success": False,
-                "error": "В составе не может быть больше 11 игроков"
-            })
-
-        # Проверка наличия вратаря
-        goalkeeper_positions = [
-            pos for pos, player_id in lineup.items() 
-            if Player.objects.get(id=player_id).position == 'Goalkeeper'
-        ]
-        if not goalkeeper_positions:
-            return JsonResponse({
-                "success": False,
-                "error": "В составе должен быть вратарь"
-            })
-
-        # Сохраняем состав и тактику в клуб
-        club.lineup = {
-            'lineup': lineup,
-            'tactic': tactic
-        }
-        club.save()
-        
-        return JsonResponse({
-            "success": True,
-            "message": "Состав и тактика успешно сохранены"
-        })
-        
-    except json.JSONDecodeError:
-        return JsonResponse({
-            "success": False,
-            "error": "Некорректный формат данных"
-        }, status=400)
-    except Exception as e:
-        logger.error(f'Error saving team lineup: {str(e)}')
-        return JsonResponse({
-            "success": False,
-            "error": str(e)
-        }, status=500)
 
 @require_http_methods(["GET"])
 def get_team_lineup(request, pk):
