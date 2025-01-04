@@ -8,6 +8,7 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    {% csrf_token %}
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="{% url 'home' %}">Football Manager</a>

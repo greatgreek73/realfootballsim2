@@ -5,7 +5,8 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.db import transaction
 from faker import Faker
-
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import ensure_csrf_cookie
 from .models import Club
 from players.models import Player
 from tournaments.models import Championship, League
@@ -145,12 +146,13 @@ def create_player(request, pk):
     max_attempts = 100
     while attempts < max_attempts:
         first_name = fake.first_name_male()
-        last_name = (fake.last_name_male()
-                     if hasattr(fake, 'last_name_male')
-                     else fake.last_name())
+        last_name = (
+            fake.last_name_male()
+            if hasattr(fake, 'last_name_male')
+            else fake.last_name()
+        )
         # Проверяем, чтобы имя и фамилия были уникальными:
-        if not Player.objects.filter(first_name=first_name,
-                                     last_name=last_name).exists():
+        if not Player.objects.filter(first_name=first_name, last_name=last_name).exists():
             break
         attempts += 1
 
@@ -221,27 +223,23 @@ def get_players(request, pk):
     } for player in players]
     return JsonResponse(player_data, safe=False)
 
+# @csrf_exempt  # <-- Если хотите отключить CSRF-защиту, раскомментируйте, но лучше разобраться с причинами 403
+@ensure_csrf_cookie
 @require_http_methods(["POST"])
 def save_team_lineup(request, pk):
     """Сохранение состава команды и тактики (lineup и tactic)"""
-    # Расширенное логирование для отладки
-    logger.debug(f"Request method: {request.method}")
-    logger.debug(f"Content-Type: {request.headers.get('Content-Type')}")
-    logger.debug(f"CSRF Token in header: {request.headers.get('X-CSRFToken')}")
-    logger.debug(f"CSRF Token in cookies: {request.COOKIES.get('csrftoken')}")
-    logger.debug(f"Session cookie: {request.COOKIES.get('sessionid')}")
-
-    club = get_object_or_404(Club, pk=pk)
-
-    logger.debug(f"Club owner: {club.owner}, Request user: {request.user}, CSRF OK: {request.csrf_processing_done}")
-
-    if club.owner != request.user:
-        logger.debug("User is not the owner of the club. Returning 403 Forbidden.")
-        return JsonResponse({"error": "Доступ запрещен"}, status=403)
+    logger.error(f"CSRF Token in request: {request.META.get('HTTP_X_CSRFTOKEN')}")
+    logger.error(f"All request headers: {request.headers}")
 
     try:
-        logger.debug(f"Request body (raw): {request.body}")
+        logger.error("Starting save_team_lineup")  # простое сообщение для начала
+        club = get_object_or_404(Club, pk=pk)
+
+        if club.owner != request.user:
+            return JsonResponse({"error": "Доступ запрещен"}, status=403)
+
         data = json.loads(request.body)
+        logger.error(f"Data parsed successfully: {data}")  # проверим успешность парсинга
 
         lineup = data.get('lineup', {})
         tactic = data.get('tactic', 'balanced')
@@ -263,7 +261,7 @@ def save_team_lineup(request, pk):
                 "error": "В составе должен быть вратарь"
             })
 
-        # Сохраняем состав и тактику в клуб (club.lineup — JSONField или TextField)
+        # Сохраняем состав и тактику
         club.lineup = {
             'lineup': lineup,
             'tactic': tactic
@@ -316,3 +314,4 @@ def get_team_lineup(request, pk):
         }
 
     return JsonResponse(lineup_data)
+

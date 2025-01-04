@@ -17,6 +17,12 @@ if IS_PRODUCTION == '1':
     DEBUG = False
     ALLOWED_HOSTS = ['128.199.49.228', 'www.realfootballsim.com', 'realfootballsim.com']
 
+    CSRF_TRUSTED_ORIGINS = [
+    'https://realfootballsim.com',
+    'https://www.realfootballsim.com'
+]
+
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',

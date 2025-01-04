@@ -39,10 +39,11 @@ document.addEventListener('DOMContentLoaded', function() {
         pitch.appendChild(slot);
     });
 
+    // --------------------------------------------------------------
     // Map position string to "type"
     function getPlayerType(position) {
         if (position.includes('Goalkeeper')) return 'goalkeeper';
-        if (position.includes('Back')) return 'defender'; 
+        if (position.includes('Back')) return 'defender';
         if (position.includes('Midfielder')) return 'midfielder';
         if (position.includes('Forward') || position.includes('Striker')) return 'forward';
         return 'other';
@@ -80,6 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 3000);
     }
 
+    // --------------------------------------------------------------
     // Save lineup to the server
     function saveTeamLineup() {
         const lineup = {};
@@ -102,13 +104,17 @@ document.addEventListener('DOMContentLoaded', function() {
             tactic: tacticValue
         };
 
+        // Debug output: see if we have a hidden input with CSRF token
+        console.log('CSRF Token:', document.querySelector('input[name="csrfmiddlewaretoken"]').value);
+
         fetch(`/clubs/detail/${clubId}/save-team-lineup/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
+                'X-CSRFToken': document.querySelector('input[name="csrfmiddlewaretoken"]').value
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
+            credentials: 'include'
         })
         .then(response => response.json())
         .then(data => {
@@ -124,6 +130,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // --------------------------------------------------------------
     // Load existing lineup from server
     function loadTeamLineup() {
         fetch(`/clubs/detail/${clubId}/get-team-lineup/`)
@@ -151,6 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
+    // --------------------------------------------------------------
     // Reset lineup => move all players back to playerList
     function resetLineup() {
         document.querySelectorAll('.player-slot .player-item').forEach(player => {
@@ -162,6 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     resetButton.addEventListener('click', resetLineup);
 
+    // --------------------------------------------------------------
     // Initialize Sortable for drag-and-drop
     function initializeSortable() {
         new Sortable(playerList, {
@@ -202,14 +211,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         showMessage('Invalid player position!', 'danger');
                         return;
                     }
-                    
+
                     // Remove existing player from that slot (if any)
                     slotElement.querySelectorAll('.player-item').forEach(existingPlayer => {
                         if (existingPlayer !== newPlayer) {
                             playerList.appendChild(existingPlayer);
                         }
                     });
-                    
+
                     // Put new player in the slot
                     slotElement.appendChild(newPlayer);
                     saveTeamLineup();
@@ -218,6 +227,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // --------------------------------------------------------------
     // Fetch the players and build list
     fetch(`/clubs/detail/${clubId}/get-players/`)
         .then(response => response.json())
@@ -236,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error loading players:', error);
         });
 
-    // Helper to get CSRF token from cookie
+    // Helper to get CSRF token from cookie (if needed)
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
