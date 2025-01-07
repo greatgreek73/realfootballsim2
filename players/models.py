@@ -53,6 +53,12 @@ class Player(models.Model):
     handling = models.IntegerField(default=0, verbose_name="Handling")
     aerial = models.IntegerField(default=0, verbose_name="Aerial")
     command = models.IntegerField(default=0, verbose_name="Command")
+    from .constants import PLAYER_PRICES
+    
+    def get_purchase_cost(self):
+        """Возвращает стоимость покупки игрока в зависимости от класса"""
+        return PLAYER_PRICES.get(self.player_class, 200)  # По умолчанию 200 токенов
+    
     distribution = models.IntegerField(default=0, verbose_name="Distribution")
     one_on_one = models.IntegerField(default=0, verbose_name="One on One")
     rebound_control = models.IntegerField(default=0, verbose_name="Rebound Control")

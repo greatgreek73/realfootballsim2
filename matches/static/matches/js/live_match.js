@@ -63,38 +63,40 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (listGroup) {
                             data.events.forEach(event => {
                                 const eventDiv = document.createElement('div');
-                                eventDiv.className = 'list-group-item';
+                                if (data.events && data.events.length > 0) {
+                                    const eventsList = document.getElementById('originalEvents');
+                                    if (eventsList) {
+                                        const listGroup = eventsList.querySelector('.list-group');
+                                        if (listGroup) {
+                                            data.events.sort((a, b) => a.minute - b.minute).forEach(event => {
+                                                const eventDiv = document.createElement('div');
+                                                eventDiv.className = 'list-group-item';
+                                                
+                                                let icon = '📝';
+                                                if (event.event_type === 'goal') icon = '⚽';
+                                                else if (event.event_type === 'yellow_card') icon = '🟨';
+                                                else if (event.event_type === 'red_card') icon = '🟥';
                                 
-                                let icon = '📝';
-                                if (event.event_type === 'goal') icon = '⚽';
-                                else if (event.event_type === 'yellow_card') icon = '🟨';
-                                else if (event.event_type === 'red_card') icon = '🟥';
-
-                                eventDiv.innerHTML = `
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <strong>${event.minute}'</strong> 
-                                            <span class="event-icon">${icon}</span>
-                                            ${event.description}
-                                        </div>
-                                    </div>
-                                `;
+                                                eventDiv.innerHTML = `
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <strong>${event.minute}'</strong> 
+                                                            <span class="event-icon">${icon}</span>
+                                                            ${event.description}
+                                                        </div>
+                                                    </div>
+                                                `;
+                                                
+                                                listGroup.appendChild(eventDiv);
+                                            });
+                                        } else {
+                                            console.warn('list-group element not found in originalEvents');
+                                        }
+                                    } else {
+                                        console.warn('originalEvents element not found');
+                                    }
+                                }
                                 
-                                listGroup.insertBefore(eventDiv, listGroup.firstChild);
-                            });
-                        } else {
-                            console.warn('list-group element not found in originalEvents');
-                        }
-                    } else {
-                        console.warn('originalEvents element not found');
-                    }
-                }
-
-                // Если матч завершен, перезагружаем страницу
-                if (data.status === 'finished') {
-                    console.log('Match finished, reloading page...');
-                    location.reload();
-                }
             } catch (error) {
                 console.error('Error parsing WebSocket message:', error);
                 console.error('Raw message:', e.data);

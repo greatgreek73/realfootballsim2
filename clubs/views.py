@@ -13,7 +13,7 @@ from tournaments.models import Championship, League
 from players.utils import generate_player_stats
 from .country_locales import country_locales
 from .forms import ClubForm
-
+from players.constants import PLAYER_PRICES
 import json
 import random
 import logging
@@ -28,13 +28,11 @@ class CreateClubView(CreateView):
     def form_valid(self, form):
         try:
             with transaction.atomic():
-                # 1. Получаем данные из формы без сохранения
                 club = form.save(commit=False)
                 club.owner = self.request.user
                 club.is_bot = False
                 club._skip_clean = True
 
-                # 2. Найти подходящую лигу
                 league = League.objects.filter(
                     country=club.country,
                     level=1
@@ -46,11 +44,9 @@ class CreateClubView(CreateView):
                     )
                     return self.form_invalid(form)
 
-                # 3. Сохраняем клуб
                 club.league = league
                 club.save()
 
-                # 4. Проверяем ID сразу после сохранения
                 if not club.id:
                     messages.error(
                         self.request,
@@ -60,11 +56,9 @@ class CreateClubView(CreateView):
 
                 messages.info(self.request, f"Клуб создан с ID: {club.id}")
 
-                # 5. Ждём немного, чтобы сигнал успел обработаться
                 from time import sleep
                 sleep(0.2)
 
-                # 6. Проверить добавление в чемпионат
                 championship = Championship.objects.filter(
                     teams=club,
                     season__is_active=True
@@ -90,7 +84,6 @@ class CreateClubView(CreateView):
                             'Возможно, нет свободных мест.'
                         )
 
-                # 7. Перенаправляем на страницу клуба
                 return redirect('clubs:club_detail', pk=club.id)
 
         except Exception as e:
@@ -134,6 +127,14 @@ def create_player(request, pk):
 
     position = request.GET.get('position')
     player_class = int(request.GET.get('player_class', 1))
+    
+    # Получаем стоимость игрока
+    cost = PLAYER_PRICES.get(player_class, 200)
+
+    # Проверяем баланс
+    if request.user.tokens < cost:
+        messages.error(request, f'Недостаточно токенов. Требуется: {cost}')
+        return redirect('clubs:club_detail', pk=pk)
 
     if not position:
         return HttpResponse("Пожалуйста, выберите позицию.")
@@ -151,7 +152,6 @@ def create_player(request, pk):
             if hasattr(fake, 'last_name_male')
             else fake.last_name()
         )
-        # Проверяем, чтобы имя и фамилия были уникальными:
         if not Player.objects.filter(first_name=first_name, last_name=last_name).exists():
             break
         attempts += 1
@@ -161,7 +161,6 @@ def create_player(request, pk):
         return redirect('clubs:club_detail', pk=pk)
 
     try:
-        # Генерируем статы игрока на основе позиции и класса
         stats = generate_player_stats(position, player_class)
 
         player = Player.objects.create(
@@ -175,6 +174,10 @@ def create_player(request, pk):
             **stats
         )
 
+        # Списываем токены после успешного создания игрока
+        request.user.tokens -= cost
+        request.user.save()
+        messages.success(request, f'С вашего счета списано {cost} токенов')
         messages.success(
             request,
             f'Игрок {player.first_name} {player.last_name} успешно создан!'
@@ -223,7 +226,6 @@ def get_players(request, pk):
     } for player in players]
     return JsonResponse(player_data, safe=False)
 
-# @csrf_exempt  # <-- Если хотите отключить CSRF-защиту, раскомментируйте, но лучше разобраться с причинами 403
 @ensure_csrf_cookie
 @require_http_methods(["POST"])
 def save_team_lineup(request, pk):
@@ -232,14 +234,14 @@ def save_team_lineup(request, pk):
     logger.error(f"All request headers: {request.headers}")
 
     try:
-        logger.error("Starting save_team_lineup")  # простое сообщение для начала
+        logger.error("Starting save_team_lineup")
         club = get_object_or_404(Club, pk=pk)
 
         if club.owner != request.user:
             return JsonResponse({"error": "Доступ запрещен"}, status=403)
 
         data = json.loads(request.body)
-        logger.error(f"Data parsed successfully: {data}")  # проверим успешность парсинга
+        logger.error(f"Data parsed successfully: {data}")
 
         lineup = data.get('lineup', {})
         tactic = data.get('tactic', 'balanced')
@@ -250,7 +252,6 @@ def save_team_lineup(request, pk):
                 "error": "В составе не может быть больше 11 игроков"
             })
 
-        # Проверка наличия вратаря
         goalkeeper_positions = [
             pos for pos, player_id in lineup.items()
             if Player.objects.get(id=player_id).position == 'Goalkeeper'
@@ -261,7 +262,6 @@ def save_team_lineup(request, pk):
                 "error": "В составе должен быть вратарь"
             })
 
-        # Сохраняем состав и тактику
         club.lineup = {
             'lineup': lineup,
             'tactic': tactic
@@ -314,4 +314,3 @@ def get_team_lineup(request, pk):
         }
 
     return JsonResponse(lineup_data)
-
