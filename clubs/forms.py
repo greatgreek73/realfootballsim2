@@ -2,7 +2,25 @@ from django import forms
 from django_countries.widgets import CountrySelectWidget
 from .models import Club
 
+AVAILABLE_COUNTRIES = [
+    ('GB', 'Great Britain'),
+    ('ES', 'Spain'),
+    ('IT', 'Italy'),
+    ('DE', 'Germany'),
+    ('FR', 'France'),
+    ('PT', 'Portugal'),
+    ('GR', 'Greece'),
+    ('RU', 'Russia'),
+    ('AR', 'Argentina'),
+    ('BR', 'Brazil'),
+]
+
 class ClubForm(forms.ModelForm):
+    country = forms.ChoiceField(
+        choices=AVAILABLE_COUNTRIES,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
     class Meta:
         model = Club
         fields = ['name', 'country']
@@ -11,9 +29,6 @@ class ClubForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'Enter club name'
             }),
-            'country': CountrySelectWidget(attrs={
-                'class': 'form-control'
-            })
         }
 
     def clean(self):
@@ -33,6 +48,3 @@ class ClubForm(forms.ModelForm):
             instance.save()
         
         return instance
-    
-
-
