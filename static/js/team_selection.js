@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             saveStatus.textContent = '';
             saveStatus.className = '';
-        }, 3000);
+        }, 10000);
     }
 
     // --------------------------------------------------------------

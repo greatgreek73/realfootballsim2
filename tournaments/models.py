@@ -323,5 +323,5 @@ class ChampionshipMatch(models.Model):
         """Возвращает дату и время матча"""
         return datetime.combine(
             self.championship.start_date + timedelta(days=self.match_day - 1),
-            datetime.min.time().replace(hour=18)
+            datetime.min.time().replace(hour=13)
         )
