@@ -69,14 +69,15 @@ class Command(BaseCommand):
                 'div2_name': 'Série B'
             },
         ]
+
         self.team_names = [
-            'United', 'City', 'Athletic', 'Rovers', 'Wanderers', 
+            'United', 'City', 'Athletic', 'Rovers', 'Wanderers',
             'Rangers', 'Dynamo', 'Sporting', 'Real', 'Inter',
             'Academy', 'Warriors', 'Legion', 'Phoenix', 'Union'
         ]
         self.team_suffixes = ['FC', 'CF', 'SC', 'AF']
-        
-        # Определяем структуру команды
+
+        # Структура команды
         self.team_structure = {
             "Goalkeeper": {"count": 3, "class_distribution": [1, 2, 3]},
             "Right Back": {"count": 2, "class_distribution": [2, 3]},
@@ -88,12 +89,36 @@ class Command(BaseCommand):
             "Right Midfielder": {"count": 2, "class_distribution": [2, 3]},
             "Left Midfielder": {"count": 2, "class_distribution": [2, 3]},
             "Center Forward": {"count": 3, "class_distribution": [1, 2, 3]}
-        }
+        ]
+
+        # В каждой команде может быть максимум 30 игроков
+        self.max_players_per_club = 30
+
+    def generate_team_name(self, fake):
+        """
+        Генерирует уникальное название команды.
+        """
+        attempts = 0
+        while attempts < 100:
+            city = fake.city()
+            variant = random.choice([
+                f"{city} {random.choice(self.team_names)}",
+                f"{random.choice(self.team_names)} {city}",
+                f"{city} {random.choice(self.team_suffixes)}"
+            ])
+            if not Club.objects.filter(name=variant).exists():
+                return variant
+            attempts += 1
+        raise Exception("Не удалось создать уникальное имя команды")
+
     def create_league_structure(self):
-        """Создает структуру лиг"""
+        """
+        Создает структуру лиг (2 дивизиона на каждую из TOP_LEAGUES).
+        """
         self.stdout.write("Creating league structure...")
         try:
             for league_info in self.TOP_LEAGUES:
+                # Первый дивизион
                 League.objects.create(
                     name=f"{league_info['country']} {league_info['div1_name']}",
                     country=league_info['country'],
@@ -101,6 +126,7 @@ class Command(BaseCommand):
                     max_teams=16,
                     foreign_players_limit=5
                 )
+                # Второй дивизион
                 League.objects.create(
                     name=f"{league_info['country']} {league_info['div2_name']}",
                     country=league_info['country'],
@@ -108,14 +134,17 @@ class Command(BaseCommand):
                     max_teams=16,
                     foreign_players_limit=5
                 )
-            self.stdout.write(self.style.SUCCESS(f"Created {len(self.TOP_LEAGUES) * 2} leagues"))
+            self.stdout.write(self.style.SUCCESS(
+                f"Created {len(self.TOP_LEAGUES) * 2} leagues"))
             return True
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"Error creating leagues: {str(e)}"))
             return False
 
     def create_teams(self):
-        """Создает команды для всех лиг"""
+        """
+        Создает 16 команд (is_bot=True) в каждой лиге, генерируя уникальные названия.
+        """
         self.stdout.write("Creating teams...")
         try:
             for league in League.objects.all():
@@ -134,57 +163,127 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR(f"Error creating teams: {str(e)}"))
             return False
 
+    def create_player(self, club, position, fake, player_class):
+        """
+        Создает одного игрока (с уникальным ФИО) нужного класса и позиции.
+        """
+        # Генерируем уникальное ФИО
+        while True:
+            first_name = fake.first_name_male()
+            last_name = fake.last_name_male()
+            if not Player.objects.filter(first_name=first_name, last_name=last_name).exists():
+                break
+
+        stats = generate_player_stats(position, player_class)
+
+        base_stats = {
+            'club': club,
+            'first_name': first_name,
+            'last_name': last_name,
+            'nationality': club.country,
+            'age': random.randint(17, 35),
+            'position': position,
+            'player_class': player_class,
+            'strength': stats['strength'],
+            'stamina': stats['stamina'],
+            'pace': stats['pace'],
+            'positioning': stats['positioning'],
+        }
+
+        if position == 'Goalkeeper':
+            # Доп. характеристики вратаря
+            gk_stats = {
+                'reflexes': stats['reflexes'],
+                'handling': stats['handling'],
+                'aerial': stats['aerial'],
+                'command': stats['command'],
+                'distribution': stats['distribution'],
+                'one_on_one': stats['one_on_one'],
+                'rebound_control': stats['rebound_control'],
+                'shot_reading': stats['shot_reading']
+            }
+            player_stats = {**base_stats, **gk_stats}
+        else:
+            # Полевые игроки
+            field_stats = {
+                'marking': stats['marking'],
+                'tackling': stats['tackling'],
+                'work_rate': stats['work_rate'],
+                'passing': stats['passing'],
+                'crossing': stats['crossing'],
+                'dribbling': stats['dribbling'],
+                'flair': stats['flair'],
+                'heading': stats['heading'],
+                'finishing': stats['finishing'],
+                'long_range': stats['long_range'],
+                'vision': stats['vision'],
+                'accuracy': stats['accuracy']
+            }
+            player_stats = {**base_stats, **field_stats}
+
+        return Player.objects.create(**player_stats)
+
     def create_players(self):
-        """Создает игроков для всех команд"""
+        """
+        Создает игроков для всех ботов команд, 
+        не превышая лимит 30 игроков в клубе.
+        """
         self.stdout.write("Creating players...")
         try:
             for club in Club.objects.all():
                 fake = Faker(['en_GB'])
                 players_created = 0
-                
-                # Проверяем текущее количество игроков
                 existing_count = Player.objects.filter(club=club).count()
-                if existing_count >= 30:
-                    self.stdout.write(f"Skipping {club.name} - already has {existing_count} players")
+
+                # Если уже 30 или больше игроков, пропускаем
+                if existing_count >= self.max_players_per_club:
+                    self.stdout.write(
+                        f"Skipping {club.name} - already has {existing_count} players"
+                    )
                     continue
 
-                # Создаем игроков согласно структуре команды
+                # Создаем игроков согласно team_structure
                 for position, details in self.team_structure.items():
-                    # Если достигли лимита - прекращаем
-                    if existing_count >= 30:
+                    if existing_count >= self.max_players_per_club:
                         break
-                        
-                    count = min(details["count"], 30 - existing_count)
+
+                    count = min(details["count"], self.max_players_per_club - existing_count)
                     class_distribution = details["class_distribution"]
-                    
+
                     for i in range(count):
                         player_class = class_distribution[i % len(class_distribution)]
                         self.create_player(club, position, fake, player_class)
                         players_created += 1
                         existing_count += 1
-                        
-                        # Проверяем после каждого созданного игрока
-                        if existing_count >= 30:
+
+                        if existing_count >= self.max_players_per_club:
                             break
-                
+
                 self.stdout.write(f"Created {players_created} players for {club.name}")
             return True
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"Error creating players: {str(e)}"))
             return False
 
-        def create_season_and_championships(self):
-        """Создает сезон и чемпионаты"""
+    def create_season_and_championships(self):
+        """
+        Создает 1 сезон (Season 1) и чемпионаты для каждой лиги, 
+        устанавливая статус in_progress.
+        """
         self.stdout.write("Creating season and championships...")
         try:
+            # Создаем сезон: 1 января 2025 – 31 января 2024?
+            #  Вероятно, год окончания меньше года начала — опечатка?
+            #  Скорректируем так, чтобы end_date > start_date:
             season = Season.objects.create(
                 name="Season 1",
                 number=1,
                 start_date=datetime(2025, 1, 1).date(),
-                end_date=datetime(2024, 1, 31).date(),
+                end_date=datetime(2025, 1, 31).date(),  # Тут поправили год
                 is_active=True
             )
 
+            # Для каждой лиги создаем Championship
             for league in League.objects.all():
                 championship = Championship.objects.create(
                     season=season,
@@ -194,7 +293,7 @@ class Command(BaseCommand):
                     end_date=season.end_date,
                     match_time=timezone.now().time().replace(hour=18, minute=0)
                 )
-                
+                # Добавляем все клубы этой лиги в teams
                 teams = Club.objects.filter(league=league)
                 for team in teams:
                     championship.teams.add(team)
@@ -207,16 +306,24 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.stdout.write("Starting football world initialization...")
-        
+
+        # 1) Лиги
         if not self.create_league_structure():
             return
+
+        # 2) Команды
         if not self.create_teams():
             return
+
+        # 3) Игроки
         if not self.create_players():
             return
+
+        # 4) Сезон + Чемпионаты
         if not self.create_season_and_championships():
             return
-            
+
+        # 5) Сгенерировать матчи
         try:
             from django.core.management import call_command
             call_command('generate_all_matches')
