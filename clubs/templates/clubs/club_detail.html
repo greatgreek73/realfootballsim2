@@ -31,7 +31,6 @@
                             {% endif %}
                         </p>
                         {% if user == club.owner %}
-                            <!-- Отображение текущего баланса токенов, если владелец клуба = текущий пользователь -->
                             <p class="mb-1">
                                 <strong>Your tokens:</strong> {{ user.tokens }}
                             </p>
@@ -58,6 +57,18 @@
                 </div>
                 <div class="card-body">
                     {% if user == club.owner %}
+                    <!-- Player Cost Info -->
+                    <div class="alert alert-info mb-3">
+                        <h5>Cost to create a player:</h5>
+                        <ul class="mb-2">
+                            <li>Class 1: {{ player_prices.1 }} tokens</li>
+                            <li>Class 2: {{ player_prices.2 }} tokens</li>
+                            <li>Class 3: {{ player_prices.3 }} tokens</li>
+                            <li>Class 4: {{ player_prices.4 }} tokens</li>
+                        </ul>
+                        <strong>Your current balance: {{ user.tokens }} tokens</strong>
+                    </div>
+                    
                     <div class="row mb-3">
                         <div class="col-12">
                             <form method="get" action="{% url 'clubs:create_player' club.id %}" class="row g-3">
