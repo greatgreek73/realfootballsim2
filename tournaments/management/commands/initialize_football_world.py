@@ -67,7 +67,7 @@ class Command(BaseCommand):
                 'country': 'BR',
                 'div1_name': 'Série A',
                 'div2_name': 'Série B'
-            },
+            }
         ]
 
         self.team_names = [
@@ -77,7 +77,7 @@ class Command(BaseCommand):
         ]
         self.team_suffixes = ['FC', 'CF', 'SC', 'AF']
 
-        # Структура команды
+        # Определяем структуру команды
         self.team_structure = {
             "Goalkeeper": {"count": 3, "class_distribution": [1, 2, 3]},
             "Right Back": {"count": 2, "class_distribution": [2, 3]},
@@ -89,7 +89,7 @@ class Command(BaseCommand):
             "Right Midfielder": {"count": 2, "class_distribution": [2, 3]},
             "Left Midfielder": {"count": 2, "class_distribution": [2, 3]},
             "Center Forward": {"count": 3, "class_distribution": [1, 2, 3]}
-        ]
+        }
 
         # В каждой команде может быть максимум 30 игроков
         self.max_players_per_club = 30
@@ -113,7 +113,7 @@ class Command(BaseCommand):
 
     def create_league_structure(self):
         """
-        Создает структуру лиг (2 дивизиона на каждую из TOP_LEAGUES).
+        Создает 2 дивизиона на каждую из TOP_LEAGUES.
         """
         self.stdout.write("Creating league structure...")
         try:
@@ -135,7 +135,8 @@ class Command(BaseCommand):
                     foreign_players_limit=5
                 )
             self.stdout.write(self.style.SUCCESS(
-                f"Created {len(self.TOP_LEAGUES) * 2} leagues"))
+                f"Created {len(self.TOP_LEAGUES) * 2} leagues"
+            ))
             return True
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"Error creating leagues: {str(e)}"))
@@ -143,7 +144,7 @@ class Command(BaseCommand):
 
     def create_teams(self):
         """
-        Создает 16 команд (is_bot=True) в каждой лиге, генерируя уникальные названия.
+        Создаёт 16 команд (is_bot=True) в каждой лиге, генерируя уникальные названия.
         """
         self.stdout.write("Creating teams...")
         try:
@@ -225,8 +226,7 @@ class Command(BaseCommand):
 
     def create_players(self):
         """
-        Создает игроков для всех ботов команд, 
-        не превышая лимит 30 игроков в клубе.
+        Создаёт игроков для ботов-команд не больше 30 в каждом клубе.
         """
         self.stdout.write("Creating players...")
         try:
@@ -272,18 +272,15 @@ class Command(BaseCommand):
         """
         self.stdout.write("Creating season and championships...")
         try:
-            # Создаем сезон: 1 января 2025 – 31 января 2024?
-            #  Вероятно, год окончания меньше года начала — опечатка?
-            #  Скорректируем так, чтобы end_date > start_date:
+            # Чтобы end_date > start_date, поменяем год end_date на 2025
             season = Season.objects.create(
                 name="Season 1",
                 number=1,
                 start_date=datetime(2025, 1, 1).date(),
-                end_date=datetime(2025, 1, 31).date(),  # Тут поправили год
+                end_date=datetime(2025, 1, 31).date(),
                 is_active=True
             )
 
-            # Для каждой лиги создаем Championship
             for league in League.objects.all():
                 championship = Championship.objects.create(
                     season=season,
@@ -307,23 +304,23 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write("Starting football world initialization...")
 
-        # 1) Лиги
+        # 1) Создание лиг
         if not self.create_league_structure():
             return
 
-        # 2) Команды
+        # 2) Создание команд
         if not self.create_teams():
             return
 
-        # 3) Игроки
+        # 3) Создание игроков
         if not self.create_players():
             return
 
-        # 4) Сезон + Чемпионаты
+        # 4) Сезон + чемпионаты
         if not self.create_season_and_championships():
             return
 
-        # 5) Сгенерировать матчи
+        # 5) Генерация матчей
         try:
             from django.core.management import call_command
             call_command('generate_all_matches')
