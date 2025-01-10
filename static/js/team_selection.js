@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const saveStatus = document.getElementById('saveStatus');
     const tacticSelect = document.getElementById('tacticSelect');
 
-    // Конфигурация слотов: позиция на поле + тип слота + метка
+    // Конфигурация слотов
     const positions = [
         { top: '10%', left: '50%', type: 'goalkeeper', label: 'GK' },  
         { top: '30%', left: '20%', type: 'defender',   label: 'LB' },  
@@ -21,18 +21,16 @@ document.addEventListener('DOMContentLoaded', function() {
         { top: '80%', left: '70%', type: 'forward',    label: 'RF' }
     ];
 
-    // ----------------------------------------------------------------
     // Создаём слоты на поле
     positions.forEach((pos, index) => {
         const slot = document.createElement('div');
-        slot.className = 'player-slot';
+        slot.className = 'player-slot empty';  // Добавляем класс empty
         slot.style.top = pos.top;
         slot.style.left = pos.left;
 
-        slot.dataset.position = index;    // индекс (0..10)
-        slot.dataset.type = pos.type;     // "goalkeeper"/"defender"/"midfielder"/"forward"
+        slot.dataset.position = index;
+        slot.dataset.type = pos.type;
 
-        // Добавляем надпись (label) - "GK", "RB", "LB" и т.д.
         const label = document.createElement('div');
         label.className = 'position-label';
         label.textContent = pos.label;
@@ -41,9 +39,6 @@ document.addEventListener('DOMContentLoaded', function() {
         pitch.appendChild(slot);
     });
 
-    // ----------------------------------------------------------------
-    // Определяем функцию, которая сопоставляет строку позиций игрока
-    // (например "Goalkeeper", "Center Back") с типом для css.
     function getPlayerType(position) {
         if (!position) return 'other';
         if (position.toLowerCase().includes('goalkeeper')) return 'goalkeeper';
@@ -55,17 +50,26 @@ document.addEventListener('DOMContentLoaded', function() {
         return 'other';
     }
 
-    // ----------------------------------------------------------------
-    // Создаём DOM-элемент для каждого игрока (из get-players)
+    function isValidPosition(playerType, slotType) {
+        switch (slotType) {
+            case 'goalkeeper':
+                return playerType === 'goalkeeper';
+            case 'defender':
+                return playerType === 'defender';
+            case 'midfielder':
+                return playerType === 'midfielder';
+            case 'forward':
+                return playerType === 'forward';
+            default:
+                return false;
+        }
+    }
+
     function createPlayerElement(player) {
         const playerElement = document.createElement('div');
         const playerType = getPlayerType(player.position);
 
         playerElement.className = `player-item ${playerType}`;
-
-        // Сохраняем в data-атрибутах:
-        // playerId      -> айди игрока
-        // playerPosition-> реальная позиция игрока (Forward, Defender и т.п.)
         playerElement.dataset.playerId = player.id;
         playerElement.dataset.playerPosition = player.position || ''; 
 
@@ -83,8 +87,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return playerElement;
     }
 
-    // ----------------------------------------------------------------
-    // Показать сообщение в #saveStatus
     function showMessage(text, type = 'success') {
         saveStatus.textContent = text;
         saveStatus.className = `alert alert-${type} mt-2`;
@@ -94,15 +96,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 4000);
     }
 
-    // ----------------------------------------------------------------
-    // Сохранение состава на сервер
     function saveTeamLineup() {
-        // Собираем lineup
         const lineup = {};
         document.querySelectorAll('.player-slot').forEach(slot => {
             const playerElem = slot.querySelector('.player-item');
             if (playerElem) {
-                // Вместо "lineup[slotIndex] = playerId" теперь делаем объект
                 lineup[slot.dataset.position] = {
                     playerId: playerElem.dataset.playerId,
                     playerPosition: playerElem.dataset.playerPosition,
@@ -112,16 +110,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Забираем тактику
         const tacticValue = tacticSelect ? tacticSelect.value : 'balanced';
-
-        // Формируем payload
         const payload = {
             lineup: lineup,
             tactic: tacticValue
         };
 
-        // Для отладки (в консоли браузера)
         console.log('Sending lineup payload:', payload);
 
         fetch(`/clubs/detail/${clubId}/save-team-lineup/`, {
@@ -147,23 +141,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ----------------------------------------------------------------
-    // Загрузка состава с сервера
     function loadTeamLineup() {
         fetch(`/clubs/detail/${clubId}/get-team-lineup/`)
             .then(response => response.json())
             .then(data => {
                 if (data.lineup) {
-                    // data.lineup => { "0": {...}, "1": {...}, ... }
                     Object.entries(data.lineup).forEach(([slotIndex, details]) => {
-                        // details = { playerId, playerPosition, slotType, slotLabel, ... }
                         const slot = document.querySelector(`.player-slot[data-position="${slotIndex}"]`);
                         if (!slot || !details) return;
 
                         const playerId = details.playerId;
-                        // Найдём элемент игрока
                         const playerElem = document.querySelector(`.player-item[data-player-id="${playerId}"]`);
                         if (playerElem) {
+                            slot.classList.remove('empty');  // Убираем класс empty
                             slot.appendChild(playerElem);
                         }
                     });
@@ -178,28 +168,42 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    // ----------------------------------------------------------------
-    // Сбросить состав (перетащить всех игроков обратно в список)
     function resetLineup() {
         document.querySelectorAll('.player-slot .player-item').forEach(player => {
             playerList.appendChild(player);
         });
+        document.querySelectorAll('.player-slot').forEach(slot => {
+            slot.classList.add('empty');
+        });
         saveTeamLineup();
         showMessage('Lineup has been reset');
     }
-    resetButton.addEventListener('click', resetLineup);
 
-    // ----------------------------------------------------------------
-    // Инициализация SortableJS для drag-and-drop
+    if (resetButton) {
+        resetButton.addEventListener('click', resetLineup);
+    }
+
     function initializeSortable() {
-        // Зона со списком игроков
         new Sortable(playerList, {
             group: 'shared',
             animation: 150,
-            onEnd: saveTeamLineup
+            onStart: function(evt) {
+                const playerType = getPlayerType(evt.item.dataset.playerPosition);
+                document.querySelectorAll('.player-slot.empty').forEach(slot => {
+                    if (isValidPosition(playerType, slot.dataset.type)) {
+                        slot.classList.add('highlight');
+                    }
+                });
+            },
+            onEnd: function(evt) {
+                document.querySelectorAll('.player-slot').forEach(slot => {
+                    slot.classList.remove('highlight');
+                    slot.classList.remove('dragover');
+                });
+                saveTeamLineup();
+            }
         });
 
-        // Каждый слот
         document.querySelectorAll('.player-slot').forEach(slot => {
             new Sortable(slot, {
                 group: 'shared',
@@ -207,54 +211,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 onAdd: function(evt) {
                     const slotElement = evt.to;
                     const newPlayer = evt.item;
-                    const slotType = slotElement.dataset.type;
-                    const playerRealPosition = newPlayer.dataset.playerPosition;
-
-                    // Простейшая проверка соответствия
-                    let isValid = false;
-                    switch (slotType) {
-                        case 'goalkeeper':
-                            // Считаем, что "Goalkeeper" есть в playerRealPosition
-                            isValid = /goalkeeper/i.test(playerRealPosition);
-                            break;
-                        case 'defender':
-                            isValid = /back|defender/i.test(playerRealPosition);
-                            break;
-                        case 'midfielder':
-                            isValid = /midfielder/i.test(playerRealPosition);
-                            break;
-                        case 'forward':
-                            isValid = /forward|striker/i.test(playerRealPosition);
-                            break;
-                        default:
-                            isValid = true; // или false — на ваше усмотрение
-                            break;
-                    }
-
-                    if (!isValid) {
+                    
+                    if (isValidPosition(getPlayerType(newPlayer.dataset.playerPosition), slotElement.dataset.type)) {
+                        slotElement.classList.remove('empty');
+                        slotElement.classList.remove('highlight');
+                        
+                        slotElement.querySelectorAll('.player-item').forEach(existingPlayer => {
+                            if (existingPlayer !== newPlayer) {
+                                playerList.appendChild(existingPlayer);
+                                slotElement.classList.add('empty');
+                            }
+                        });
+                        
+                        slotElement.appendChild(newPlayer);
+                        saveTeamLineup();
+                    } else {
                         playerList.appendChild(newPlayer);
                         showMessage('Invalid player position!', 'danger');
-                        return;
                     }
-
-                    // Если в слоте уже кто-то есть, выкидываем его обратно в список
-                    slotElement.querySelectorAll('.player-item').forEach(existingPlayer => {
-                        if (existingPlayer !== newPlayer) {
-                            playerList.appendChild(existingPlayer);
-                        }
-                    });
-
-                    // Кладём нового игрока в слот
-                    slotElement.appendChild(newPlayer);
-                    saveTeamLineup();
+                },
+                onRemove: function(evt) {
+                    const slot = evt.from;
+                    slot.classList.add('empty');
                 }
+            });
+
+            slot.addEventListener('dragenter', function(e) {
+                if (slot.classList.contains('empty') && slot.classList.contains('highlight')) {
+                    slot.classList.add('dragover');
+                }
+            });
+            
+            slot.addEventListener('dragleave', function(e) {
+                slot.classList.remove('dragover');
             });
         });
     }
 
-    // ----------------------------------------------------------------
-    // При загрузке страницы: сначала получаем игроков, заполняем список, 
-    // а затем грузим сохранённый состав
     fetch(`/clubs/detail/${clubId}/get-players/`)
         .then(response => response.json())
         .then(players => {

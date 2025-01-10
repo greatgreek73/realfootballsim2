@@ -12,14 +12,10 @@
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h2 class="mb-0">Team Selection</h2>
-                        <a href="{% url 'clubs:club_detail' club.id %}" class="btn btn-outline-secondary">
-                            Back to Club
-                        </a>
+                        <a href="{% url 'clubs:club_detail' club.id %}" class="btn btn-outline-secondary">Back to Club</a>
                     </div>
                 </div>
                 <div class="card-body">
-
-                    <!-- Добавляем секцию для выбора тактики -->
                     <div class="tactics-section">
                         <label for="tacticSelect"><strong>Select Tactic:</strong></label>
                         <select id="tacticSelect">
@@ -28,7 +24,6 @@
                             <option value="defensive">Defensive</option>
                         </select>
                     </div>
-                    <!-- Конец секции выбора тактики -->
 
                     <div class="pitch" id="pitch">
                         <!-- Player slots will be added here dynamically -->
@@ -51,7 +46,6 @@
     </div>
 </div>
 
-<!-- Добавляем скрытое поле с ID клуба -->
 <input type="hidden" id="clubId" value="{{ club.id }}">
 
 <style>
@@ -71,12 +65,30 @@
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
 
+    .pitch::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background-color: rgba(255, 255, 255, 0.5);
+    }
+
+    .pitch::after {
+        content: '';
+        position: absolute;
+        top: 25%;
+        bottom: 25%;
+        left: 50%;
+        width: 2px;
+        background-color: rgba(255, 255, 255, 0.5);
+        transform: translateX(-50%);
+    }
+
     .player-slot {
         width: 70px;
         height: 70px;
-        background-color: rgba(255, 255, 255, 0.8);
-        border: 2px solid #fff;
-        border-radius: 50%;
         position: absolute;
         display: flex;
         justify-content: center;
@@ -84,11 +96,58 @@
         font-size: 12px;
         transition: all 0.2s ease;
         transform: translate(-50%, -50%);
+        border-radius: 50%;
     }
 
-    .player-slot:hover {
-        background-color: rgba(255, 255, 255, 0.9);
-        box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    .player-slot.empty {
+        background-color: transparent;
+        border: none;
+    }
+
+    .player-slot.empty .position-label {
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    .player-slot.highlight {
+        background-color: rgba(255, 255, 255, 0.2);
+        border: 2px dashed rgba(255, 255, 255, 0.8);
+    }
+
+    .player-slot.highlight .position-label {
+        opacity: 1;
+    }
+
+    .player-slot.dragover {
+        background-color: rgba(255, 255, 255, 0.4);
+        border: 2px solid rgba(255, 255, 255, 0.9);
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+    }
+
+    .player-slot:not(.empty) {
+        background-color: rgba(255, 255, 255, 0.8);
+        border: 2px solid #fff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .player-slot:not(.empty) .position-label {
+        opacity: 1;
+    }
+
+    .position-label {
+        position: absolute;
+        bottom: -20px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 12px;
+        color: white;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        font-weight: bold;
+        background-color: rgba(0,0,0,0.3);
+        padding: 2px 6px;
+        border-radius: 3px;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
     }
 
     .player-list {
@@ -154,20 +213,6 @@
         color: #6c757d;
     }
 
-    .position-label {
-        position: absolute;
-        bottom: -20px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 12px;
-        color: white;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-        font-weight: bold;
-        background-color: rgba(0,0,0,0.3);
-        padding: 2px 6px;
-        border-radius: 3px;
-    }
-
     .sortable-ghost {
         opacity: 0.4;
     }
@@ -191,27 +236,6 @@
         padding: 0.5rem 1rem;
         margin: 0;
         font-size: 14px;
-    }
-
-    .pitch::before {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 0;
-        right: 0;
-        height: 2px;
-        background-color: rgba(255, 255, 255, 0.5);
-    }
-
-    .pitch::after {
-        content: '';
-        position: absolute;
-        top: 25%;
-        bottom: 25%;
-        left: 50%;
-        width: 2px;
-        background-color: rgba(255, 255, 255, 0.5);
-        transform: translateX(-50%);
     }
 </style>
 
