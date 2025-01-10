@@ -5,7 +5,6 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.db import transaction
 from faker import Faker
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.csrf import ensure_csrf_cookie
 from .models import Club
 from players.models import Player
@@ -80,8 +79,7 @@ class CreateClubView(CreateView):
                     else:
                         messages.warning(
                             self.request,
-                            f'Club "{club.name}" created but not added to championship. '
-                            'Possibly no free spots.'
+                            f'Club "{club.name}" created but not added to championship. Possibly no free spots.'
                         )
 
                 return redirect('clubs:club_detail', pk=club.id)
@@ -97,6 +95,7 @@ class CreateClubView(CreateView):
             'Error creating club. Please check your input.'
         )
         return super().form_invalid(form)
+
 
 class ClubDetailView(DetailView):
     model = Club
@@ -116,12 +115,10 @@ class ClubDetailView(DetailView):
         return context
 
 def get_locale_from_country_code(country_code):
-    """Returns locale for given country code."""
     return country_locales.get(country_code, 'en_US')
 
 @require_http_methods(["GET"])
 def create_player(request, pk):
-    """Creates a new player for the club"""
     club = get_object_or_404(Club, pk=pk)
     if club.owner != request.user:
         return HttpResponse("You don't have permission to create players in this club.", status=403)
@@ -129,10 +126,8 @@ def create_player(request, pk):
     position = request.GET.get('position')
     player_class = int(request.GET.get('player_class', 1))
     
-    # Get player cost
     cost = PLAYER_PRICES.get(player_class, 200)
 
-    # Check balance
     if request.user.tokens < cost:
         messages.error(request, f'Insufficient tokens. Required: {cost}')
         return redirect('clubs:club_detail', pk=pk)
@@ -175,7 +170,6 @@ def create_player(request, pk):
             **stats
         )
 
-        # Deduct tokens after successful player creation
         request.user.tokens -= cost
         request.user.save()
         messages.success(request, f'Successfully deducted {cost} tokens')
@@ -194,7 +188,6 @@ def create_player(request, pk):
 
 @require_http_methods(["GET"])
 def team_selection_view(request, pk):
-    """Team selection page view"""
     club = get_object_or_404(Club, pk=pk)
     if club.owner != request.user:
         messages.error(request, "You don't have permission to view this page.")
@@ -208,57 +201,99 @@ def team_selection_view(request, pk):
 
 @require_http_methods(["GET"])
 def get_players(request, pk):
-    """Get club's player list"""
     club = get_object_or_404(Club, pk=pk)
     if club.owner != request.user:
         return JsonResponse({"error": "Access denied"}, status=403)
 
     players = Player.objects.filter(club=club)
-    player_data = [{
-        'id': player.id,
-        'name': f"{player.first_name} {player.last_name}",
-        'position': player.position,
-        'playerClass': player.player_class,
-        'attributes': {
-            'stamina': player.stamina,
-            'strength': player.strength,
-            'speed': player.pace
-        }
-    } for player in players]
+    player_data = []
+    for p in players:
+        player_data.append({
+            'id': p.id,
+            'name': f"{p.first_name} {p.last_name}",
+            'position': p.position,
+            'playerClass': p.player_class,
+            'attributes': {
+                'stamina': p.stamina,
+                'strength': p.strength,
+                'speed': p.pace
+            }
+        })
     return JsonResponse(player_data, safe=False)
 
 @ensure_csrf_cookie
 @require_http_methods(["POST"])
 def save_team_lineup(request, pk):
-    """Save team lineup and tactics"""
+    """
+    Теперь ожидаем, что lineup - объект вида:
+    {
+      "0": {
+        "playerId": "8001",
+        "playerPosition": "Goalkeeper",
+        "slotType": "goalkeeper",
+        "slotLabel": "GK"
+      },
+      "1": {...},
+      ...
+    }
+    И tactic => строка (напр. "balanced")
+    """
     try:
         club = get_object_or_404(Club, pk=pk)
         if club.owner != request.user:
             return JsonResponse({"error": "Access denied"}, status=403)
 
         data = json.loads(request.body)
-        lineup = data.get('lineup', {})
+        raw_lineup = data.get('lineup', {})
         tactic = data.get('tactic', 'balanced')
 
-        if len(lineup) > 11:
+        logger.debug(f"save_team_lineup() received data: {data}")
+
+        # Проверяем длину
+        if len(raw_lineup) > 11:
             return JsonResponse({
                 "success": False,
                 "error": "Squad cannot have more than 11 players"
-            })
+            }, status=400)
 
-        goalkeeper_positions = [
-            pos for pos, player_id in lineup.items()
-            if Player.objects.get(id=player_id).position == 'Goalkeeper'
-        ]
-        if not goalkeeper_positions:
+        # Ищем хотя бы одного вратаря
+        has_goalkeeper = False
+        for slot_idx, slot_info in raw_lineup.items():
+            if not isinstance(slot_info, dict):
+                # Старый формат (слот_info = "8012")? Можно обрабатывать отдельно
+                return JsonResponse({
+                    "success": False,
+                    "error": "Invalid format: expected object, got string"
+                }, status=400)
+
+            p_id = slot_info.get("playerId")
+            p_pos = slot_info.get("playerPosition", "")
+            # Проверяем, что playerId существует:
+            try:
+                p_obj = Player.objects.get(id=p_id)
+            except Player.DoesNotExist:
+                return JsonResponse({"success": False,
+                                     "error": f"Player {p_id} does not exist"}, status=400)
+
+            # Проверяем принадлежность клубу
+            if p_obj.club_id != club.id:
+                return JsonResponse({"success": False,
+                                     "error": f"Player {p_id} is not in club {club.id}"}, status=400)
+
+            # Узнаём, является ли он вратарём
+            if "goalkeeper" in p_pos.lower():
+                has_goalkeeper = True
+
+        if not has_goalkeeper:
             return JsonResponse({
                 "success": False,
                 "error": "Squad must include a goalkeeper"
-            })
+            }, status=400)
 
+        # Сохраняем
         club.lineup = {
-            'lineup': lineup,
-            'tactic': tactic
+            "lineup": raw_lineup,
+            "tactic": tactic
         }
         club.save()
 
@@ -269,42 +304,44 @@ def save_team_lineup(request, pk):
 
     except json.JSONDecodeError:
         logger.error("JSONDecodeError: Cannot decode JSON from request body")
-        return JsonResponse({
-            "success": False,
-            "error": "Invalid data format"
-        }, status=400)
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
     except Exception as e:
-        logger.error(f'Error saving team lineup: {str(e)}')
-        return JsonResponse({
-            "success": False,
-            "error": str(e)
-        }, status=500)
+        logger.error(f"Error saving team lineup: {str(e)}")
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 @require_http_methods(["GET"])
 def get_team_lineup(request, pk):
-    """Get current team lineup and tactics"""
     club = get_object_or_404(Club, pk=pk)
     if club.owner != request.user:
         return JsonResponse({"error": "Access denied"}, status=403)
 
     data = club.lineup or {}
-    lineup = data.get('lineup', {})
+    lineup_data = data.get('lineup', {})
     tactic = data.get('tactic', 'balanced')
 
-    lineup_data = {
-        'lineup': lineup,
+    # Для удобства отправим обратно players: {...}, если нужно
+    # Но в принципе lineup_data уже содержит playerId
+    response_data = {
+        'lineup': lineup_data,
         'tactic': tactic,
         'players': {}
     }
 
-    if lineup:
-        players = Player.objects.filter(id__in=lineup.values())
-        lineup_data['players'] = {
-            str(player.id): {
-                'name': f"{player.first_name} {player.last_name}",
-                'position': player.position,
-                'playerClass': player.player_class
-            } for player in players
-        }
+    # Собираем ID игроков, чтобы вернуть доп. данные
+    player_ids = []
+    for info in lineup_data.values():
+        if isinstance(info, dict):
+            pid = info.get('playerId')
+            if pid:
+                player_ids.append(pid)
 
-    return JsonResponse(lineup_data)
+    if player_ids:
+        players_qs = Player.objects.filter(id__in=player_ids)
+        for p in players_qs:
+            response_data['players'][str(p.id)] = {
+                'name': f"{p.first_name} {p.last_name}",
+                'position': p.position,
+                'playerClass': p.player_class
+            }
+
+    return JsonResponse(response_data)

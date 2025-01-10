@@ -6,31 +6,33 @@ document.addEventListener('DOMContentLoaded', function() {
     const saveStatus = document.getElementById('saveStatus');
     const tacticSelect = document.getElementById('tacticSelect');
 
-    // Configuration of player slots on the pitch
+    // Конфигурация слотов: позиция на поле + тип слота + метка
     const positions = [
-        { top: '10%', left: '50%', type: 'goalkeeper', label: 'GK' },  // GK
-        { top: '30%', left: '20%', type: 'defender',   label: 'LB' },  // DEF
+        { top: '10%', left: '50%', type: 'goalkeeper', label: 'GK' },  
+        { top: '30%', left: '20%', type: 'defender',   label: 'LB' },  
         { top: '30%', left: '40%', type: 'defender',   label: 'CB' },
         { top: '30%', left: '60%', type: 'defender',   label: 'CB' },
         { top: '30%', left: '80%', type: 'defender',   label: 'RB' },
-        { top: '60%', left: '30%', type: 'midfielder', label: 'LM' },  // MID
+        { top: '60%', left: '30%', type: 'midfielder', label: 'LM' },  
         { top: '60%', left: '50%', type: 'midfielder', label: 'CM' },
         { top: '60%', left: '70%', type: 'midfielder', label: 'RM' },
-        { top: '80%', left: '30%', type: 'forward',    label: 'LF' },  // FWD
+        { top: '80%', left: '30%', type: 'forward',    label: 'LF' },  
         { top: '80%', left: '50%', type: 'forward',    label: 'ST' },
         { top: '80%', left: '70%', type: 'forward',    label: 'RF' }
     ];
 
-    // Create slots on the pitch
+    // ----------------------------------------------------------------
+    // Создаём слоты на поле
     positions.forEach((pos, index) => {
         const slot = document.createElement('div');
         slot.className = 'player-slot';
         slot.style.top = pos.top;
         slot.style.left = pos.left;
-        slot.dataset.position = index;     // numeric index (0..10)
-        slot.dataset.type = pos.type;      // "goalkeeper"/"defender"/"midfielder"/"forward"
 
-        // Add small label for position
+        slot.dataset.position = index;    // индекс (0..10)
+        slot.dataset.type = pos.type;     // "goalkeeper"/"defender"/"midfielder"/"forward"
+
+        // Добавляем надпись (label) - "GK", "RB", "LB" и т.д.
         const label = document.createElement('div');
         label.className = 'position-label';
         label.textContent = pos.label;
@@ -39,23 +41,33 @@ document.addEventListener('DOMContentLoaded', function() {
         pitch.appendChild(slot);
     });
 
-    // --------------------------------------------------------------
-    // Map position string to "type"
+    // ----------------------------------------------------------------
+    // Определяем функцию, которая сопоставляет строку позиций игрока
+    // (например "Goalkeeper", "Center Back") с типом для css.
     function getPlayerType(position) {
-        if (position.includes('Goalkeeper')) return 'goalkeeper';
-        if (position.includes('Back')) return 'defender';
-        if (position.includes('Midfielder')) return 'midfielder';
-        if (position.includes('Forward') || position.includes('Striker')) return 'forward';
+        if (!position) return 'other';
+        if (position.toLowerCase().includes('goalkeeper')) return 'goalkeeper';
+        if (position.toLowerCase().includes('back') ||
+            position.toLowerCase().includes('defender')) return 'defender';
+        if (position.toLowerCase().includes('midfielder')) return 'midfielder';
+        if (position.toLowerCase().includes('forward') ||
+            position.toLowerCase().includes('striker')) return 'forward';
         return 'other';
     }
 
-    // Create DOM element for player
+    // ----------------------------------------------------------------
+    // Создаём DOM-элемент для каждого игрока (из get-players)
     function createPlayerElement(player) {
         const playerElement = document.createElement('div');
         const playerType = getPlayerType(player.position);
+
         playerElement.className = `player-item ${playerType}`;
+
+        // Сохраняем в data-атрибутах:
+        // playerId      -> айди игрока
+        // playerPosition-> реальная позиция игрока (Forward, Defender и т.п.)
         playerElement.dataset.playerId = player.id;
-        playerElement.dataset.position = player.position;
+        playerElement.dataset.playerPosition = player.position || ''; 
 
         const nameElement = document.createElement('div');
         nameElement.className = 'player-name';
@@ -71,41 +83,46 @@ document.addEventListener('DOMContentLoaded', function() {
         return playerElement;
     }
 
-    // Show message in #saveStatus
+    // ----------------------------------------------------------------
+    // Показать сообщение в #saveStatus
     function showMessage(text, type = 'success') {
         saveStatus.textContent = text;
         saveStatus.className = `alert alert-${type} mt-2`;
         setTimeout(() => {
             saveStatus.textContent = '';
             saveStatus.className = '';
-        }, 10000);
+        }, 4000);
     }
 
-    // --------------------------------------------------------------
-    // Save lineup to the server
+    // ----------------------------------------------------------------
+    // Сохранение состава на сервер
     function saveTeamLineup() {
+        // Собираем lineup
         const lineup = {};
-        // Collect players from each slot
         document.querySelectorAll('.player-slot').forEach(slot => {
             const playerElem = slot.querySelector('.player-item');
             if (playerElem) {
-                lineup[slot.dataset.position] = playerElem.dataset.playerId;
+                // Вместо "lineup[slotIndex] = playerId" теперь делаем объект
+                lineup[slot.dataset.position] = {
+                    playerId: playerElem.dataset.playerId,
+                    playerPosition: playerElem.dataset.playerPosition,
+                    slotType: slot.dataset.type,
+                    slotLabel: slot.querySelector('.position-label').textContent
+                };
             }
         });
 
-        // Also capture the tactic from the <select>:
+        // Забираем тактику
         const tacticValue = tacticSelect ? tacticSelect.value : 'balanced';
 
-        showMessage('Saving lineup...');
-
-        // IMPORTANT: sending { lineup: { ... }, tactic: "..." }
+        // Формируем payload
         const payload = {
             lineup: lineup,
             tactic: tacticValue
         };
 
-        // Debug output: see if we have a hidden input with CSRF token
-        console.log('CSRF Token:', document.querySelector('input[name="csrfmiddlewaretoken"]').value);
+        // Для отладки (в консоли браузера)
+        console.log('Sending lineup payload:', payload);
 
         fetch(`/clubs/detail/${clubId}/save-team-lineup/`, {
             method: 'POST',
@@ -119,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showMessage('Lineup successfully saved!');
+                showMessage('Lineup saved!');
             } else {
                 showMessage(`Error saving lineup: ${data.error || ''}`, 'danger');
             }
@@ -130,21 +147,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --------------------------------------------------------------
-    // Load existing lineup from server
+    // ----------------------------------------------------------------
+    // Загрузка состава с сервера
     function loadTeamLineup() {
         fetch(`/clubs/detail/${clubId}/get-team-lineup/`)
             .then(response => response.json())
             .then(data => {
                 if (data.lineup) {
-                    // if data.lineup => object { "0": "42", "1": "55", ...}
-                    Object.entries(data.lineup).forEach(([position, playerId]) => {
-                        // Find the slot by position
-                        const slot = document.querySelector(`.player-slot[data-position="${position}"]`);
-                        // Find the actual player item
-                        const player = document.querySelector(`.player-item[data-player-id="${playerId}"]`);
-                        if (slot && player) {
-                            slot.appendChild(player);
+                    // data.lineup => { "0": {...}, "1": {...}, ... }
+                    Object.entries(data.lineup).forEach(([slotIndex, details]) => {
+                        // details = { playerId, playerPosition, slotType, slotLabel, ... }
+                        const slot = document.querySelector(`.player-slot[data-position="${slotIndex}"]`);
+                        if (!slot || !details) return;
+
+                        const playerId = details.playerId;
+                        // Найдём элемент игрока
+                        const playerElem = document.querySelector(`.player-item[data-player-id="${playerId}"]`);
+                        if (playerElem) {
+                            slot.appendChild(playerElem);
                         }
                     });
                 }
@@ -158,8 +178,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    // --------------------------------------------------------------
-    // Reset lineup => move all players back to playerList
+    // ----------------------------------------------------------------
+    // Сбросить состав (перетащить всех игроков обратно в список)
     function resetLineup() {
         document.querySelectorAll('.player-slot .player-item').forEach(player => {
             playerList.appendChild(player);
@@ -167,18 +187,19 @@ document.addEventListener('DOMContentLoaded', function() {
         saveTeamLineup();
         showMessage('Lineup has been reset');
     }
-
     resetButton.addEventListener('click', resetLineup);
 
-    // --------------------------------------------------------------
-    // Initialize Sortable for drag-and-drop
+    // ----------------------------------------------------------------
+    // Инициализация SortableJS для drag-and-drop
     function initializeSortable() {
+        // Зона со списком игроков
         new Sortable(playerList, {
             group: 'shared',
             animation: 150,
             onEnd: saveTeamLineup
         });
 
+        // Каждый слот
         document.querySelectorAll('.player-slot').forEach(slot => {
             new Sortable(slot, {
                 group: 'shared',
@@ -187,22 +208,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     const slotElement = evt.to;
                     const newPlayer = evt.item;
                     const slotType = slotElement.dataset.type;
-                    const playerPosition = newPlayer.dataset.position;
+                    const playerRealPosition = newPlayer.dataset.playerPosition;
 
-                    // Validate position
+                    // Простейшая проверка соответствия
                     let isValid = false;
                     switch (slotType) {
                         case 'goalkeeper':
-                            isValid = playerPosition.includes('Goalkeeper');
+                            // Считаем, что "Goalkeeper" есть в playerRealPosition
+                            isValid = /goalkeeper/i.test(playerRealPosition);
                             break;
                         case 'defender':
-                            isValid = playerPosition.includes('Back');
+                            isValid = /back|defender/i.test(playerRealPosition);
                             break;
                         case 'midfielder':
-                            isValid = playerPosition.includes('Midfielder');
+                            isValid = /midfielder/i.test(playerRealPosition);
                             break;
                         case 'forward':
-                            isValid = playerPosition.includes('Forward') || playerPosition.includes('Striker');
+                            isValid = /forward|striker/i.test(playerRealPosition);
+                            break;
+                        default:
+                            isValid = true; // или false — на ваше усмотрение
                             break;
                     }
 
@@ -212,14 +237,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
 
-                    // Remove existing player from that slot (if any)
+                    // Если в слоте уже кто-то есть, выкидываем его обратно в список
                     slotElement.querySelectorAll('.player-item').forEach(existingPlayer => {
                         if (existingPlayer !== newPlayer) {
                             playerList.appendChild(existingPlayer);
                         }
                     });
 
-                    // Put new player in the slot
+                    // Кладём нового игрока в слот
                     slotElement.appendChild(newPlayer);
                     saveTeamLineup();
                 }
@@ -227,8 +252,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --------------------------------------------------------------
-    // Fetch the players and build list
+    // ----------------------------------------------------------------
+    // При загрузке страницы: сначала получаем игроков, заполняем список, 
+    // а затем грузим сохранённый состав
     fetch(`/clubs/detail/${clubId}/get-players/`)
         .then(response => response.json())
         .then(players => {
@@ -236,29 +262,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 const playerElement = createPlayerElement(player);
                 playerList.appendChild(playerElement);
             });
-            // after players are loaded, init drag-and-drop
             initializeSortable();
-            // then load the saved lineup
             loadTeamLineup();
         })
         .catch(error => {
             showMessage('Error loading players', 'danger');
             console.error('Error loading players:', error);
         });
-
-    // Helper to get CSRF token from cookie (if needed)
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
 });

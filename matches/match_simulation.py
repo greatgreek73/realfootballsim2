@@ -16,7 +16,18 @@ class MatchSimulation:
     def __init__(self, match: Match):
         self.match = match
 
-        # Инициализация «статов» матча для home/away
+        # Изначально, в базе у нас:
+        # match.home_lineup = {
+        #   "lineup": {
+        #       "0": { "playerId": "8001", "slotType": "goalkeeper", "slotLabel": "GK" },
+        #       "1": { "playerId": "8002", "slotType": "defender",   "slotLabel": "LB" },
+        #       ...
+        #   },
+        #   "tactic": "balanced"
+        # }
+        #
+        # Аналогично для match.away_lineup
+
         self.match_stats = {
             'home': {
                 'possession': 50,
@@ -24,10 +35,10 @@ class MatchSimulation:
                 'goals': 0,
                 'passes': 0,
                 'tackles': 0,
-                'team_attack': self._calculate_team_parameter(match.home_team, 'attack'),
-                'team_defense': self._calculate_team_parameter(match.home_team, 'defense'),
-                'team_midfield': self._calculate_team_parameter(match.home_team, 'midfield'),
-                'tactics': 'attacking',
+                'team_attack': 0,
+                'team_defense': 0,
+                'team_midfield': 0,
+                'tactics': 'balanced',  # по умолчанию
             },
             'away': {
                 'possession': 50,
@@ -35,55 +46,33 @@ class MatchSimulation:
                 'goals': 0,
                 'passes': 0,
                 'tackles': 0,
-                'team_attack': self._calculate_team_parameter(match.away_team, 'attack'),
-                'team_defense': self._calculate_team_parameter(match.away_team, 'defense'),
-                'team_midfield': self._calculate_team_parameter(match.away_team, 'midfield'),
-                'tactics': 'defensive',
+                'team_attack': 0,
+                'team_defense': 0,
+                'team_midfield': 0,
+                'tactics': 'balanced',
             },
         }
 
-        # Создадим словарь "агентов" игроков
-        self.player_agents = {
-            'home': {},
-            'away': {}
-        }
+        # При инициализации сразу прочитаем tactic:
+        if isinstance(self.match.home_lineup, dict):
+            self.match_stats['home']['tactics'] = self.match.home_lineup.get('tactic', 'balanced')
+        if isinstance(self.match.away_lineup, dict):
+            self.match_stats['away']['tactics'] = self.match.away_lineup.get('tactic', 'balanced')
 
-        # Получаем ID игроков из составов
-        home_lineup_ids = []
-        away_lineup_ids = []
-
+        # Разберём home_lineup
+        home_lineup_dict = {}
         if self.match.home_lineup and isinstance(self.match.home_lineup, dict):
-            # Проверяем, есть ли вложенный словарь "lineup"
-            if "lineup" in self.match.home_lineup:
-                home_lineup = self.match.home_lineup["lineup"]
-            else:
-                home_lineup = self.match.home_lineup
-            # Берём только значения (ID игроков)
-            home_lineup_ids = list(map(str, home_lineup.values()))
-
+            home_lineup_dict = self.match.home_lineup.get('lineup', {})
+        away_lineup_dict = {}
         if self.match.away_lineup and isinstance(self.match.away_lineup, dict):
-            # То же самое для away_lineup
-            if "lineup" in self.match.away_lineup:
-                away_lineup = self.match.away_lineup["lineup"]
-            else:
-                away_lineup = self.match.away_lineup
-            away_lineup_ids = list(map(str, away_lineup.values()))
+            away_lineup_dict = self.match.away_lineup.get('lineup', {})
 
-        logger.info(f"Home lineup IDs: {home_lineup_ids}")
-        logger.info(f"Away lineup IDs: {away_lineup_ids}")
+        # Сохраним в self.home_slots / self.away_slots
+        self.home_slots = self._build_slot_map(home_lineup_dict)
+        self.away_slots = self._build_slot_map(away_lineup_dict)
 
-        # Получаем объекты игроков по их ID
-        home_players = Player.objects.filter(pk__in=home_lineup_ids)
-        away_players = Player.objects.filter(pk__in=away_lineup_ids)
-
-        # Создаем агентов для каждого игрока
-        for player in home_players:
-            agent = PlayerAgent(player)
-            self.player_agents['home'][player.id] = agent
-
-        for player in away_players:
-            agent = PlayerAgent(player)
-            self.player_agents['away'][player.id] = agent
+        # Для удобства также соберём списки игроков (их атрибутов) и рассчитаем командные параметры
+        self._calculate_team_parameters()
 
         # Изначально "владелец мяча" и "зона" не заданы
         self.ball_owner = None
@@ -92,11 +81,61 @@ class MatchSimulation:
         # Подготовим списки минут, когда возникают опасные моменты
         self._setup_moments()
 
-    def _calculate_team_parameter(self, team, parameter_type):
+    def _build_slot_map(self, lineup_dict):
         """
-        Примерная функция, которая усредняет характеристики команды
+        На входе: { "0": { "playerId": "8001", "slotType": "goalkeeper", ... }, "1": {...}, ... }
+        Возвращаем: dict, ключ=строка слота, значение={
+           "playerObj": <Player>,
+           "agent": <PlayerAgent>,
+           "slotType": ...,
+           "slotLabel": ...,
+        }
         """
-        players = team.player_set.all()
+        result = {}
+        for slot_index, slot_info in lineup_dict.items():
+            # slot_info => {playerId, slotType, slotLabel, ...}
+            player_id_str = slot_info.get("playerId")
+            if not player_id_str:
+                continue
+            try:
+                player_id = int(player_id_str)
+                player_obj = Player.objects.get(pk=player_id)
+            except (ValueError, Player.DoesNotExist):
+                logger.warning(f"Slot {slot_index}: invalid playerId={player_id_str}, skipping.")
+                continue
+
+            agent = PlayerAgent(player_obj)
+            result[slot_index] = {
+                "playerObj": player_obj,
+                "agent": agent,
+                "slotType": slot_info.get("slotType"),    # "goalkeeper", "defender", ...
+                "slotLabel": slot_info.get("slotLabel"),  # "GK", "LB", "CB", ...
+            }
+        return result
+
+    def _calculate_team_parameters(self):
+        """
+        Для каждой команды (home/away) вычисляем "team_attack", "team_defense", "team_midfield"
+        на основе игроков, лежащих в self.home_slots / self.away_slots.
+        """
+        # Собираем список всех Player-объектов для home:
+        home_players = [slot["playerObj"] for slot in self.home_slots.values()]
+
+        # Аналогично для away:
+        away_players = [slot["playerObj"] for slot in self.away_slots.values()]
+
+        self.match_stats['home']['team_attack'] = self._calculate_team_parameter(home_players, 'attack')
+        self.match_stats['home']['team_defense'] = self._calculate_team_parameter(home_players, 'defense')
+        self.match_stats['home']['team_midfield'] = self._calculate_team_parameter(home_players, 'midfield')
+
+        self.match_stats['away']['team_attack'] = self._calculate_team_parameter(away_players, 'attack')
+        self.match_stats['away']['team_defense'] = self._calculate_team_parameter(away_players, 'defense')
+        self.match_stats['away']['team_midfield'] = self._calculate_team_parameter(away_players, 'midfield')
+
+    def _calculate_team_parameter(self, players, parameter_type):
+        """
+        Рассчитываем некое «среднее» параметра (атака/защита/центр) по набору игроков.
+        """
         total = 0
         count = 0
 
@@ -119,7 +158,7 @@ class MatchSimulation:
                     base_value = player.marking + player.tackling
                     weight = 1.0
 
-            else:  # "midfield"
+            else:  # 'midfield'
                 if player.position in ['Central Midfielder', 'Defensive Midfielder', 'Attacking Midfielder']:
                     base_value = player.passing + player.vision + player.work_rate
                     weight = 1.5
@@ -136,24 +175,9 @@ class MatchSimulation:
         else:
             return 50
 
-    def create_match_event(self, minute, event_type, agent, description):
-        """
-        Создаём MatchEvent в БД (запись о событии).
-        agent.player_model — ссылка на Player
-        """
-        player_model = agent.player_model if agent else None
-        MatchEvent.objects.create(
-            match=self.match,
-            minute=minute,
-            event_type=event_type,
-            player=player_model,
-            description=description
-        )
-
     def _setup_moments(self):
         """
-        Определяем, на каких минутах будет "опасный момент/атака" 
-        у home / away.
+        Определяем, на каких минутах будет опасный момент у home/away (упрощённо).
         """
         base_min, base_max = 10, 20
         home_strength = (self.match_stats['home']['team_attack'] + self.match_stats['home']['team_midfield']) / 2
@@ -169,46 +193,76 @@ class MatchSimulation:
         random.shuffle(all_minutes)
 
         self.home_moments_minutes = sorted(all_minutes[:home_chances])
-        self.away_moments_minutes = sorted(all_minutes[home_chances:home_chances + away_chances])
+        self.away_moments_minutes = sorted(all_minutes[home_chances : home_chances + away_chances])
+
+    def create_match_event(self, minute, event_type, agent, description):
+        """
+        Создаём MatchEvent в БД (запись о событии).
+        agent.player_model — ссылка на Player (или None).
+        """
+        player_model = agent.player_model if agent else None
+        MatchEvent.objects.create(
+            match=self.match,
+            minute=minute,
+            event_type=event_type,
+            player=player_model,
+            description=description
+        )
 
     def simulate_minute(self, minute):
         """
-        Логика "1 минута матча": создаём MatchEvent'ы (гол, блок и т. д.).
+        Логика "1 минута матча": упрощённая схема выбора атакующей команды и рандомного игрока.
         """
         if minute in self.home_moments_minutes:
             attacking_team = 'home'
         elif minute in self.away_moments_minutes:
             attacking_team = 'away'
         else:
-            return  # Ничего не произошло
-
-        # События
-        self.create_match_event(minute, 'info', None, "==============================")
-        self.create_match_event(minute, 'info', None, f"MOMENT at minute {minute}: {attacking_team.upper()} tries to attack!")
-        self.create_match_event(minute, 'info', None, "==============================")
-
-        # Выбираем рандомного игрока из того, что у нас есть в self.player_agents
-        if not self.player_agents[attacking_team]:
-            # Если вдруг lineup пуст
-            logger.warning(f"No players in {attacking_team} lineup to simulate minute {minute}.")
+            # Ни у кого нет опасного момента
             return
 
-        random_player_id = random.choice(list(self.player_agents[attacking_team].keys()))
-        owner_agent = self.player_agents[attacking_team][random_player_id]
+        self.create_match_event(minute, 'info', None,
+                                f"MOMENT at minute {minute}: {attacking_team.upper()} tries to attack!")
+
+        # Соберём список «подходящих» слотов для атаки.
+        # Допустим, хотим только slotType = 'midfielder' или 'forward'.
+        if attacking_team == 'home':
+            slot_map = self.home_slots
+            defending_team = 'away'
+        else:
+            slot_map = self.away_slots
+            defending_team = 'home'
+
+        attacking_slots = [
+            idx
+            for idx, data in slot_map.items()
+            if data["slotType"] in ('midfielder', 'forward')
+        ]
+
+        if not attacking_slots:
+            logger.warning(f"No attacking slots found for {attacking_team}.")
+            return
+
+        chosen_slot_index = random.choice(attacking_slots)
+        slot_data = slot_map[chosen_slot_index]
+        agent = slot_data["agent"]
 
         self.create_match_event(
             minute,
             'info',
-            owner_agent,
-            f"Ball currently owned by {attacking_team.upper()} player {owner_agent.full_name}"
+            agent,
+            f"Ball owned by {agent.full_name} (slot {slot_data['slotLabel']})"
         )
 
-        # 30% шанс гола
-        if random.random() < 0.3:
-            # Случайный "автор гола"
-            scorer_player_id = random.choice(list(self.player_agents[attacking_team].keys()))
-            scorer_agent = self.player_agents[attacking_team][scorer_player_id]
+        # Определим вероятность гола (упрощённо 25%)
+        goal_probability = 0.25
 
+        # Усилим шанс, если это чистый «forward»:
+        if slot_data["slotType"] == 'forward':
+            goal_probability += 0.10  # +10% если тип «forward»
+
+        if random.random() < goal_probability:
+            # Гол
             self.match_stats[attacking_team]['goals'] += 1
             if attacking_team == 'home':
                 self.match.home_score += 1
@@ -219,22 +273,22 @@ class MatchSimulation:
             self.create_match_event(
                 minute,
                 'goal',
-                scorer_agent,
-                f"GOAL! {scorer_agent.full_name} scores!"
+                agent,
+                f"GOAL by {agent.full_name}!"
             )
         else:
-            # "Shot blocked"
+            # Блок/промах
             self.create_match_event(
                 minute,
                 'info',
-                owner_agent,
-                "Shot blocked by defenders!"
+                agent,
+                "Shot blocked by defenders or missed!"
             )
 
 
 def simulate_one_minute(match_id: int):
     """
-    Функция, которую может вызывать Celery (каждые 5 секунд и т. д.).
+    Функция, которую может вызывать Celery периодически.
     """
     try:
         match = Match.objects.get(id=match_id)
@@ -259,18 +313,14 @@ def simulate_one_minute(match_id: int):
 
         if match.current_minute >= 90:
             match.status = 'finished'
-
         match.save()
 
-        # Отправляем обновление через WebSocket
+        # Отправляем обновление через WebSocket (если нужно)
         channel_layer = get_channel_layer()
         if channel_layer is not None:
-            # Получаем последние события матча
             latest_events = list(match.events.order_by('-minute')[:10].values(
                 'minute', 'event_type', 'description'
             ))
-            
-            # Формируем данные для отправки
             match_data = {
                 "minute": match.current_minute,
                 "home_score": match.home_score,
@@ -278,8 +328,6 @@ def simulate_one_minute(match_id: int):
                 "status": match.status,
                 "events": latest_events
             }
-            
-            # Отправляем в группу WebSocket
             async_to_sync(channel_layer.group_send)(
                 f"match_{match.id}",
                 {
