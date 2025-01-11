@@ -1,11 +1,12 @@
-# country_locales.py
-
 country_locales = {
-    'US': 'en_US',
-    'FR': 'fr_FR',
-    'DE': 'de_DE',
-    'ES': 'es_ES',
-    'IT': 'it_IT',
-    'RU': 'ru_RU',
-    # Добавьте другие сопоставления по мере необходимости
+    'GB': 'en_GB',  # Великобритания
+    'ES': 'es_ES',  # Испания
+    'IT': 'it_IT',  # Италия
+    'DE': 'de_DE',  # Германия
+    'FR': 'fr_FR',  # Франция
+    'PT': 'pt_PT',  # Португалия
+    'GR': 'el_GR',  # Греция
+    'RU': 'ru_RU',  # Россия
+    'AR': 'es_AR',  # Аргентина
+    'BR': 'pt_BR',  # Бразилия
 }
