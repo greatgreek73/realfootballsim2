@@ -1,25 +1,32 @@
+# clubs/views.py
+import json
+import random
+import logging
+
 from django.shortcuts import redirect, render, get_object_or_404
 from django.views.generic import CreateView, DetailView
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.db import transaction
 from faker import Faker
-from django.views.decorators.csrf import ensure_csrf_cookie
+
 from .models import Club
-from players.models import Player
-from tournaments.models import Championship, League
-from players.utils import generate_player_stats
-from .country_locales import country_locales
 from .forms import ClubForm
+from .country_locales import country_locales
+from players.models import Player
+from players.utils import generate_player_stats
 from players.constants import PLAYER_PRICES
-import json
-import random
-import logging
+from tournaments.models import Championship, League
 
 logger = logging.getLogger(__name__)
 
+
 class CreateClubView(CreateView):
+    """
+    Представление для создания нового клуба.
+    """
     model = Club
     form_class = ClubForm
     template_name = 'clubs/create_club.html'
@@ -54,9 +61,6 @@ class CreateClubView(CreateView):
                     return self.form_invalid(form)
 
                 messages.info(self.request, f"Club created with ID: {club.id}")
-
-                from time import sleep
-                sleep(0.2)
 
                 championship = Championship.objects.filter(
                     teams=club,
@@ -98,6 +102,9 @@ class CreateClubView(CreateView):
 
 
 class ClubDetailView(DetailView):
+    """
+    Детальная страница клуба, где отображаются игроки и другая информация.
+    """
     model = Club
     template_name = 'clubs/club_detail.html'
 
@@ -114,18 +121,26 @@ class ClubDetailView(DetailView):
 
         return context
 
+
 def get_locale_from_country_code(country_code):
+    """
+    Возвращает строку локали (например, 'en_GB') для заданного кода страны.
+    """
     return country_locales.get(country_code, 'en_US')
+
 
 @require_http_methods(["GET"])
 def create_player(request, pk):
+    """
+    Создаёт нового игрока в клубе (через GET-параметры: position, player_class).
+    """
     club = get_object_or_404(Club, pk=pk)
     if club.owner != request.user:
         return HttpResponse("You don't have permission to create players in this club.", status=403)
 
     position = request.GET.get('position')
     player_class = int(request.GET.get('player_class', 1))
-    
+
     cost = PLAYER_PRICES.get(player_class, 200)
 
     if request.user.tokens < cost:
@@ -172,22 +187,24 @@ def create_player(request, pk):
 
         request.user.tokens -= cost
         request.user.save()
+
         messages.success(request, f'Successfully deducted {cost} tokens')
         messages.success(
             request,
             f'Player {player.first_name} {player.last_name} successfully created!'
         )
     except Exception as e:
-        messages.error(
-            request,
-            f'Error creating player: {str(e)}'
-        )
+        messages.error(request, f'Error creating player: {str(e)}')
         logger.error(f'Error creating player: {str(e)}')
 
     return redirect('clubs:club_detail', pk=pk)
 
+
 @require_http_methods(["GET"])
 def team_selection_view(request, pk):
+    """
+    Страница выбора состава (drag-and-drop).
+    """
     club = get_object_or_404(Club, pk=pk)
     if club.owner != request.user:
         messages.error(request, "You don't have permission to view this page.")
@@ -199,19 +216,23 @@ def team_selection_view(request, pk):
     }
     return render(request, 'clubs/team_selection.html', context)
 
+
 @require_http_methods(["GET"])
 def get_players(request, pk):
+    """
+    Возвращает JSON со списком игроков клуба.
+    """
     club = get_object_or_404(Club, pk=pk)
     if club.owner != request.user:
         return JsonResponse({"error": "Access denied"}, status=403)
 
     players = Player.objects.filter(club=club)
-    player_data = []
+    data = []
     for p in players:
-        player_data.append({
+        data.append({
             'id': p.id,
             'name': f"{p.first_name} {p.last_name}",
-            'position': p.position,
+            'position': p.position,  # например "Attacking Midfielder"
             'playerClass': p.player_class,
             'attributes': {
                 'stamina': p.stamina,
@@ -219,24 +240,27 @@ def get_players(request, pk):
                 'speed': p.pace
             }
         })
-    return JsonResponse(player_data, safe=False)
+    return JsonResponse(data, safe=False)
+
 
 @ensure_csrf_cookie
 @require_http_methods(["POST"])
 def save_team_lineup(request, pk):
     """
-    Теперь ожидаем, что lineup - объект вида:
-    {
-      "0": {
-        "playerId": "8001",
-        "playerPosition": "Goalkeeper",
-        "slotType": "goalkeeper",
-        "slotLabel": "GK"
-      },
-      "1": {...},
-      ...
-    }
-    И tactic => строка (напр. "balanced")
+    Сохраняет состав (lineup) и тактику.
+    Ожидаем структуру вида:
+      {
+        "lineup": {
+          "0": {
+            "playerId": "123",
+            "playerPosition": "Defensive Midfielder",
+            "slotType": "ldm",
+            "slotLabel": "LDM"
+          },
+          ...
+        },
+        "tactic": "balanced"
+      }
     """
     try:
         club = get_object_or_404(Club, pk=pk)
@@ -249,40 +273,47 @@ def save_team_lineup(request, pk):
 
         logger.debug(f"save_team_lineup() received data: {data}")
 
-        # Проверяем длину
         if len(raw_lineup) > 11:
             return JsonResponse({
                 "success": False,
                 "error": "Squad cannot have more than 11 players"
             }, status=400)
 
-        # Ищем хотя бы одного вратаря
         has_goalkeeper = False
+
         for slot_idx, slot_info in raw_lineup.items():
             if not isinstance(slot_info, dict):
-                # Старый формат (слот_info = "8012")? Можно обрабатывать отдельно
                 return JsonResponse({
                     "success": False,
-                    "error": "Invalid format: expected object, got string"
+                    "error": "Invalid format: each slot must be an object"
                 }, status=400)
 
-            p_id = slot_info.get("playerId")
+            p_id  = slot_info.get("playerId")
             p_pos = slot_info.get("playerPosition", "")
-            # Проверяем, что playerId существует:
+            s_type = slot_info.get("slotType", "")
+            s_label = slot_info.get("slotLabel", "")
+
             try:
                 p_obj = Player.objects.get(id=p_id)
             except Player.DoesNotExist:
-                return JsonResponse({"success": False,
-                                     "error": f"Player {p_id} does not exist"}, status=400)
+                return JsonResponse({
+                    "success": False,
+                    "error": f"Player {p_id} does not exist"
+                }, status=400)
 
-            # Проверяем принадлежность клубу
             if p_obj.club_id != club.id:
-                return JsonResponse({"success": False,
-                                     "error": f"Player {p_id} is not in club {club.id}"}, status=400)
+                return JsonResponse({
+                    "success": False,
+                    "error": f"Player {p_id} does not belong to club {club.id}"
+                }, status=400)
 
-            # Узнаём, является ли он вратарём
+            # Проверяем наличие хотя бы одного вратаря
             if "goalkeeper" in p_pos.lower():
                 has_goalkeeper = True
+
+            # Дополнительная валидация можно делать здесь, если нужно.
+
+            # Пример: если slotType = "ldm", убедиться, что p_pos включает "Defensive Midfielder"
 
         if not has_goalkeeper:
             return JsonResponse({
@@ -309,8 +340,12 @@ def save_team_lineup(request, pk):
         logger.error(f"Error saving team lineup: {str(e)}")
         return JsonResponse({"success": False, "error": str(e)}, status=500)
 
+
 @require_http_methods(["GET"])
 def get_team_lineup(request, pk):
+    """
+    Возвращаем сохранённый состав.
+    """
     club = get_object_or_404(Club, pk=pk)
     if club.owner != request.user:
         return JsonResponse({"error": "Access denied"}, status=403)
@@ -319,29 +354,26 @@ def get_team_lineup(request, pk):
     lineup_data = data.get('lineup', {})
     tactic = data.get('tactic', 'balanced')
 
-    # Для удобства отправим обратно players: {...}, если нужно
-    # Но в принципе lineup_data уже содержит playerId
-    response_data = {
+    response = {
         'lineup': lineup_data,
         'tactic': tactic,
         'players': {}
     }
 
-    # Собираем ID игроков, чтобы вернуть доп. данные
-    player_ids = []
+    pids = []
     for info in lineup_data.values():
         if isinstance(info, dict):
             pid = info.get('playerId')
             if pid:
-                player_ids.append(pid)
+                pids.append(pid)
 
-    if player_ids:
-        players_qs = Player.objects.filter(id__in=player_ids)
-        for p in players_qs:
-            response_data['players'][str(p.id)] = {
-                'name': f"{p.first_name} {p.last_name}",
-                'position': p.position,
-                'playerClass': p.player_class
+    if pids:
+        qs = Player.objects.filter(id__in=pids)
+        for pl in qs:
+            response['players'][str(pl.id)] = {
+                'name': f"{pl.first_name} {pl.last_name}",
+                'position': pl.position,
+                'playerClass': pl.player_class
             }
 
-    return JsonResponse(response_data)
+    return JsonResponse(response)

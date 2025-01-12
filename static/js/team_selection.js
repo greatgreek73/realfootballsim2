@@ -1,3 +1,4 @@
+// team_selection.js
 document.addEventListener('DOMContentLoaded', function() {
     const pitch = document.getElementById('pitch');
     const playerList = document.getElementById('playerList');
@@ -6,30 +7,61 @@ document.addEventListener('DOMContentLoaded', function() {
     const saveStatus = document.getElementById('saveStatus');
     const tacticSelect = document.getElementById('tacticSelect');
 
+    // -------------------------------
     // Конфигурация слотов
+    // 1) GK (1 слот)
+    // 2) Защита (defense): 5 слотов (ldef, rdef, cdef1, cdef2, cdef3)
+    // 3) Опорная зона (defensive midfield): 5 слотов (ldm, rdm, cdm1, cdm2, cdm3)
+    // 4) Полузащита (midfield): 5 слотов (lm, rm, cm1, cm2, cm3)
+    // 5) Атакующая полузащита: 4 слота (lam, ram, cam1, cam2)
+    // 6) Форварды (3 центральных): cf1, cf2, cf3
+
     const positions = [
-        { top: '10%', left: '50%', type: 'goalkeeper', label: 'GK' },  
-        { top: '30%', left: '20%', type: 'defender',   label: 'LB' },  
-        { top: '30%', left: '40%', type: 'defender',   label: 'CB' },
-        { top: '30%', left: '60%', type: 'defender',   label: 'CB' },
-        { top: '30%', left: '80%', type: 'defender',   label: 'RB' },
-        { top: '60%', left: '30%', type: 'midfielder', label: 'LM' },  
-        { top: '60%', left: '50%', type: 'midfielder', label: 'CM' },
-        { top: '60%', left: '70%', type: 'midfielder', label: 'RM' },
-        { top: '80%', left: '30%', type: 'forward',    label: 'LF' },  
-        { top: '80%', left: '50%', type: 'forward',    label: 'ST' },
-        { top: '80%', left: '70%', type: 'forward',    label: 'RF' }
+        // GK (1)
+        { top: '8%',  left: '50%',  type: 'goalkeeper', label: 'GK' },
+
+        // Защита (5)
+        { top: '18%', left: '20%', type: 'ldef',  label: 'LDEF' },
+        { top: '18%', left: '80%', type: 'rdef',  label: 'RDEF' },
+        { top: '18%', left: '40%', type: 'cdef1', label: 'CDEF1' },
+        { top: '18%', left: '50%', type: 'cdef2', label: 'CDEF2' },
+        { top: '18%', left: '60%', type: 'cdef3', label: 'CDEF3' },
+
+        // Опорная зона (5)
+        { top: '30%', left: '15%', type: 'ldm',  label: 'LDM' },
+        { top: '30%', left: '85%', type: 'rdm',  label: 'RDM' },
+        { top: '30%', left: '35%', type: 'cdm1', label: 'CDM1' },
+        { top: '30%', left: '50%', type: 'cdm2', label: 'CDM2' },
+        { top: '30%', left: '65%', type: 'cdm3', label: 'CDM3' },
+
+        // Обычная полузащита (5)
+        { top: '45%', left: '15%', type: 'lm',  label: 'LM' },
+        { top: '45%', left: '85%', type: 'rm',  label: 'RM' },
+        { top: '45%', left: '35%', type: 'cm1', label: 'CM1' },
+        { top: '45%', left: '50%', type: 'cm2', label: 'CM2' },
+        { top: '45%', left: '65%', type: 'cm3', label: 'CM3' },
+
+        // Атакующая полузащита (4)
+        { top: '60%', left: '20%', type: 'lam',  label: 'LAM' },
+        { top: '60%', left: '80%', type: 'ram',  label: 'RAM' },
+        { top: '60%', left: '40%', type: 'cam1', label: 'CAM1' },
+        { top: '60%', left: '60%', type: 'cam2', label: 'CAM2' },
+
+        // 3 центральных форварда
+        { top: '75%', left: '35%', type: 'cf1',  label: 'CF1' },
+        { top: '75%', left: '50%', type: 'cf2',  label: 'CF2' },
+        { top: '75%', left: '65%', type: 'cf3',  label: 'CF3' }
     ];
 
-    // Создаём слоты на поле
+    // Создаём слоты
     positions.forEach((pos, index) => {
         const slot = document.createElement('div');
-        slot.className = 'player-slot empty';  // Добавляем класс empty
+        slot.className = 'player-slot empty';  // изначально пуст
         slot.style.top = pos.top;
         slot.style.left = pos.left;
 
-        slot.dataset.position = index;
-        slot.dataset.type = pos.type;
+        slot.dataset.position = String(index);
+        slot.dataset.type = pos.type;  // напр. "ldef", "cdm2", "cam1", "cf2"
 
         const label = document.createElement('div');
         label.className = 'position-label';
@@ -39,56 +71,104 @@ document.addEventListener('DOMContentLoaded', function() {
         pitch.appendChild(slot);
     });
 
-    function getPlayerType(position) {
-        if (!position) return 'other';
-        if (position.toLowerCase().includes('goalkeeper')) return 'goalkeeper';
-        if (position.toLowerCase().includes('back') ||
-            position.toLowerCase().includes('defender')) return 'defender';
-        if (position.toLowerCase().includes('midfielder')) return 'midfielder';
-        if (position.toLowerCase().includes('forward') ||
-            position.toLowerCase().includes('striker')) return 'forward';
+    // -------------------------------
+    // Определяем базовый тип игрока (goalkeeper, defender, midfielder, forward)
+    function getPlayerType(positionString) {
+        if (!positionString) return 'other';
+        const p = positionString.toLowerCase();
+        if (p.includes('goalkeeper')) return 'goalkeeper';
+        if (p.includes('back') || p.includes('defender')) return 'defender';
+        if (p.includes('midfielder')) return 'midfielder';
+        if (p.includes('forward') || p.includes('striker')) return 'forward';
         return 'other';
     }
 
-    function isValidPosition(playerType, slotType) {
+    // -------------------------------
+    // Проверка соответствия slotType -> playerType/position
+    // Например, slotType "ldm" требует "Defensive Midfielder"
+    function isValidPosition(playerType, slotType, fullPositionName) {
+        const pLower = (fullPositionName || '').toLowerCase();
+
         switch (slotType) {
             case 'goalkeeper':
-                return playerType === 'goalkeeper';
-            case 'defender':
-                return playerType === 'defender';
-            case 'midfielder':
-                return playerType === 'midfielder';
-            case 'forward':
-                return playerType === 'forward';
+                return (playerType === 'goalkeeper');
+
+            // --- 5 защитников ---
+            case 'ldef':
+            case 'rdef':
+            case 'cdef1':
+            case 'cdef2':
+            case 'cdef3':
+                return (playerType === 'defender');
+
+            // --- опорная зона ---
+            case 'ldm':
+            case 'rdm':
+            case 'cdm1':
+            case 'cdm2':
+            case 'cdm3':
+                // Нужно наличие "defensive midfielder"
+                return pLower.includes('defensive midfielder');
+
+            // --- обычная полузащита ---
+            case 'lm':
+            case 'rm':
+            case 'cm1':
+            case 'cm2':
+            case 'cm3':
+                // Должен быть midfielder, но не "defensive" и не "attacking"
+                if (playerType !== 'midfielder') return false;
+                if (pLower.includes('defensive midfielder')) return false;
+                if (pLower.includes('attacking midfielder')) return false;
+                return true;
+
+            // --- атакующая полузащита ---
+            case 'lam':
+            case 'ram':
+            case 'cam1':
+            case 'cam2':
+                // Нужно именно "attacking midfielder"
+                return pLower.includes('attacking midfielder');
+
+            // --- форварды (cf1, cf2, cf3)
+            case 'cf1':
+            case 'cf2':
+            case 'cf3':
+                return (playerType === 'forward');
+
             default:
                 return false;
         }
     }
 
+    // -------------------------------
+    // Создаём DOM-элемент игрока
     function createPlayerElement(player) {
         const playerElement = document.createElement('div');
-        const playerType = getPlayerType(player.position);
+        const pt = getPlayerType(player.position);
 
-        playerElement.className = `player-item ${playerType}`;
-        playerElement.dataset.playerId = player.id;
-        playerElement.dataset.playerPosition = player.position || ''; 
+        playerElement.className = `player-item ${pt}`;
+        playerElement.dataset.playerId = String(player.id);
+        playerElement.dataset.playerPosition = player.position || '';
 
-        const nameElement = document.createElement('div');
-        nameElement.className = 'player-name';
-        nameElement.textContent = player.name;
+        const nameEl = document.createElement('div');
+        nameEl.className = 'player-name';
+        nameEl.textContent = player.name;
 
-        const positionElement = document.createElement('div');
-        positionElement.className = 'player-position text-muted';
-        positionElement.textContent = player.position;
+        const posEl = document.createElement('div');
+        posEl.className = 'player-position text-muted';
+        posEl.textContent = player.position;
 
-        playerElement.appendChild(nameElement);
-        playerElement.appendChild(positionElement);
+        playerElement.appendChild(nameEl);
+        playerElement.appendChild(posEl);
 
         return playerElement;
     }
 
-    function showMessage(text, type = 'success') {
-        saveStatus.textContent = text;
+    // -------------------------------
+    // Вывод сообщения
+    function showMessage(msg, type = 'success') {
+        saveStatus.textContent = msg;
         saveStatus.className = `alert alert-${type} mt-2`;
         setTimeout(() => {
             saveStatus.textContent = '';
@@ -96,24 +176,26 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 4000);
     }
 
+    // -------------------------------
+    // Сохранение состава
     function saveTeamLineup() {
         const lineup = {};
         document.querySelectorAll('.player-slot').forEach(slot => {
-            const playerElem = slot.querySelector('.player-item');
-            if (playerElem) {
+            const playerItem = slot.querySelector('.player-item');
+            if (playerItem) {
                 lineup[slot.dataset.position] = {
-                    playerId: playerElem.dataset.playerId,
-                    playerPosition: playerElem.dataset.playerPosition,
-                    slotType: slot.dataset.type,
-                    slotLabel: slot.querySelector('.position-label').textContent
+                    playerId:       playerItem.dataset.playerId,
+                    playerPosition: playerItem.dataset.playerPosition,
+                    slotType:       slot.dataset.type,
+                    slotLabel:      slot.querySelector('.position-label').textContent
                 };
             }
         });
 
-        const tacticValue = tacticSelect ? tacticSelect.value : 'balanced';
+        const tacticVal = tacticSelect ? tacticSelect.value : 'balanced';
         const payload = {
             lineup: lineup,
-            tactic: tacticValue
+            tactic: tacticVal
         };
 
         console.log('Sending lineup payload:', payload);
@@ -127,7 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
             body: JSON.stringify(payload),
             credentials: 'include'
         })
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => {
             if (data.success) {
                 showMessage('Lineup saved!');
@@ -135,26 +217,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 showMessage(`Error saving lineup: ${data.error || ''}`, 'danger');
             }
         })
-        .catch(error => {
+        .catch(err => {
             showMessage('Server error', 'danger');
-            console.error('Error saving lineup:', error);
+            console.error('Error saving lineup:', err);
         });
     }
 
+    // -------------------------------
+    // Загрузка уже сохранённого состава
     function loadTeamLineup() {
         fetch(`/clubs/detail/${clubId}/get-team-lineup/`)
-            .then(response => response.json())
+            .then(r => r.json())
             .then(data => {
                 if (data.lineup) {
                     Object.entries(data.lineup).forEach(([slotIndex, details]) => {
                         const slot = document.querySelector(`.player-slot[data-position="${slotIndex}"]`);
                         if (!slot || !details) return;
-
-                        const playerId = details.playerId;
-                        const playerElem = document.querySelector(`.player-item[data-player-id="${playerId}"]`);
-                        if (playerElem) {
-                            slot.classList.remove('empty');  // Убираем класс empty
-                            slot.appendChild(playerElem);
+                        const pid = details.playerId;
+                        const pElem = document.querySelector(`.player-item[data-player-id="${pid}"]`);
+                        if (pElem) {
+                            slot.classList.remove('empty');
+                            slot.appendChild(pElem);
                         }
                     });
                 }
@@ -162,18 +245,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     tacticSelect.value = data.tactic;
                 }
             })
-            .catch(error => {
+            .catch(err => {
                 showMessage('Error loading lineup', 'danger');
-                console.error('Error loading lineup:', error);
+                console.error('Error loading lineup:', err);
             });
     }
 
+    // -------------------------------
+    // Сброс состава
     function resetLineup() {
-        document.querySelectorAll('.player-slot .player-item').forEach(player => {
-            playerList.appendChild(player);
+        document.querySelectorAll('.player-slot .player-item').forEach(pl => {
+            playerList.appendChild(pl);
         });
-        document.querySelectorAll('.player-slot').forEach(slot => {
-            slot.classList.add('empty');
+        document.querySelectorAll('.player-slot').forEach(s => {
+            s.classList.add('empty');
         });
         saveTeamLineup();
         showMessage('Lineup has been reset');
@@ -183,14 +268,19 @@ document.addEventListener('DOMContentLoaded', function() {
         resetButton.addEventListener('click', resetLineup);
     }
 
+    // -------------------------------
+    // Инициализация перетаскивания
     function initializeSortable() {
         new Sortable(playerList, {
             group: 'shared',
             animation: 150,
             onStart: function(evt) {
-                const playerType = getPlayerType(evt.item.dataset.playerPosition);
+                const pPos = evt.item.dataset.playerPosition || '';
+                const pType = getPlayerType(pPos);
+
+                // Подсветим все слоты, куда можно положить
                 document.querySelectorAll('.player-slot.empty').forEach(slot => {
-                    if (isValidPosition(playerType, slot.dataset.type)) {
+                    if (isValidPosition(pType, slot.dataset.type, pPos)) {
                         slot.classList.add('highlight');
                     }
                 });
@@ -209,21 +299,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 group: 'shared',
                 animation: 150,
                 onAdd: function(evt) {
-                    const slotElement = evt.to;
+                    const slotEl = evt.to;
                     const newPlayer = evt.item;
-                    
-                    if (isValidPosition(getPlayerType(newPlayer.dataset.playerPosition), slotElement.dataset.type)) {
-                        slotElement.classList.remove('empty');
-                        slotElement.classList.remove('highlight');
-                        
-                        slotElement.querySelectorAll('.player-item').forEach(existingPlayer => {
-                            if (existingPlayer !== newPlayer) {
-                                playerList.appendChild(existingPlayer);
-                                slotElement.classList.add('empty');
+                    const pPos = newPlayer.dataset.playerPosition || '';
+                    const pType = getPlayerType(pPos);
+                    const stype = slotEl.dataset.type;
+
+                    if (isValidPosition(pType, stype, pPos)) {
+                        slotEl.classList.remove('empty');
+                        slotEl.classList.remove('highlight');
+
+                        slotEl.querySelectorAll('.player-item').forEach(ex => {
+                            if (ex !== newPlayer) {
+                                playerList.appendChild(ex);
+                                slotEl.classList.add('empty');
                             }
                         });
-                        
-                        slotElement.appendChild(newPlayer);
+
+                        slotEl.appendChild(newPlayer);
                         saveTeamLineup();
                     } else {
                         playerList.appendChild(newPlayer);
@@ -231,35 +324,39 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 },
                 onRemove: function(evt) {
-                    const slot = evt.from;
-                    slot.classList.add('empty');
+                    const oldSlot = evt.from;
+                    oldSlot.classList.add('empty');
                 }
             });
 
-            slot.addEventListener('dragenter', function(e) {
+            slot.addEventListener('dragenter', function() {
                 if (slot.classList.contains('empty') && slot.classList.contains('highlight')) {
                     slot.classList.add('dragover');
                 }
             });
-            
-            slot.addEventListener('dragleave', function(e) {
+            slot.addEventListener('dragleave', function() {
                 slot.classList.remove('dragover');
             });
         });
     }
 
+    // -------------------------------
+    // 1) Загрузить список игроков,
+    // 2) Инициализировать перетаскивание,
+    // 3) Загрузить уже сохранённый состав
     fetch(`/clubs/detail/${clubId}/get-players/`)
-        .then(response => response.json())
+        .then(r => r.json())
         .then(players => {
-            players.forEach(player => {
-                const playerElement = createPlayerElement(player);
-                playerList.appendChild(playerElement);
+            playerList.innerHTML = '';
+            players.forEach(pl => {
+                const pel = createPlayerElement(pl);
+                playerList.appendChild(pel);
             });
             initializeSortable();
             loadTeamLineup();
         })
-        .catch(error => {
+        .catch(err => {
             showMessage('Error loading players', 'danger');
-            console.error('Error loading players:', error);
+            console.error('Error loading players:', err);
         });
 });
