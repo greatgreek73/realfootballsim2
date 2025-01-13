@@ -33,7 +33,7 @@
                                     <span class="badge bg-info">Class {{ player.player_class }}</span>
                                 </li>
                                 {% endif %}
-                                <!-- Добавляем отображение опыта -->
+                                <!-- Отображение опыта -->
                                 <li class="mb-2">
                                     <strong>Experience:</strong> {{ player.experience|floatformat:1 }}
                                 </li>
@@ -489,6 +489,17 @@
                             Improve Stats
                         </button>
                     </div>
+
+                    <!-- Если текущий пользователь — владелец клуба, показать кнопку «Удалить игрока» -->
+                    {% if user.is_authenticated and player.club.owner == user %}
+                    <div class="mt-4 text-center">
+                        <a href="{% url 'players:player_delete' player_id=player.id %}"
+                           class="btn btn-danger">
+                            Удалить игрока
+                        </a>
+                    </div>
+                    {% endif %}
+
                 </div>
             </div>
         </div>
@@ -539,7 +550,7 @@
           {% endif %}
 
           <p class="small text-muted">
-            +3 points will be added to the selected group's attributes. 
+            +3 points will be added to the selected group's attributes.
             Then +2 points will be randomly allocated among other attributes.
           </p>
         </div>
@@ -593,7 +604,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const groupSelect = document.getElementById('groupSelect');
         const groupVal = groupSelect.value;
 
-        // Отправляем fetch POST на ваш новый эндпоинт (например, /players/<id>/boost_player_ajax/)
+        // Отправляем fetch POST на ваш эндпоинт (players/<id>/boost_player_ajax/)
         fetch("{% url 'players:player_boost_ajax' player.id %}", {
             method: 'POST',
             headers: {
@@ -618,7 +629,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const modal = bootstrap.Modal.getInstance(modalEl);
                 modal.hide();
 
-                // Убрали alert(...) — теперь просто анимация
             } else {
                 alert(data.message || 'Error while boosting stats');
             }
@@ -628,7 +638,6 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Something went wrong');
         });
     });
-
 });
 
 /**
@@ -643,38 +652,37 @@ function applyStatChanges(changes) {
 
         // Ищем прогресс-бар: data-attr="attrName"
         const bar = document.querySelector(`.progress-bar[data-attr="${attrName}"]`);
-        if (!bar) continue; // нет такого progress-bar?
+        if (!bar) continue;
 
-        // Обновляем текст внутри
+        // Обновим текст внутри
         bar.textContent = newVal;
 
-        // Ставим начальную ширину = oldVal, чтобы при переходе был заметен
+        // Начальный width = oldVal
         bar.style.width = oldVal + '%';
 
-        // Если прирост > 0, показываем +N
+        // Если прирост > 0, показываем +N поверх progress
         const diff = newVal - oldVal;
         if (diff > 0) {
             const plusBadge = document.createElement('span');
             plusBadge.className = 'badge bg-success position-absolute translate-middle';
             plusBadge.style.zIndex = '9999';
             plusBadge.textContent = `+${diff}`;
-
-            // Разместим поверх самого progress (родитель — .progress)
+            // Добавляем поверх .progress
             bar.parentNode.appendChild(plusBadge);
 
-            // Через 1 сек уберем badge
+            // Через 10 сек удалим badge
             setTimeout(() => {
                 plusBadge.remove();
             }, 10000);
         }
 
-        // Запускаем анимацию (CSS transition)
+        // Анимация плавного перехода
         requestAnimationFrame(() => {
             bar.style.transition = 'width 1s ease';
             bar.style.width = newVal + '%';
         });
 
-        // Через 1.5 сек отключим transition, чтобы при следующем улучшении анимация сработала вновь
+        // Через 1.5s убираем transition, чтобы при повторном улучшении анимация сработала снова
         setTimeout(() => {
             bar.style.transition = '';
         }, 1500);

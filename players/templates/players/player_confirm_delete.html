@@ -1,0 +1,26 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-body">
+            <h3 class="card-title">Удаление игрока</h3>
+            <p class="card-text">
+                Вы действительно хотите удалить игрока
+                <strong>{{ player.first_name }} {{ player.last_name }}</strong>?
+            </p>
+            <form method="POST">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">
+                    Удалить
+                </button>
+                <a href="{% url 'players:player_detail' pk=player.id %}"
+                   class="btn btn-secondary">
+                    Отмена
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
