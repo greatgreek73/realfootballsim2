@@ -154,30 +154,10 @@ def extract_player_ids_from_lineup(current_lineup):
 
 
 def complete_lineup(club, current_lineup):
-    """
-    Дополняет неполный состав с учетом позиций игроков.
-    Всегда использует новый формат:
-    {
-        "0": {
-            "playerId": "123",
-            "slotType": "goalkeeper",
-            "slotLabel": "GK",
-            "playerPosition": "Goalkeeper"
-        },
-        ...
-    }
-    """
-    # Собираем уже занятых игроков
+    """Дополняет неполный состав, используя более гибкие правила позиций."""
     used_ids = extract_player_ids_from_lineup(current_lineup)
     
-    # Проверяем наличие вратаря в текущем составе
-    has_goalkeeper = False
-    for slot in current_lineup.values():
-        if isinstance(slot, dict) and 'goalkeeper' in slot.get('playerPosition', '').lower():
-            has_goalkeeper = True
-            break
-        
-    # Получаем доступных игроков по позициям
+    # Получаем всех доступных игроков и их позиции
     available_players = {}
     for player in Player.objects.filter(club=club).exclude(id__in=used_ids):
         if player.position not in available_players:
@@ -187,12 +167,7 @@ def complete_lineup(club, current_lineup):
             'position': player.position
         })
 
-    # Определяем сколько и каких игроков нужно добавить
-    slots_needed = 11 - len(current_lineup)
-    if slots_needed <= 0:
-        return current_lineup
-
-    # Конвертируем текущий состав в новый формат, если нужно
+    # Конвертируем текущий состав в новый формат
     new_lineup = {}
     for slot_key, slot_val in current_lineup.items():
         if isinstance(slot_val, dict):
@@ -207,62 +182,57 @@ def complete_lineup(club, current_lineup):
                     "playerPosition": player.position
                 }
             except (Player.DoesNotExist, ValueError):
-                logger.warning(f"Could not convert player {slot_val} to new format")
                 continue
 
     next_slot = len(new_lineup)
-    
-    # Если нет вратаря, обязательно добавляем его первым
-    if not has_goalkeeper:
-        goalkeepers = available_players.get('Goalkeeper', [])
-        if not goalkeepers:
-            logger.warning(f"No available goalkeepers for club {club.name}")
-            return None
-            
-        goalkeeper = random.choice(goalkeepers)
-        new_lineup[str(next_slot)] = {
-            "playerId": str(goalkeeper['id']),
-            "slotType": "goalkeeper",
-            "slotLabel": "GK",
-            "playerPosition": "Goalkeeper"
-        }
-        next_slot += 1
-        slots_needed -= 1
+    slots_needed = 11 - len(new_lineup)
+    if slots_needed <= 0:
+        return new_lineup
 
-        # Распределяем оставшиеся позиции по приоритетам
-    positions_priority = [
-        ('Center Back', 2),  # минимум 2 центральных защитника
-        ('Left Back', 1),    # левый защитник
-        ('Right Back', 1),   # правый защитник
-        ('Central Midfielder', 2),  # 2 центральных полузащитника
-        ('Defensive Midfielder', 1), 
-        ('Attacking Midfielder', 1),
-        ('Center Forward', 1),
+    # Приоритетные позиции с возможными заменами
+    position_preferences = [
+        (['Goalkeeper'], ['Center Back']),  # предпочтительно вратарь, но можно и центрального защитника
+        (['Center Back', 'Left Back', 'Right Back'], []),  # любой защитник
+        (['Center Back', 'Left Back', 'Right Back'], []),  # любой защитник
+        (['Central Midfielder', 'Defensive Midfielder'], []),  # любой опорник
+        (['Attacking Midfielder', 'Central Midfielder'], []),  # любой центральный
+        (['Left Midfielder', 'Right Midfielder', 'Attacking Midfielder'], []),  # любой атакующий
+        (['Center Forward'], ['Attacking Midfielder']),  # нападающий или атакующий полузащитник
     ]
 
-    for position, count in positions_priority:
+    for preferred_positions, fallback_positions in position_preferences:
         if slots_needed <= 0:
             break
-            
-        players = available_players.get(position, [])
-        if not players:
-            continue
-            
-        for _ in range(min(count, slots_needed)):
-            if players:
-                player = random.choice(players)
-                players.remove(player)
-                
-                new_lineup[str(next_slot)] = {
-                    "playerId": str(player['id']),
-                    "slotType": "auto",
-                    "slotLabel": f"AUTO{next_slot}",
-                    "playerPosition": player['position']
-                }
-                next_slot += 1
-                slots_needed -= 1
 
-    # Если остались незаполненные слоты, заполняем любыми доступными игроками
+        # Сначала пробуем предпочтительные позиции
+        available = []
+        for pos in preferred_positions:
+            if pos in available_players:
+                available.extend(available_players[pos])
+
+        # Если нет предпочтительных, пробуем запасные варианты
+        if not available and fallback_positions:
+            for pos in fallback_positions:
+                if pos in available_players:
+                    available.extend(available_players[pos])
+
+        if available:
+            player = random.choice(available)
+            # Удаляем использованного игрока из доступных
+            available_players[player['position']].remove(player)
+            if not available_players[player['position']]:
+                del available_players[player['position']]
+
+            new_lineup[str(next_slot)] = {
+                "playerId": str(player['id']),
+                "slotType": "auto",
+                "slotLabel": f"AUTO{next_slot}",
+                "playerPosition": player['position']
+            }
+            next_slot += 1
+            slots_needed -= 1
+
+    # Заполняем оставшиеся слоты любыми доступными игроками
     all_available = []
     for players in available_players.values():
         all_available.extend(players)
@@ -270,7 +240,7 @@ def complete_lineup(club, current_lineup):
     while slots_needed > 0 and all_available:
         player = random.choice(all_available)
         all_available.remove(player)
-        
+
         new_lineup[str(next_slot)] = {
             "playerId": str(player['id']),
             "slotType": "auto",
@@ -280,12 +250,11 @@ def complete_lineup(club, current_lineup):
         next_slot += 1
         slots_needed -= 1
 
-    if slots_needed > 0:
-        logger.warning(f"Could not complete lineup for club {club.name}, missing {slots_needed} players")
-        return None
+    # Если удалось заполнить все слоты
+    if slots_needed == 0:
+        return new_lineup
 
-    return new_lineup
-
+    return None
 
 @shared_task(name='tournaments.start_scheduled_matches')
 def start_scheduled_matches():
