@@ -6,7 +6,7 @@ from django.db import transaction, OperationalError
 from django.core.management import call_command
 from matches.models import Match
 from players.models import Player
-from clubs.models import Club  # <-- Убрали импорт изнутри функции
+from clubs.models import Club
 from .models import Season, Championship, League
 import logging
 import time
@@ -38,7 +38,7 @@ def retry_on_db_lock(func, max_attempts=3, delay=1):
 @shared_task(name='tournaments.simulate_active_matches', bind=True)
 def simulate_active_matches(self):
     """
-    Пошаговая симуляция матчей.
+    Пошаговая симуляция матчей (каждая «минута»).
     """
     now = timezone.now()
     logger.info(f"Starting active matches simulation at {now}")
@@ -80,6 +80,7 @@ def check_season_end(self):
                 status='finished'
             ).count()
 
+            # Допустим у нас 16 команд, каждая играет 15 туров * 2 круга = 30, итого 16 * 15 (т.к. каждая пара считает лишь один раз)
             required_matches = (
                 len(Championship.objects.filter(season=current_season)) * (16 * 15)
             )
@@ -88,6 +89,7 @@ def check_season_end(self):
             if is_end_date_passed and all_matches_played:
                 logger.info(f"Season {current_season.number} has ended. Starting end-season process...")
 
+                # Проверяем, не остались ли незавершенные матчи
                 unfinished_matches = Match.objects.filter(
                     championshipmatch__championship__season=current_season,
                     status__in=['scheduled', 'in_progress']
@@ -133,23 +135,68 @@ def start_scheduled_matches():
     """
 
     def complete_lineup(club, current_lineup):
-        """Дополняет неполный состав случайными игроками из клуба."""
-        used_players = set(str(pid) for pid in current_lineup.values())
+        """
+        Дополняет неполный состав случайными игроками из клуба.
+        
+        current_lineup может содержать либо строки (старый формат),
+        либо словари вида:
+            {
+                "playerId": "8012",
+                "slotType": "...",
+                ...
+            }
+        Нужно извлекать из этого словаря именно playerId и приводить к int.
+        """
+        # 1) Определяем, используется ли формат "dict" (playerId) или старый
+        #    Сделаем проверку по первому элементу, если он есть.
+        is_new_format = False
+        if current_lineup:
+            any_val = next(iter(current_lineup.values()))
+            if isinstance(any_val, dict):
+                is_new_format = True
 
+        # 2) Собираем ID уже занятых игроков
+        used_ids = set()
+        for slot_key, slot_val in current_lineup.items():
+            if isinstance(slot_val, dict):
+                # Новый формат
+                pid_str = slot_val.get('playerId')
+                if pid_str is not None:
+                    used_ids.add(int(pid_str))
+            else:
+                # Старый формат
+                used_ids.add(int(slot_val))
+
+        # 3) Получаем всех доступных игроков клуба
         available_players = list(
             Player.objects.filter(club=club)
-            .exclude(id__in=used_players)
+            .exclude(id__in=used_ids)
             .values_list('id', flat=True)
         )
 
+        # 4) Сколько недостает игроков?
         slots_needed = 11 - len(current_lineup)
         if len(available_players) < slots_needed:
-            return None
+            return None  # Недостаточно игроков
 
+        # 5) Рандомно добавляем нужное число
         random_players = random.sample(available_players, slots_needed)
         next_pos = len(current_lineup)
+
         for player_id in random_players:
-            current_lineup[str(next_pos)] = str(player_id)
+            if is_new_format:
+                # Создаем запись в виде dict
+                current_lineup[str(next_pos)] = {
+                    "playerId": str(player_id),
+                    # Остальные поля можно заполнить пустыми или как угодно
+                    "slotType": "auto_filled",
+                    "slotLabel": f"AUTO{next_pos}",
+                    "playerPosition": ""  # Можно попытаться вычислить из Player, если нужно
+                }
+            else:
+                # Старый формат: просто строка
+                current_lineup[str(next_pos)] = str(player_id)
+
             next_pos += 1
 
         return current_lineup
@@ -175,15 +222,16 @@ def start_scheduled_matches():
 
             # Обработка состава домашней команды
             home_data = match.home_team.lineup
-            # Если None или не dict — создаём заготовку
             if not home_data or not isinstance(home_data, dict):
                 home_data = {"lineup": {}}
 
             home_lineup = home_data.get('lineup', {})
             if len(home_lineup) < 11:
-                home_lineup = complete_lineup(match.home_team, home_lineup)
-                if home_lineup is None:
+                new_home_lineup = complete_lineup(match.home_team, home_lineup)
+                if new_home_lineup is None:
                     return '0 matches started: not enough players in home team'
+                home_lineup = new_home_lineup
+
             match.home_lineup = home_lineup
             match.home_tactic = home_data.get('tactic', 'balanced')
 
@@ -194,9 +242,11 @@ def start_scheduled_matches():
 
             away_lineup = away_data.get('lineup', {})
             if len(away_lineup) < 11:
-                away_lineup = complete_lineup(match.away_team, away_lineup)
-                if away_lineup is None:
+                new_away_lineup = complete_lineup(match.away_team, away_lineup)
+                if new_away_lineup is None:
                     return '0 matches started: not enough players in away team'
+                away_lineup = new_away_lineup
+
             match.away_lineup = away_lineup
             match.away_tactic = away_data.get('tactic', 'balanced')
 
