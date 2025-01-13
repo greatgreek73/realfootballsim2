@@ -155,12 +155,12 @@ def extract_player_ids_from_lineup(current_lineup):
 
 def complete_lineup(club, current_lineup):
     """Дополняет неполный состав, используя более гибкие правила позиций."""
-    used_ids = extract_player_ids_from_lineup(current_lineup)
+    # Создаем множество уже использованных ID
+    used_ids = set()
     
     # Получаем всех доступных игроков и их позиции
     available_players = {}
-    all_players = Player.objects.filter(club=club).exclude(id__in=used_ids)
-    
+    all_players = list(club.player_set.all())
     for player in all_players:
         if player.position not in available_players:
             available_players[player.position] = []
@@ -168,66 +168,96 @@ def complete_lineup(club, current_lineup):
             'id': player.id,
             'position': player.position
         })
-    
+
     new_lineup = {}
     next_slot = 0
-    slots_needed = 11
 
-    # Сначала ставим вратаря
-    goalkeepers = available_players.get('Goalkeeper', [])
-    if goalkeepers:
-        keeper = goalkeepers[0]
-        new_lineup[str(next_slot)] = {
+    # 1. Сначала вратарь
+    if 'Goalkeeper' in available_players and available_players['Goalkeeper']:
+        keeper = available_players['Goalkeeper'][0]
+        new_lineup['0'] = {
             "playerId": str(keeper['id']),
             "slotType": "goalkeeper",
             "slotLabel": "GK",
             "playerPosition": "Goalkeeper"
         }
-        available_players['Goalkeeper'].remove(keeper)
-        if not available_players['Goalkeeper']:
-            del available_players['Goalkeeper']
-        next_slot += 1
-        slots_needed -= 1
+        used_ids.add(keeper['id'])
+        next_slot = 1
+
+    # 2. Далее защитники
+    defenders = []
+    for pos in ['Center Back', 'Left Back', 'Right Back']:
+        if pos in available_players:
+            defenders.extend(available_players[pos])
     
-    # Приоритетные позиции
-    positions_priority = [
-        (['Center Back'], 2),
-        (['Left Back', 'Right Back'], 2),
-        (['Central Midfielder', 'Defensive Midfielder'], 2),
-        (['Attacking Midfielder', 'Left Midfielder', 'Right Midfielder'], 3),
-        (['Center Forward'], 2)
-    ]
+    needed_defenders = min(4, len(defenders))
+    selected_defenders = random.sample(defenders, needed_defenders)
+    for defender in selected_defenders:
+        if defender['id'] not in used_ids:
+            new_lineup[str(next_slot)] = {
+                "playerId": str(defender['id']),
+                "slotType": "auto",
+                "slotLabel": f"AUTO{next_slot}",
+                "playerPosition": defender['position']
+            }
+            used_ids.add(defender['id'])
+            next_slot += 1
 
-    # Заполняем остальные позиции
-    for positions, count in positions_priority:
-        if slots_needed <= 0:
-            break
-            
-        # Собираем всех доступных игроков для этих позиций
-        candidates = []
-        for pos in positions:
-            if pos in available_players:
-                candidates.extend(available_players[pos])
+    # 3. Полузащитники
+    midfielders = []
+    for pos in ['Central Midfielder', 'Defensive Midfielder', 'Attacking Midfielder', 'Left Midfielder', 'Right Midfielder']:
+        if pos in available_players:
+            midfielders.extend([m for m in available_players[pos] if m['id'] not in used_ids])
+    
+    needed_midfielders = min(4, len(midfielders))
+    selected_midfielders = random.sample(midfielders, needed_midfielders)
+    for midfielder in selected_midfielders:
+        if midfielder['id'] not in used_ids:
+            new_lineup[str(next_slot)] = {
+                "playerId": str(midfielder['id']),
+                "slotType": "auto",
+                "slotLabel": f"AUTO{next_slot}",
+                "playerPosition": midfielder['position']
+            }
+            used_ids.add(midfielder['id'])
+            next_slot += 1
+
+    # 4. Нападающие
+    forwards = []
+    for pos in ['Center Forward']:
+        if pos in available_players:
+            forwards.extend([f for f in available_players[pos] if f['id'] not in used_ids])
+    
+    needed_forwards = min(2, len(forwards))
+    selected_forwards = random.sample(forwards, needed_forwards) if forwards else []
+    for forward in selected_forwards:
+        if forward['id'] not in used_ids:
+            new_lineup[str(next_slot)] = {
+                "playerId": str(forward['id']),
+                "slotType": "auto",
+                "slotLabel": f"AUTO{next_slot}",
+                "playerPosition": forward['position']
+            }
+            used_ids.add(forward['id'])
+            next_slot += 1
+
+    # Если не хватает игроков, добавляем любых доступных
+    while next_slot < 11:
+        available = [p for p in all_players if p.id not in used_ids]
+        if not available:
+            return None
         
-        # Берем нужное количество игроков
-        to_take = min(len(candidates), count, slots_needed)
-        if to_take > 0:
-            selected = random.sample(candidates, to_take)
-            for player in selected:
-                new_lineup[str(next_slot)] = {
-                    "playerId": str(player['id']),
-                    "slotType": "auto",
-                    "slotLabel": f"AUTO{next_slot}",
-                    "playerPosition": player['position']
-                }
-                # Удаляем использованного игрока
-                available_players[player['position']].remove(player)
-                if not available_players[player['position']]:
-                    del available_players[player['position']]
-                next_slot += 1
-                slots_needed -= 1
+        player = random.choice(available)
+        new_lineup[str(next_slot)] = {
+            "playerId": str(player.id),
+            "slotType": "auto",
+            "slotLabel": f"AUTO{next_slot}",
+            "playerPosition": player.position
+        }
+        used_ids.add(player.id)
+        next_slot += 1
 
-    return new_lineup if slots_needed == 0 else None
+    return new_lineup
 
 @shared_task(name='tournaments.start_scheduled_matches')
 def start_scheduled_matches():
