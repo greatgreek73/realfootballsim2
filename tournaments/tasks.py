@@ -154,47 +154,68 @@ def extract_player_ids_from_lineup(current_lineup):
 
 
 def complete_lineup(club, current_lineup):
-    """Дополняет состав без дублирования игроков"""
-    # Получаем всех доступных игроков один раз
-    all_players = list(club.player_set.all())
-    if len(all_players) < 11:
+    """Дополняет состав, гарантированно избегая дублирования игроков"""
+    # Получаем всех доступных игроков
+    available_players = list(club.player_set.all())
+    if len(available_players) < 11:
         return None
 
     new_lineup = {}
-    next_slot = 0
-    used_ids = set()
+    used_players = []  # Будем хранить использованных игроков здесь
 
-    # Ищем и ставим вратаря
-    goalkeeper = next((p for p in all_players if p.position == 'Goalkeeper'), None)
-    if goalkeeper:
-        new_lineup['0'] = {
-            "playerId": str(goalkeeper.id),
-            "slotType": "goalkeeper",
-            "slotLabel": "GK",
-            "playerPosition": goalkeeper.position
-        }
-        used_ids.add(goalkeeper.id)
-        next_slot = 1
-    else:
+    # 1. Сначала ставим вратаря
+    goalkeepers = [p for p in available_players if p.position == 'Goalkeeper']
+    if not goalkeepers:
         return None
 
-    # Добавляем остальных игроков
-    available = [p for p in all_players if p.id not in used_ids]
-    while next_slot < 11 and available:
-        player = random.choice(available)
-        new_lineup[str(next_slot)] = {
-            "playerId": str(player.id),
-            "slotType": "auto",
-            "slotLabel": f"AUTO{next_slot}",
-            "playerPosition": player.position
-        }
-        used_ids.add(player.id)
-        available.remove(player)
-        next_slot += 1
+    keeper = goalkeepers[0]
+    new_lineup['0'] = {
+        "playerId": str(keeper.id),
+        "slotType": "goalkeeper",
+        "slotLabel": "GK",
+        "playerPosition": "Goalkeeper"
+    }
+    available_players.remove(keeper)
+    used_players.append(keeper)
 
-    return new_lineup if next_slot == 11 else None
+    # 2. Теперь остальные позиции
+    current_slot = 1
+    positions_needed = [
+        (2, ['Center Back']),  # 2 центральных защитника
+        (2, ['Left Back', 'Right Back']),  # 2 крайних защитника
+        (3, ['Central Midfielder', 'Defensive Midfielder', 'Attacking Midfielder']),  # 3 полузащитника
+        (2, ['Left Midfielder', 'Right Midfielder']),  # 2 крайних полузащитника
+        (1, ['Center Forward'])  # 1 нападающий
+    ]
 
-    
+    for count, possible_positions in positions_needed:
+        # Находим игроков на нужных позициях
+        candidates = [p for p in available_players if p.position in possible_positions]
+        # Берем столько игроков, сколько нужно (или сколько есть)
+        selected = candidates[:count] if len(candidates) <= count else random.sample(candidates, count)
+        
+        for player in selected:
+            if player in available_players:  # Дополнительная проверка
+                new_lineup[str(current_slot)] = {
+                    "playerId": str(player.id),
+                    "slotType": "auto",
+                    "slotLabel": f"AUTO{current_slot}",
+                    "playerPosition": player.position
+                }
+                available_players.remove(player)
+                used_players.append(player)
+                current_slot += 1
+
+    # Проверяем, что у нас полный состав
+    if len(new_lineup) == 11:
+        # Дополнительная проверка на дубликаты
+        player_ids = [int(data['playerId']) for data in new_lineup.values()]
+        if len(set(player_ids)) == 11:
+            return new_lineup
+
+    return None
+
+
 @shared_task(name='tournaments.start_scheduled_matches')
 def start_scheduled_matches():
     """
