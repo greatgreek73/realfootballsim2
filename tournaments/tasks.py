@@ -159,102 +159,75 @@ def complete_lineup(club, current_lineup):
     
     # Получаем всех доступных игроков и их позиции
     available_players = {}
-    for player in Player.objects.filter(club=club).exclude(id__in=used_ids):
+    all_players = Player.objects.filter(club=club).exclude(id__in=used_ids)
+    
+    for player in all_players:
         if player.position not in available_players:
             available_players[player.position] = []
         available_players[player.position].append({
             'id': player.id,
             'position': player.position
         })
-
-    # Конвертируем текущий состав в новый формат
+    
     new_lineup = {}
-    for slot_key, slot_val in current_lineup.items():
-        if isinstance(slot_val, dict):
-            new_lineup[slot_key] = slot_val
-        else:
-            try:
-                player = Player.objects.get(id=int(slot_val))
-                new_lineup[slot_key] = {
-                    "playerId": str(player.id),
-                    "slotType": "auto",
-                    "slotLabel": f"AUTO{slot_key}",
-                    "playerPosition": player.position
-                }
-            except (Player.DoesNotExist, ValueError):
-                continue
+    next_slot = 0
+    slots_needed = 11
 
-    next_slot = len(new_lineup)
-    slots_needed = 11 - len(new_lineup)
-    if slots_needed <= 0:
-        return new_lineup
-
-    # Приоритетные позиции с возможными заменами
-    position_preferences = [
-        (['Goalkeeper'], ['Center Back']),  # предпочтительно вратарь, но можно и центрального защитника
-        (['Center Back', 'Left Back', 'Right Back'], []),  # любой защитник
-        (['Center Back', 'Left Back', 'Right Back'], []),  # любой защитник
-        (['Central Midfielder', 'Defensive Midfielder'], []),  # любой опорник
-        (['Attacking Midfielder', 'Central Midfielder'], []),  # любой центральный
-        (['Left Midfielder', 'Right Midfielder', 'Attacking Midfielder'], []),  # любой атакующий
-        (['Center Forward'], ['Attacking Midfielder']),  # нападающий или атакующий полузащитник
-    ]
-
-    for preferred_positions, fallback_positions in position_preferences:
-        if slots_needed <= 0:
-            break
-
-        # Сначала пробуем предпочтительные позиции
-        available = []
-        for pos in preferred_positions:
-            if pos in available_players:
-                available.extend(available_players[pos])
-
-        # Если нет предпочтительных, пробуем запасные варианты
-        if not available and fallback_positions:
-            for pos in fallback_positions:
-                if pos in available_players:
-                    available.extend(available_players[pos])
-
-        if available:
-            player = random.choice(available)
-            # Удаляем использованного игрока из доступных
-            available_players[player['position']].remove(player)
-            if not available_players[player['position']]:
-                del available_players[player['position']]
-
-            new_lineup[str(next_slot)] = {
-                "playerId": str(player['id']),
-                "slotType": "auto",
-                "slotLabel": f"AUTO{next_slot}",
-                "playerPosition": player['position']
-            }
-            next_slot += 1
-            slots_needed -= 1
-
-    # Заполняем оставшиеся слоты любыми доступными игроками
-    all_available = []
-    for players in available_players.values():
-        all_available.extend(players)
-
-    while slots_needed > 0 and all_available:
-        player = random.choice(all_available)
-        all_available.remove(player)
-
+    # Сначала ставим вратаря
+    goalkeepers = available_players.get('Goalkeeper', [])
+    if goalkeepers:
+        keeper = goalkeepers[0]
         new_lineup[str(next_slot)] = {
-            "playerId": str(player['id']),
-            "slotType": "auto",
-            "slotLabel": f"AUTO{next_slot}",
-            "playerPosition": player['position']
+            "playerId": str(keeper['id']),
+            "slotType": "goalkeeper",
+            "slotLabel": "GK",
+            "playerPosition": "Goalkeeper"
         }
+        available_players['Goalkeeper'].remove(keeper)
+        if not available_players['Goalkeeper']:
+            del available_players['Goalkeeper']
         next_slot += 1
         slots_needed -= 1
+    
+    # Приоритетные позиции
+    positions_priority = [
+        (['Center Back'], 2),
+        (['Left Back', 'Right Back'], 2),
+        (['Central Midfielder', 'Defensive Midfielder'], 2),
+        (['Attacking Midfielder', 'Left Midfielder', 'Right Midfielder'], 3),
+        (['Center Forward'], 2)
+    ]
 
-    # Если удалось заполнить все слоты
-    if slots_needed == 0:
-        return new_lineup
+    # Заполняем остальные позиции
+    for positions, count in positions_priority:
+        if slots_needed <= 0:
+            break
+            
+        # Собираем всех доступных игроков для этих позиций
+        candidates = []
+        for pos in positions:
+            if pos in available_players:
+                candidates.extend(available_players[pos])
+        
+        # Берем нужное количество игроков
+        to_take = min(len(candidates), count, slots_needed)
+        if to_take > 0:
+            selected = random.sample(candidates, to_take)
+            for player in selected:
+                new_lineup[str(next_slot)] = {
+                    "playerId": str(player['id']),
+                    "slotType": "auto",
+                    "slotLabel": f"AUTO{next_slot}",
+                    "playerPosition": player['position']
+                }
+                # Удаляем использованного игрока
+                available_players[player['position']].remove(player)
+                if not available_players[player['position']]:
+                    del available_players[player['position']]
+                next_slot += 1
+                slots_needed -= 1
 
-    return None
+    return new_lineup if slots_needed == 0 else None
 
 @shared_task(name='tournaments.start_scheduled_matches')
 def start_scheduled_matches():
