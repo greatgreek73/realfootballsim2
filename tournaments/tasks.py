@@ -37,6 +37,7 @@ def retry_on_db_lock(func, max_attempts=3, delay=1):
 def simulate_active_matches(self):
     """
     Пошаговая симуляция матчей (каждая «минута»).
+    Запускается периодически (например, каждые 5 секунд).
     """
     now = timezone.now()
     logger.info(f"Starting active matches simulation at {now}")
@@ -62,6 +63,7 @@ def simulate_active_matches(self):
 def check_season_end(self):
     """
     Проверяет окончание сезона и создаёт новый при необходимости.
+    Запускается, к примеру, раз в день или раз в час (согласно настройкам Celery Beat).
     """
     try:
         with transaction.atomic():
@@ -78,6 +80,7 @@ def check_season_end(self):
                 status='finished'
             ).count()
 
+            # Примерный расчёт: 16 команд * (15 туров), если двойной круг - 16*15=240, плюс количество чемпионатов
             required_matches = (
                 len(Championship.objects.filter(season=current_season)) * (16 * 15)
             )
@@ -122,18 +125,15 @@ def check_season_end(self):
         logger.error(f"Error in season end check: {str(e)}")
         raise
 
+
 def extract_player_ids_from_lineup(current_lineup):
     """
-    Извлекает ID игроков из состава любого формата.
-    
-    Поддерживает оба формата:
-    Старый: {"0": "8012", ...}
-    Новый: {"0": {"playerId": "8012", ...}, ...}
+    Извлекает ID игроков из состава любого формата (старый/новый).
     """
     player_ids = set()
     if not current_lineup:
         return player_ids
-        
+
     for slot_val in current_lineup.values():
         if isinstance(slot_val, dict):
             # Новый формат
@@ -144,83 +144,78 @@ def extract_player_ids_from_lineup(current_lineup):
                 except ValueError:
                     logger.warning(f"Invalid playerId format: {pid_str}")
         else:
-            # Старый формат
+            # Старый формат: "8012"
             try:
                 player_ids.add(int(slot_val))
             except ValueError:
                 logger.warning(f"Invalid player id in old format: {slot_val}")
-    
+
     return player_ids
 
 
 def complete_lineup(club, current_lineup):
-    """Дополняет состав, гарантированно избегая дублирования игроков"""
-    # Получаем всех доступных игроков
-    available_players = list(club.player_set.all())
-    if len(available_players) < 11:
+    """
+    Дополняет состав без дублирования игроков, используя простую логику:
+    1) Ищет вратаря (обязательно).
+    2) Заполняет остальные 10 слотов случайными игроками из клуба.
+    3) Не учитывает точные позиции (кроме GK).
+    """
+
+    # Получаем всех игроков клуба
+    all_players = list(club.player_set.all())
+    if len(all_players) < 11:
+        # Если игроков меньше 11, невозможно сформировать состав
         return None
 
     new_lineup = {}
-    used_players = []  # Будем хранить использованных игроков здесь
+    used_ids = set()
 
-    # 1. Сначала ставим вратаря
-    goalkeepers = [p for p in available_players if p.position == 'Goalkeeper']
+    # --- 1) Ставим вратаря (если есть) ---
+    goalkeepers = [p for p in all_players if p.position == 'Goalkeeper']
     if not goalkeepers:
+        logger.warning(f"No Goalkeeper in club {club.name}")
         return None
 
-    keeper = goalkeepers[0]
+    keeper = goalkeepers[0]  # Берём первого попавшегося GK
     new_lineup['0'] = {
         "playerId": str(keeper.id),
         "slotType": "goalkeeper",
         "slotLabel": "GK",
-        "playerPosition": "Goalkeeper"
+        "playerPosition": keeper.position
     }
-    available_players.remove(keeper)
-    used_players.append(keeper)
+    used_ids.add(keeper.id)
+    all_players.remove(keeper)  # исключаем из пула
 
-    # 2. Теперь остальные позиции
-    current_slot = 1
-    positions_needed = [
-        (2, ['Center Back']),  # 2 центральных защитника
-        (2, ['Left Back', 'Right Back']),  # 2 крайних защитника
-        (3, ['Central Midfielder', 'Defensive Midfielder', 'Attacking Midfielder']),  # 3 полузащитника
-        (2, ['Left Midfielder', 'Right Midfielder']),  # 2 крайних полузащитника
-        (1, ['Center Forward'])  # 1 нападающий
-    ]
+    # --- 2) Заполняем остальные 10 слотов любыми игроками ---
+    if len(all_players) < 10:
+        logger.warning(f"Club {club.name} doesn't have enough players after removing GK")
+        return None
 
-    for count, possible_positions in positions_needed:
-        # Находим игроков на нужных позициях
-        candidates = [p for p in available_players if p.position in possible_positions]
-        # Берем столько игроков, сколько нужно (или сколько есть)
-        selected = candidates[:count] if len(candidates) <= count else random.sample(candidates, count)
-        
-        for player in selected:
-            if player in available_players:  # Дополнительная проверка
-                new_lineup[str(current_slot)] = {
-                    "playerId": str(player.id),
-                    "slotType": "auto",
-                    "slotLabel": f"AUTO{current_slot}",
-                    "playerPosition": player.position
-                }
-                available_players.remove(player)
-                used_players.append(player)
-                current_slot += 1
+    chosen_others = random.sample(all_players, 10)
+    slot_index = 1
+    for player in chosen_others:
+        new_lineup[str(slot_index)] = {
+            "playerId": str(player.id),
+            "slotType": "auto",
+            "slotLabel": f"AUTO{slot_index}",
+            "playerPosition": player.position
+        }
+        used_ids.add(player.id)
+        slot_index += 1
 
-    # Проверяем, что у нас полный состав
-    if len(new_lineup) == 11:
-        # Дополнительная проверка на дубликаты
-        player_ids = [int(data['playerId']) for data in new_lineup.values()]
-        if len(set(player_ids)) == 11:
-            return new_lineup
-
-    return None
+    # Проверяем, что в итоге у нас 11 уникальных игроков
+    if len(new_lineup) == 11 and len(used_ids) == 11:
+        return new_lineup
+    else:
+        logger.warning(f"Could not form a unique 11-player lineup for {club.name}")
+        return None
 
 
 @shared_task(name='tournaments.start_scheduled_matches')
 def start_scheduled_matches():
     """
     Переводит матчи из scheduled в in_progress и копирует составы команд.
-    Автоматически дополняет неполные составы случайными игроками из клуба.
+    Автоматически дополняет неполные составы (до 11 игроков), если они меньше 11.
     """
     now = timezone.now()
     logger.info("===== STARTING start_scheduled_matches TASK =====")
@@ -241,34 +236,40 @@ def start_scheduled_matches():
         for match in matches:
             logger.info(f"Processing match ID={match.id}: {match.home_team} vs {match.away_team}")
 
-            # Получаем lineup домашней команды
+            # Обрабатываем домашнюю команду
             home_data = match.home_team.lineup or {"lineup": {}, "tactic": "balanced"}
             if not isinstance(home_data, dict):
                 home_data = {"lineup": {}, "tactic": "balanced"}
             home_lineup = home_data.get('lineup', {})
 
             if len(home_lineup) < 11:
-                new_home_lineup = complete_lineup(match.home_team, home_lineup)
-                if new_home_lineup is None:
-                    logger.warning(f"Not enough players in home team {match.home_team.name}. Cannot start match={match.id}.")
+                completed_home = complete_lineup(match.home_team, home_lineup)
+                if completed_home is None:
+                    logger.warning(
+                        f"Home team {match.home_team.name} cannot form 11 players. "
+                        f"Skipping match {match.id}."
+                    )
                     continue
-                home_lineup = new_home_lineup
+                home_lineup = completed_home
 
             match.home_lineup = home_lineup
             match.home_tactic = home_data.get('tactic', 'balanced')
 
-            # Получаем lineup гостевой команды
+            # Обрабатываем гостевую команду
             away_data = match.away_team.lineup or {"lineup": {}, "tactic": "balanced"}
             if not isinstance(away_data, dict):
                 away_data = {"lineup": {}, "tactic": "balanced"}
             away_lineup = away_data.get('lineup', {})
 
             if len(away_lineup) < 11:
-                new_away_lineup = complete_lineup(match.away_team, away_lineup)
-                if new_away_lineup is None:
-                    logger.warning(f"Not enough players in away team {match.away_team.name}. Cannot start match={match.id}.")
+                completed_away = complete_lineup(match.away_team, away_lineup)
+                if completed_away is None:
+                    logger.warning(
+                        f"Away team {match.away_team.name} cannot form 11 players. "
+                        f"Skipping match {match.id}."
+                    )
                     continue
-                away_lineup = new_away_lineup
+                away_lineup = completed_away
 
             match.away_lineup = away_lineup
             match.away_tactic = away_data.get('tactic', 'balanced')
