@@ -43,11 +43,23 @@
                         <div class="col-md-6">
                             <p><strong>Date:</strong> {{ match.datetime|date:"d M Y H:i" }}</p>
                             <p><strong>Status:</strong> 
-                                <span class="badge {% if match.status == 'finished' %}bg-success{% elif match.status == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                <span class="badge 
+                                    {% if match.status == 'finished' %}bg-success
+                                    {% elif match.status == 'in_progress' %}bg-warning
+                                    {% else %}bg-secondary{% endif %}
+                                ">
                                     {{ match.get_status_display }}
                                 </span>
                             </p>
-                            <p><strong>Time:</strong> <span id="matchTime">{% if match.status == 'in_progress' %}{{ match.current_minute }}'{% else %}90'{% endif %}</span></p>
+                            <p><strong>Time:</strong> 
+                                <span id="matchTime">
+                                    {% if match.status == 'in_progress' %}
+                                        {{ match.current_minute }}'
+                                    {% else %}
+                                        90'
+                                    {% endif %}
+                                </span>
+                            </p>
                         </div>
                         <div class="col-md-6 text-end">
                             {% if match.status == 'finished' %}
@@ -96,7 +108,7 @@
                 </div>
             </div>
 
-            <!-- Добавляем РАЗДЕЛ ДЛЯ ВЫВОДА СОСТАВОВ -->
+            <!-- Раздел для вывода составов -->
             <div class="row mb-4">
                 <div class="col-md-6">
                     <div class="card">
@@ -106,14 +118,15 @@
                         <div class="card-body p-0">
                             <ul class="list-group list-group-flush">
                                 {% for slot, player in home_lineup_list %}
-                                <li class="list-group-item">
-                                    Slot {{ slot }}:
-                                    {% if player %}
-                                        {{ player.first_name }} {{ player.last_name }} ({{ player.position }})
-                                    {% else %}
-                                        <em class="text-muted">No player assigned</em>
-                                    {% endif %}
-                                </li>
+                                    <li class="list-group-item">
+                                        <strong>Slot {{ slot }}:</strong>
+                                        {% if player %}
+                                            {{ player.first_name }} {{ player.last_name }} 
+                                            <small class="text-muted">({{ player.position }})</small>
+                                        {% else %}
+                                            <em class="text-muted">No player assigned</em>
+                                        {% endif %}
+                                    </li>
                                 {% endfor %}
                             </ul>
                         </div>
@@ -128,14 +141,15 @@
                         <div class="card-body p-0">
                             <ul class="list-group list-group-flush">
                                 {% for slot, player in away_lineup_list %}
-                                <li class="list-group-item">
-                                    Slot {{ slot }}:
-                                    {% if player %}
-                                        {{ player.first_name }} {{ player.last_name }} ({{ player.position }})
-                                    {% else %}
-                                        <em class="text-muted">No player assigned</em>
-                                    {% endif %}
-                                </li>
+                                    <li class="list-group-item">
+                                        <strong>Slot {{ slot }}:</strong>
+                                        {% if player %}
+                                            {{ player.first_name }} {{ player.last_name }}
+                                            <small class="text-muted">({{ player.position }})</small>
+                                        {% else %}
+                                            <em class="text-muted">No player assigned</em>
+                                        {% endif %}
+                                    </li>
                                 {% endfor %}
                             </ul>
                         </div>
