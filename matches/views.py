@@ -1,3 +1,5 @@
+# C:\realfootballsim\matches\views.py
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import CreateView, DetailView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -16,49 +18,97 @@ from players.models import Player
 from .tasks import simulate_match_minute, broadcast_minute_events_in_chunks
 
 
+def _extract_player_id(slot_val):
+    """
+    Универсальная функция, которая извлекает playerId как строку
+    из любого формата слота (старого или нового).
+      - Старый формат: slot_val = "8012" (str)
+      - Новый формат: slot_val = {"playerId": "8012", ...}
+    Возвращает строку (например, "8012") или None.
+    """
+    if isinstance(slot_val, dict):
+        # Новый формат
+        return slot_val.get("playerId")  # может быть "8012" или None
+    else:
+        # Старый формат (просто строка)
+        return slot_val
+
+
 def get_match_lineups(match):
     """
-    Получает составы матча и связанных игроков оптимизированным способом.
+    Получает составы (home_lineup_list, away_lineup_list) и связанных игроков.
+    Каждый из них — список кортежей (slot_key, player_obj).
     """
     home_lineup_list = []
     away_lineup_list = []
 
-    # Домашний состав
+    # --------------------------
+    # Обработка домашнего состава
+    # --------------------------
     if match.home_lineup and isinstance(match.home_lineup, dict):
-        # Если это вложенный словарь с 'lineup'
+        # Если это "вложенный" формат с ключом 'lineup'
         if 'lineup' in match.home_lineup:
             lineup_dict = match.home_lineup['lineup']
         else:
             lineup_dict = match.home_lineup
-        
-        # Получаем ID игроков и объекты одним запросом
-        home_ids = [int(val) for val in lineup_dict.values()]
-        home_players = {str(p.id): p for p in Player.objects.filter(id__in=home_ids)}
-        
-        # Формируем список в нужном порядке
+
+        # 1) Собираем все playerId (строки) в множество
+        home_id_strings = set()
+        for slot_val in lineup_dict.values():
+            pid_str = _extract_player_id(slot_val)
+            if pid_str:
+                home_id_strings.add(pid_str)
+
+        # 2) Загружаем всех игроков одним запросом
+        #    и делаем словарь по ключу (строковому id).
+        home_players = {
+            str(p.id): p
+            for p in Player.objects.filter(id__in=home_id_strings)
+        }
+
+        # 3) Собираем home_lineup_list в порядке слотов 0..10
         for slot_num in range(11):
             slot_key = str(slot_num)
-            player_id = lineup_dict.get(slot_key)
-            player_obj = home_players.get(str(player_id)) if player_id else None
+            slot_val = lineup_dict.get(slot_key)
+            # Извлекаем playerId из слота
+            pid_str = _extract_player_id(slot_val)
+
+            # Ищем Player в словаре
+            player_obj = None
+            if pid_str:
+                player_obj = home_players.get(pid_str)
+
             home_lineup_list.append((slot_key, player_obj))
 
-    # Гостевой состав
+    # --------------------------
+    # Обработка гостевого состава
+    # --------------------------
     if match.away_lineup and isinstance(match.away_lineup, dict):
-        # Если это вложенный словарь с 'lineup'
         if 'lineup' in match.away_lineup:
             lineup_dict = match.away_lineup['lineup']
         else:
             lineup_dict = match.away_lineup
 
-        # Получаем ID игроков и объекты одним запросом
-        away_ids = [int(val) for val in lineup_dict.values()]
-        away_players = {str(p.id): p for p in Player.objects.filter(id__in=away_ids)}
-        
-        # Формируем список в нужном порядке
+        away_id_strings = set()
+        for slot_val in lineup_dict.values():
+            pid_str = _extract_player_id(slot_val)
+            if pid_str:
+                away_id_strings.add(pid_str)
+
+        away_players = {
+            str(p.id): p
+            for p in Player.objects.filter(id__in=away_id_strings)
+        }
+
         for slot_num in range(11):
             slot_key = str(slot_num)
-            player_id = lineup_dict.get(slot_key)
-            player_obj = away_players.get(str(player_id)) if player_id else None
+            slot_val = lineup_dict.get(slot_key)
+            pid_str = _extract_player_id(slot_val)
+
+            player_obj = None
+            if pid_str:
+                player_obj = away_players.get(pid_str)
+
             away_lineup_list.append((slot_key, player_obj))
 
     return home_lineup_list, away_lineup_list
@@ -71,15 +121,10 @@ def match_detail(request, pk):
     # Получаем события матча
     match_events = match.events.order_by('minute')
     
-    # Получаем составы и добавляем отладочный вывод
+    # Получаем составы
     home_lineup_list, away_lineup_list = get_match_lineups(match)
-    print(f"\nDEBUG Match {match.id}")
-    print("Raw home_lineup:", match.home_lineup)
-    print("Raw away_lineup:", match.away_lineup)
-    print("Processed home_lineup:", [(slot, player.first_name if player else 'Empty') for slot, player in home_lineup_list])
-    print("Processed away_lineup:", [(slot, player.first_name if player else 'Empty') for slot, player in away_lineup_list])
-    
-    # Проверяем, является ли пользователь членом одной из команд
+
+    # Проверяем, является ли пользователь членом одной из команд (для UI)
     is_user_team = (
         request.user.is_authenticated
         and (
@@ -158,7 +203,6 @@ def simulate_match_view(request, match_id):
             datetime=timezone.now(),
             status='in_progress',
             current_minute=0,
-            # Добавляем тактики
             home_tactic='balanced',
             away_tactic='balanced',
         )
