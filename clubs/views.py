@@ -106,24 +106,24 @@ class CreateClubView(CreateView):
         # Структура позиций для 16 игроков (11 + 5)
         positions = [
             # Основной состав (11)
-            {"position": "Goalkeeper", "class": 2},  # Основной вратарь
-            {"position": "Right Back", "class": 2},
-            {"position": "Center Back", "class": 2},
-            {"position": "Center Back", "class": 2},
-            {"position": "Left Back", "class": 2},
-            {"position": "Defensive Midfielder", "class": 2},
-            {"position": "Central Midfielder", "class": 2},
-            {"position": "Attacking Midfielder", "class": 2},
-            {"position": "Right Midfielder", "class": 2},
-            {"position": "Center Forward", "class": 2},
-            {"position": "Center Forward", "class": 2},
+            {"position": "Goalkeeper", "class": 4},  # Основной вратарь
+            {"position": "Right Back", "class": 4},
+            {"position": "Center Back", "class": 4},
+            {"position": "Center Back", "class": 4},
+            {"position": "Left Back", "class": 4},
+            {"position": "Defensive Midfielder", "class": 4},
+            {"position": "Central Midfielder", "class": 4},
+            {"position": "Attacking Midfielder", "class": 4},
+            {"position": "Right Midfielder", "class": 4},
+            {"position": "Center Forward", "class": 4},
+            {"position": "Center Forward", "class": 4},
             
             # Запасные (5)
-            {"position": "Goalkeeper", "class": 3},  # Запасной вратарь
-            {"position": "Center Back", "class": 3},  # Запасной защитник
-            {"position": "Central Midfielder", "class": 3},  # Запасной полузащитник
-            {"position": "Attacking Midfielder", "class": 3},  # Запасной атакующий
-            {"position": "Center Forward", "class": 3},  # Запасной нападающий
+            {"position": "Goalkeeper", "class": 4},  # Запасной вратарь
+            {"position": "Center Back", "class": 4},  # Запасной защитник
+            {"position": "Central Midfielder", "class": 4},  # Запасной полузащитник
+            {"position": "Attacking Midfielder", "class": 4},  # Запасной атакующий
+            {"position": "Center Forward", "class": 4},  # Запасной нападающий
         ]
 
         country_code = club.country.code
