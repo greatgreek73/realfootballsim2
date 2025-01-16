@@ -1,5 +1,3 @@
-# C:\realfootballsim\matches\views.py
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import CreateView, DetailView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -26,19 +24,24 @@ def _extract_player_id(slot_val):
       - Новый формат: slot_val = {"playerId": "8012", ...}
     Возвращает строку (например, "8012") или None.
     """
-    if isinstance(slot_val, dict):
-        # Новый формат
-        return slot_val.get("playerId")  # может быть "8012" или None
-    else:
-        # Старый формат (просто строка)
-        return slot_val
+    try:
+        if isinstance(slot_val, dict):
+            # Новый формат
+            player_id = slot_val.get("playerId")
+            # Проверяем что это действительно строка или число
+            return str(player_id) if player_id is not None else None
+        elif slot_val is not None:
+            # Старый формат (просто строка или число)
+            return str(slot_val)
+        return None
+    except (ValueError, TypeError, AttributeError):
+        return None
 
 
 def get_match_lineups(match):
     """
     Получает составы матча и связанных игроков оптимизированным способом.
     """
-
     home_lineup_list = []
     away_lineup_list = []
 
@@ -50,15 +53,27 @@ def get_match_lineups(match):
         else:
             lineup_dict = match.home_lineup
         
-        # Получаем ID игроков и объекты одним запросом
-        home_ids = [int(val) for val in lineup_dict.values()]
+        # Собираем ID игроков, используя _extract_player_id
+        home_ids = []
+        for slot_val in lineup_dict.values():
+            player_id_str = _extract_player_id(slot_val)
+            if player_id_str and player_id_str.strip():  # Проверяем что строка не пустая
+                try:
+                    player_id = int(player_id_str.strip())
+                    if player_id > 0:  # Проверяем что ID положительный
+                        home_ids.append(player_id)
+                except (ValueError, TypeError):
+                    continue
+        
+        # Получаем объекты игроков одним запросом
         home_players = {str(p.id): p for p in Player.objects.filter(id__in=home_ids)}
         
         # Формируем список в нужном порядке
         for slot_num in range(11):
             slot_key = str(slot_num)
-            player_id = lineup_dict.get(slot_key)
-            player_obj = home_players.get(str(player_id)) if player_id else None
+            slot_val = lineup_dict.get(slot_key)
+            player_id_str = _extract_player_id(slot_val)
+            player_obj = home_players.get(player_id_str) if player_id_str else None
             home_lineup_list.append((slot_key, player_obj))
 
     # Гостевой состав
@@ -69,15 +84,27 @@ def get_match_lineups(match):
         else:
             lineup_dict = match.away_lineup
 
-        # Получаем ID игроков и объекты одним запросом
-        away_ids = [int(val) for val in lineup_dict.values()]
+        # Собираем ID игроков, используя _extract_player_id
+        away_ids = []
+        for slot_val in lineup_dict.values():
+            player_id_str = _extract_player_id(slot_val)
+            if player_id_str and player_id_str.strip():  # Проверяем что строка не пустая
+                try:
+                    player_id = int(player_id_str.strip())
+                    if player_id > 0:  # Проверяем что ID положительный
+                        away_ids.append(player_id)
+                except (ValueError, TypeError):
+                    continue
+        
+        # Получаем объекты игроков одним запросом
         away_players = {str(p.id): p for p in Player.objects.filter(id__in=away_ids)}
         
         # Формируем список в нужном порядке
         for slot_num in range(11):
             slot_key = str(slot_num)
-            player_id = lineup_dict.get(slot_key)
-            player_obj = away_players.get(str(player_id)) if player_id else None
+            slot_val = lineup_dict.get(slot_key)
+            player_id_str = _extract_player_id(slot_val)
+            player_obj = away_players.get(player_id_str) if player_id_str else None
             away_lineup_list.append((slot_key, player_obj))
 
     return home_lineup_list, away_lineup_list
