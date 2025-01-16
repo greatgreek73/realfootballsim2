@@ -36,79 +36,48 @@ def _extract_player_id(slot_val):
 
 def get_match_lineups(match):
     """
-    Получает составы (home_lineup_list, away_lineup_list) и связанных игроков.
-    Каждый из них — список кортежей (slot_key, player_obj).
+    Получает составы матча и связанных игроков оптимизированным способом.
     """
+
     home_lineup_list = []
     away_lineup_list = []
 
-    # --------------------------
-    # Обработка домашнего состава
-    # --------------------------
+    # Домашний состав
     if match.home_lineup and isinstance(match.home_lineup, dict):
-        # Если это "вложенный" формат с ключом 'lineup'
+        # Если это вложенный словарь с 'lineup'
         if 'lineup' in match.home_lineup:
             lineup_dict = match.home_lineup['lineup']
         else:
             lineup_dict = match.home_lineup
-
-        # 1) Собираем все playerId (строки) в множество
-        home_id_strings = set()
-        for slot_val in lineup_dict.values():
-            pid_str = _extract_player_id(slot_val)
-            if pid_str:
-                home_id_strings.add(pid_str)
-
-        # 2) Загружаем всех игроков одним запросом
-        #    и делаем словарь по ключу (строковому id).
-        home_players = {
-            str(p.id): p
-            for p in Player.objects.filter(id__in=home_id_strings)
-        }
-
-        # 3) Собираем home_lineup_list в порядке слотов 0..10
+        
+        # Получаем ID игроков и объекты одним запросом
+        home_ids = [int(val) for val in lineup_dict.values()]
+        home_players = {str(p.id): p for p in Player.objects.filter(id__in=home_ids)}
+        
+        # Формируем список в нужном порядке
         for slot_num in range(11):
             slot_key = str(slot_num)
-            slot_val = lineup_dict.get(slot_key)
-            # Извлекаем playerId из слота
-            pid_str = _extract_player_id(slot_val)
-
-            # Ищем Player в словаре
-            player_obj = None
-            if pid_str:
-                player_obj = home_players.get(pid_str)
-
+            player_id = lineup_dict.get(slot_key)
+            player_obj = home_players.get(str(player_id)) if player_id else None
             home_lineup_list.append((slot_key, player_obj))
 
-    # --------------------------
-    # Обработка гостевого состава
-    # --------------------------
+    # Гостевой состав
     if match.away_lineup and isinstance(match.away_lineup, dict):
+        # Если это вложенный словарь с 'lineup'
         if 'lineup' in match.away_lineup:
             lineup_dict = match.away_lineup['lineup']
         else:
             lineup_dict = match.away_lineup
 
-        away_id_strings = set()
-        for slot_val in lineup_dict.values():
-            pid_str = _extract_player_id(slot_val)
-            if pid_str:
-                away_id_strings.add(pid_str)
-
-        away_players = {
-            str(p.id): p
-            for p in Player.objects.filter(id__in=away_id_strings)
-        }
-
+        # Получаем ID игроков и объекты одним запросом
+        away_ids = [int(val) for val in lineup_dict.values()]
+        away_players = {str(p.id): p for p in Player.objects.filter(id__in=away_ids)}
+        
+        # Формируем список в нужном порядке
         for slot_num in range(11):
             slot_key = str(slot_num)
-            slot_val = lineup_dict.get(slot_key)
-            pid_str = _extract_player_id(slot_val)
-
-            player_obj = None
-            if pid_str:
-                player_obj = away_players.get(pid_str)
-
+            player_id = lineup_dict.get(slot_key)
+            player_obj = away_players.get(str(player_id)) if player_id else None
             away_lineup_list.append((slot_key, player_obj))
 
     return home_lineup_list, away_lineup_list
@@ -117,14 +86,19 @@ def get_match_lineups(match):
 @login_required
 def match_detail(request, pk):
     match = get_object_or_404(Match, pk=pk)
-    
+
     # Получаем события матча
     match_events = match.events.order_by('minute')
     
-    # Получаем составы
+    # Получаем составы и добавляем отладочный вывод
     home_lineup_list, away_lineup_list = get_match_lineups(match)
-
-    # Проверяем, является ли пользователь членом одной из команд (для UI)
+    print(f"\nDEBUG Match {match.id}")
+    print("Raw home_lineup:", match.home_lineup)
+    print("Raw away_lineup:", match.away_lineup)
+    print("Processed home_lineup:", [(slot, player.first_name if player else 'Empty') for slot, player in home_lineup_list])
+    print("Processed away_lineup:", [(slot, player.first_name if player else 'Empty') for slot, player in away_lineup_list])
+    
+    # Проверяем, является ли пользователь членом одной из команд
     is_user_team = (
         request.user.is_authenticated
         and (
@@ -132,7 +106,7 @@ def match_detail(request, pk):
             or request.user.club == match.away_team
         )
     )
-    
+
     context = {
         'match': match,
         'match_events': match_events,
@@ -140,7 +114,7 @@ def match_detail(request, pk):
         'home_lineup_list': home_lineup_list,
         'away_lineup_list': away_lineup_list
     }
-    
+
     return render(request, 'matches/match_detail.html', context)
 
 
@@ -167,7 +141,7 @@ class MatchListView(LoginRequiredMixin, ListView):
             ).order_by('championshipmatch__round', 'datetime')
 
         return Match.objects.filter(
-            Q(home_team=self.request.user.club) | 
+            Q(home_team=self.request.user.club) |
             Q(away_team=self.request.user.club)
         )
 
@@ -177,7 +151,7 @@ def get_match_events(request, match_id):
     match = get_object_or_404(Match, id=match_id)
     events = match.events.order_by('minute').values('minute', 'event_type', 'description')
     return JsonResponse({
-        'events': list(events), 
+        'events': list(events),
         'match': {
             'home_team': match.home_team.name,
             'away_team': match.away_team.name,
@@ -196,7 +170,7 @@ def simulate_match_view(request, match_id):
         opponent = Club.objects.filter(is_bot=True).exclude(id=club.id).order_by('?').first()
         if not opponent:
             return render(request, 'matches/no_opponent.html', {'club': club})
-        
+
         match = Match.objects.create(
             home_team=club,
             away_team=opponent,
@@ -207,7 +181,7 @@ def simulate_match_view(request, match_id):
             away_tactic='balanced',
         )
         match_id = match.id
-    
+
     return redirect('matches:match_detail', pk=match_id)
 
 

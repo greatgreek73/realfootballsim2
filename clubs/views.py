@@ -53,6 +53,9 @@ class CreateClubView(CreateView):
                 club.league = league
                 club.save()
 
+                # Generate initial 16 players for the new club
+                self.generate_initial_players(club)
+
                 if not club.id:
                     messages.error(
                         self.request,
@@ -92,6 +95,63 @@ class CreateClubView(CreateView):
             logger.error(f'Error creating club: {str(e)}')
             messages.error(self.request, f'Error creating club: {str(e)}')
             return self.form_invalid(form)
+
+    def generate_initial_players(self, club):
+        """
+        Генерирует начальный состав из 16 игроков для новой команды пользователя:
+        - 11 игроков основы
+        - 5 запасных
+        Игроки распределяются по позициям и классам для формирования работоспособного состава.
+        """
+        # Структура позиций для 16 игроков (11 + 5)
+        positions = [
+            # Основной состав (11)
+            {"position": "Goalkeeper", "class": 2},  # Основной вратарь
+            {"position": "Right Back", "class": 2},
+            {"position": "Center Back", "class": 2},
+            {"position": "Center Back", "class": 2},
+            {"position": "Left Back", "class": 2},
+            {"position": "Defensive Midfielder", "class": 2},
+            {"position": "Central Midfielder", "class": 2},
+            {"position": "Attacking Midfielder", "class": 2},
+            {"position": "Right Midfielder", "class": 2},
+            {"position": "Center Forward", "class": 2},
+            {"position": "Center Forward", "class": 2},
+            
+            # Запасные (5)
+            {"position": "Goalkeeper", "class": 3},  # Запасной вратарь
+            {"position": "Center Back", "class": 3},  # Запасной защитник
+            {"position": "Central Midfielder", "class": 3},  # Запасной полузащитник
+            {"position": "Attacking Midfielder", "class": 3},  # Запасной атакующий
+            {"position": "Center Forward", "class": 3},  # Запасной нападающий
+        ]
+
+        country_code = club.country.code
+        locale = get_locale_from_country_code(country_code)
+        fake = Faker(locale)
+
+        for player_info in positions:
+            # Генерируем уникальное имя
+            while True:
+                first_name = fake.first_name_male()
+                last_name = fake.last_name_male() if hasattr(fake, 'last_name_male') else fake.last_name()
+                if not Player.objects.filter(first_name=first_name, last_name=last_name).exists():
+                    break
+
+            # Генерируем характеристики игрока
+            stats = generate_player_stats(player_info["position"], player_info["class"])
+            
+            # Создаем игрока
+            Player.objects.create(
+                club=club,
+                first_name=first_name,
+                last_name=last_name,
+                nationality=club.country,
+                age=random.randint(18, 30),
+                position=player_info["position"],
+                player_class=player_info["class"],
+                **stats
+            )
 
     def form_invalid(self, form):
         messages.error(

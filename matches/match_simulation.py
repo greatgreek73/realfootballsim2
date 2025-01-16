@@ -9,11 +9,19 @@ from .models import Match, MatchEvent
 from .player_agent import PlayerAgent
 from players.models import Player
 
+# === Добавляем импорт класса, отвечающего за авто-выбор состава ===
+from .match_preparation import PreMatchPreparation
+
 logger = logging.getLogger(__name__)
 
 
 class MatchSimulation:
     def __init__(self, match: Match):
+        # === Добавляем вызов предматчевой подготовки, чтобы у ботов генерировался состав ===
+        prep = PreMatchPreparation(match)
+        prep.prepare_match()
+        # === Конец добавки ===
+
         self.match = match
 
         # Изначально, в базе у нас:
@@ -225,7 +233,6 @@ class MatchSimulation:
                                 f"MOMENT at minute {minute}: {attacking_team.upper()} tries to attack!")
 
         # Соберём список «подходящих» слотов для атаки.
-        # Допустим, хотим только slotType = 'midfielder' или 'forward'.
         if attacking_team == 'home':
             slot_map = self.home_slots
             defending_team = 'away'
@@ -257,7 +264,7 @@ class MatchSimulation:
         # Определим вероятность гола (упрощённо 25%)
         goal_probability = 0.25
 
-        # Усилим шанс, если это чистый «forward»:
+        # Усилим шанс, если это «forward»
         if slot_data["slotType"] == 'forward':
             goal_probability += 0.10  # +10% если тип «forward»
 
