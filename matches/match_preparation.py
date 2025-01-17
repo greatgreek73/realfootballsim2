@@ -2,6 +2,7 @@ from typing import Dict, List
 from .models import Match
 from clubs.models import Club
 from players.models import Player
+from .utils import extract_player_id
 import logging
 
 logger = logging.getLogger(__name__)
@@ -169,9 +170,15 @@ class PreMatchPreparation:
             'Forward': 0
         }
 
-        for pos_key, player_id in lineup.items():
+        for pos_key, slot_val in lineup.items():
+            # Extract player_id from either format (dict or primitive)
+            player_id_str = extract_player_id(slot_val)
+            if not player_id_str:
+                errors.append(f"Invalid player ID format in position {pos_key}")
+                continue
+                
             try:
-                player = Player.objects.get(id=player_id)
+                player = Player.objects.get(id=int(player_id_str))
                 if player.position == 'Goalkeeper':
                     position_counts['Goalkeeper'] += 1
                 elif 'Back' in player.position:
@@ -248,9 +255,12 @@ class PreMatchPreparation:
 
     def calculate_team_strength(self, lineup: Dict, team: Club, is_home: bool=False) -> float:
         total_strength = 0
-        for player_id in lineup.values():
+        for slot_val in lineup.values():
+            player_id_str = extract_player_id(slot_val)
+            if not player_id_str:
+                continue
             try:
-                player = Player.objects.get(id=player_id)
+                player = Player.objects.get(id=int(player_id_str))
                 total_strength += self.calculate_player_strength(player)
             except Player.DoesNotExist:
                 pass
@@ -270,8 +280,10 @@ class PreMatchPreparation:
         parameters = self.match_parameters[team_type]
 
         # Примерная логика
-        for _, player_id in lineup.items():
-            parameters['players_condition'][player_id] = 100
+        for _, slot_val in lineup.items():
+            player_id_str = extract_player_id(slot_val)
+            if player_id_str:
+                parameters['players_condition'][int(player_id_str)] = 100
 
         # Здесь можно делать любые расчёты, как у вас в коде
         parameters['team_attack'] = self.calculate_team_strength(lineup, None, is_home=(team_type=='home'))

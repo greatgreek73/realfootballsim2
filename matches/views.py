@@ -14,28 +14,7 @@ from players.models import Player
 
 # Импорт Celery-задач
 from .tasks import simulate_match_minute, broadcast_minute_events_in_chunks
-
-
-def _extract_player_id(slot_val):
-    """
-    Универсальная функция, которая извлекает playerId как строку
-    из любого формата слота (старого или нового).
-      - Старый формат: slot_val = "8012" (str)
-      - Новый формат: slot_val = {"playerId": "8012", ...}
-    Возвращает строку (например, "8012") или None.
-    """
-    try:
-        if isinstance(slot_val, dict):
-            # Новый формат
-            player_id = slot_val.get("playerId")
-            # Проверяем что это действительно строка или число
-            return str(player_id) if player_id is not None else None
-        elif slot_val is not None:
-            # Старый формат (просто строка или число)
-            return str(slot_val)
-        return None
-    except (ValueError, TypeError, AttributeError):
-        return None
+from .utils import extract_player_id
 
 
 def get_match_lineups(match):
@@ -56,7 +35,7 @@ def get_match_lineups(match):
         # Собираем ID игроков, используя _extract_player_id
         home_ids = []
         for slot_val in lineup_dict.values():
-            player_id_str = _extract_player_id(slot_val)
+            player_id_str = extract_player_id(slot_val)
             if player_id_str and player_id_str.strip():  # Проверяем что строка не пустая
                 try:
                     player_id = int(player_id_str.strip())
@@ -72,7 +51,7 @@ def get_match_lineups(match):
         for slot_num in range(11):
             slot_key = str(slot_num)
             slot_val = lineup_dict.get(slot_key)
-            player_id_str = _extract_player_id(slot_val)
+            player_id_str = extract_player_id(slot_val)
             player_obj = home_players.get(player_id_str) if player_id_str else None
             home_lineup_list.append((slot_key, player_obj))
 
@@ -87,7 +66,7 @@ def get_match_lineups(match):
         # Собираем ID игроков, используя _extract_player_id
         away_ids = []
         for slot_val in lineup_dict.values():
-            player_id_str = _extract_player_id(slot_val)
+            player_id_str = extract_player_id(slot_val)
             if player_id_str and player_id_str.strip():  # Проверяем что строка не пустая
                 try:
                     player_id = int(player_id_str.strip())
@@ -103,7 +82,7 @@ def get_match_lineups(match):
         for slot_num in range(11):
             slot_key = str(slot_num)
             slot_val = lineup_dict.get(slot_key)
-            player_id_str = _extract_player_id(slot_val)
+            player_id_str = extract_player_id(slot_val)
             player_obj = away_players.get(player_id_str) if player_id_str else None
             away_lineup_list.append((slot_key, player_obj))
 
