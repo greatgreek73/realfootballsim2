@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import CreateView, DetailView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.urls import reverse
 from django.http import JsonResponse, HttpResponseNotAllowed
 from django.utils.decorators import method_decorator
@@ -181,11 +182,25 @@ def simulate_match_view(request, match_id):
             home_team=club,
             away_team=opponent,
             datetime=timezone.now(),
-            status='in_progress',
+            status='scheduled',  # Сначала scheduled
             current_minute=0,
             home_tactic='balanced',
             away_tactic='balanced',
         )
+        
+        # Подготавливаем матч (заполняем составы)
+        from .match_preparation import PreMatchPreparation
+        prep = PreMatchPreparation(match)
+        if not prep.prepare_match():
+            # Если что-то пошло не так с составами
+            errors = prep.get_validation_errors()
+            messages.error(request, f"Match preparation failed: {'; '.join(errors)}")
+            match.delete()
+            return redirect('clubs:club_detail', pk=club.id)
+            
+        # Теперь можно начинать матч
+        match.status = 'in_progress'
+        match.save()
         match_id = match.id
 
     return redirect('matches:match_detail', pk=match_id)

@@ -26,6 +26,8 @@ document.addEventListener('DOMContentLoaded', function() {
         matchSocket.onclose = function(e) {
             console.log('WebSocket connection closed:', e.code, e.reason);
             console.error('Match socket closed unexpectedly');
+            // Попытка переподключения через 5 секунд
+            setTimeout(() => window.location.reload(), 5000);
         };
 
         matchSocket.onerror = function(e) {
@@ -43,60 +45,54 @@ document.addEventListener('DOMContentLoaded', function() {
                 const timeElement = document.getElementById('matchTime');
                 if (timeElement) {
                     timeElement.textContent = `${data.minute}'`;
-                } else {
-                    console.warn('matchTime element not found');
                 }
 
                 // Обновляем счет
                 const scoreElement = document.getElementById('score');
                 if (scoreElement) {
                     scoreElement.textContent = `${data.home_score} - ${data.away_score}`;
-                } else {
-                    console.warn('score element not found');
                 }
 
-                // Добавляем новые события
+                // Обновляем события
                 if (data.events && data.events.length > 0) {
                     const eventsList = document.getElementById('originalEvents');
                     if (eventsList) {
                         const listGroup = eventsList.querySelector('.list-group');
                         if (listGroup) {
-                            data.events.forEach(event => {
-                                const eventDiv = document.createElement('div');
-                                if (data.events && data.events.length > 0) {
-                                    const eventsList = document.getElementById('originalEvents');
-                                    if (eventsList) {
-                                        const listGroup = eventsList.querySelector('.list-group');
-                                        if (listGroup) {
-                                            data.events.sort((a, b) => a.minute - b.minute).forEach(event => {
-                                                const eventDiv = document.createElement('div');
-                                                eventDiv.className = 'list-group-item';
-                                                
-                                                let icon = '📝';
-                                                if (event.event_type === 'goal') icon = '⚽';
-                                                else if (event.event_type === 'yellow_card') icon = '🟨';
-                                                else if (event.event_type === 'red_card') icon = '🟥';
-                                
-                                                eventDiv.innerHTML = `
-                                                    <div class="d-flex justify-content-between align-items-center">
-                                                        <div>
-                                                            <strong>${event.minute}'</strong> 
-                                                            <span class="event-icon">${icon}</span>
-                                                            ${event.description}
-                                                        </div>
-                                                    </div>
-                                                `;
-                                                
-                                                listGroup.appendChild(eventDiv);
-                                            });
-                                        } else {
-                                            console.warn('list-group element not found in originalEvents');
-                                        }
-                                    } else {
-                                        console.warn('originalEvents element not found');
+                            // Очищаем старые события
+                            listGroup.innerHTML = '';
+                            
+                            // Добавляем новые события
+                            data.events
+                                .sort((a, b) => b.minute - a.minute)
+                                .forEach(event => {
+                                    const eventDiv = document.createElement('div');
+                                    eventDiv.className = 'list-group-item';
+                                    
+                                    let icon = '📝';
+                                    if (event.event_type === 'goal') {
+                                        icon = '⚽';
+                                    } else if (event.event_type === 'yellow_card') {
+                                        icon = '🟨';
+                                    } else if (event.event_type === 'red_card') {
+                                        icon = '🟥';
                                     }
-                                }
-                                
+                            
+                                    eventDiv.innerHTML = `
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>${event.minute}'</strong> 
+                                                <span class="event-icon">${icon}</span>
+                                                ${event.description}
+                                            </div>
+                                        </div>
+                                    `;
+                                    
+                                    listGroup.appendChild(eventDiv);
+                                });
+                        }
+                    }
+                }
             } catch (error) {
                 console.error('Error parsing WebSocket message:', error);
                 console.error('Raw message:', e.data);
