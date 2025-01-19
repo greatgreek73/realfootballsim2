@@ -1,0 +1,35 @@
+
+
+def simulate_one_minute(match_id: int):
+    """
+    Функция, которую может вызывать Celery (каждые 5 секунд и т. д.).
+    """
+    try:
+        match = Match.objects.get(id=match_id)
+
+        if match.status != 'in_progress':
+            logger.info(f"Match {match_id} is not in progress, skipping simulate_one_minute.")
+            return
+
+        # Если >=90, завершаем
+        if match.current_minute >= 90:
+            if match.status != 'finished':
+                match.status = 'finished'
+                match.save()
+            return
+
+        # Запускаем симуляцию 1 минуты
+        sim = MatchSimulation(match)
+        sim.simulate_minute(match.current_minute + 1)
+
+        # Увеличиваем current_minute
+        match.current_minute += 1
+
+        if match.current_minute >= 90:
+            match.status = 'finished'
+
+        match.save()
+
+    except Exception as e:
+        logger.error(f"Error in simulate_one_minute for match {match_id}: {str(e)}")
+        raise

@@ -18,39 +18,39 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const positions = [
         // GK (1)
-        { top: '8%',  left: '50%',  type: 'goalkeeper', label: 'GK' },
+        { top: '10%', left: '50%', type: 'goalkeeper', label: 'GK' },
 
         // Защита (5)
-        { top: '18%', left: '20%', type: 'ldef',  label: 'LDEF' },
-        { top: '18%', left: '80%', type: 'rdef',  label: 'RDEF' },
-        { top: '18%', left: '40%', type: 'cdef1', label: 'CDEF1' },
-        { top: '18%', left: '50%', type: 'cdef2', label: 'CDEF2' },
-        { top: '18%', left: '60%', type: 'cdef3', label: 'CDEF3' },
+        { top: '25%', left: '15%', type: 'ldef',  label: 'LDEF' },
+        { top: '25%', left: '85%', type: 'rdef',  label: 'RDEF' },
+        { top: '25%', left: '35%', type: 'cdef1', label: 'CDEF1' },
+        { top: '25%', left: '50%', type: 'cdef2', label: 'CDEF2' },
+        { top: '25%', left: '65%', type: 'cdef3', label: 'CDEF3' },
 
         // Опорная зона (5)
-        { top: '30%', left: '15%', type: 'ldm',  label: 'LDM' },
-        { top: '30%', left: '85%', type: 'rdm',  label: 'RDM' },
-        { top: '30%', left: '35%', type: 'cdm1', label: 'CDM1' },
-        { top: '30%', left: '50%', type: 'cdm2', label: 'CDM2' },
-        { top: '30%', left: '65%', type: 'cdm3', label: 'CDM3' },
+        { top: '40%', left: '15%', type: 'ldm',  label: 'LDM' },
+        { top: '40%', left: '85%', type: 'rdm',  label: 'RDM' },
+        { top: '40%', left: '35%', type: 'cdm1', label: 'CDM1' },
+        { top: '40%', left: '50%', type: 'cdm2', label: 'CDM2' },
+        { top: '40%', left: '65%', type: 'cdm3', label: 'CDM3' },
 
         // Обычная полузащита (5)
-        { top: '45%', left: '15%', type: 'lm',  label: 'LM' },
-        { top: '45%', left: '85%', type: 'rm',  label: 'RM' },
-        { top: '45%', left: '35%', type: 'cm1', label: 'CM1' },
-        { top: '45%', left: '50%', type: 'cm2', label: 'CM2' },
-        { top: '45%', left: '65%', type: 'cm3', label: 'CM3' },
+        { top: '55%', left: '15%', type: 'lm',  label: 'LM' },
+        { top: '55%', left: '85%', type: 'rm',  label: 'RM' },
+        { top: '55%', left: '35%', type: 'cm1', label: 'CM1' },
+        { top: '55%', left: '50%', type: 'cm2', label: 'CM2' },
+        { top: '55%', left: '65%', type: 'cm3', label: 'CM3' },
 
         // Атакующая полузащита (4)
-        { top: '60%', left: '20%', type: 'lam',  label: 'LAM' },
-        { top: '60%', left: '80%', type: 'ram',  label: 'RAM' },
-        { top: '60%', left: '40%', type: 'cam1', label: 'CAM1' },
-        { top: '60%', left: '60%', type: 'cam2', label: 'CAM2' },
+        { top: '70%', left: '15%', type: 'lam',  label: 'LAM' },
+        { top: '70%', left: '85%', type: 'ram',  label: 'RAM' },
+        { top: '70%', left: '35%', type: 'cam1', label: 'CAM1' },
+        { top: '70%', left: '65%', type: 'cam2', label: 'CAM2' },
 
         // 3 центральных форварда
-        { top: '75%', left: '35%', type: 'cf1',  label: 'CF1' },
-        { top: '75%', left: '50%', type: 'cf2',  label: 'CF2' },
-        { top: '75%', left: '65%', type: 'cf3',  label: 'CF3' }
+        { top: '85%', left: '35%', type: 'cf1',  label: 'CF1' },
+        { top: '85%', left: '50%', type: 'cf2',  label: 'CF2' },
+        { top: '85%', left: '65%', type: 'cf3',  label: 'CF3' }
     ];
 
     // Создаём слоты
