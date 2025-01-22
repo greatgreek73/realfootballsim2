@@ -16,6 +16,14 @@ logger = logging.getLogger(__name__)
 
 
 class MatchSimulation:
+    # Словарь допустимых позиций для каждого типа слота
+    SLOT_POSITION_MAPPING = {
+        "goalkeeper": ["Goalkeeper"],
+        "defender": ["Right Back", "Left Back", "Center Back", "Defensive Midfielder"],
+        "midfielder": ["Central Midfielder", "Left Midfielder", "Right Midfielder", "Defensive Midfielder", "Attacking Midfielder"],
+        "forward": ["Center Forward", "Attacking Midfielder"]
+    }
+
     def __init__(self, match: Match):
         # === Добавляем вызов предматчевой подготовки, чтобы у ботов генерировался состав ===
         prep = PreMatchPreparation(match)
@@ -126,55 +134,45 @@ class MatchSimulation:
         Для каждой команды (home/away) вычисляем "team_attack", "team_defense", "team_midfield"
         на основе игроков, лежащих в self.home_slots / self.away_slots.
         """
-        # Собираем список всех Player-объектов для home:
-        home_players = [slot["playerObj"] for slot in self.home_slots.values()]
+        self.match_stats['home']['team_attack'] = self._calculate_team_parameter(self.home_slots, 'attack')
+        self.match_stats['home']['team_defense'] = self._calculate_team_parameter(self.home_slots, 'defense')
+        self.match_stats['home']['team_midfield'] = self._calculate_team_parameter(self.home_slots, 'midfield')
 
-        # Аналогично для away:
-        away_players = [slot["playerObj"] for slot in self.away_slots.values()]
+        self.match_stats['away']['team_attack'] = self._calculate_team_parameter(self.away_slots, 'attack')
+        self.match_stats['away']['team_defense'] = self._calculate_team_parameter(self.away_slots, 'defense')
+        self.match_stats['away']['team_midfield'] = self._calculate_team_parameter(self.away_slots, 'midfield')
 
-        self.match_stats['home']['team_attack'] = self._calculate_team_parameter(home_players, 'attack')
-        self.match_stats['home']['team_defense'] = self._calculate_team_parameter(home_players, 'defense')
-        self.match_stats['home']['team_midfield'] = self._calculate_team_parameter(home_players, 'midfield')
-
-        self.match_stats['away']['team_attack'] = self._calculate_team_parameter(away_players, 'attack')
-        self.match_stats['away']['team_defense'] = self._calculate_team_parameter(away_players, 'defense')
-        self.match_stats['away']['team_midfield'] = self._calculate_team_parameter(away_players, 'midfield')
-
-    def _calculate_team_parameter(self, players, parameter_type):
+    def _calculate_team_parameter(self, slots_dict, parameter_type):
         """
         Рассчитываем некое «среднее» параметра (атака/защита/центр) по набору игроков.
+        Применяем штраф, если игрок не на своей позиции.
         """
         total = 0
         count = 0
 
-        for player in players:
+        for slot_idx, slot_data in slots_dict.items():
+            player = slot_data["playerObj"]
+            slot_type = slot_data["slotType"]  # "goalkeeper", "defender", ...
             experience_multiplier = 1 + player.experience * 0.01
 
+            # Базовые значения в зависимости от типа параметра
             if parameter_type == 'attack':
-                if player.position in ['Center Forward', 'Attacking Midfielder']:
-                    base_value = player.finishing + player.heading + player.long_range
-                    weight = 1.5
-                else:
-                    base_value = player.finishing + player.long_range
-                    weight = 1.0
-
+                base_value = player.finishing + player.heading + player.long_range
             elif parameter_type == 'defense':
-                if player.position in ['Center Back', 'Right Back', 'Left Back', 'Defensive Midfielder']:
-                    base_value = player.marking + player.tackling + player.heading
-                    weight = 1.5
-                else:
-                    base_value = player.marking + player.tackling
-                    weight = 1.0
-
+                base_value = player.marking + player.tackling + player.heading
             else:  # 'midfield'
-                if player.position in ['Central Midfielder', 'Defensive Midfielder', 'Attacking Midfielder']:
-                    base_value = player.passing + player.vision + player.work_rate
-                    weight = 1.5
-                else:
-                    base_value = player.passing + player.work_rate
-                    weight = 1.0
+                base_value = player.passing + player.vision + player.work_rate
 
-            final_value = base_value * experience_multiplier
+            # Проверяем, подходит ли позиция игрока для данного слота
+            penalty_coefficient = 1.0
+            allowed_positions = self.SLOT_POSITION_MAPPING.get(slot_type, [])
+            if player.position not in allowed_positions:
+                # Штраф 30% если игрок не на своей позиции
+                penalty_coefficient = 0.7
+
+            final_value = base_value * experience_multiplier * penalty_coefficient
+            weight = 1.0  # Единый вес для всех игроков
+            
             total += (final_value * weight)
             count += weight
 

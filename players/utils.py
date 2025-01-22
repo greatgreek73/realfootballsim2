@@ -20,7 +20,7 @@ def generate_player_stats(position, player_class):
     }
 
     if position == 'Goalkeeper':
-        # Характеристики вратаря (12 характеристик)
+        # Характеристики вратаря (8 дополнительных характеристик)
         gk_stats = {
             'reflexes': generate_stat(),
             'handling': generate_stat(),
@@ -33,7 +33,7 @@ def generate_player_stats(position, player_class):
         }
         stats = {**base_stats, **gk_stats}
     else:
-        # Характеристики полевого игрока (16 характеристик)
+        # Характеристики полевого игрока (12 дополнительных характеристик)
         field_stats = {
             'marking': generate_stat(),
             'tackling': generate_stat(),
@@ -50,7 +50,7 @@ def generate_player_stats(position, player_class):
         }
         stats = {**base_stats, **field_stats}
 
-        # Модификаторы позиций
+        # Прежний словарь для различных позиций
         position_modifiers = {
             'Center Back': {
                 'marking': 1.2, 'tackling': 1.2, 'heading': 1.1,
@@ -64,17 +64,22 @@ def generate_player_stats(position, player_class):
                 'pace': 1.1, 'crossing': 1.1, 'stamina': 1.1,
                 'tackling': 1.1, 'marking': 1.1
             },
-            'Defensive Midfielder': {
-                'tackling': 1.2, 'marking': 1.1, 'passing': 1.1,
-                'work_rate': 1.2, 'vision': 1.1
+            # Новый ключ для левого полузащитника:
+            'Left Midfielder': {
+                # Примерные бонусы: фланговому полузащитнику полезнее скорость, дриблинг и кроссы
+                'pace': 1.2,
+                'crossing': 1.2,
+                'dribbling': 1.1,
+                'work_rate': 1.1,
+                'stamina': 1.1
             },
+            # Исходная логика для "Central Midfielder"
             'Central Midfielder': {
-                'passing': 1.2, 'vision': 1.2, 'work_rate': 1.1,
-                'stamina': 1.1, 'positioning': 1.1
-            },
-            'Attacking Midfielder': {
-                'vision': 1.2, 'passing': 1.2, 'dribbling': 1.1,
-                'flair': 1.2, 'finishing': 1.1
+                'passing': 1.2,
+                'vision': 1.2,
+                'work_rate': 1.1,
+                'stamina': 1.1,
+                'positioning': 1.1
             },
             'Center Forward': {
                 'finishing': 1.3, 'heading': 1.2, 'positioning': 1.2,
@@ -82,14 +87,14 @@ def generate_player_stats(position, player_class):
             }
         }
 
-        # Применяем модификаторы позиции
+        # Применяем модификаторы для соответствующей позиции
         if position in position_modifiers:
             for attr, mod in position_modifiers[position].items():
                 if attr in stats:
                     stats[attr] = min(99, int(stats[attr] * mod))
 
-    # Модификатор класса игрока
-    class_modifier = (5 - player_class) * 0.1  # +10% за каждый класс выше 1
+    # Модификатор класса игрока (чем выше player_class, тем выше бонус)
+    class_modifier = (5 - player_class) * 0.1
     for key in stats:
         stats[key] = min(99, int(stats[key] * (1 + class_modifier)))
 

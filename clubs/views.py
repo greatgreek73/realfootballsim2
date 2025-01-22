@@ -1,4 +1,3 @@
-# clubs/views.py
 import json
 import random
 import logging
@@ -101,29 +100,27 @@ class CreateClubView(CreateView):
         Генерирует начальный состав из 16 игроков для новой команды пользователя:
         - 11 игроков основы
         - 5 запасных
-        Игроки распределяются по позициям и классам для формирования работоспособного состава.
         """
-        # Структура позиций для 16 игроков (11 + 5)
         positions = [
             # Основной состав (11)
-            {"position": "Goalkeeper", "class": 4},  # Основной вратарь
-            {"position": "Right Back", "class": 4},
-            {"position": "Center Back", "class": 4},
-            {"position": "Center Back", "class": 4},
-            {"position": "Left Back", "class": 4},
-            {"position": "Defensive Midfielder", "class": 4},
-            {"position": "Central Midfielder", "class": 4},
-            {"position": "Attacking Midfielder", "class": 4},
-            {"position": "Right Midfielder", "class": 4},
-            {"position": "Center Forward", "class": 4},
-            {"position": "Center Forward", "class": 4},
-            
-            # Запасные (5)
-            {"position": "Goalkeeper", "class": 4},  # Запасной вратарь
-            {"position": "Center Back", "class": 4},  # Запасной защитник
-            {"position": "Central Midfielder", "class": 4},  # Запасной полузащитник
-            {"position": "Attacking Midfielder", "class": 4},  # Запасной атакующий
-            {"position": "Center Forward", "class": 4},  # Запасной нападающий
+            {"position": "Goalkeeper",         "class": 4},  # 1  Вратарь
+            {"position": "Right Back",         "class": 4},  # 2
+            {"position": "Center Back",        "class": 4},  # 3
+            {"position": "Center Back",        "class": 4},  # 4
+            {"position": "Left Back",          "class": 4},  # 5
+            {"position": "Left Midfielder",    "class": 4},  # 6  (было Defensive Midfielder)
+            {"position": "Central Midfielder", "class": 4},  # 7
+            {"position": "Central Midfielder", "class": 4},  # 8  (было Attacking Midfielder)
+            {"position": "Right Midfielder",   "class": 4},  # 9
+            {"position": "Center Forward",     "class": 4},  # 10
+            {"position": "Center Forward",     "class": 4},  # 11
+
+            # Запас (5)
+            {"position": "Goalkeeper",         "class": 4},  # 12
+            {"position": "Center Back",        "class": 4},  # 13
+            {"position": "Central Midfielder", "class": 4},  # 14
+            {"position": "Central Midfielder", "class": 4},  # 15 (было Attacking Midfielder)
+            {"position": "Center Forward",     "class": 4},  # 16
         ]
 
         country_code = club.country.code
@@ -134,13 +131,17 @@ class CreateClubView(CreateView):
             # Генерируем уникальное имя
             while True:
                 first_name = fake.first_name_male()
-                last_name = fake.last_name_male() if hasattr(fake, 'last_name_male') else fake.last_name()
+                last_name = (
+                    fake.last_name_male()
+                    if hasattr(fake, 'last_name_male')
+                    else fake.last_name()
+                )
                 if not Player.objects.filter(first_name=first_name, last_name=last_name).exists():
                     break
 
             # Генерируем характеристики игрока
             stats = generate_player_stats(player_info["position"], player_info["class"])
-            
+
             # Создаем игрока
             Player.objects.create(
                 club=club,
@@ -292,7 +293,7 @@ def get_players(request, pk):
         data.append({
             'id': p.id,
             'name': f"{p.first_name} {p.last_name}",
-            'position': p.position,  # например "Attacking Midfielder"
+            'position': p.position,
             'playerClass': p.player_class,
             'attributes': {
                 'stamina': p.stamina,
@@ -308,19 +309,6 @@ def get_players(request, pk):
 def save_team_lineup(request, pk):
     """
     Сохраняет состав (lineup) и тактику.
-    Ожидаем структуру вида:
-      {
-        "lineup": {
-          "0": {
-            "playerId": "123",
-            "playerPosition": "Defensive Midfielder",
-            "slotType": "ldm",
-            "slotLabel": "LDM"
-          },
-          ...
-        },
-        "tactic": "balanced"
-      }
     """
     try:
         club = get_object_or_404(Club, pk=pk)
@@ -367,13 +355,8 @@ def save_team_lineup(request, pk):
                     "error": f"Player {p_id} does not belong to club {club.id}"
                 }, status=400)
 
-            # Проверяем наличие хотя бы одного вратаря
             if "goalkeeper" in p_pos.lower():
                 has_goalkeeper = True
-
-            # Дополнительная валидация можно делать здесь, если нужно.
-
-            # Пример: если slotType = "ldm", убедиться, что p_pos включает "Defensive Midfielder"
 
         if not has_goalkeeper:
             return JsonResponse({
@@ -381,7 +364,6 @@ def save_team_lineup(request, pk):
                 "error": "Squad must include a goalkeeper"
             }, status=400)
 
-        # Сохраняем
         club.lineup = {
             "lineup": raw_lineup,
             "tactic": tactic
