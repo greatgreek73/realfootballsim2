@@ -8,14 +8,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const tacticSelect = document.getElementById('tacticSelect');
 
     // -------------------------------
-    // Конфигурация слотов
-    // 1) GK (1 слот)
-    // 2) Защита (defense): 5 слотов (ldef, rdef, cdef1, cdef2, cdef3)
-    // 3) Опорная зона (defensive midfield): 5 слотов (ldm, rdm, cdm1, cdm2, cdm3)
-    // 4) Полузащита (midfield): 5 слотов (lm, rm, cm1, cm2, cm3)
-    // 5) Атакующая полузащита: 4 слота (lam, ram, cam1, cam2)
-    // 6) Форварды (3 центральных): cf1, cf2, cf3
-
+    // Конфигурация слотов (не меняем)
+    // -------------------------------
     const positions = [
         // 3 центральных форварда
         { top: '15%', left: '35%', type: 'cf1',  label: 'CF1' },
@@ -29,11 +23,11 @@ document.addEventListener('DOMContentLoaded', function() {
         { top: '30%', left: '65%', type: 'cam2', label: 'CAM2' },
 
         // Обычная полузащита (5)
-        { top: '45%', left: '15%', type: 'lm',  label: 'LM' },
-        { top: '45%', left: '85%', type: 'rm',  label: 'RM' },
-        { top: '45%', left: '35%', type: 'cm1', label: 'CM1' },
-        { top: '45%', left: '50%', type: 'cm2', label: 'CM2' },
-        { top: '45%', left: '65%', type: 'cm3', label: 'CM3' },
+        { top: '45%', left: '15%', type: 'lm',   label: 'LM' },
+        { top: '45%', left: '85%', type: 'rm',   label: 'RM' },
+        { top: '45%', left: '35%', type: 'cm1',  label: 'CM1' },
+        { top: '45%', left: '50%', type: 'cm2',  label: 'CM2' },
+        { top: '45%', left: '65%', type: 'cm3',  label: 'CM3' },
 
         // Опорная зона (5)
         { top: '60%', left: '15%', type: 'ldm',  label: 'LDM' },
@@ -61,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
         slot.style.left = pos.left;
 
         slot.dataset.position = String(index);
-        slot.dataset.type = pos.type;  // напр. "ldef", "cdm2", "cam1", "cf2"
+        slot.dataset.type = pos.type;
 
         const label = document.createElement('div');
         label.className = 'position-label';
@@ -72,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // -------------------------------
-    // Определяем базовый тип игрока (goalkeeper, defender, midfielder, forward)
+    // Определяем базовый тип игрока
     function getPlayerType(positionString) {
         if (!positionString) return 'other';
         const p = positionString.toLowerCase();
@@ -84,8 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // -------------------------------
-    // Проверка соответствия slotType -> playerType/position
-    // Например, slotType "ldm" требует "Defensive Midfielder"
+    // Проверка соответствия slotType -> playerType
     function isValidPosition(playerType, slotType, fullPositionName) {
         const pLower = (fullPositionName || '').toLowerCase();
 
@@ -93,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'goalkeeper':
                 return (playerType === 'goalkeeper');
 
-            // --- 5 защитников ---
+            // 5 защитников
             case 'ldef':
             case 'rdef':
             case 'cdef1':
@@ -101,36 +94,33 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'cdef3':
                 return (playerType === 'defender');
 
-            // --- опорная зона ---
+            // опорная зона
             case 'ldm':
             case 'rdm':
             case 'cdm1':
             case 'cdm2':
             case 'cdm3':
-                // Нужно наличие "defensive midfielder"
                 return pLower.includes('defensive midfielder');
 
-            // --- обычная полузащита ---
+            // обычная полузащита
             case 'lm':
             case 'rm':
             case 'cm1':
             case 'cm2':
             case 'cm3':
-                // Должен быть midfielder, но не "defensive" и не "attacking"
                 if (playerType !== 'midfielder') return false;
                 if (pLower.includes('defensive midfielder')) return false;
                 if (pLower.includes('attacking midfielder')) return false;
                 return true;
 
-            // --- атакующая полузащита ---
+            // атакующая полузащита
             case 'lam':
             case 'ram':
             case 'cam1':
             case 'cam2':
-                // Нужно именно "attacking midfielder"
                 return pLower.includes('attacking midfielder');
 
-            // --- форварды (cf1, cf2, cf3)
+            // форварды
             case 'cf1':
             case 'cf2':
             case 'cf3':
@@ -150,6 +140,11 @@ document.addEventListener('DOMContentLoaded', function() {
         playerElement.className = `player-item ${pt}`;
         playerElement.dataset.playerId = String(player.id);
         playerElement.dataset.playerPosition = player.position || '';
+
+        // Если на бэкенде есть "player.attributes", сохраним:
+        if (player.attributes) {
+            playerElement.dataset.attrs = JSON.stringify(player.attributes);
+        }
 
         const nameEl = document.createElement('div');
         nameEl.className = 'player-name';
@@ -184,10 +179,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const playerItem = slot.querySelector('.player-item');
             if (playerItem) {
                 lineup[slot.dataset.position] = {
-                    playerId:       playerItem.dataset.playerId,
+                    playerId: playerItem.dataset.playerId,
                     playerPosition: playerItem.dataset.playerPosition,
-                    slotType:       slot.dataset.type,
-                    slotLabel:      slot.querySelector('.position-label').textContent
+                    slotType: slot.dataset.type,
+                    slotLabel: slot.querySelector('.position-label').textContent
                 };
             }
         });
@@ -224,7 +219,48 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // -------------------------------
-    // Загрузка уже сохранённого состава
+    // Функция рассчёта статистики команды
+    function calculateTeamStats() {
+        let totalStamina = 0;
+        let totalAttack = 0;
+        let totalDefense = 0;
+        let count = 0;
+
+        // Перебираем всех игроков, которые стоят на поле
+        document.querySelectorAll('.player-slot:not(.empty) .player-item').forEach(playerEl => {
+            // Извлекаем dataset.attrs
+            const raw = playerEl.dataset.attrs;
+            if (!raw) return; // если нет атрибутов, пропускаем
+            const attrs = JSON.parse(raw);
+
+            // Пример (adjust под себя):
+            const stamina = attrs.stamina || 0;
+            const attack  = attrs.attack  || 0;
+            const defense = attrs.defense || 0;
+
+            totalStamina += stamina;
+            totalAttack  += attack;
+            totalDefense += defense;
+            count++;
+        });
+
+        // Если хотите среднее:
+        let avgStamina = count > 0 ? Math.round(totalStamina / count) : 0;
+        let avgAttack  = count > 0 ? Math.round(totalAttack / count) : 0;
+        let avgDefense = count > 0 ? Math.round(totalDefense / count) : 0;
+
+        // Выводим в DOM
+        const staminaVal = document.getElementById('staminaVal');
+        const attackVal  = document.getElementById('attackVal');
+        const defenseVal = document.getElementById('defenseVal');
+
+        if (staminaVal) staminaVal.textContent = avgStamina;
+        if (attackVal)  attackVal.textContent  = avgAttack;
+        if (defenseVal) defenseVal.textContent = avgDefense;
+    }
+
+    // -------------------------------
+    // Загрузка состава
     function loadTeamLineup() {
         fetch(`/clubs/detail/${clubId}/get-team-lineup/`)
             .then(r => r.json())
@@ -244,6 +280,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.tactic) {
                     tacticSelect.value = data.tactic;
                 }
+                // После загрузки состава - пересчитаем
+                calculateTeamStats();
             })
             .catch(err => {
                 showMessage('Error loading lineup', 'danger');
@@ -262,6 +300,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         saveTeamLineup();
         showMessage('Lineup has been reset');
+        // Пересчитаем
+        calculateTeamStats();
     }
 
     if (resetButton) {
@@ -291,6 +331,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     slot.classList.remove('dragover');
                 });
                 saveTeamLineup();
+                calculateTeamStats(); // Пересчитать
             }
         });
 
@@ -309,6 +350,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         slotEl.classList.remove('empty');
                         slotEl.classList.remove('highlight');
 
+                        // Если уже был кто-то, вернём его назад в список
                         slotEl.querySelectorAll('.player-item').forEach(ex => {
                             if (ex !== newPlayer) {
                                 playerList.appendChild(ex);
@@ -318,14 +360,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         slotEl.appendChild(newPlayer);
                         saveTeamLineup();
+                        calculateTeamStats();
                     } else {
+                        // Вернём игрока обратно
                         playerList.appendChild(newPlayer);
                         showMessage('Invalid player position!', 'danger');
+                        calculateTeamStats();
                     }
                 },
                 onRemove: function(evt) {
                     const oldSlot = evt.from;
                     oldSlot.classList.add('empty');
+                    calculateTeamStats();
                 }
             });
 
@@ -341,9 +387,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // -------------------------------
-    // 1) Загрузить список игроков,
-    // 2) Инициализировать перетаскивание,
-    // 3) Загрузить уже сохранённый состав
+    // (1) Загрузить список игроков,
+    // (2) Инициализировать перетаскивание,
+    // (3) Загрузить уже сохранённый состав
     fetch(`/clubs/detail/${clubId}/get-players/`)
         .then(r => r.json())
         .then(players => {
