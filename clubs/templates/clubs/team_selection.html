@@ -6,17 +6,49 @@
 {% block content %}
 {% csrf_token %}
 <div class="container">
-    <div class="row">
+    <!-- Секция со ссылкой "Back to Club" и заголовком -->
+    <div class="row mb-4">
         <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">Team Selection</h2>
+                <a href="{% url 'clubs:club_detail' club.id %}" class="btn btn-outline-secondary">Back to Club</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card с блоком статистики команды (Team Stats) -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">Team Stats</h3>
+                </div>
+                <div class="card-body" id="teamStats">
+                    <!-- Внутри: Attack, Defense и т.п. -->
+                    <div>Team Attack: <span id="attackVal">0</span></div>
+                    <div>Team Defense: <span id="defenseVal">0</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основная часть из двух колонок: поле (слева), список игроков (справа) -->
+    <div class="row">
+        <!-- Левая колонка (поле + панель управления) -->
+        <div class="col-lg-8">
             <div class="card mb-4">
                 <div class="card-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h2 class="mb-0">Team Selection</h2>
-                        <a href="{% url 'clubs:club_detail' club.id %}" class="btn btn-outline-secondary">Back to Club</a>
-                    </div>
+                    <!-- Тут если нужно какой-то заголовок -->
+                    <h4 class="mb-0">Pitch & Controls</h4>
                 </div>
                 <div class="card-body">
-                    <div class="tactics-section mb-3">
+                    <!-- Само поле -->
+                    <div class="pitch mb-4" id="pitch">
+                        <!-- Player slots will be added here dynamically -->
+                    </div>
+
+                    <!-- Панель управления (текущая "tactics-section" и Reset) -->
+                    <div class="text-center mb-3">
                         <label for="tacticSelect"><strong>Select Tactic:</strong></label>
                         <select id="tacticSelect">
                             <option value="attacking">Attacking</option>
@@ -25,31 +57,24 @@
                         </select>
                     </div>
 
-                    <!-- Поле -->
-                    <div class="pitch" id="pitch">
-                        <!-- Player slots will be added here dynamically -->
-                    </div>
-
-                    <!-- Кнопка сброса/статус -->
-                    <div class="text-center mt-4">
+                    <!-- Reset и SaveStatus -->
+                    <div class="text-center">
                         <button id="resetButton" class="btn btn-warning">Reset Lineup</button>
                         <div id="saveStatus" class="mt-2"></div>
                     </div>
+                </div>
+            </div>
+        </div>
 
-                    <!-- Блок для статистики команды -->
-                    <div class="mt-4" id="teamStats">
-                        <h3 class="h5 mb-2">Team Stats</h3>
-                        <!-- Добавляем показатели -->
-                        <div>Team Attack: <span id="attackVal">0</span></div>
-                        <div>Team Defense: <span id="defenseVal">0</span></div>
-                    </div>
-
-                    <!-- Список игроков -->
-                    <div class="mt-4">
-                        <h3 class="h4 mb-3">Available Players</h3>
-                        <div class="player-list" id="playerList">
-                            <!-- Available players will be added here dynamically -->
-                        </div>
+        <!-- Правая колонка (список игроков) -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Available Players</h4>
+                </div>
+                <div class="card-body">
+                    <div class="player-list" id="playerList">
+                        <!-- Available players will be added here dynamically -->
                     </div>
                 </div>
             </div>
@@ -57,9 +82,12 @@
     </div>
 </div>
 
+<!-- Скрытое поле ID клуба -->
 <input type="hidden" id="clubId" value="{{ club.id }}">
 
+<!-- Стили -->
 <style>
+    /* Стили поля, взятые из вашего исходника */
     .pitch {
         width: 100%;
         max-width: 800px;
@@ -75,7 +103,6 @@
         border-radius: 8px;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
-
     .pitch::before {
         content: '';
         position: absolute;
@@ -85,7 +112,6 @@
         height: 2px;
         background-color: rgba(255, 255, 255, 0.5);
     }
-
     .pitch::after {
         content: '';
         position: absolute;
@@ -109,38 +135,31 @@
         transform: translate(-50%, -50%);
         border-radius: 50%;
     }
-
     .player-slot.empty {
         background-color: transparent;
         border: none;
     }
-
     .player-slot.empty .position-label {
         opacity: 0;
         transition: opacity 0.2s ease;
     }
-
     .player-slot.highlight {
         background-color: rgba(255, 255, 255, 0.2);
         border: 2px dashed rgba(255, 255, 255, 0.8);
     }
-
     .player-slot.dragover {
         background-color: rgba(255, 255, 255, 0.4);
         border: 2px solid rgba(255, 255, 255, 0.9);
         box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
     }
-
     .player-slot:not(.empty) {
         background-color: rgba(255, 255, 255, 0.8);
         border: 2px solid #fff;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-
     .player-slot:not(.empty) .position-label {
         opacity: 1;
     }
-
     .position-label {
         position: absolute;
         bottom: -20px;
@@ -156,7 +175,6 @@
         pointer-events: none;
         transition: opacity 0.2s ease;
     }
-
     .player-list {
         display: flex;
         flex-wrap: wrap;
@@ -166,7 +184,6 @@
         border-radius: 8px;
         min-height: 100px;
     }
-
     .player-item {
         width: 130px;
         height: 70px;
@@ -184,47 +201,38 @@
         transition: all 0.2s ease;
         margin: 0;
     }
-
     .player-item:hover {
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         transform: translateY(-2px);
     }
-
     .player-item.goalkeeper {
         background-color: #fff3cd;
         border-left: 4px solid #ffc107;
     }
-
     .player-item.defender {
         background-color: #cfe2ff;
         border-left: 4px solid #0d6efd;
     }
-
     .player-item.midfielder {
         background-color: #d1e7dd;
         border-left: 4px solid #198754;
     }
-
     .player-item.forward {
         background-color: #f8d7da;
         border-left: 4px solid #dc3545;
     }
-
     .player-name {
         font-weight: bold;
         margin-bottom: 4px;
     }
-
     .player-position {
         font-size: 11px;
         color: #6c757d;
     }
-
     #saveStatus {
         min-height: 24px;
         transition: all 0.3s ease;
     }
-
     #saveStatus.alert {
         display: inline-block;
         padding: 0.5rem 1rem;
@@ -233,8 +241,7 @@
     }
 </style>
 
-<!-- SortableJS -->
+<!-- Подключение SortableJS и вашего JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
-<!-- Наш JS -->
 <script src="{% static 'js/team_selection.js' %}"></script>
 {% endblock %}
