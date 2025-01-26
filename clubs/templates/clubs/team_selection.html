@@ -39,9 +39,8 @@
                     <!-- БЛОК ДЛЯ СТАТИСТИКИ КОМАНДЫ -->
                     <div class="mt-4" id="teamStats">
                         <h3 class="h5 mb-2">Team Stats</h3>
-                        <div>Stamina: <span id="staminaVal">0</span></div>
-                        <div>Attack: <span id="attackVal">0</span></div>
-                        <div>Defense: <span id="defenseVal">0</span></div>
+                        <!-- Убрали stamina/defense. Оставили только Team Attack -->
+                        <div>Team Attack: <span id="attackVal">0</span></div>
                     </div>
 
                     <!-- Список игроков -->
@@ -123,10 +122,6 @@
     .player-slot.highlight {
         background-color: rgba(255, 255, 255, 0.2);
         border: 2px dashed rgba(255, 255, 255, 0.8);
-    }
-
-    .player-slot.highlight .position-label {
-        opacity: 1;
     }
 
     .player-slot.dragover {
