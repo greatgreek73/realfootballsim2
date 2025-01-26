@@ -16,7 +16,7 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="tactics-section">
+                    <div class="tactics-section mb-3">
                         <label for="tacticSelect"><strong>Select Tactic:</strong></label>
                         <select id="tacticSelect">
                             <option value="attacking">Attacking</option>
@@ -36,11 +36,12 @@
                         <div id="saveStatus" class="mt-2"></div>
                     </div>
 
-                    <!-- БЛОК ДЛЯ СТАТИСТИКИ КОМАНДЫ -->
+                    <!-- Блок для статистики команды -->
                     <div class="mt-4" id="teamStats">
                         <h3 class="h5 mb-2">Team Stats</h3>
-                        <!-- Убрали stamina/defense. Оставили только Team Attack -->
+                        <!-- Добавляем показатели -->
                         <div>Team Attack: <span id="attackVal">0</span></div>
+                        <div>Team Defense: <span id="defenseVal">0</span></div>
                     </div>
 
                     <!-- Список игроков -->
@@ -217,19 +218,6 @@
     .player-position {
         font-size: 11px;
         color: #6c757d;
-    }
-
-    .sortable-ghost {
-        opacity: 0.4;
-    }
-
-    .sortable-chosen {
-        opacity: 0.8;
-        transform: scale(1.05);
-    }
-
-    .sortable-drag {
-        opacity: 0.8;
     }
 
     #saveStatus {

@@ -1,3 +1,5 @@
+# clubs/views.py
+
 import json
 import random
 import logging
@@ -20,6 +22,12 @@ from players.constants import PLAYER_PRICES
 from tournaments.models import Championship, League
 
 logger = logging.getLogger(__name__)
+
+def get_locale_from_country_code(country_code):
+    """
+    Возвращает строку локали (например, 'en_GB') для заданного кода страны.
+    """
+    return country_locales.get(country_code, 'en_US')
 
 class CreateClubView(CreateView):
     """
@@ -96,27 +104,30 @@ class CreateClubView(CreateView):
 
     def generate_initial_players(self, club):
         """
-        Генерирует начальный состав из 16 игроков.
+        Генерирует начальный состав из 16 игроков для новой команды пользователя:
+        - 11 игроков основы
+        - 5 запасных
         """
         positions = [
-            {"position": "Goalkeeper",         "class": 4},
-            {"position": "Right Back",         "class": 4},
-            {"position": "Center Back",        "class": 4},
-            {"position": "Center Back",        "class": 4},
-            {"position": "Left Back",          "class": 4},
-            {"position": "Left Midfielder",    "class": 4},
-            {"position": "Central Midfielder", "class": 4},
-            {"position": "Central Midfielder", "class": 4},
-            {"position": "Right Midfielder",   "class": 4},
-            {"position": "Center Forward",     "class": 4},
-            {"position": "Center Forward",     "class": 4},
+            # Основной состав (11)
+            {"position": "Goalkeeper",         "class": 4},  # 1  Вратарь
+            {"position": "Right Back",         "class": 4},  # 2
+            {"position": "Center Back",        "class": 4},  # 3
+            {"position": "Center Back",        "class": 4},  # 4
+            {"position": "Left Back",          "class": 4},  # 5
+            {"position": "Left Midfielder",    "class": 4},  # 6 
+            {"position": "Central Midfielder", "class": 4},  # 7
+            {"position": "Central Midfielder", "class": 4},  # 8 
+            {"position": "Right Midfielder",   "class": 4},  # 9
+            {"position": "Center Forward",     "class": 4},  # 10
+            {"position": "Center Forward",     "class": 4},  # 11
 
             # Запас (5)
-            {"position": "Goalkeeper",         "class": 4},
-            {"position": "Center Back",        "class": 4},
-            {"position": "Central Midfielder", "class": 4},
-            {"position": "Central Midfielder", "class": 4},
-            {"position": "Center Forward",     "class": 4},
+            {"position": "Goalkeeper",         "class": 4},  # 12
+            {"position": "Center Back",        "class": 4},  # 13
+            {"position": "Central Midfielder", "class": 4},  # 14
+            {"position": "Central Midfielder", "class": 4},  # 15
+            {"position": "Center Forward",     "class": 4},  # 16
         ]
 
         country_code = club.country.code
@@ -124,6 +135,7 @@ class CreateClubView(CreateView):
         fake = Faker(locale)
 
         for player_info in positions:
+            # Генерируем уникальное имя
             while True:
                 first_name = fake.first_name_male()
                 last_name = (
@@ -134,8 +146,10 @@ class CreateClubView(CreateView):
                 if not Player.objects.filter(first_name=first_name, last_name=last_name).exists():
                     break
 
+            # Генерируем характеристики игрока
             stats = generate_player_stats(player_info["position"], player_info["class"])
 
+            # Создаем игрока
             Player.objects.create(
                 club=club,
                 first_name=first_name,
@@ -157,13 +171,14 @@ class CreateClubView(CreateView):
 
 class ClubDetailView(DetailView):
     """
-    Детальная страница клуба.
+    Детальная страница клуба, где отображаются игроки и другая информация.
     """
     model = Club
     template_name = 'clubs/club_detail.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        from players.constants import PLAYER_PRICES
         context['players'] = Player.objects.filter(club=self.object)
         context['player_prices'] = PLAYER_PRICES
 
@@ -176,14 +191,10 @@ class ClubDetailView(DetailView):
         return context
 
 
-def get_locale_from_country_code(country_code):
-    return country_locales.get(country_code, 'en_US')
-
-
 @require_http_methods(["GET"])
 def create_player(request, pk):
     """
-    Создаёт нового игрока в клубе (GET-параметры: position, player_class).
+    Создаёт нового игрока в клубе (через GET-параметры: position, player_class).
     """
     club = get_object_or_404(Club, pk=pk)
     if club.owner != request.user:
@@ -253,6 +264,9 @@ def create_player(request, pk):
 
 @require_http_methods(["GET"])
 def team_selection_view(request, pk):
+    """
+    Страница выбора состава (drag-and-drop).
+    """
     club = get_object_or_404(Club, pk=pk)
     if club.owner != request.user:
         messages.error(request, "You don't have permission to view this page.")
@@ -269,7 +283,7 @@ def team_selection_view(request, pk):
 def get_players(request, pk):
     """
     Возвращает JSON со списком игроков клуба.
-    **Здесь мы убрали stamina/defense/strength и добавили attack**
+    + Добавляем поля "attack" и "defense" для подсчёта на фронте.
     """
     club = get_object_or_404(Club, pk=pk)
     if club.owner != request.user:
@@ -278,7 +292,7 @@ def get_players(request, pk):
     players = Player.objects.filter(club=club)
     data = []
     for p in players:
-        # Суммируем нужные характеристики: finishing, dribbling, accuracy, long_range, heading
+        # Attack = finishing + dribbling + accuracy + long_range + heading
         total_attack = (
             (p.finishing or 0) +
             (p.dribbling or 0) +
@@ -286,15 +300,25 @@ def get_players(request, pk):
             (p.long_range or 0) +
             (p.heading or 0)
         )
+        # Defense = marking + tackling + heading
+        total_defense = (
+            (p.marking or 0) +
+            (p.tackling or 0) +
+            (p.heading or 0)
+        )
+
         data.append({
             'id': p.id,
             'name': f"{p.first_name} {p.last_name}",
             'position': p.position,
             'playerClass': p.player_class,
+            # Связка дополнительной информации
             'attributes': {
-                'attack': total_attack  # only one field in 'attributes' now
+                'attack': total_attack,
+                'defense': total_defense
             }
         })
+
     return JsonResponse(data, safe=False)
 
 
@@ -302,7 +326,7 @@ def get_players(request, pk):
 @require_http_methods(["POST"])
 def save_team_lineup(request, pk):
     """
-    Сохраняет состав (lineup).
+    Сохраняет состав (lineup) и тактику.
     """
     try:
         club = get_object_or_404(Club, pk=pk)
@@ -323,8 +347,6 @@ def save_team_lineup(request, pk):
 
         has_goalkeeper = False
 
-        from players.models import Player
-
         for slot_idx, slot_info in raw_lineup.items():
             if not isinstance(slot_info, dict):
                 return JsonResponse({
@@ -334,6 +356,8 @@ def save_team_lineup(request, pk):
 
             p_id  = slot_info.get("playerId")
             p_pos = slot_info.get("playerPosition", "")
+            s_type = slot_info.get("slotType", "")
+            s_label = slot_info.get("slotLabel", "")
 
             try:
                 p_obj = Player.objects.get(id=int(p_id))
@@ -380,7 +404,7 @@ def save_team_lineup(request, pk):
 @require_http_methods(["GET"])
 def get_team_lineup(request, pk):
     """
-    Возвращает сохранённый состав.
+    Возвращаем сохранённый состав.
     """
     club = get_object_or_404(Club, pk=pk)
     if club.owner != request.user:
@@ -395,8 +419,6 @@ def get_team_lineup(request, pk):
         'tactic': tactic,
         'players': {}
     }
-
-    from players.models import Player
 
     pids = []
     for info in lineup_data.values():
