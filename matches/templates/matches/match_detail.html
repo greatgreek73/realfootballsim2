@@ -42,7 +42,7 @@
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <p><strong>Date:</strong> {{ match.datetime|date:"d M Y H:i" }}</p>
-                            <p><strong>Status:</strong> 
+                            <p><strong>Status:</strong>
                                 <span class="badge 
                                     {% if match.status == 'finished' %}bg-success
                                     {% elif match.status == 'in_progress' %}bg-warning
@@ -157,8 +157,11 @@
             </div>
 
             <!-- =============================
-                 НОВЫЙ РАЗДЕЛ: лучшие игроки
+                 Новое условие: 
+                 показываем лучших игроков 
+                 только если match.status == 'scheduled'
                  ============================= -->
+            {% if match.status == 'scheduled' %}
             <div class="row mb-4">
                 <div class="col-md-6">
                     <div class="card">
@@ -256,6 +259,7 @@
                     </div>
                 </div><!-- /.col-md-6 -->
             </div>
+            {% endif %}
 
             <div class="text-center">
                 <a href="{% url 'matches:match_list' %}" class="btn btn-outline-primary">Back to Matches</a>
