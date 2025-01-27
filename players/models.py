@@ -1,6 +1,27 @@
 from django.db import models
 from django_countries.fields import CountryField
 
+# === Добавленная функция вне класса Player ===
+def get_player_line(player):
+    """
+    Возвращает строку из ['GK', 'DEF', 'MID', 'FWD'],
+    соответствующую позиции игрока:
+      - GK:  если position == 'Goalkeeper'
+      - DEF: если 'Back' в position или position == 'Defensive Midfielder'
+      - MID: если 'Midfielder' в position (включая Attacking Midfielder)
+      - FWD: если 'Forward' в position
+    """
+    if player.position == 'Goalkeeper':
+        return 'GK'
+    if 'Back' in player.position or player.position == 'Defensive Midfielder':
+        return 'DEF'
+    if 'Midfielder' in player.position:  # включая Attacking Midfielder
+        return 'MID'
+    if 'Forward' in player.position:
+        return 'FWD'
+    return 'MID'  # fallback
+
+
 class Player(models.Model):
     POSITIONS = [
         ('Goalkeeper', 'Goalkeeper'),
@@ -53,12 +74,13 @@ class Player(models.Model):
     handling = models.IntegerField(default=0, verbose_name="Handling")
     aerial = models.IntegerField(default=0, verbose_name="Aerial")
     command = models.IntegerField(default=0, verbose_name="Command")
-    from .constants import PLAYER_PRICES
-    
+
+    from .constants import PLAYER_PRICES  # Импорт из вашего constants.py
+
     def get_purchase_cost(self):
         """Возвращает стоимость покупки игрока в зависимости от класса"""
-        return PLAYER_PRICES.get(self.player_class, 200)  # По умолчанию 200 токенов
-    
+        return PLAYER_PRICES.get(self.player_class, 200)
+
     distribution = models.IntegerField(default=0, verbose_name="Distribution")
     one_on_one = models.IntegerField(default=0, verbose_name="One on One")
     rebound_control = models.IntegerField(default=0, verbose_name="Rebound Control")
@@ -143,9 +165,8 @@ class Player(models.Model):
     def overall_rating(self):
         """
         Вычисляет общий рейтинг игрока на основе его характеристик,
-        учитывая опыт. Допустим, за каждый 1.0 опыта характеристики растут на 1%.
+        учитывая опыт (1% прибавки за 1.0 опыта).
         """
-        # Коэффициент влияния опыта (1% за единицу опыта)
         experience_multiplier = 1 + self.experience * 0.01
 
         if self.is_goalkeeper:
@@ -165,9 +186,8 @@ class Player(models.Model):
                 self.accuracy
             ]
 
-        # Применяем опытный множитель
-        adjusted_attributes = [int(attr * experience_multiplier) for attr in attributes]
-        return sum(adjusted_attributes) // len(adjusted_attributes)
+        adjusted = [int(a * experience_multiplier) for a in attributes]
+        return sum(adjusted) // len(adjusted)
 
     def get_position_specific_attributes(self):
         """Возвращает атрибуты, специфичные для позиции игрока."""
@@ -200,16 +220,31 @@ class Player(models.Model):
 
     def get_boost_cost(self) -> int:
         """
-        Возвращает стоимость (в токенах) следующей «платной» тренировки:
-          1-я тренировка: 0 токенов
-          2-я тренировка: 1 токен
-          3-я тренировка: 2 токена
-          4-я тренировка: 4 токенов
-          5-я тренировка: 8 токенов
-          ...
+        Возвращает стоимость (в токенах) для следующей платной тренировки:
+          - 1-я тренировка: 0 токенов
+          - 2-я тренировка: 1 токен
+          - 3-я тренировка: 2 токена
+          - 4-я тренировка: 4 токенов
+          - 5-я тренировка: 8 токенов
+          - ...
         """
-        # Если ещё не было прокачек (boost_count=0), значит первая прокачка бесплатна
         if self.boost_count == 0:
             return 0
-        # Если boost_count=1 => следующая (вторая) тренировка = 2^(1-1)=1, и т.д.
         return 2 ** (self.boost_count - 1)
+
+    # === Добавленный метод внутри Player (шаг 1) ===
+    def sum_attributes(self):
+        """
+        Возвращает сумму всех характеристик игрока (и вратарских, и полевых),
+        чтобы можно было определить «самого сильного» по общему количеству очков.
+        """
+        attrs = [
+            self.strength, self.stamina, self.pace, self.positioning,
+            self.reflexes, self.handling, self.aerial, self.command,
+            self.distribution, self.one_on_one, self.rebound_control,
+            self.shot_reading, self.marking, self.tackling, self.work_rate,
+            self.passing, self.crossing, self.dribbling, self.flair,
+            self.heading, self.finishing, self.long_range, self.vision,
+            self.accuracy
+        ]
+        return sum(attrs)

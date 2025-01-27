@@ -11,11 +11,11 @@ from django.db.models import Q
 
 from .models import Match, MatchEvent
 from clubs.models import Club
-from players.models import Player
-
+from players.models import Player  # Для доступа к Player и sum_attributes
 # Импорт Celery-задач
 from .tasks import simulate_match_minute, broadcast_minute_events_in_chunks
 from .utils import extract_player_id
+from tournaments.models import Championship, League
 
 
 def get_match_lineups(match):
@@ -33,22 +33,19 @@ def get_match_lineups(match):
         else:
             lineup_dict = match.home_lineup
         
-        # Собираем ID игроков, используя _extract_player_id
         home_ids = []
         for slot_val in lineup_dict.values():
             player_id_str = extract_player_id(slot_val)
-            if player_id_str and player_id_str.strip():  # Проверяем что строка не пустая
+            if player_id_str and player_id_str.strip():
                 try:
-                    player_id = int(player_id_str.strip())
-                    if player_id > 0:  # Проверяем что ID положительный
-                        home_ids.append(player_id)
+                    pid = int(player_id_str.strip())
+                    if pid > 0:
+                        home_ids.append(pid)
                 except (ValueError, TypeError):
                     continue
         
-        # Получаем объекты игроков одним запросом
         home_players = {str(p.id): p for p in Player.objects.filter(id__in=home_ids)}
         
-        # Формируем список в нужном порядке
         for slot_num in range(11):
             slot_key = str(slot_num)
             slot_val = lineup_dict.get(slot_key)
@@ -58,28 +55,24 @@ def get_match_lineups(match):
 
     # Гостевой состав
     if match.away_lineup and isinstance(match.away_lineup, dict):
-        # Если это вложенный словарь с 'lineup'
         if 'lineup' in match.away_lineup:
             lineup_dict = match.away_lineup['lineup']
         else:
             lineup_dict = match.away_lineup
 
-        # Собираем ID игроков, используя _extract_player_id
         away_ids = []
         for slot_val in lineup_dict.values():
             player_id_str = extract_player_id(slot_val)
-            if player_id_str and player_id_str.strip():  # Проверяем что строка не пустая
+            if player_id_str and player_id_str.strip():
                 try:
-                    player_id = int(player_id_str.strip())
-                    if player_id > 0:  # Проверяем что ID положительный
-                        away_ids.append(player_id)
+                    pid = int(player_id_str.strip())
+                    if pid > 0:
+                        away_ids.append(pid)
                 except (ValueError, TypeError):
                     continue
         
-        # Получаем объекты игроков одним запросом
         away_players = {str(p.id): p for p in Player.objects.filter(id__in=away_ids)}
         
-        # Формируем список в нужном порядке
         for slot_num in range(11):
             slot_key = str(slot_num)
             slot_val = lineup_dict.get(slot_key)
@@ -90,36 +83,69 @@ def get_match_lineups(match):
     return home_lineup_list, away_lineup_list
 
 
+# =========================
+#   НОВАЯ ФУНКЦИЯ
+# =========================
+def get_best_players_by_line(club):
+    """
+    Возвращает словарь c ключами 'GK', 'DEF', 'MID', 'FWD':
+      {
+        'GK': лучший_вратарь_или_None,
+        'DEF': лучший_защитник_или_None,
+        'MID': лучший_полузащитник_или_None,
+        'FWD': лучший_нападающий_или_None,
+      }
+    Лучший определяется по сумме всех характеристик (sum_attributes()).
+    Опорники считаются защитниками, атакующие полузащитники считаются полузащитниками.
+    """
+    from players.models import get_player_line
+
+    best = {
+        'GK': (0, None),
+        'DEF': (0, None),
+        'MID': (0, None),
+        'FWD': (0, None),
+    }
+    players = club.player_set.all()
+
+    for p in players:
+        line = get_player_line(p)  # Определяем GK/DEF/MID/FWD
+        total = p.sum_attributes() # Сумма всех атрибутов
+        if total > best[line][0]:
+            best[line] = (total, p)
+
+    return {
+        'GK': best['GK'][1],
+        'DEF': best['DEF'][1],
+        'MID': best['MID'][1],
+        'FWD': best['FWD'][1],
+    }
+
+
 @login_required
 def match_detail(request, pk):
     match = get_object_or_404(Match, pk=pk)
 
     # Получаем события матча
     match_events = match.events.order_by('minute')
-    
-    # Получаем составы и добавляем отладочный вывод
+
+    # Получаем составы (если нужно)
     home_lineup_list, away_lineup_list = get_match_lineups(match)
-    print(f"\nDEBUG Match {match.id}")
-    print("Raw home_lineup:", match.home_lineup)
-    print("Raw away_lineup:", match.away_lineup)
-    print("Processed home_lineup:", [(slot, player.first_name if player else 'Empty') for slot, player in home_lineup_list])
-    print("Processed away_lineup:", [(slot, player.first_name if player else 'Empty') for slot, player in away_lineup_list])
-    
-    # Проверяем, является ли пользователь членом одной из команд
-    is_user_team = (
-        request.user.is_authenticated
-        and (
-            request.user.club == match.home_team
-            or request.user.club == match.away_team
-        )
-    )
+
+    # =========================
+    #   ДОБАВЛЯЕМ ЛУЧШИХ ИГРОКОВ
+    # =========================
+    home_best = get_best_players_by_line(match.home_team)
+    away_best = get_best_players_by_line(match.away_team)
 
     context = {
         'match': match,
         'match_events': match_events,
-        'is_user_team': is_user_team,
         'home_lineup_list': home_lineup_list,
-        'away_lineup_list': away_lineup_list
+        'away_lineup_list': away_lineup_list,
+        # Новые ключи для лучших игроков:
+        'home_best': home_best,
+        'away_best': away_best,
     }
 
     return render(request, 'matches/match_detail.html', context)
@@ -182,23 +208,21 @@ def simulate_match_view(request, match_id):
             home_team=club,
             away_team=opponent,
             datetime=timezone.now(),
-            status='scheduled',  # Сначала scheduled
+            status='scheduled',
             current_minute=0,
             home_tactic='balanced',
             away_tactic='balanced',
         )
         
-        # Подготавливаем матч (заполняем составы)
+        # Предматчевая подготовка
         from .match_preparation import PreMatchPreparation
         prep = PreMatchPreparation(match)
         if not prep.prepare_match():
-            # Если что-то пошло не так с составами
             errors = prep.get_validation_errors()
             messages.error(request, f"Match preparation failed: {'; '.join(errors)}")
             match.delete()
             return redirect('clubs:club_detail', pk=club.id)
             
-        # Теперь можно начинать матч
         match.status = 'in_progress'
         match.save()
         match_id = match.id
