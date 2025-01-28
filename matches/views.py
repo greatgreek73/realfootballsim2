@@ -11,92 +11,65 @@ from django.db.models import Q
 
 from .models import Match, MatchEvent
 from clubs.models import Club
-from players.models import Player  # Для доступа к Player и sum_attributes
+from players.models import Player
 # Импорт Celery-задач
 from .tasks import simulate_match_minute, broadcast_minute_events_in_chunks
 from .utils import extract_player_id
 from tournaments.models import Championship, League
 
 
+def get_lineups_from_json(lineup_json):
+    """
+    Преобразует JSON/словарь состава (как в match.home_lineup) в список (slot, player).
+    Возвращает список вида [(slot_key, player_obj), ...].
+    """
+    lineup_list = []
+    if not lineup_json or not isinstance(lineup_json, dict):
+        return lineup_list
+
+    # Если есть вложенный 'lineup'
+    if 'lineup' in lineup_json:
+        real_lineup = lineup_json['lineup']
+    else:
+        real_lineup = lineup_json
+
+    # Собираем ID игроков
+    player_ids = []
+    for slot_val in real_lineup.values():
+        pid_str = extract_player_id(slot_val)
+        if pid_str and pid_str.isdigit():
+            player_ids.append(int(pid_str))
+
+    # Берём объекты Player одним запросом
+    players_by_id = {p.id: p for p in Player.objects.filter(id__in=player_ids)}
+
+    # Формируем 11 слотов (0..10)
+    for slot_num in range(11):
+        slot_key = str(slot_num)
+        val = real_lineup.get(slot_key)
+        pid_str = extract_player_id(val)
+        player_obj = None
+        if pid_str and pid_str.isdigit():
+            pid = int(pid_str)
+            player_obj = players_by_id.get(pid)
+        lineup_list.append((slot_key, player_obj))
+
+    return lineup_list
+
+
 def get_match_lineups(match):
     """
-    Получает составы матча и связанных игроков оптимизированным способом.
+    Получает составы (home_lineup_list, away_lineup_list) из match.home_lineup / match.away_lineup.
     """
-    home_lineup_list = []
-    away_lineup_list = []
-
-    # Домашний состав
-    if match.home_lineup and isinstance(match.home_lineup, dict):
-        # Если это вложенный словарь с 'lineup'
-        if 'lineup' in match.home_lineup:
-            lineup_dict = match.home_lineup['lineup']
-        else:
-            lineup_dict = match.home_lineup
-        
-        home_ids = []
-        for slot_val in lineup_dict.values():
-            player_id_str = extract_player_id(slot_val)
-            if player_id_str and player_id_str.strip():
-                try:
-                    pid = int(player_id_str.strip())
-                    if pid > 0:
-                        home_ids.append(pid)
-                except (ValueError, TypeError):
-                    continue
-        
-        home_players = {str(p.id): p for p in Player.objects.filter(id__in=home_ids)}
-        
-        for slot_num in range(11):
-            slot_key = str(slot_num)
-            slot_val = lineup_dict.get(slot_key)
-            player_id_str = extract_player_id(slot_val)
-            player_obj = home_players.get(player_id_str) if player_id_str else None
-            home_lineup_list.append((slot_key, player_obj))
-
-    # Гостевой состав
-    if match.away_lineup and isinstance(match.away_lineup, dict):
-        if 'lineup' in match.away_lineup:
-            lineup_dict = match.away_lineup['lineup']
-        else:
-            lineup_dict = match.away_lineup
-
-        away_ids = []
-        for slot_val in lineup_dict.values():
-            player_id_str = extract_player_id(slot_val)
-            if player_id_str and player_id_str.strip():
-                try:
-                    pid = int(player_id_str.strip())
-                    if pid > 0:
-                        away_ids.append(pid)
-                except (ValueError, TypeError):
-                    continue
-        
-        away_players = {str(p.id): p for p in Player.objects.filter(id__in=away_ids)}
-        
-        for slot_num in range(11):
-            slot_key = str(slot_num)
-            slot_val = lineup_dict.get(slot_key)
-            player_id_str = extract_player_id(slot_val)
-            player_obj = away_players.get(player_id_str) if player_id_str else None
-            away_lineup_list.append((slot_key, player_obj))
-
+    home_lineup_list = get_lineups_from_json(match.home_lineup)
+    away_lineup_list = get_lineups_from_json(match.away_lineup)
     return home_lineup_list, away_lineup_list
 
 
-# =========================
-#   НОВАЯ ФУНКЦИЯ
-# =========================
 def get_best_players_by_line(club):
     """
-    Возвращает словарь c ключами 'GK', 'DEF', 'MID', 'FWD':
-      {
-        'GK': лучший_вратарь_или_None,
-        'DEF': лучший_защитник_или_None,
-        'MID': лучший_полузащитник_или_None,
-        'FWD': лучший_нападающий_или_None,
-      }
-    Лучший определяется по сумме всех характеристик (sum_attributes()).
-    Опорники считаются защитниками, атакующие полузащитники считаются полузащитниками.
+    Возвращает dict { 'GK': Player|None, 'DEF': ..., 'MID': ..., 'FWD': ... }
+    с лучшими игроками клуба по каждой линии. 
     """
     from players.models import get_player_line
 
@@ -106,11 +79,9 @@ def get_best_players_by_line(club):
         'MID': (0, None),
         'FWD': (0, None),
     }
-    players = club.player_set.all()
-
-    for p in players:
-        line = get_player_line(p)  # Определяем GK/DEF/MID/FWD
-        total = p.sum_attributes() # Сумма всех атрибутов
+    for p in club.player_set.all():
+        line = get_player_line(p)
+        total = p.sum_attributes()
         if total > best[line][0]:
             best[line] = (total, p)
 
@@ -125,27 +96,78 @@ def get_best_players_by_line(club):
 @login_required
 def match_detail(request, pk):
     match = get_object_or_404(Match, pk=pk)
-
-    # Получаем события матча
     match_events = match.events.order_by('minute')
 
-    # Получаем составы (если нужно)
+    # Текущие составы
     home_lineup_list, away_lineup_list = get_match_lineups(match)
 
-    # =========================
-    #   ДОБАВЛЯЕМ ЛУЧШИХ ИГРОКОВ
-    # =========================
+    # Лучшие игроки (для блока, если match.status == 'scheduled')
     home_best = get_best_players_by_line(match.home_team)
     away_best = get_best_players_by_line(match.away_team)
+
+    # -----------------------------------------------------
+    # 1) Если match.status == 'scheduled', 
+    #    ищем последний сыгранный матч для home_team
+    # -----------------------------------------------------
+    home_prev_match = None
+    home_prev_lineup_list = []
+    if match.status == 'scheduled':
+        home_prev_match = (
+            Match.objects.filter(
+                status='finished',
+                datetime__lt=match.datetime
+            )
+            .filter(Q(home_team=match.home_team) | Q(away_team=match.home_team))
+            .order_by('-datetime')
+            .first()
+        )
+        if home_prev_match:
+            # Если в home_prev_match home_team == match.home_team,
+            #    значит lineups для "домашней" стороны
+            # Иначе берем away_lineup.
+            if home_prev_match.home_team == match.home_team:
+                home_prev_lineup_list = get_lineups_from_json(home_prev_match.home_lineup)
+            else:
+                home_prev_lineup_list = get_lineups_from_json(home_prev_match.away_lineup)
+
+    # -----------------------------------------------------
+    # 2) Если match.status == 'scheduled',
+    #    ищем последний сыгранный матч для away_team
+    # -----------------------------------------------------
+    away_prev_match = None
+    away_prev_lineup_list = []
+    if match.status == 'scheduled':
+        away_prev_match = (
+            Match.objects.filter(
+                status='finished',
+                datetime__lt=match.datetime
+            )
+            .filter(Q(home_team=match.away_team) | Q(away_team=match.away_team))
+            .order_by('-datetime')
+            .first()
+        )
+        if away_prev_match:
+            if away_prev_match.home_team == match.away_team:
+                away_prev_lineup_list = get_lineups_from_json(away_prev_match.home_lineup)
+            else:
+                away_prev_lineup_list = get_lineups_from_json(away_prev_match.away_lineup)
 
     context = {
         'match': match,
         'match_events': match_events,
+
         'home_lineup_list': home_lineup_list,
         'away_lineup_list': away_lineup_list,
-        # Новые ключи для лучших игроков:
+
         'home_best': home_best,
         'away_best': away_best,
+
+        # Предыдущие матчи каждой команды
+        'home_prev_match': home_prev_match,
+        'home_prev_lineup_list': home_prev_lineup_list,
+
+        'away_prev_match': away_prev_match,
+        'away_prev_lineup_list': away_prev_lineup_list,
     }
 
     return render(request, 'matches/match_detail.html', context)

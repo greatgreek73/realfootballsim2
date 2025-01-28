@@ -92,177 +92,221 @@
                                 <div class="list-group-item">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
-                                            <strong>{{ event.minute }}'</strong> - 
+                                            <strong>{{ event.minute }}'</strong> -
                                             {{ event.event_type }}: {{ event.description }}
                                         </div>
                                     </div>
                                 </div>
-                            {% empty %}
-                                <div class="list-group-item text-center text-muted">
-                                    No events recorded
-                                </div>
                             {% endfor %}
                         </div>
                     </div>
+
+                    {# Убрали вывод состава, если он был ранее #}
+
+                    <!-- Если текущий матч ещё Scheduled - показываем блоки -->
+                    {% if match.status == 'scheduled' %}
+
+                    <!-- Лучшие игроки -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="mb-0 h5">Home Team Best Players</h3>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled">
+                                        <li>
+                                            <strong>Best Goalkeeper:</strong><br>
+                                            {% if home_best.GK %}
+                                                {{ home_best.GK.first_name }} {{ home_best.GK.last_name }}
+                                                ({{ home_best.GK.sum_attributes }})
+                                            {% else %}
+                                                <em>No GK found</em>
+                                            {% endif %}
+                                        </li>
+                                        <li class="mt-2">
+                                            <strong>Best Defender:</strong><br>
+                                            {% if home_best.DEF %}
+                                                {{ home_best.DEF.first_name }} {{ home_best.DEF.last_name }}
+                                                ({{ home_best.DEF.sum_attributes }})
+                                            {% else %}
+                                                <em>No Defender found</em>
+                                            {% endif %}
+                                        </li>
+                                        <li class="mt-2">
+                                            <strong>Best Midfielder:</strong><br>
+                                            {% if home_best.MID %}
+                                                {{ home_best.MID.first_name }} {{ home_best.MID.last_name }}
+                                                ({{ home_best.MID.sum_attributes }})
+                                            {% else %}
+                                                <em>No Midfielder found</em>
+                                            {% endif %}
+                                        </li>
+                                        <li class="mt-2">
+                                            <strong>Best Forward:</strong><br>
+                                            {% if home_best.FWD %}
+                                                {{ home_best.FWD.first_name }} {{ home_best.FWD.last_name }}
+                                                ({{ home_best.FWD.sum_attributes }})
+                                            {% else %}
+                                                <em>No Forward found</em>
+                                            {% endif %}
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div><!-- /.col-md-6 -->
+
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="mb-0 h5">Away Team Best Players</h3>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled">
+                                        <li>
+                                            <strong>Best Goalkeeper:</strong><br>
+                                            {% if away_best.GK %}
+                                                {{ away_best.GK.first_name }} {{ away_best.GK.last_name }}
+                                                ({{ away_best.GK.sum_attributes }})
+                                            {% else %}
+                                                <em>No GK found</em>
+                                            {% endif %}
+                                        </li>
+                                        <li class="mt-2">
+                                            <strong>Best Defender:</strong><br>
+                                            {% if away_best.DEF %}
+                                                {{ away_best.DEF.first_name }} {{ away_best.DEF.last_name }}
+                                                ({{ away_best.DEF.sum_attributes }})
+                                            {% else %}
+                                                <em>No Defender found</em>
+                                            {% endif %}
+                                        </li>
+                                        <li class="mt-2">
+                                            <strong>Best Midfielder:</strong><br>
+                                            {% if away_best.MID %}
+                                                {{ away_best.MID.first_name }} {{ away_best.MID.last_name }}
+                                                ({{ away_best.MID.sum_attributes }})
+                                            {% else %}
+                                                <em>No Midfielder found</em>
+                                            {% endif %}
+                                        </li>
+                                        <li class="mt-2">
+                                            <strong>Best Forward:</strong><br>
+                                            {% if away_best.FWD %}
+                                                {{ away_best.FWD.first_name }} {{ away_best.FWD.last_name }}
+                                                ({{ away_best.FWD.sum_attributes }})
+                                            {% else %}
+                                                <em>No Forward found</em>
+                                            {% endif %}
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div><!-- /.col-md-6 -->
+                    </div>
+
+                    <!-- Previous match of Home Team -->
+                    {% if home_prev_match %}
+                    <div class="row mb-4">
+                        <div class="col-12 mb-3">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">
+                                        Home Team's Previous Match:
+                                        {{ home_prev_match.home_team.name }} vs {{ home_prev_match.away_team.name }}
+                                        ({{ home_prev_match.datetime|date:"d M Y" }})
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="mb-2">
+                                        Score: {{ home_prev_match.home_score }} - {{ home_prev_match.away_score }}
+                                    </p>
+                                    <p class="mb-0 text-muted">
+                                        <small>Match ID #{{ home_prev_match.id }}</small>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Lineup used by {{ match.home_team.name }} in that match</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <ul class="list-group list-group-flush">
+                                        {% for slot, player in home_prev_lineup_list %}
+                                            <li class="list-group-item">
+                                                <strong>Slot {{ slot }}:</strong>
+                                                {% if player %}
+                                                    {{ player.first_name }} {{ player.last_name }}
+                                                    <small class="text-muted">({{ player.position }})</small>
+                                                {% else %}
+                                                    <em class="text-muted">No player assigned</em>
+                                                {% endif %}
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Previous match of Away Team -->
+                    {% if away_prev_match %}
+                    <div class="row mb-4">
+                        <div class="col-12 mb-3">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">
+                                        Away Team's Previous Match:
+                                        {{ away_prev_match.home_team.name }} vs {{ away_prev_match.away_team.name }}
+                                        ({{ away_prev_match.datetime|date:"d M Y" }})
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="mb-2">
+                                        Score: {{ away_prev_match.home_score }} - {{ away_prev_match.away_score }}
+                                    </p>
+                                    <p class="mb-0 text-muted">
+                                        <small>Match ID #{{ away_prev_match.id }}</small>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Lineup used by {{ match.away_team.name }} in that match</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <ul class="list-group list-group-flush">
+                                        {% for slot, player in away_prev_lineup_list %}
+                                            <li class="list-group-item">
+                                                <strong>Slot {{ slot }}:</strong>
+                                                {% if player %}
+                                                    {{ player.first_name }} {{ player.last_name }}
+                                                    <small class="text-muted">({{ player.position }})</small>
+                                                {% else %}
+                                                    <em class="text-muted">No player assigned</em>
+                                                {% endif %}
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% endif %} <!-- end if match.status == 'scheduled' -->
+
+                    <div class="text-center">
+                        <a href="{% url 'matches:match_list' %}" class="btn btn-outline-primary">Back to Matches</a>
+                    </div>
                 </div>
-            </div>
-
-            <!-- Раздел для вывода составов (home_lineup_list / away_lineup_list) - если нужно -->
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="mb-0 h5">Home Lineup</h3>
-                        </div>
-                        <div class="card-body p-0">
-                            <ul class="list-group list-group-flush">
-                                {% for slot, player in home_lineup_list %}
-                                    <li class="list-group-item">
-                                        <strong>Slot {{ slot }}:</strong>
-                                        {% if player %}
-                                            {{ player.first_name }} {{ player.last_name }} 
-                                            <small class="text-muted">({{ player.position }})</small>
-                                        {% else %}
-                                            <em class="text-muted">No player assigned</em>
-                                        {% endif %}
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    </div>
-                </div><!-- /.col-md-6 -->
-
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="mb-0 h5">Away Lineup</h3>
-                        </div>
-                        <div class="card-body p-0">
-                            <ul class="list-group list-group-flush">
-                                {% for slot, player in away_lineup_list %}
-                                    <li class="list-group-item">
-                                        <strong>Slot {{ slot }}:</strong>
-                                        {% if player %}
-                                            {{ player.first_name }} {{ player.last_name }}
-                                            <small class="text-muted">({{ player.position }})</small>
-                                        {% else %}
-                                            <em class="text-muted">No player assigned</em>
-                                        {% endif %}
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    </div>
-                </div><!-- /.col-md-6 -->
-            </div>
-
-            <!-- =============================
-                 Новое условие: 
-                 показываем лучших игроков 
-                 только если match.status == 'scheduled'
-                 ============================= -->
-            {% if match.status == 'scheduled' %}
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="mb-0 h5">Home Team Best Players</h3>
-                        </div>
-                        <div class="card-body">
-                            <ul class="list-unstyled">
-                                <li>
-                                    <strong>Best Goalkeeper:</strong><br>
-                                    {% if home_best.GK %}
-                                        {{ home_best.GK.first_name }} {{ home_best.GK.last_name }}
-                                        ({{ home_best.GK.sum_attributes }})
-                                    {% else %}
-                                        <em>No GK found</em>
-                                    {% endif %}
-                                </li>
-                                <li class="mt-2">
-                                    <strong>Best Defender:</strong><br>
-                                    {% if home_best.DEF %}
-                                        {{ home_best.DEF.first_name }} {{ home_best.DEF.last_name }}
-                                        ({{ home_best.DEF.sum_attributes }})
-                                    {% else %}
-                                        <em>No Defender found</em>
-                                    {% endif %}
-                                </li>
-                                <li class="mt-2">
-                                    <strong>Best Midfielder:</strong><br>
-                                    {% if home_best.MID %}
-                                        {{ home_best.MID.first_name }} {{ home_best.MID.last_name }}
-                                        ({{ home_best.MID.sum_attributes }})
-                                    {% else %}
-                                        <em>No Midfielder found</em>
-                                    {% endif %}
-                                </li>
-                                <li class="mt-2">
-                                    <strong>Best Forward:</strong><br>
-                                    {% if home_best.FWD %}
-                                        {{ home_best.FWD.first_name }} {{ home_best.FWD.last_name }}
-                                        ({{ home_best.FWD.sum_attributes }})
-                                    {% else %}
-                                        <em>No Forward found</em>
-                                    {% endif %}
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div><!-- /.col-md-6 -->
-
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="mb-0 h5">Away Team Best Players</h3>
-                        </div>
-                        <div class="card-body">
-                            <ul class="list-unstyled">
-                                <li>
-                                    <strong>Best Goalkeeper:</strong><br>
-                                    {% if away_best.GK %}
-                                        {{ away_best.GK.first_name }} {{ away_best.GK.last_name }}
-                                        ({{ away_best.GK.sum_attributes }})
-                                    {% else %}
-                                        <em>No GK found</em>
-                                    {% endif %}
-                                </li>
-                                <li class="mt-2">
-                                    <strong>Best Defender:</strong><br>
-                                    {% if away_best.DEF %}
-                                        {{ away_best.DEF.first_name }} {{ away_best.DEF.last_name }}
-                                        ({{ away_best.DEF.sum_attributes }})
-                                    {% else %}
-                                        <em>No Defender found</em>
-                                    {% endif %}
-                                </li>
-                                <li class="mt-2">
-                                    <strong>Best Midfielder:</strong><br>
-                                    {% if away_best.MID %}
-                                        {{ away_best.MID.first_name }} {{ away_best.MID.last_name }}
-                                        ({{ away_best.MID.sum_attributes }})
-                                    {% else %}
-                                        <em>No Midfielder found</em>
-                                    {% endif %}
-                                </li>
-                                <li class="mt-2">
-                                    <strong>Best Forward:</strong><br>
-                                    {% if away_best.FWD %}
-                                        {{ away_best.FWD.first_name }} {{ away_best.FWD.last_name }}
-                                        ({{ away_best.FWD.sum_attributes }})
-                                    {% else %}
-                                        <em>No Forward found</em>
-                                    {% endif %}
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div><!-- /.col-md-6 -->
-            </div>
-            {% endif %}
-
-            <div class="text-center">
-                <a href="{% url 'matches:match_list' %}" class="btn btn-outline-primary">Back to Matches</a>
             </div>
         </div>
     </div>
