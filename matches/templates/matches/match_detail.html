@@ -44,24 +44,24 @@
                                     {% endif %}
                                 </a>
                             </div>
+
                             <div class="col-md-2">
-                                {% if match.status == 'finished' %}
-                                    <h3 class="score mb-0" id="finalScore">
-                                        {{ match.home_score }} - {{ match.away_score }}
-                                    </h3>
-                                {% else %}
-                                    <h3 class="score mb-0" id="score">
-                                        {{ match.home_score }} - {{ match.away_score }}
-                                    </h3>
-                                {% endif %}
-                                <div class="small text-muted">
+                                <!-- Счёт -->
+                                <h3 class="score mb-0" id="score">
+                                    {{ match.home_score }} - {{ match.away_score }}
+                                </h3>
+                                <!-- Минуты -->
+                                <div class="small text-muted" id="matchTime">
                                     {% if match.status == 'in_progress' %}
-                                        Live {{ match.current_minute }}'
-                                    {% else %}
+                                        {{ match.current_minute }}'
+                                    {% elif match.status == 'finished' %}
                                         90'
+                                    {% else %}
+                                        0'
                                     {% endif %}
                                 </div>
                             </div>
+
                             <div class="col-md-5">
                                 <a href="{% url 'clubs:club_detail' match.away_team.id %}" class="text-decoration-none">
                                     <h3>{{ match.away_team.name }}</h3>
@@ -287,7 +287,7 @@
                                                     </div>
                                                 {% else %}
                                                     <em>No Midfielder found</em>
-                                                {% endif %}
+                                                {% endif %} 
                                             </td>
                                         </tr>
                                         <tr>

@@ -43,18 +43,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Обновляем время
                 const timeElement = document.getElementById('matchTime');
-                if (timeElement) {
+                if (timeElement && data.minute !== undefined) {
                     timeElement.textContent = `${data.minute}'`;
                 }
 
                 // Обновляем счет
                 const scoreElement = document.getElementById('score');
-                if (scoreElement) {
+                if (scoreElement && data.home_score !== undefined && data.away_score !== undefined) {
                     scoreElement.textContent = `${data.home_score} - ${data.away_score}`;
                 }
 
                 // Обновляем события
-                if (data.events && data.events.length > 0) {
+                if (data.events && Array.isArray(data.events)) {
                     const eventsList = document.getElementById('originalEvents');
                     if (eventsList) {
                         const listGroup = eventsList.querySelector('.list-group');
@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             // Очищаем старые события
                             listGroup.innerHTML = '';
                             
-                            // Добавляем новые события
+                            // Добавляем новые события (сортируем в порядке минут)
                             data.events
                                 .sort((a, b) => b.minute - a.minute)
                                 .forEach(event => {
