@@ -31,7 +31,7 @@ class Match(models.Model):
         db_index=True
     )
     
-    # Составы команд
+    # Составы команд (хранятся в формате JSON)
     home_lineup = models.JSONField(null=True, blank=True)
     away_lineup = models.JSONField(null=True, blank=True)
 
@@ -42,6 +42,26 @@ class Match(models.Model):
     # Текущая минута матча
     current_minute = models.PositiveIntegerField(default=0)
 
+    # Новые поля: текущий игрок, владеющий мячом, и текущая зона (5-уровневая система)
+    current_player_with_ball = models.ForeignKey(
+        'players.Player',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='matches_with_ball'
+    )
+    current_zone = models.CharField(
+        max_length=10,
+        choices=[
+            ('GK', 'GK'),
+            ('DEF', 'DEF'),
+            ('DM', 'DM'),
+            ('AM', 'AM'),
+            ('FWD', 'FWD')
+        ],
+        default='GK'
+    )
+
     def __str__(self):
         return f"{self.home_team} vs {self.away_team} - {self.datetime}"
 
@@ -51,16 +71,15 @@ class MatchEvent(models.Model):
     minute = models.PositiveIntegerField()
     event_type = models.CharField(max_length=20, choices=[
         ('goal', 'Goal'),
-        ('miss', 'Miss'),
-        ('possession', 'Possession Change'),
-        ('defense_to_midfield', 'Defense to Midfield Transition'),
-        ('midfield_to_attack', 'Midfield to Attack Transition'),
-        ('attack_to_shot', 'Attack to Shot Opportunity'),
+        ('pass', 'Pass'),
         ('interception', 'Interception'),
+        ('shot_miss', 'Shot Miss'),
+        ('info', 'Info'),
         ('yellow_card', 'Yellow Card'),
         ('red_card', 'Red Card'),
         ('substitution', 'Substitution')
     ])
+    # Теперь поле player позволяет указать конкретного игрока, участвующего в событии
     player = models.ForeignKey('players.Player', on_delete=models.CASCADE, null=True, blank=True)
     description = models.TextField()
 
