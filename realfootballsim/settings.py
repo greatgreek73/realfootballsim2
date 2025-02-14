@@ -75,14 +75,19 @@ WSGI_APPLICATION = 'realfootballsim.wsgi.application'
 # Настройка Channels
 ASGI_APPLICATION = 'realfootballsim.asgi.application'
 
-# Default DB (dev) - SQLite для локальной разработки
+# Настройка базы данных PostgreSQL для локальной разработки
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'rfsimdb',
+        'USER': 'nikos',
+        'PASSWORD': '5x9t8zy5',
+        'HOST': 'localhost',
+        'PORT': '5432',
         'ATOMIC_REQUESTS': False,
     }
 }
+
 
 # Если установлен IS_PRODUCTION, используем PostgreSQL
 if IS_PRODUCTION == '1':
