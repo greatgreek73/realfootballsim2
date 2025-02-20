@@ -47,5 +47,6 @@ htmlcov/
 *.swp
 *.swo
 *~
+repopack-output.txt
 
 realfootballsim/production.py

@@ -276,8 +276,8 @@ class Command(BaseCommand):
             season = Season.objects.create(
                 name="Season 1",
                 number=1,
-                start_date=datetime(2025, 1, 1).date(),
-                end_date=datetime(2025, 1, 31).date(),
+                start_date=datetime(2025, 2, 1).date(),
+                end_date=datetime(2025, 2, 28).date(),
                 is_active=True
             )
 

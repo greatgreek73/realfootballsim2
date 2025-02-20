@@ -11,6 +11,12 @@ echo =====================================
 :: Активация виртуального окружения
 call venv310\Scripts\activate.bat
 
+:: Запускаем Redis в отдельном окне
+echo [%date% %time%] Starting Redis Server...
+start "Redis Server" cmd /k "color 0F && \"C:\Program Files\Redis\redis-server.exe\""
+timeout /t 2 > nul
+
+
 :: Запускаем Daphne в отдельном окне
 echo [%date% %time%] Starting Daphne Server...
 start "Daphne Server" cmd /k "color 0A && daphne -b 0.0.0.0 -p 8000 realfootballsim.asgi:application"
