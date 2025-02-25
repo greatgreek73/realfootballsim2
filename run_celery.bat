@@ -3,7 +3,10 @@ title Celery Processes
 
 :: Настраиваем цвета и кодировку
 color 0A
+:: Устанавливаем UTF-8 кодировку для консоли
 chcp 65001 > nul
+:: Устанавливаем переменную окружения для Python
+set PYTHONIOENCODING=utf-8
 
 echo [%date% %time%] Starting Celery processes...
 echo =====================================
@@ -19,21 +22,21 @@ timeout /t 2 > nul
 
 :: Запускаем Daphne в отдельном окне
 echo [%date% %time%] Starting Daphne Server...
-start "Daphne Server" cmd /k "color 0A && daphne -b 0.0.0.0 -p 8000 realfootballsim.asgi:application"
+start "Daphne Server" cmd /k "chcp 65001 > nul && set PYTHONIOENCODING=utf-8 && color 0A && daphne -b 0.0.0.0 -p 8000 realfootballsim.asgi:application"
 
 :: Небольшая пауза между запусками
 timeout /t 2 > nul
 
 :: Запускаем worker в отдельном окне без перенаправления в файл
 echo [%date% %time%] Starting Celery Worker...
-start "Celery Worker" cmd /k "color 0B && celery -A realfootballsim worker --pool=solo -l info"
+start "Celery Worker" cmd /k "chcp 65001 > nul && set PYTHONIOENCODING=utf-8 && color 0B && celery -A realfootballsim worker --pool=solo -l info"
 
 :: Небольшая пауза между запусками
 timeout /t 2 > nul
 
 :: Запускаем beat в отдельном окне без перенаправления в файл
 echo [%date% %time%] Starting Celery Beat...
-start "Celery Beat" cmd /k "color 0C && celery -A realfootballsim beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
+start "Celery Beat" cmd /k "chcp 65001 > nul && set PYTHONIOENCODING=utf-8 && color 0C && celery -A realfootballsim beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
 
 echo.
 echo [%date% %time%] All processes started!

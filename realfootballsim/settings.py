@@ -181,11 +181,13 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
+            'stream': 'ext://sys.stdout',  # Явно указываем stdout
         },
         'file': {
             'class': 'logging.FileHandler',
             'filename': 'debug.log',
             'formatter': 'verbose',
+            'encoding': 'utf-8',  # Явно указываем UTF-8 для файла
         },
     },
     'loggers': {

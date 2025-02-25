@@ -138,41 +138,27 @@ def ensure_match_lineup_set(match: Match, for_home: bool) -> None:
 
 def simulate_one_minute(match_id: int):
     """
-    Симулирует одну минуту матча, разбитую на суб-события.
-    Каждая игровая минута будет длиться ровно 60 секунд реального времени,
-    а внутриминутные события будут приходить с интервалом 10 секунд.
-    
-    Логика:
-      1. Увеличиваем текущую минуту.
-      2. Фиксируем событие начала минуты.
-      3. Выполняем цикл суб-событий (например, 3 суб-события).
-         Если происходит пас или попытка удара, фиксируется событие, после чего
-         вызывается send_update и задержка в 10 секунд.
-         При провале паса (перехват) или попытке удара (удача или промах) цепочка завершается.
-      4. После завершения суб-событий обновляем минуту и сохраняем матч.
-      5. Если симуляция минуты завершилась раньше 60 секунд, ждем оставшееся время.
-      6. Отправляем финальное обновление.
+    Симулирует одну минуту матча, создавая события и обновляя состояние.
     """
     PASS_SUCCESS_PROB = 0.6
     SHOT_SUCCESS_PROB = 0.15
     transition_map = {"GK": "DEF", "DEF": "DM", "DM": "AM", "AM": "FWD"}
-    
-    start_time = time.time()
 
     try:
         with transaction.atomic():
+            # Получаем матч и проверяем его статус
             match = Match.objects.select_for_update().get(id=match_id)
             if match.status != 'in_progress':
                 logger.debug(f"simulate_one_minute: матч {match.id} не в процессе, пропускаем.")
                 return
             if match.current_minute >= 90:
-                if match.status != 'finished':
-                    match.status = 'finished'
-                    match.save()
+                match.status = 'finished'
+                match.save()
                 return
 
             minute = match.current_minute + 1
 
+            # Определяем владеющую команду
             if match.current_player_with_ball:
                 if match.current_player_with_ball in match.home_team.player_set.all():
                     possessing_team = match.home_team
@@ -183,6 +169,7 @@ def simulate_one_minute(match_id: int):
                 starting_player = choose_player(match.home_team, "GK")
                 match.current_player_with_ball = starting_player
 
+            # Создаем событие начала минуты
             start_event_desc = f"Начало минуты {minute}: команда {possessing_team} начинает атаку."
             MatchEvent.objects.create(
                 match=match,
@@ -193,6 +180,7 @@ def simulate_one_minute(match_id: int):
             logger.info(start_event_desc)
             send_update(match)
 
+            # Симулируем события минуты
             subevents = 3
             for i in range(subevents):
                 if match.current_zone != "FWD":
@@ -213,6 +201,7 @@ def simulate_one_minute(match_id: int):
                             logger.info(pass_event_desc)
                             match.current_player_with_ball = new_player
                             match.current_zone = target_zone
+                            match.save()
                         else:
                             raise Exception("Не удалось найти игрока для паса.")
                     else:
@@ -230,8 +219,8 @@ def simulate_one_minute(match_id: int):
                         logger.info(intercept_desc)
                         match.current_player_with_ball = interceptor
                         match.current_zone = "GK"
+                        match.save()
                         send_update(match)
-                        time.sleep(10)
                         break
                 else:
                     if random.random() < SHOT_SUCCESS_PROB:
@@ -265,50 +254,18 @@ def simulate_one_minute(match_id: int):
                     new_owner = choose_player(opponent_team, "GK")
                     match.current_player_with_ball = new_owner
                     match.current_zone = "GK"
+                    match.save()
                     send_update(match)
-                    time.sleep(10)
                     break
 
                 send_update(match)
-                time.sleep(10)
 
+            # Обновляем минуту и проверяем завершение матча
             match.current_minute = minute
             if match.current_minute >= 90:
                 match.status = 'finished'
             match.save()
             send_update(match)
-
-        # После симуляции минуты ждём оставшееся время до 60 секунд
-        elapsed = time.time() - start_time
-        if elapsed < 60:
-            time.sleep(60 - elapsed)
-
-        # Финальное обновление за минуту
-        recent_events_qs = match.events.all().order_by('-id')[:5]
-        recent_events = list(reversed(recent_events_qs))
-        events_data = []
-        for e in recent_events:
-            events_data.append({
-                "minute": e.minute,
-                "event_type": e.event_type,
-                "description": e.description,
-                "player": f"{e.player.first_name} {e.player.last_name}" if e.player else ""
-            })
-        channel_layer = get_channel_layer()
-        update_data = {
-            "minute": match.current_minute,
-            "home_score": match.home_score,
-            "away_score": match.away_score,
-            "status": match.status,
-            "events": events_data,
-        }
-        async_to_sync(channel_layer.group_send)(
-            f"match_{match.id}",
-            {
-                "type": "match_update",
-                "data": update_data
-            }
-        )
 
     except Match.DoesNotExist:
         logger.error(f"simulate_one_minute: матч {match_id} не найден.")
