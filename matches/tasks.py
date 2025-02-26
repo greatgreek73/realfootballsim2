@@ -84,7 +84,8 @@ def broadcast_minute_events_in_chunks(match_id: int, minute: int, duration: int 
                 "status": match.status,
                 # В этот раз отправляем только 1 событие (event),
                 # чтобы на фронте поочередно "проигрывать" их внутри одной минуты
-                "events": [single_event_data]
+                "events": [single_event_data],
+                "partial_update": True  # Добавляем флаг для идентификации частичного обновления
             }
 
             # Логируем

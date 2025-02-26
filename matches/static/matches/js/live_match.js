@@ -59,37 +59,89 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (eventsList) {
                         const listGroup = eventsList.querySelector('.list-group');
                         if (listGroup) {
-                            // Очищаем старые события
-                            listGroup.innerHTML = '';
-                            
-                            // Добавляем новые события (сортируем в порядке минут)
-                            data.events
-                                .sort((a, b) => b.minute - a.minute)
-                                .forEach(event => {
-                                    const eventDiv = document.createElement('div');
-                                    eventDiv.className = 'list-group-item';
-                                    
-                                    let icon = '📝';
-                                    if (event.event_type === 'goal') {
-                                        icon = '⚽';
-                                    } else if (event.event_type === 'yellow_card') {
-                                        icon = '🟨';
-                                    } else if (event.event_type === 'red_card') {
-                                        icon = '🟥';
-                                    }
-                            
-                                    eventDiv.innerHTML = `
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>${event.minute}'</strong> 
-                                                <span class="event-icon">${icon}</span>
-                                                ${event.description}
-                                            </div>
+                            // Если это частичное обновление (например, всего одно событие)
+                            // то просто добавляем его в начало списка, а не заменяем весь список
+                            if (data.events.length === 1 && data.partial_update) {
+                                const event = data.events[0];
+                                const eventDiv = document.createElement('div');
+                                eventDiv.className = 'list-group-item new-event'; // Добавляем класс для анимации
+                                
+                                let icon = '📝';
+                                if (event.event_type === 'goal') {
+                                    icon = '⚽';
+                                } else if (event.event_type === 'interception') {
+                                    icon = '🔄';
+                                } else if (event.event_type === 'shot_miss') {
+                                    icon = '❌';
+                                } else if (event.event_type === 'pass') {
+                                    icon = '➡️';
+                                } else if (event.event_type === 'yellow_card') {
+                                    icon = '🟨';
+                                } else if (event.event_type === 'red_card') {
+                                    icon = '🟥';
+                                }
+                        
+                                eventDiv.innerHTML = `
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>${event.minute}'</strong> 
+                                            <span class="event-icon">${icon}</span>
+                                            ${event.description}
                                         </div>
-                                    `;
-                                    
+                                    </div>
+                                `;
+                                
+                                // Вставляем в начало списка
+                                if (listGroup.firstChild) {
+                                    listGroup.insertBefore(eventDiv, listGroup.firstChild);
+                                } else {
                                     listGroup.appendChild(eventDiv);
-                                });
+                                }
+
+                                // Добавляем анимацию появления
+                                setTimeout(() => {
+                                    eventDiv.classList.add('new-event-visible');
+                                }, 50);
+                            } else {
+                                // Полное обновление - как сейчас
+                                // Очищаем старые события
+                                listGroup.innerHTML = '';
+                                
+                                // Добавляем новые события (сортируем в порядке минут)
+                                data.events
+                                    .sort((a, b) => b.minute - a.minute)
+                                    .forEach(event => {
+                                        const eventDiv = document.createElement('div');
+                                        eventDiv.className = 'list-group-item';
+                                        
+                                        let icon = '📝';
+                                        if (event.event_type === 'goal') {
+                                            icon = '⚽';
+                                        } else if (event.event_type === 'interception') {
+                                            icon = '🔄';
+                                        } else if (event.event_type === 'shot_miss') {
+                                            icon = '❌';
+                                        } else if (event.event_type === 'pass') {
+                                            icon = '➡️';
+                                        } else if (event.event_type === 'yellow_card') {
+                                            icon = '🟨';
+                                        } else if (event.event_type === 'red_card') {
+                                            icon = '🟥';
+                                        }
+                                
+                                        eventDiv.innerHTML = `
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <strong>${event.minute}'</strong> 
+                                                    <span class="event-icon">${icon}</span>
+                                                    ${event.description}
+                                                </div>
+                                            </div>
+                                        `;
+                                        
+                                        listGroup.appendChild(eventDiv);
+                                    });
+                            }
                         }
                     }
                 }

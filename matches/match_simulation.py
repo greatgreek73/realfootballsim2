@@ -265,7 +265,10 @@ def simulate_one_minute(match_id: int):
             if match.current_minute >= 90:
                 match.status = 'finished'
             match.save()
-            send_update(match)
+            
+            # Запускаем трансляцию событий в Celery-задаче
+            from .tasks import broadcast_minute_events_in_chunks
+            broadcast_minute_events_in_chunks.delay(match_id, minute, duration=5)
 
     except Match.DoesNotExist:
         logger.error(f"simulate_one_minute: матч {match_id} не найден.")
