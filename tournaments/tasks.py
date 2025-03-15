@@ -50,7 +50,7 @@ def simulate_active_matches(self):
     from matches.match_simulation import simulate_one_minute
 
     for match in matches:
-        simulate_one_minute(match.id)
+        simulate_one_minute(match)
         logger.info(
             f"Simulated one minute for match {match.id} "
             f"({match.home_team} vs {match.away_team}, current_minute={match.current_minute})"
