@@ -136,7 +136,7 @@ def ensure_match_lineup_set(match: Match, for_home: bool) -> None:
         else:
             match.away_lineup = club_lineup
 
-def simulate_one_minute(match_id: int):
+def simulate_one_minute(match):
     """
     Симулирует одну минуту матча, создавая события и обновляя состояние.
     """
@@ -147,13 +147,13 @@ def simulate_one_minute(match_id: int):
     try:
         with transaction.atomic():
             # Получаем матч и проверяем его статус
-            match = Match.objects.select_for_update().get(id=match_id)
+            # match = Match.objects.select_for_update().get(id=match_id)
             if match.status != 'in_progress':
                 logger.debug(f"simulate_one_minute: матч {match.id} не в процессе, пропускаем.")
                 return
             if match.current_minute >= 90:
                 match.status = 'finished'
-                match.save()
+                # match.save()
                 return
 
             minute = match.current_minute + 1
@@ -201,7 +201,7 @@ def simulate_one_minute(match_id: int):
                             logger.info(pass_event_desc)
                             match.current_player_with_ball = new_player
                             match.current_zone = target_zone
-                            match.save()
+                            # match.save()
                         else:
                             raise Exception("Не удалось найти игрока для паса.")
                     else:
@@ -254,7 +254,7 @@ def simulate_one_minute(match_id: int):
                     new_owner = choose_player(opponent_team, "GK")
                     match.current_player_with_ball = new_owner
                     match.current_zone = "GK"
-                    match.save()
+                    # match.save()
                     send_update(match)
                     break
 
@@ -264,16 +264,17 @@ def simulate_one_minute(match_id: int):
             match.current_minute = minute
             if match.current_minute >= 90:
                 match.status = 'finished'
-            match.save()
+            # match.save()
             
             # Запускаем трансляцию событий в Celery-задаче
             from .tasks import broadcast_minute_events_in_chunks
-            broadcast_minute_events_in_chunks.delay(match_id, minute, duration=5)
+            broadcast_minute_events_in_chunks.delay(match.id, minute, duration=5)
+            return match
 
     except Match.DoesNotExist:
-        logger.error(f"simulate_one_minute: матч {match_id} не найден.")
+        logger.error(f"simulate_one_minute: матч {match.id} не найден.")
     except Exception as e:
-        logger.error(f"simulate_one_minute({match_id}) => {str(e)}")
+        logger.error(f"simulate_one_minute({match.id}) => {str(e)}")
         raise
 
 def simulate_match(match_id: int):
@@ -303,7 +304,8 @@ def simulate_match(match_id: int):
             send_update(match)
 
         for _ in range(90):
-            simulate_one_minute(match_id)
+            match = simulate_one_minute(match)
+            match.save()
             match.refresh_from_db()
             if match.status == 'finished':
                 break
