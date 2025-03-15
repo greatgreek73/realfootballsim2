@@ -20,7 +20,8 @@ def simulate_match_minute(match_id: int):
     """
     try:
         match = Match.objects.select_for_update().get(id=match_id)
-        simulate_one_minute(match)
+        match = simulate_one_minute(match)
+        match.save()
         logger.info(f"Successfully simulated minute for match {match_id}")
     except Exception as e:
         logger.error(f"Error simulating minute for match {match_id}: {str(e)}")
