@@ -150,11 +150,11 @@ def simulate_one_minute(match):
             # match = Match.objects.select_for_update().get(id=match_id)
             if match.status != 'in_progress':
                 logger.debug(f"simulate_one_minute: матч {match.id} не в процессе, пропускаем.")
-                return
+                return match
             if match.current_minute >= 90:
                 match.status = 'finished'
                 # match.save()
-                return
+                return match
 
             minute = match.current_minute + 1
 
