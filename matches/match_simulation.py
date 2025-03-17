@@ -28,6 +28,10 @@ def send_update(match):
         "minute": match.current_minute,
         "home_score": match.home_score,
         "away_score": match.away_score,
+        "st_shoots": match.st_shoots,
+        "st_passes": match.st_passes,
+        "st_posessions": match.st_posessions,
+        "st_fouls": match.st_fouls,
         "status": match.status,
         "events": events_data,
     }
@@ -187,6 +191,7 @@ def simulate_one_minute(match):
             for i in range(subevents):
                 if random.random() < FOUL_PROB:
                     match.st_fouls += 1
+                    #To DO : process foul
                     
                 if match.current_zone != "FWD":
                     target_zone = transition_map.get(match.current_zone, match.current_zone)
