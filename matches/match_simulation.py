@@ -142,6 +142,7 @@ def simulate_one_minute(match):
     """
     PASS_SUCCESS_PROB = 0.6
     SHOT_SUCCESS_PROB = 0.15
+    FOUL_PROB = 0.15
     transition_map = {"GK": "DEF", "DEF": "DM", "DM": "AM", "AM": "FWD"}
 
     try:
@@ -168,6 +169,7 @@ def simulate_one_minute(match):
                 possessing_team = match.home_team
                 starting_player = choose_player(match.home_team, "GK")
                 match.current_player_with_ball = starting_player
+                match.st_posseions += 1
 
             # Создаем событие начала минуты
             start_event_desc = f"Начало минуты {minute}: команда {possessing_team} начинает атаку."
@@ -183,12 +185,17 @@ def simulate_one_minute(match):
             # Симулируем события минуты
             subevents = 3
             for i in range(subevents):
+                if random.random() < FOUL_PROB:
+                    match.st_fouls += 1
+                    
                 if match.current_zone != "FWD":
                     target_zone = transition_map.get(match.current_zone, match.current_zone)
+                    match.st_posseions += 1
                     if random.random() < PASS_SUCCESS_PROB:
                         new_player = choose_player(possessing_team, target_zone,
                             exclude_ids={match.current_player_with_ball.id} if match.current_player_with_ball else set())
                         if new_player:
+                            match.st_passes += 1
                             pass_event_desc = (f"Пас успешен: {match.current_player_with_ball.first_name if match.current_player_with_ball else 'Unknown'} "
                                                f"передаёт мяч {new_player.first_name} {new_player.last_name} в зону {target_zone}.")
                             MatchEvent.objects.create(
@@ -223,6 +230,7 @@ def simulate_one_minute(match):
                         send_update(match)
                         break
                 else:
+                    match.st_shoots += 1
                     if random.random() < SHOT_SUCCESS_PROB:
                         if possessing_team == match.home_team:
                             match.home_score += 1

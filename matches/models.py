@@ -61,6 +61,11 @@ class Match(models.Model):
         ],
         default='GK'
     )
+    #statistics
+    st_shoots = models.PositiveBigIntegerField(default=0)
+    st_passes = models.PositiveBigIntegerField(default=0)
+    st_posessions = models.PositiveBigIntegerField(default=0)
+    st_fouls = models.PositiveBigIntegerField(default=0)
 
     def __str__(self):
         return f"{self.home_team} vs {self.away_team} - {self.datetime}"
