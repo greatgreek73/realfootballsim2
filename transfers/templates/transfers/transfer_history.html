@@ -1,0 +1,90 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Transfer History{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Transfer History</h1>
+    
+    <!-- Фильтры -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Filters</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="season" class="form-label">Season</label>
+                    <select name="season" id="season" class="form-select">
+                        <option value="">All Seasons</option>
+                        {% for season in seasons %}
+                            <option value="{{ season.id }}" {% if filters.season == season.id|stringformat:"s" %}selected{% endif %}>{{ season.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="club" class="form-label">Club</label>
+                    <select name="club" id="club" class="form-select">
+                        <option value="">All Clubs</option>
+                        {% for club in clubs %}
+                            <option value="{{ club.id }}" {% if filters.club == club.id|stringformat:"s" %}selected{% endif %}>{{ club.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="player" class="form-label">Player ID</label>
+                    <input type="number" class="form-control" id="player" name="player" value="{{ filters.player }}">
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- История трансферов -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Transfers</h5>
+        </div>
+        <div class="card-body">
+            {% if transfers %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Player</th>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Fee</th>
+                                <th>Date</th>
+                                <th>Season</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transfer in transfers %}
+                                <tr>
+                                    <td>{{ transfer.player.full_name }}</td>
+                                    <td>{{ transfer.from_club.name }}</td>
+                                    <td>{{ transfer.to_club.name }}</td>
+                                    <td>{{ transfer.transfer_fee }} tokens</td>
+                                    <td>{{ transfer.transfer_date|date:"d M Y" }}</td>
+                                    <td>{{ transfer.season.name|default:"N/A" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    No transfers found matching your criteria.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="mt-4 mb-5">
+        <a href="{% url 'transfers:transfer_market' %}" class="btn btn-primary">Go to Transfer Market</a>
+    </div>
+</div>
+{% endblock %}

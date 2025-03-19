@@ -1,0 +1,106 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Transfer Market{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Transfer Market</h1>
+    
+    <!-- Фильтры -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Filters</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="position" class="form-label">Position</label>
+                    <select name="position" id="position" class="form-select">
+                        <option value="">All Positions</option>
+                        {% for pos_value, pos_name in positions %}
+                            <option value="{{ pos_value }}" {% if filters.position == pos_value %}selected{% endif %}>{{ pos_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="min_age" class="form-label">Min Age</label>
+                    <input type="number" class="form-control" id="min_age" name="min_age" min="16" max="40" value="{{ filters.min_age }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="max_age" class="form-label">Max Age</label>
+                    <input type="number" class="form-control" id="max_age" name="max_age" min="16" max="40" value="{{ filters.max_age }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="min_price" class="form-label">Min Price</label>
+                    <input type="number" class="form-control" id="min_price" name="min_price" min="0" value="{{ filters.min_price }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="max_price" class="form-label">Max Price</label>
+                    <input type="number" class="form-control" id="max_price" name="max_price" min="0" value="{{ filters.max_price }}">
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Список игроков на трансфере -->
+    <div class="row">
+        {% if listings %}
+            {% for listing in listings %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">{{ listing.player.full_name }}</h5>
+                            <span class="badge bg-primary">{{ listing.player.position }}</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <strong>Club:</strong> {{ listing.club.name }}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Age:</strong> {{ listing.player.age }}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Nationality:</strong> {{ listing.player.nationality.name }}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Overall Rating:</strong> {{ listing.player.overall_rating }}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Asking Price:</strong> <span class="text-danger">{{ listing.asking_price }} tokens</span>
+                            </div>
+                            {% if listing.description %}
+                                <div class="mb-3">
+                                    <strong>Description:</strong> {{ listing.description }}
+                                </div>
+                            {% endif %}
+                            <div class="text-center mt-3">
+                                <a href="{% url 'transfers:transfer_listing_detail' listing.id %}" class="btn btn-primary">View Details</a>
+                            </div>
+                        </div>
+                        <div class="card-footer text-muted">
+                            Listed {{ listing.listed_at|timesince }} ago
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    No players currently listed on the transfer market.
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Кнопка для создания нового листинга -->
+    {% if user_club %}
+        <div class="text-center mt-4 mb-5">
+            <a href="{% url 'transfers:create_transfer_listing' %}" class="btn btn-success btn-lg">List Player for Transfer</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,173 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Club Transfers{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">{{ club.name }} - Transfer Management</h1>
+    
+    <div class="row">
+        <!-- Активные листинги -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">Active Transfer Listings</h5>
+                </div>
+                <div class="card-body">
+                    {% if active_listings %}
+                        <div class="list-group">
+                            {% for listing in active_listings %}
+                                <div class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">{{ listing.player.full_name }}</h5>
+                                        <small>{{ listing.listed_at|timesince }} ago</small>
+                                    </div>
+                                    <p class="mb-1">{{ listing.player.position }} | Rating: {{ listing.player.overall_rating }}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-danger">{{ listing.asking_price }} tokens</span>
+                                        <div>
+                                            <a href="{% url 'transfers:transfer_listing_detail' listing.id %}" class="btn btn-sm btn-primary">View</a>
+                                            <a href="{% url 'transfers:cancel_transfer_listing' listing.id %}" class="btn btn-sm btn-danger">Cancel</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">You don't have any active transfer listings.</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'transfers:create_transfer_listing' %}" class="btn btn-success w-100">List New Player</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Игроки, доступные для листинга -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">Players Available for Transfer</h5>
+                </div>
+                <div class="card-body">
+                    {% if players_not_listed %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Position</th>
+                                        <th>Age</th>
+                                        <th>Rating</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for player in players_not_listed %}
+                                        <tr>
+                                            <td>{{ player.full_name }}</td>
+                                            <td>{{ player.position }}</td>
+                                            <td>{{ player.age }}</td>
+                                            <td>{{ player.overall_rating }}</td>
+                                            <td>
+                                                <a href="{% url 'transfers:create_transfer_listing' %}?player={{ player.id }}" class="btn btn-sm btn-outline-primary">List</a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">All your players are already listed on the transfer market.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ожидающие предложения -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Pending Transfer Offers</h5>
+        </div>
+        <div class="card-body">
+            {% if pending_offers %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Player</th>
+                                <th>Bidding Club</th>
+                                <th>Bid Amount</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for offer in pending_offers %}
+                                <tr>
+                                    <td>{{ offer.transfer_listing.player.full_name }}</td>
+                                    <td>{{ offer.bidding_club.name }}</td>
+                                    <td class="text-success fw-bold">{{ offer.bid_amount }} tokens</td>
+                                    <td>{{ offer.created_at|timesince }} ago</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'transfers:accept_transfer_offer' offer.id %}" class="btn btn-sm btn-success">Accept</a>
+                                            <a href="{% url 'transfers:reject_transfer_offer' offer.id %}" class="btn btn-sm btn-danger">Reject</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">You don't have any pending transfer offers.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- История трансферов -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Transfer History</h5>
+        </div>
+        <div class="card-body">
+            {% if transfer_history %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Player</th>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Fee</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transfer in transfer_history %}
+                                <tr class="{% if transfer.to_club == club %}table-success{% elif transfer.from_club == club %}table-danger{% endif %}">
+                                    <td>{{ transfer.player.full_name }}</td>
+                                    <td>{{ transfer.from_club.name }}</td>
+                                    <td>{{ transfer.to_club.name }}</td>
+                                    <td>{{ transfer.transfer_fee }} tokens</td>
+                                    <td>{{ transfer.transfer_date|date:"d M Y" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">No transfer history available.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="mt-4 mb-5">
+        <a href="{% url 'transfers:transfer_market' %}" class="btn btn-primary">Go to Transfer Market</a>
+        <a href="{% url 'clubs:club_detail' club.id %}" class="btn btn-secondary">Back to Club</a>
+    </div>
+</div>
+{% endblock %}

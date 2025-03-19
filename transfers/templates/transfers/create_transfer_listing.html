@@ -1,0 +1,90 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Create Transfer Listing{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">List Player for Transfer</h1>
+    
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Create New Transfer Listing</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.player.id_for_label }}" class="form-label">Player</label>
+                            {{ form.player.errors }}
+                            <select name="{{ form.player.name }}" id="{{ form.player.id_for_label }}" 
+                                   class="form-select player-select {% if form.player.errors %}is-invalid{% endif %}">
+                                <option value="">Select a player</option>
+                                {% for player in form.player.field.queryset %}
+                                    <option value="{{ player.id }}" 
+                                            data-min-price="{{ player.get_purchase_cost }}"
+                                            {% if form.player.value|stringformat:"s" == player.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ player.full_name }} ({{ player.position }}, {{ player.age }} y.o., Rating: {{ player.overall_rating }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Select a player from your club to list on the transfer market</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.asking_price.id_for_label }}" class="form-label">Asking Price (tokens)</label>
+                            {{ form.asking_price.errors }}
+                            <input type="number" name="{{ form.asking_price.name }}" id="{{ form.asking_price.id_for_label }}" 
+                                   class="form-control {% if form.asking_price.errors %}is-invalid{% endif %}"
+                                   value="{{ form.asking_price.value|default:'' }}">
+                            <div class="form-text" id="min-price-info">Price must be at least the player's base value</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">Description (optional)</label>
+                            {{ form.description.errors }}
+                            <textarea name="{{ form.description.name }}" id="{{ form.description.id_for_label }}" 
+                                      class="form-control {% if form.description.errors %}is-invalid{% endif %}" 
+                                      rows="4">{{ form.description.value|default:'' }}</textarea>
+                            <div class="form-text">Add any additional information about the player</div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'transfers:club_transfers' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">List Player</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const playerSelect = document.querySelector('.player-select');
+        const askingPriceInput = document.getElementById('{{ form.asking_price.id_for_label }}');
+        const minPriceInfo = document.getElementById('min-price-info');
+        
+        function updateMinPrice() {
+            const selectedOption = playerSelect.options[playerSelect.selectedIndex];
+            if (selectedOption && selectedOption.value) {
+                const minPrice = selectedOption.getAttribute('data-min-price');
+                askingPriceInput.min = minPrice;
+                if (!askingPriceInput.value || parseInt(askingPriceInput.value) < parseInt(minPrice)) {
+                    askingPriceInput.value = minPrice;
+                }
+                minPriceInfo.textContent = `Price must be at least ${minPrice} tokens (player's base value)`;
+            }
+        }
+        
+        playerSelect.addEventListener('change', updateMinPrice);
+        updateMinPrice(); // Run on page load
+    });
+</script>
+{% endblock %}
+{% endblock %}
