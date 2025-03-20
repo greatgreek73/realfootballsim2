@@ -16,6 +16,7 @@ from players.models import Player
 from .tasks import simulate_match_minute, broadcast_minute_events_in_chunks
 from .utils import extract_player_id
 from tournaments.models import Championship, League
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 
 def get_lineups_from_json(lineup_json):
@@ -191,14 +192,21 @@ class MatchListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         championship_id = self.kwargs.get('championship_id')
         if championship_id:
-            return Match.objects.filter(
+            matches = Match.objects.filter(
                 championshipmatch__championship_id=championship_id
             ).order_by('championshipmatch__round', 'datetime')
+            paginator = Paginator(matches, 7)
+            #pageNumber = request.GET.get('page')
+            return paginator.page(1)
 
-        return Match.objects.filter(
+        matches = Match.objects.filter(
             Q(home_team=self.request.user.club) |
             Q(away_team=self.request.user.club)
         )
+        paginator = Paginator(matches, 7)
+        return paginator.page(1)
+
+
 
 
 @login_required
