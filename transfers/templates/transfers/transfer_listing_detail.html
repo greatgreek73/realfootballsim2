@@ -1,0 +1,264 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ listing.player.full_name }} - Transfer Listing{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Информация об игроке -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">{{ listing.player.full_name }}</h2>
+                    <span class="badge bg-primary">{{ listing.player.position }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Club:</strong> {{ listing.club.name }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Age:</strong> {{ listing.player.age }}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Nationality:</strong> {{ listing.player.nationality.name }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Overall Rating:</strong> {{ listing.player.overall_rating }}
+                        </div>
+                    </div>
+                    
+                    <h4 class="mt-4 mb-3">Player Attributes</h4>
+                    
+                    <!-- Общие характеристики -->
+                    <div class="mb-4">
+                        <h5>General</h5>
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <div class="d-flex justify-content-between">
+                                    <span>Strength:</span>
+                                    <span>{{ listing.player.strength }}</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar" role="progressbar" style="width: {{ listing.player.strength }}%"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <div class="d-flex justify-content-between">
+                                    <span>Stamina:</span>
+                                    <span>{{ listing.player.stamina }}</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar" role="progressbar" style="width: {{ listing.player.stamina }}%"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <div class="d-flex justify-content-between">
+                                    <span>Pace:</span>
+                                    <span>{{ listing.player.pace }}</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar" role="progressbar" style="width: {{ listing.player.pace }}%"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <div class="d-flex justify-content-between">
+                                    <span>Positioning:</span>
+                                    <span>{{ listing.player.positioning }}</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar" role="progressbar" style="width: {{ listing.player.positioning }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if listing.player.is_goalkeeper %}
+                        <!-- Характеристики вратаря -->
+                        <div class="mb-4">
+                            <h5>Goalkeeper Skills</h5>
+                            <div class="row">
+                                {% for attr, value in listing.player.get_position_specific_attributes.items %}
+                                    <div class="col-md-3 mb-2">
+                                        <div class="d-flex justify-content-between">
+                                            <span>{{ attr|title }}:</span>
+                                            <span>{{ value }}</span>
+                                        </div>
+                                        <div class="progress">
+                                            <div class="progress-bar" role="progressbar" style="width: {{ value }}%"></div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- Характеристики полевого игрока -->
+                        <div class="mb-4">
+                            <h5>Field Player Skills</h5>
+                            <div class="row">
+                                {% for attr, value in listing.player.get_position_specific_attributes.items %}
+                                    <div class="col-md-3 mb-2">
+                                        <div class="d-flex justify-content-between">
+                                            <span>{{ attr|title }}:</span>
+                                            <span>{{ value }}</span>
+                                        </div>
+                                        <div class="progress">
+                                            <div class="progress-bar" role="progressbar" style="width: {{ value }}%"></div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if listing.description %}
+                        <div class="mt-4">
+                            <h5>Seller's Description</h5>
+                            <p>{{ listing.description }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Listed {{ listing.listed_at|timesince }} ago</span>
+                        <span class="text-danger fw-bold">Asking Price: {{ listing.asking_price }} tokens</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Форма предложения и информация о предложениях -->
+        <div class="col-md-4">
+            {% if is_seller %}
+                <!-- Если пользователь - продавец -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Your Listing</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>You are the seller of this player.</p>
+                        {% if listing.status == 'active' %}
+                            <a href="{% url 'transfers:cancel_transfer_listing' listing.id %}" class="btn btn-danger w-100 mb-3">Cancel Listing</a>
+                        {% else %}
+                            <div class="alert alert-info">
+                                This listing is {{ listing.status }}.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if all_offers %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Pending Offers</h5>
+                        </div>
+                        <div class="card-body">
+                            {% for offer in all_offers %}
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h6>{{ offer.bidding_club.name }}</h6>
+                                        <p class="text-success fw-bold">{{ offer.bid_amount }} tokens</p>
+                                        {% if offer.message %}
+                                            <p class="small">{{ offer.message }}</p>
+                                        {% endif %}
+                                        <div class="d-flex justify-content-between mt-3">
+                                            <a href="{% url 'transfers:accept_transfer_offer' offer.id %}" class="btn btn-success btn-sm">Accept</a>
+                                            <a href="{% url 'transfers:reject_transfer_offer' offer.id %}" class="btn btn-danger btn-sm">Reject</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Offers</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">No offers received yet.</p>
+                        </div>
+                    </div>
+                {% endif %}
+            {% elif user_club and listing.status == 'active' %}
+                <!-- Если пользователь - потенциальный покупатель -->
+                {% if user_offers %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Your Offers</h5>
+                        </div>
+                        <div class="card-body">
+                            {% for offer in user_offers %}
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <p class="text-success fw-bold">{{ offer.bid_amount }} tokens</p>
+                                        <p class="small text-muted">Status: {{ offer.get_status_display }}</p>
+                                        {% if offer.status == 'pending' %}
+                                            <a href="{% url 'transfers:cancel_transfer_offer' offer.id %}" class="btn btn-danger btn-sm">Cancel Offer</a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+                
+                {% if form %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Make an Offer</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.bid_amount.id_for_label }}" class="form-label">Your Bid (tokens)</label>
+                                    {{ form.bid_amount.errors }}
+                                    <input type="number" name="{{ form.bid_amount.name }}" id="{{ form.bid_amount.id_for_label }}" 
+                                           class="form-control {% if form.bid_amount.errors %}is-invalid{% endif %}"
+                                           value="{{ form.bid_amount.value|default:listing.asking_price }}" min="{{ listing.asking_price }}">
+                                    <div class="form-text">Minimum: {{ listing.asking_price }} tokens</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.message.id_for_label }}" class="form-label">Message (optional)</label>
+                                    {{ form.message.errors }}
+                                    <textarea name="{{ form.message.name }}" id="{{ form.message.id_for_label }}" 
+                                              class="form-control {% if form.message.errors %}is-invalid{% endif %}" 
+                                              rows="3">{{ form.message.value|default:'' }}</textarea>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary w-100">Submit Offer</button>
+                            </form>
+                        </div>
+                    </div>
+                {% endif %}
+            {% else %}
+                <!-- Если пользователь не авторизован или не имеет клуба -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Make an Offer</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if not user.is_authenticated %}
+                            <p>You need to <a href="{% url 'accounts:login' %}">log in</a> to make an offer.</p>
+                        {% elif not user_club %}
+                            <p>You need to have a club to make transfer offers.</p>
+                        {% elif listing.status != 'active' %}
+                            <p>This listing is no longer active.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="mt-4 mb-5">
+        <a href="{% url 'transfers:transfer_market' %}" class="btn btn-secondary">Back to Transfer Market</a>
+    </div>
+</div>
+{% endblock %}

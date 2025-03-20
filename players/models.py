@@ -75,11 +75,36 @@ class Player(models.Model):
     aerial = models.IntegerField(default=0, verbose_name="Aerial")
     command = models.IntegerField(default=0, verbose_name="Command")
 
-    from .constants import PLAYER_PRICES  # Импорт из вашего constants.py
-
     def get_purchase_cost(self):
-        """Возвращает стоимость покупки игрока в зависимости от класса"""
-        return PLAYER_PRICES.get(self.player_class, 200)
+        """
+        Возвращает базовую стоимость покупки игрока
+        """
+        # Определяем базовые цены в зависимости от класса игрока
+        player_prices = {
+            1: 100,  # Класс 1 (низший)
+            2: 200,  # Класс 2
+            3: 300,  # Класс 3
+            4: 500,  # Класс 4
+            5: 800,  # Класс 5 (высший)
+        }
+        
+        # Базовая цена в зависимости от класса игрока
+        base_price = player_prices.get(self.player_class, 100)
+        
+        # Модификатор в зависимости от возраста
+        age_modifier = 1.0
+        if self.age < 23:
+            age_modifier = 1.2  # Молодые игроки стоят дороже
+        elif self.age > 30:
+            age_modifier = 0.8  # Возрастные игроки стоят дешевле
+        
+        # Модификатор в зависимости от общего рейтинга
+        rating_modifier = self.overall_rating / 70.0
+        
+        # Итоговая стоимость
+        final_cost = int(base_price * age_modifier * rating_modifier)
+        
+        return max(50, final_cost)  # Минимальная стоимость 50 токенов
 
     distribution = models.IntegerField(default=0, verbose_name="Distribution")
     one_on_one = models.IntegerField(default=0, verbose_name="One on One")
