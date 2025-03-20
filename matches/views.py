@@ -196,15 +196,20 @@ class MatchListView(LoginRequiredMixin, ListView):
                 championshipmatch__championship_id=championship_id
             ).order_by('championshipmatch__round', 'datetime')
             paginator = Paginator(matches, 7)
-            #pageNumber = request.GET.get('page')
-            return paginator.page(1)
+            pageNumber = int(self.request.GET.get('page') or 1)
+            if pageNumber > paginator.num_pages:
+                pageNumber = paginator.num_pages
+            return paginator.page(pageNumber)
 
         matches = Match.objects.filter(
             Q(home_team=self.request.user.club) |
             Q(away_team=self.request.user.club)
         )
         paginator = Paginator(matches, 7)
-        return paginator.page(1)
+        pageNumber = int(self.request.GET.get('page') or 1)
+        if pageNumber > paginator.num_pages:
+            pageNumber = paginator.num_pages
+        return paginator.page(pageNumber)
 
 
 
