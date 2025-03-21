@@ -80,38 +80,98 @@
                             <td>{{ listing.player.age }}</td>
                             <td>{{ listing.club.name }}</td>
                             <td>{{ listing.player.overall_rating }}</td>
-                            <td>
-                                {% with highest_offer=listing.get_highest_offer %}
-                                {% if highest_offer %}
-                                    <strong class="text-danger">{{ highest_offer.bid_amount }} монет</strong>
-                                    <small class="d-block text-muted">Bid by {{ highest_offer.bidding_club.name }}</small>
-                                {% else %}
-                                    <strong class="text-danger">{{ listing.asking_price }} монет</strong>
-                                    <small class="d-block text-muted">Starting price</small>
-                                {% endif %}
-                                {% endwith %}
-                            </td>
+                            <td><strong class="text-danger">{{ listing.asking_price }} монет</strong></td>
                             <td>
                                 {% if listing.status == 'active' %}
                                 <span class="countdown-timer" data-expires="{{ listing.expires_at|date:'c' }}" data-listing-id="{{ listing.id }}">
                                     <span class="hours">00</span>:<span class="minutes">00</span>:<span class="seconds">00</span>
-                                </span></small>
-                            </div>
-                            {% elif listing.status == 'expired' %}
-                            <div class="mt-1">
-                                <small><span class="badge bg-secondary">Auction ended</span></small>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-        {% else %}
-            <div class="col-12">
-                <div class="alert alert-info">
-                    No players currently listed on the transfer market.
-                </div>
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary">Ended</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'transfers:transfer_listing_detail' listing.id %}" class="btn btn-outline-primary">Details</a>
+                                    {% if user_club and user_club != listing.club and listing.status == 'active' %}
+                                    <a href="{% url 'transfers:transfer_listing_detail' listing.id %}#bid" class="btn btn-outline-success">Bid</a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4">
+                                <div class="alert alert-info mb-0">
+                                    No players currently listed on the transfer market.
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
+        </div>
+        
+        <!-- Пагинация -->
+        {% if listings.paginator.num_pages > 1 %}
+        <div class="card-footer">
+            <nav aria-label="Transfer market pagination">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if listings.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ listings.previous_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&laquo;&laquo;</span>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link">&laquo;</span>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in listings.paginator.page_range %}
+                        {% if listings.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > listings.number|add:'-3' and num < listings.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if listings.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ listings.next_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ listings.paginator.num_pages }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&raquo;</span>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link">&raquo;&raquo;</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
         {% endif %}
     </div>
     

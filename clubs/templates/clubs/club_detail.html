@@ -34,6 +34,9 @@
                             <p class="mb-1">
                                 <strong>Your tokens:</strong> {{ user.tokens }}
                             </p>
+                            <p class="mb-1">
+                                <strong>Your money:</strong> {{ user.money }} монет
+                            </p>
                         {% endif %}
                     </div>
                 </div>
@@ -66,7 +69,7 @@
                             <li>Class 3: {{ player_prices.3 }} tokens</li>
                             <li>Class 4: {{ player_prices.4 }} tokens</li>
                         </ul>
-                        <strong>Your current balance: {{ user.tokens }} tokens</strong>
+                        <strong>Your current balance: {{ user.tokens }} tokens / {{ user.money }} монет</strong>
                     </div>
                     
                     <div class="row mb-3">
