@@ -70,7 +70,7 @@
                                 <strong>Overall Rating:</strong> {{ listing.player.overall_rating }}
                             </div>
                             <div class="mb-3">
-                                <strong>Asking Price:</strong> <span class="text-danger">{{ listing.asking_price }} tokens</span>
+                                <strong>Asking Price:</strong> <span class="text-danger">{{ listing.asking_price }} монет</span>
                             </div>
                             {% if listing.description %}
                                 <div class="mb-3">
@@ -79,10 +79,24 @@
                             {% endif %}
                             <div class="text-center mt-3">
                                 <a href="{% url 'transfers:transfer_listing_detail' listing.id %}" class="btn btn-primary">View Details</a>
+                                {% if user_club and user_club != listing.club and listing.status == 'active' %}
+                                <a href="{% url 'transfers:transfer_listing_detail' listing.id %}#bid" class="btn btn-success mt-2">Сделать ставку</a>
+                                {% endif %}
                             </div>
                         </div>
                         <div class="card-footer text-muted">
-                            Listed {{ listing.listed_at|timesince }} ago
+                            <div>Listed {{ listing.listed_at|timesince }} ago</div>
+                            {% if listing.status == 'active' %}
+                            <div class="mt-1">
+                                <small>Auction ends in: <span class="badge bg-warning text-dark countdown-timer" data-expires="{{ listing.expires_at|date:'c' }}" data-listing-id="{{ listing.id }}">
+                                    <span class="hours">00</span>:<span class="minutes">00</span>:<span class="seconds">00</span>
+                                </span></small>
+                            </div>
+                            {% elif listing.status == 'expired' %}
+                            <div class="mt-1">
+                                <small><span class="badge bg-secondary">Auction ended</span></small>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
