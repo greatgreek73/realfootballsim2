@@ -6,6 +6,7 @@ from django.http import HttpResponseForbidden, JsonResponse
 from django.db.models import Q
 from django.views.decorators.http import require_POST
 from django.utils import timezone
+from django.core.paginator import Paginator
 
 from .models import TransferListing, TransferOffer, TransferHistory
 from .forms import TransferListingForm, TransferOfferForm
@@ -17,8 +18,8 @@ def transfer_market(request):
     """
     Отображает трансферный рынок со всеми активными листингами
     """
-    # Получаем все активные листинги
-    listings = TransferListing.objects.filter(status='active')
+    # Получаем все активные листинги, сортируя по времени окончания (сначала те, которые скоро закончатся)
+    listings = TransferListing.objects.filter(status='active').order_by('expires_at')
     
     # Фильтрация по позиции, если указана
     position = request.GET.get('position')
@@ -41,6 +42,11 @@ def transfer_market(request):
     if max_price:
         listings = listings.filter(asking_price__lte=max_price)
     
+    # Добавляем пагинацию
+    paginator = Paginator(listings, 30)  # 30 листингов на страницу
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
     # Получаем клуб пользователя, если есть
     user_club = None
     try:
@@ -49,7 +55,7 @@ def transfer_market(request):
         pass
     
     context = {
-        'listings': listings,
+        'listings': page_obj,  # пагинированные листинги
         'user_club': user_club,
         'positions': Player.POSITIONS,
         'filters': {
@@ -110,7 +116,7 @@ def transfer_listing_detail(request, listing_id):
                 offer.bidding_club = user_club
                 offer.save()
                 messages.success(request, 'Your offer has been submitted.')
-                return redirect('transfer_listing_detail', listing_id=listing.id)
+                return redirect('transfers:transfer_listing_detail', listing_id=listing.id)
         else:
             form = TransferOfferForm(
                 transfer_listing=listing,
@@ -138,7 +144,7 @@ def create_transfer_listing(request):
         user_club = request.user.club
     except:
         messages.error(request, 'You need to have a club to list players for transfer.')
-        return redirect('transfer_market')
+        return redirect('transfers:transfer_market')
     
     if request.method == 'POST':
         form = TransferListingForm(request.POST, club=user_club)
@@ -168,7 +174,7 @@ def club_transfers(request):
         user_club = request.user.club
     except:
         messages.error(request, 'You need to have a club to manage transfers.')
-        return redirect('transfer_market')
+        return redirect('transfers:transfer_market')
     
     # Получаем активные листинги клуба
     active_listings = TransferListing.objects.filter(
@@ -223,11 +229,11 @@ def cancel_transfer_listing(request, listing_id):
     
     if listing.status != 'active':
         messages.error(request, 'This listing cannot be cancelled.')
-        return redirect('club_transfers')
+        return redirect('transfers:club_transfers')
     
     listing.cancel()
     messages.success(request, f'Listing for {listing.player.full_name} has been cancelled.')
-    return redirect('club_transfers')
+    return redirect('transfers:club_transfers')
 
 @login_required
 def cancel_transfer_offer(request, offer_id):
@@ -247,11 +253,11 @@ def cancel_transfer_offer(request, offer_id):
     
     if offer.status != 'pending':
         messages.error(request, 'This offer cannot be cancelled.')
-        return redirect('transfer_listing_detail', listing_id=offer.transfer_listing.id)
+        return redirect('transfers:transfer_listing_detail', listing_id=offer.transfer_listing.id)
     
     offer.cancel()
     messages.success(request, 'Your offer has been cancelled.')
-    return redirect('transfer_listing_detail', listing_id=offer.transfer_listing.id)
+    return redirect('transfers:transfer_listing_detail', listing_id=offer.transfer_listing.id)
 
 @login_required
 def accept_transfer_offer(request, offer_id):
@@ -271,7 +277,7 @@ def accept_transfer_offer(request, offer_id):
     
     if offer.status != 'pending' or offer.transfer_listing.status != 'active':
         messages.error(request, 'This offer cannot be accepted.')
-        return redirect('club_transfers')
+        return redirect('transfers:club_transfers')
     
     # Принимаем предложение, что запускает процесс трансфера
     if offer.accept():
@@ -282,7 +288,7 @@ def accept_transfer_offer(request, offer_id):
     else:
         messages.error(request, 'There was an error processing the transfer.')
     
-    return redirect('club_transfers')
+    return redirect('transfers:club_transfers')
 
 @login_required
 def reject_transfer_offer(request, offer_id):
@@ -302,11 +308,11 @@ def reject_transfer_offer(request, offer_id):
     
     if offer.status != 'pending':
         messages.error(request, 'This offer cannot be rejected.')
-        return redirect('club_transfers')
+        return redirect('transfers:club_transfers')
     
     offer.reject()
     messages.success(request, 'The offer has been rejected.')
-    return redirect('club_transfers')
+    return redirect('transfers:club_transfers')
 
 @login_required
 def transfer_history(request):

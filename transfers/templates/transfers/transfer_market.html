@@ -46,67 +46,132 @@
         </div>
     </div>
     
-    <!-- Список игроков на трансфере -->
-    <div class="row">
-        {% if listings %}
-            {% for listing in listings %}
-                <div class="col-md-4 mb-4">
-                    <div class="card h-100">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">{{ listing.player.full_name }}</h5>
-                            <span class="badge bg-primary">{{ listing.player.position }}</span>
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <strong>Club:</strong> {{ listing.club.name }}
-                            </div>
-                            <div class="mb-3">
-                                <strong>Age:</strong> {{ listing.player.age }}
-                            </div>
-                            <div class="mb-3">
-                                <strong>Nationality:</strong> {{ listing.player.nationality.name }}
-                            </div>
-                            <div class="mb-3">
-                                <strong>Overall Rating:</strong> {{ listing.player.overall_rating }}
-                            </div>
-                            <div class="mb-3">
-                                <strong>Asking Price:</strong> <span class="text-danger">{{ listing.asking_price }} монет</span>
-                            </div>
-                            {% if listing.description %}
-                                <div class="mb-3">
-                                    <strong>Description:</strong> {{ listing.description }}
-                                </div>
-                            {% endif %}
-                            <div class="text-center mt-3">
-                                <a href="{% url 'transfers:transfer_listing_detail' listing.id %}" class="btn btn-primary">View Details</a>
-                                {% if user_club and user_club != listing.club and listing.status == 'active' %}
-                                <a href="{% url 'transfers:transfer_listing_detail' listing.id %}#bid" class="btn btn-success mt-2">Сделать ставку</a>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="card-footer text-muted">
-                            <div>Listed {{ listing.listed_at|timesince }} ago</div>
-                            {% if listing.status == 'active' %}
-                            <div class="mt-1">
-                                <small>Auction ends in: <span class="badge bg-warning text-dark countdown-timer" data-expires="{{ listing.expires_at|date:'c' }}" data-listing-id="{{ listing.id }}">
-                                    <span class="hours">00</span>:<span class="minutes">00</span>:<span class="seconds">00</span>
-                                </span></small>
-                            </div>
-                            {% elif listing.status == 'expired' %}
-                            <div class="mt-1">
-                                <small><span class="badge bg-secondary">Auction ended</span></small>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-        {% else %}
-            <div class="col-12">
-                <div class="alert alert-info">
-                    No players currently listed on the transfer market.
-                </div>
+    <!-- Таблица трансферов -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Available Players</h5>
+                <span class="text-muted">Showing {{ listings.start_index }}-{{ listings.end_index }} of {{ listings.paginator.count }}</span>
             </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Player</th>
+                            <th>Position</th>
+                            <th>Age</th>
+                            <th>Club</th>
+                            <th>Rating</th>
+                            <th>Price</th>
+                            <th>Time Left</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for listing in listings %}
+                        <tr>
+                            <td>
+                                <strong>{{ listing.player.full_name }}</strong>
+                                <small class="d-block text-muted">{{ listing.player.nationality.name }}</small>
+                            </td>
+                            <td><span class="badge bg-primary">{{ listing.player.position }}</span></td>
+                            <td>{{ listing.player.age }}</td>
+                            <td>{{ listing.club.name }}</td>
+                            <td>{{ listing.player.overall_rating }}</td>
+                            <td><strong class="text-danger">{{ listing.asking_price }} монет</strong></td>
+                            <td>
+                                {% if listing.status == 'active' %}
+                                <span class="countdown-timer" data-expires="{{ listing.expires_at|date:'c' }}" data-listing-id="{{ listing.id }}">
+                                    <span class="hours">00</span>:<span class="minutes">00</span>:<span class="seconds">00</span>
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary">Ended</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'transfers:transfer_listing_detail' listing.id %}" class="btn btn-outline-primary">Details</a>
+                                    {% if user_club and user_club != listing.club and listing.status == 'active' %}
+                                    <a href="{% url 'transfers:transfer_listing_detail' listing.id %}#bid" class="btn btn-outline-success">Bid</a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4">
+                                <div class="alert alert-info mb-0">
+                                    No players currently listed on the transfer market.
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Пагинация -->
+        {% if listings.paginator.num_pages > 1 %}
+        <div class="card-footer">
+            <nav aria-label="Transfer market pagination">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if listings.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ listings.previous_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&laquo;&laquo;</span>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link">&laquo;</span>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in listings.paginator.page_range %}
+                        {% if listings.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > listings.number|add:'-3' and num < listings.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if listings.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ listings.next_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ listings.paginator.num_pages }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&raquo;</span>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link">&raquo;&raquo;</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
         {% endif %}
     </div>
     
