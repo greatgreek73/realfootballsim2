@@ -15,6 +15,7 @@ def generate_player_stats(position, player_class):
     base_stats = {
         'strength': generate_stat(),
         'stamina': generate_stat(),
+        'morale': generate_stat(),
         'pace': generate_stat(),
         'positioning': generate_stat(),
     }
