@@ -66,6 +66,7 @@ class Player(models.Model):
     # Общие характеристики
     strength = models.IntegerField(default=0, verbose_name="Strength")
     stamina = models.IntegerField(default=0, verbose_name="Stamina")
+    morale = models.IntegerField(default=0, verbose_name="Morale")
     pace = models.IntegerField(default=0, verbose_name="Pace")
     positioning = models.IntegerField(default=0, verbose_name="Positioning")
 
