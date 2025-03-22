@@ -101,6 +101,12 @@ class TransferListing(models.Model):
             
             return True
         return False
+        
+    def get_highest_offer(self):
+        """
+        Возвращает текущее предложение с максимальной ставкой
+        """
+        return self.offers.filter(status='pending').order_by('-bid_amount').first()
 
 class TransferOffer(models.Model):
     """

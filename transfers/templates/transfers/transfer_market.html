@@ -80,7 +80,17 @@
                             <td>{{ listing.player.age }}</td>
                             <td>{{ listing.club.name }}</td>
                             <td>{{ listing.player.overall_rating }}</td>
-                            <td><strong class="text-danger">{{ listing.asking_price }} монет</strong></td>
+                            <td>
+                                {% with highest_offer=listing.get_highest_offer %}
+                                {% if highest_offer %}
+                                    <strong class="text-danger">{{ highest_offer.bid_amount }} монет</strong>
+                                    <small class="d-block text-muted">Bid by {{ highest_offer.bidding_club.name }}</small>
+                                {% else %}
+                                    <strong class="text-danger">{{ listing.asking_price }} монет</strong>
+                                    <small class="d-block text-muted">Starting price</small>
+                                {% endif %}
+                                {% endwith %}
+                            </td>
                             <td>
                                 {% if listing.status == 'active' %}
                                 <span class="countdown-timer" data-expires="{{ listing.expires_at|date:'c' }}" data-listing-id="{{ listing.id }}">
