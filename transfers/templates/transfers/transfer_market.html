@@ -46,49 +46,54 @@
         </div>
     </div>
     
-    <!-- Список игроков на трансфере -->
-    <div class="row">
-        {% if listings %}
-            {% for listing in listings %}
-                <div class="col-md-4 mb-4">
-                    <div class="card h-100">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">{{ listing.player.full_name }}</h5>
-                            <span class="badge bg-primary">{{ listing.player.position }}</span>
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <strong>Club:</strong> {{ listing.club.name }}
-                            </div>
-                            <div class="mb-3">
-                                <strong>Age:</strong> {{ listing.player.age }}
-                            </div>
-                            <div class="mb-3">
-                                <strong>Nationality:</strong> {{ listing.player.nationality.name }}
-                            </div>
-                            <div class="mb-3">
-                                <strong>Overall Rating:</strong> {{ listing.player.overall_rating }}
-                            </div>
-                            <div class="mb-3">
-                                <strong>Asking Price:</strong> <span class="text-danger">{{ listing.asking_price }} монет</span>
-                            </div>
-                            {% if listing.description %}
-                                <div class="mb-3">
-                                    <strong>Description:</strong> {{ listing.description }}
-                                </div>
-                            {% endif %}
-                            <div class="text-center mt-3">
-                                <a href="{% url 'transfers:transfer_listing_detail' listing.id %}" class="btn btn-primary">View Details</a>
-                                {% if user_club and user_club != listing.club and listing.status == 'active' %}
-                                <a href="{% url 'transfers:transfer_listing_detail' listing.id %}#bid" class="btn btn-success mt-2">Сделать ставку</a>
+    <!-- Таблица трансферов -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Available Players</h5>
+                <span class="text-muted">Showing {{ listings.start_index }}-{{ listings.end_index }} of {{ listings.paginator.count }}</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Player</th>
+                            <th>Position</th>
+                            <th>Age</th>
+                            <th>Club</th>
+                            <th>Rating</th>
+                            <th>Price</th>
+                            <th>Time Left</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for listing in listings %}
+                        <tr>
+                            <td>
+                                <strong>{{ listing.player.full_name }}</strong>
+                                <small class="d-block text-muted">{{ listing.player.nationality.name }}</small>
+                            </td>
+                            <td><span class="badge bg-primary">{{ listing.player.position }}</span></td>
+                            <td>{{ listing.player.age }}</td>
+                            <td>{{ listing.club.name }}</td>
+                            <td>{{ listing.player.overall_rating }}</td>
+                            <td>
+                                {% with highest_offer=listing.get_highest_offer %}
+                                {% if highest_offer %}
+                                    <strong class="text-danger">{{ highest_offer.bid_amount }} монет</strong>
+                                    <small class="d-block text-muted">Bid by {{ highest_offer.bidding_club.name }}</small>
+                                {% else %}
+                                    <strong class="text-danger">{{ listing.asking_price }} монет</strong>
+                                    <small class="d-block text-muted">Starting price</small>
                                 {% endif %}
-                            </div>
-                        </div>
-                        <div class="card-footer text-muted">
-                            <div>Listed {{ listing.listed_at|timesince }} ago</div>
-                            {% if listing.status == 'active' %}
-                            <div class="mt-1">
-                                <small>Auction ends in: <span class="badge bg-warning text-dark countdown-timer" data-expires="{{ listing.expires_at|date:'c' }}" data-listing-id="{{ listing.id }}">
+                                {% endwith %}
+                            </td>
+                            <td>
+                                {% if listing.status == 'active' %}
+                                <span class="countdown-timer" data-expires="{{ listing.expires_at|date:'c' }}" data-listing-id="{{ listing.id }}">
                                     <span class="hours">00</span>:<span class="minutes">00</span>:<span class="seconds">00</span>
                                 </span></small>
                             </div>
