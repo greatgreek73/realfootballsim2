@@ -171,7 +171,7 @@ def match_detail(request, pk):
         'away_prev_lineup_list': away_prev_lineup_list,
     }
 
-    return render(request, 'matches/git.html', context)
+    return render(request, 'matches/match_detail.html', context)
 
 
 class CreateMatchView(CreateView):
@@ -194,7 +194,7 @@ class MatchListView(LoginRequiredMixin, ListView):
         if championship_id:
             matches = Match.objects.filter(
                 championshipmatch__championship_id=championship_id
-            ).order_by('championshipmatch__round', 'datetime')[:7]
+            ).order_by('championshipmatch__round', 'datetime')
             paginator = Paginator(matches, 7)
             pageNumber = int(self.request.GET.get('page') or 1)
             if pageNumber > paginator.num_pages:
@@ -204,7 +204,7 @@ class MatchListView(LoginRequiredMixin, ListView):
         matches = Match.objects.filter(
             Q(home_team=self.request.user.club) |
             Q(away_team=self.request.user.club)
-        )[:7]
+        )
         paginator = Paginator(matches, 7)
         pageNumber = int(self.request.GET.get('page') or 1)
         if pageNumber > paginator.num_pages:
