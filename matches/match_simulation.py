@@ -65,11 +65,10 @@ def choose_player(team: Club, zone: str, exclude_ids: set = None) -> Player:
     """
     if exclude_ids is None:
         exclude_ids = set()
-    # commented cause : make sure after failed shot the ball might end with any of team member
-    # condition = zone_conditions(zone)
-    # candidates = [p for p in team.player_set.all() if condition(p) and p.id not in exclude_ids]
-    # if candidates:
-    #     return random.choice(candidates)
+    condition = zone_conditions(zone)
+    candidates = [p for p in team.player_set.all() if condition(p) and p.id not in exclude_ids]
+    if candidates:
+        return random.choice(candidates)
     candidates = [p for p in team.player_set.all() if p.id not in exclude_ids]
     if candidates:
         return random.choice(candidates)
@@ -147,8 +146,6 @@ def simulate_one_minute(match):
     """
     PASS_SUCCESS_PROB = 0.6
     SHOT_SUCCESS_PROB = 0.15
-    # BALL_OUT_PROB = 0.6
-    BOUNCE_PROB = 0.7
     FOUL_PROB = 0.15
     transition_map = {"GK": "DEF", "DEF": "DM", "DM": "AM", "AM": "FWD"}
 
@@ -266,11 +263,8 @@ def simulate_one_minute(match):
                             description=shot_miss_desc
                         )
                         logger.info(shot_miss_desc)
-                    if random.random() < BOUNCE_PROB:
-                        bounced_team = possessing_team
-                    else:
-                        bounced_team = get_opponent_team(match, possessing_team)
-                    new_owner = choose_player(bounced_team, "GK")
+                    opponent_team = get_opponent_team(match, possessing_team)
+                    new_owner = choose_player(opponent_team, "GK")
                     match.current_player_with_ball = new_owner
                     match.current_zone = "GK"
                     # match.save()
