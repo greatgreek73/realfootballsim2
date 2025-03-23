@@ -30,7 +30,7 @@ class Command(BaseCommand):
         # Находим матчи, которые должны были начаться
         matches = Match.objects.filter(
             status='scheduled',
-            date__lte=now
+            datetime__lte=now
         ).select_related('home_team', 'away_team')
 
         if debug:

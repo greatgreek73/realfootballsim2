@@ -21,7 +21,7 @@ class Command(BaseCommand):
                 # Находим матчи для симуляции
                 matches = Match.objects.filter(
                     status='scheduled',
-                    date__lte=now
+                    datetime__lte=now
                 ).select_related('home_team', 'away_team')
                 
                 if matches.exists():

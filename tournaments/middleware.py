@@ -32,7 +32,7 @@ class MatchSimulationMiddleware:
         now = timezone.now()
         matches = Match.objects.filter(
             status='scheduled',
-            date__lte=now
+            datetime__lte=now
         ).select_related('home_team', 'away_team')
 
         logger.info(f"Found {matches.count()} matches to check")
