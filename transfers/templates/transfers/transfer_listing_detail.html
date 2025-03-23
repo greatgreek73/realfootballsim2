@@ -3,6 +3,15 @@
 
 {% block title %}{{ listing.player.full_name }} - Transfer Listing{% endblock %}
 
+{% block extra_css %}
+<style>
+    .countdown-timer {
+        font-size: 1.1em;
+        padding: 5px 10px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <div class="row">
@@ -124,8 +133,22 @@
                 <div class="card-footer">
                     <div class="d-flex justify-content-between align-items-center">
                         <span>Listed {{ listing.listed_at|timesince }} ago</span>
-                        <span class="text-danger fw-bold">Asking Price: {{ listing.asking_price }} tokens</span>
+                        <span class="text-danger fw-bold">Asking Price: {{ listing.asking_price }} монет</span>
                     </div>
+                    {% if listing.status == 'active' %}
+                    <div class="mt-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Auction ends in:</span>
+                            <span class="badge bg-warning text-dark countdown-timer" data-expires="{{ listing.expires_at|date:'c' }}" data-listing-id="{{ listing.id }}">
+                                <span class="hours">00</span>:<span class="minutes">00</span>:<span class="seconds">00</span>
+                            </span>
+                        </div>
+                    </div>
+                    {% elif listing.status == 'expired' %}
+                    <div class="mt-2">
+                        <span class="badge bg-secondary">Auction ended</span>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -136,15 +159,15 @@
                 <!-- Если пользователь - продавец -->
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0">Your Listing</h5>
+                        <h5 class="mb-0">Ваш листинг</h5>
                     </div>
                     <div class="card-body">
-                        <p>You are the seller of this player.</p>
+                        <p>Вы являетесь продавцом этого игрока.</p>
                         {% if listing.status == 'active' %}
-                            <a href="{% url 'transfers:cancel_transfer_listing' listing.id %}" class="btn btn-danger w-100 mb-3">Cancel Listing</a>
+                            <a href="{% url 'transfers:cancel_transfer_listing' listing.id %}" class="btn btn-danger w-100 mb-3">Отменить листинг</a>
                         {% else %}
                             <div class="alert alert-info">
-                                This listing is {{ listing.status }}.
+                                Этот листинг имеет статус: {{ listing.get_status_display }}.
                             </div>
                         {% endif %}
                     </div>
@@ -153,20 +176,20 @@
                 {% if all_offers %}
                     <div class="card">
                         <div class="card-header">
-                            <h5 class="mb-0">Pending Offers</h5>
+                            <h5 class="mb-0">Ставки на аукционе</h5>
                         </div>
                         <div class="card-body">
                             {% for offer in all_offers %}
-                                <div class="card mb-3">
+                                <div class="card mb-3 {% if forloop.first %}border-success{% endif %}">
                                     <div class="card-body">
-                                        <h6>{{ offer.bidding_club.name }}</h6>
-                                        <p class="text-success fw-bold">{{ offer.bid_amount }} tokens</p>
+                                        <h6>{{ offer.bidding_club.name }} {% if forloop.first %}<span class="badge bg-success">Лидирующая ставка</span>{% endif %}</h6>
+                                        <p class="text-success fw-bold">{{ offer.bid_amount }} монет</p>
                                         {% if offer.message %}
                                             <p class="small">{{ offer.message }}</p>
                                         {% endif %}
                                         <div class="d-flex justify-content-between mt-3">
-                                            <a href="{% url 'transfers:accept_transfer_offer' offer.id %}" class="btn btn-success btn-sm">Accept</a>
-                                            <a href="{% url 'transfers:reject_transfer_offer' offer.id %}" class="btn btn-danger btn-sm">Reject</a>
+                                            <a href="{% url 'transfers:accept_transfer_offer' offer.id %}" class="btn btn-success btn-sm">Принять ставку</a>
+                                            <a href="{% url 'transfers:reject_transfer_offer' offer.id %}" class="btn btn-danger btn-sm">Отклонить</a>
                                         </div>
                                     </div>
                                 </div>
@@ -176,10 +199,10 @@
                 {% else %}
                     <div class="card">
                         <div class="card-header">
-                            <h5 class="mb-0">Offers</h5>
+                            <h5 class="mb-0">Ставки на аукционе</h5>
                         </div>
                         <div class="card-body">
-                            <p class="text-muted">No offers received yet.</p>
+                            <p class="text-muted">Пока нет ставок на аукционе.</p>
                         </div>
                     </div>
                 {% endif %}
@@ -188,16 +211,16 @@
                 {% if user_offers %}
                     <div class="card mb-4">
                         <div class="card-header">
-                            <h5 class="mb-0">Your Offers</h5>
+                            <h5 class="mb-0">Ваши ставки</h5>
                         </div>
                         <div class="card-body">
                             {% for offer in user_offers %}
                                 <div class="card mb-3">
                                     <div class="card-body">
-                                        <p class="text-success fw-bold">{{ offer.bid_amount }} tokens</p>
-                                        <p class="small text-muted">Status: {{ offer.get_status_display }}</p>
+                                        <p class="text-success fw-bold">{{ offer.bid_amount }} монет</p>
+                                        <p class="small text-muted">Статус: {{ offer.get_status_display }}</p>
                                         {% if offer.status == 'pending' %}
-                                            <a href="{% url 'transfers:cancel_transfer_offer' offer.id %}" class="btn btn-danger btn-sm">Cancel Offer</a>
+                                            <a href="{% url 'transfers:cancel_transfer_offer' offer.id %}" class="btn btn-danger btn-sm">Отменить ставку</a>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -209,56 +232,54 @@
                 {% if form %}
                     <div class="card">
                         <div class="card-header">
-                            <h5 class="mb-0">Make an Offer</h5>
+                            <h5 class="mb-0" id="bid">Сделать ставку на аукционе</h5>
                         </div>
                         <div class="card-body">
                             <form method="post">
                                 {% csrf_token %}
                                 
                                 <div class="mb-3">
-                                    <label for="{{ form.bid_amount.id_for_label }}" class="form-label">Your Bid (tokens)</label>
+                                    <label for="{{ form.bid_amount.id_for_label }}" class="form-label">Ваша ставка (монет)</label>
                                     {{ form.bid_amount.errors }}
-                                    <input type="number" name="{{ form.bid_amount.name }}" id="{{ form.bid_amount.id_for_label }}" 
-                                           class="form-control {% if form.bid_amount.errors %}is-invalid{% endif %}"
-                                           value="{{ form.bid_amount.value|default:listing.asking_price }}" min="{{ listing.asking_price }}">
-                                    <div class="form-text">Minimum: {{ listing.asking_price }} tokens</div>
+                                    <input type="number" name="{{ form.bid_amount.name }}" id="{{ form.bid_amount.id_for_label }}" class="form-control" min="{{ listing.asking_price }}" value="{{ listing.asking_price }}" required>
+                                    <div class="form-text">{{ form.bid_amount.help_text }}</div>
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label for="{{ form.message.id_for_label }}" class="form-label">Message (optional)</label>
+                                    <label for="{{ form.message.id_for_label }}" class="form-label">Сообщение (необязательно)</label>
                                     {{ form.message.errors }}
-                                    <textarea name="{{ form.message.name }}" id="{{ form.message.id_for_label }}" 
-                                              class="form-control {% if form.message.errors %}is-invalid{% endif %}" 
-                                              rows="3">{{ form.message.value|default:'' }}</textarea>
+                                    {{ form.message }}
                                 </div>
                                 
-                                <button type="submit" class="btn btn-primary w-100">Submit Offer</button>
+                                <button type="submit" class="btn btn-primary w-100">Сделать ставку</button>
                             </form>
                         </div>
                     </div>
                 {% endif %}
             {% else %}
-                <!-- Если пользователь не авторизован или не имеет клуба -->
+                <!-- Если пользователь не имеет клуба или листинг не активен -->
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0">Make an Offer</h5>
+                        <h5 class="mb-0">Сделать ставку</h5>
                     </div>
                     <div class="card-body">
-                        {% if not user.is_authenticated %}
-                            <p>You need to <a href="{% url 'accounts:login' %}">log in</a> to make an offer.</p>
-                        {% elif not user_club %}
-                            <p>You need to have a club to make transfer offers.</p>
+                        {% if not user_club %}
+                            <div class="alert alert-warning">
+                                Вам необходимо иметь клуб, чтобы делать ставки.
+                            </div>
                         {% elif listing.status != 'active' %}
-                            <p>This listing is no longer active.</p>
+                            <div class="alert alert-info">
+                                Этот аукцион {{ listing.get_status_display }} и больше не принимает ставки.
+                            </div>
                         {% endif %}
                     </div>
                 </div>
             {% endif %}
         </div>
     </div>
-    
-    <div class="mt-4 mb-5">
-        <a href="{% url 'transfers:transfer_market' %}" class="btn btn-secondary">Back to Transfer Market</a>
-    </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'transfers/js/countdown.js' %}"></script>
 {% endblock %}

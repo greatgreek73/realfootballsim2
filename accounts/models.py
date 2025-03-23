@@ -9,3 +9,9 @@ class CustomUser(AbstractUser):
         default=0,
         help_text="Current balance of tokens for user."
     )
+    
+    # Поле для хранения баланса игровой валюты (деньги)
+    money = models.PositiveIntegerField(
+        default=1000,
+        help_text="Current balance of in-game money for user."
+    )

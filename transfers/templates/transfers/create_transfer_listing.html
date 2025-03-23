@@ -35,12 +35,27 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label for="{{ form.asking_price.id_for_label }}" class="form-label">Asking Price (tokens)</label>
+                            <label for="{{ form.asking_price.id_for_label }}" class="form-label">Asking Price (монет)</label>
                             {{ form.asking_price.errors }}
                             <input type="number" name="{{ form.asking_price.name }}" id="{{ form.asking_price.id_for_label }}" 
                                    class="form-control {% if form.asking_price.errors %}is-invalid{% endif %}"
                                    value="{{ form.asking_price.value|default:'' }}">
                             <div class="form-text" id="min-price-info">Price must be at least the player's base value</div>
+                        </div>
+                        
+                        <!-- Добавляем поле выбора длительности трансфера -->
+                        <div class="mb-3">
+                            <label for="{{ form.duration.id_for_label }}" class="form-label">Длительность трансфера</label>
+                            {{ form.duration.errors }}
+                            <select name="{{ form.duration.name }}" id="{{ form.duration.id_for_label }}" 
+                                   class="form-select {% if form.duration.errors %}is-invalid{% endif %}">
+                                {% for value, text in form.duration.field.choices %}
+                                    <option value="{{ value }}" {% if form.duration.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                                        {{ text }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">{{ form.duration.help_text }}</div>
                         </div>
                         
                         <div class="mb-3">
@@ -78,7 +93,7 @@
                 if (!askingPriceInput.value || parseInt(askingPriceInput.value) < parseInt(minPrice)) {
                     askingPriceInput.value = minPrice;
                 }
-                minPriceInfo.textContent = `Price must be at least ${minPrice} tokens (player's base value)`;
+                minPriceInfo.textContent = `Price must be at least ${minPrice} монет (player's base value)`;
             }
         }
         

@@ -8,9 +8,10 @@ class TransferListingForm(forms.ModelForm):
     """
     class Meta:
         model = TransferListing
-        fields = ['player', 'asking_price', 'description']
+        fields = ['player', 'asking_price', 'duration', 'description']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4}),
+            'duration': forms.Select(attrs={'class': 'form-control'}),
         }
     
     def __init__(self, *args, **kwargs):
@@ -26,6 +27,10 @@ class TransferListingForm(forms.ModelForm):
                 'class': 'player-select',
                 'data-min-price': True
             })
+        
+        # Добавляем подсказки для полей
+        self.fields['duration'].help_text = 'Выберите длительность трансфера'
+        self.fields['asking_price'].help_text = 'Начальная цена аукциона в монетах'
     
     def clean(self):
         cleaned_data = super().clean()
@@ -36,7 +41,7 @@ class TransferListingForm(forms.ModelForm):
             min_price = player.get_purchase_cost()
             if asking_price < min_price:
                 self.add_error('asking_price', 
-                    f'Asking price cannot be lower than player\'s base value ({min_price} tokens)')
+                    f'Asking price cannot be lower than player\'s base value ({min_price} монет)')
         
         return cleaned_data
 
@@ -61,7 +66,7 @@ class TransferOfferForm(forms.ModelForm):
             # Устанавливаем минимальную цену предложения равной запрашиваемой цене
             self.fields['bid_amount'].min_value = self.transfer_listing.asking_price
             self.fields['bid_amount'].initial = self.transfer_listing.asking_price
-            self.fields['bid_amount'].help_text = f'Minimum: {self.transfer_listing.asking_price} tokens'
+            self.fields['bid_amount'].help_text = f'Minimum: {self.transfer_listing.asking_price} монет'
     
     def clean(self):
         cleaned_data = super().clean()
@@ -74,11 +79,11 @@ class TransferOfferForm(forms.ModelForm):
             # Проверка, что предложение не ниже запрашиваемой цены
             if bid_amount < self.transfer_listing.asking_price:
                 self.add_error('bid_amount', 
-                    f'Bid amount cannot be lower than asking price ({self.transfer_listing.asking_price} tokens)')
+                    f'Bid amount cannot be lower than asking price ({self.transfer_listing.asking_price} монет)')
             
-            # Проверка, что у клуба-покупателя достаточно токенов
-            if self.bidding_club.owner and self.bidding_club.owner.tokens < bid_amount:
+            # Проверка, что у клуба-покупателя достаточно денег
+            if self.bidding_club.owner and self.bidding_club.owner.money < bid_amount:
                 self.add_error('bid_amount', 
-                    f'You do not have enough tokens. Available: {self.bidding_club.owner.tokens}')
+                    f'You do not have enough money. Available: {self.bidding_club.owner.money} монет')
         
         return cleaned_data

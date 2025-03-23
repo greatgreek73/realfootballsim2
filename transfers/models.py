@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from datetime import timedelta
 
 from players.models import Player
 from clubs.models import Club
@@ -15,12 +16,21 @@ class TransferListing(models.Model):
         ('active', 'Active'),
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
+        ('expired', 'Expired'),
+    )
+    
+    DURATION_CHOICES = (
+        (5, '5 минут'),
+        (30, '30 минут'),
+        (60, '60 минут'),
     )
     
     player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='transfer_listings')
     club = models.ForeignKey(Club, on_delete=models.CASCADE, related_name='transfer_listings')
     asking_price = models.PositiveIntegerField()
     listed_at = models.DateTimeField(default=timezone.now)
+    duration = models.PositiveIntegerField(choices=DURATION_CHOICES, default=30, help_text='Длительность трансфера в минутах')
+    expires_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     description = models.TextField(blank=True, null=True)
     
@@ -29,8 +39,30 @@ class TransferListing(models.Model):
         verbose_name = 'Transfer Listing'
         verbose_name_plural = 'Transfer Listings'
     
+    def save(self, *args, **kwargs):
+        # При создании листинга устанавливаем время окончания
+        if not self.expires_at:
+            self.expires_at = self.listed_at + timedelta(minutes=self.duration)
+        super().save(*args, **kwargs)
+    
     def __str__(self):
-        return f"{self.player.full_name} - {self.asking_price} tokens"
+        return f"{self.player.full_name} - {self.asking_price} монет"
+    
+    def is_expired(self):
+        """
+        Проверяет, истекло ли время трансфера
+        """
+        return timezone.now() >= self.expires_at
+    
+    def time_remaining(self):
+        """
+        Возвращает оставшееся время трансфера в секундах
+        """
+        if self.status != 'active':
+            return 0
+        
+        remaining = self.expires_at - timezone.now()
+        return max(0, remaining.total_seconds())
     
     def cancel(self):
         """
@@ -55,6 +87,20 @@ class TransferListing(models.Model):
         self.offers.filter(status='pending').update(status='rejected')
         
         return True
+        
+    def expire(self):
+        """
+        Помечает трансферный листинг как истекший
+        """
+        if self.status == 'active':
+            self.status = 'expired'
+            self.save()
+            
+            # Отменяем все ожидающие предложения
+            self.offers.filter(status='pending').update(status='cancelled')
+            
+            return True
+        return False
 
 class TransferOffer(models.Model):
     """
@@ -80,7 +126,7 @@ class TransferOffer(models.Model):
         verbose_name_plural = 'Transfer Offers'
     
     def __str__(self):
-        return f"{self.bidding_club.name} - {self.bid_amount} tokens for {self.transfer_listing.player.full_name}"
+        return f"{self.bidding_club.name} - {self.bid_amount} монет for {self.transfer_listing.player.full_name}"
     
     def accept(self):
         """
@@ -90,9 +136,9 @@ class TransferOffer(models.Model):
         if self.status != 'pending' or self.transfer_listing.status != 'active':
             return False
         
-        # Проверяем, что у покупателя достаточно токенов
+        # Проверяем, что у покупателя достаточно денег
         buyer = self.bidding_club.owner
-        if not buyer or buyer.tokens < self.bid_amount:
+        if not buyer or buyer.money < self.bid_amount:
             return False
         
         # Получаем продавца
@@ -101,8 +147,8 @@ class TransferOffer(models.Model):
             return False
         
         # Выполняем финансовую транзакцию
-        buyer.tokens -= self.bid_amount
-        seller.tokens += self.bid_amount
+        buyer.money -= self.bid_amount
+        seller.money += self.bid_amount
         buyer.save()
         seller.save()
         
@@ -166,4 +212,4 @@ class TransferHistory(models.Model):
         verbose_name_plural = 'Transfer History'
     
     def __str__(self):
-        return f"{self.player.full_name}: {self.from_club.name} → {self.to_club.name} ({self.transfer_fee} tokens)"
+        return f"{self.player.full_name}: {self.from_club.name} → {self.to_club.name} ({self.transfer_fee} монет)"

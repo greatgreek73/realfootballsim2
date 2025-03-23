@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     'tournaments.apps.TournamentsConfig',
     'django_celery_beat',
     'channels',  # Добавляем channels
-    'transfers',
+    'transfers',  # Явное указание конфига приложения
 ]
 
 MIDDLEWARE = [

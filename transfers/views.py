@@ -2,8 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
 from django.db.models import Q
+from django.views.decorators.http import require_POST
+from django.utils import timezone
 
 from .models import TransferListing, TransferOffer, TransferHistory
 from .forms import TransferListingForm, TransferOfferForm
@@ -275,7 +277,7 @@ def accept_transfer_offer(request, offer_id):
     if offer.accept():
         messages.success(
             request, 
-            f'Transfer completed! {offer.transfer_listing.player.full_name} has been transferred to {offer.bidding_club.name} for {offer.bid_amount} tokens.'
+            f'Transfer completed! {offer.transfer_listing.player.full_name} has been transferred to {offer.bidding_club.name} for {offer.bid_amount} монет.'
         )
     else:
         messages.error(request, 'There was an error processing the transfer.')
@@ -341,3 +343,33 @@ def transfer_history(request):
     }
     
     return render(request, 'transfers/transfer_history.html', context)
+
+@require_POST
+@login_required
+def expire_transfer_listing(request, listing_id):
+    """
+    API-эндпоинт для обработки истечения срока трансфера
+    """
+    listing = get_object_or_404(TransferListing, id=listing_id)
+    
+    # Проверяем, действительно ли истек срок
+    if not listing.is_expired() or listing.status != 'active':
+        return JsonResponse({'success': False, 'message': 'Listing is not expired or not active'})
+    
+    # Проверяем, есть ли ставки на аукционе
+    highest_offer = listing.offers.filter(status='pending').order_by('-bid_amount').first()
+    
+    if highest_offer:
+        # Если есть ставки, принимаем наивысшую
+        success = highest_offer.accept()
+        return JsonResponse({
+            'success': success,
+            'message': 'Auction completed, highest bid accepted' if success else 'Failed to complete auction'
+        })
+    else:
+        # Если ставок нет, просто помечаем листинг как истекший
+        success = listing.expire()
+        return JsonResponse({
+            'success': success,
+            'message': 'Listing marked as expired' if success else 'Failed to expire listing'
+        })
