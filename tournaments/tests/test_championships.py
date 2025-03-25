@@ -135,7 +135,7 @@ class ChampionshipSystemTests(TestCase):
             # Собираем все времена матчей в этом туре
             match_times = set()
             for match in round_matches:
-                match_times.add(match.match.date)
+                match_times.add(match.match.datetime)
             
             # Проверяем, что все матчи в одно время
             self.assertEqual(len(match_times), 1,

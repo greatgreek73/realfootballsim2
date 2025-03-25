@@ -120,7 +120,7 @@ class ChampionshipSystemTests(TestCase):
             # Собираем все даты матчей в этом туре
             match_dates = set()
             for match in round_matches:
-                match_dates.add(match.match.date.date())
+                match_dates.add(match.match.datetime.date())
             
             # Проверяем, что все матчи в один день
             self.assertEqual(len(match_dates), 1,

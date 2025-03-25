@@ -37,7 +37,7 @@ class Command(BaseCommand):
             self.stdout.write(f'Found {matches.count()} matches to simulate')
             for match in matches:
                 self.stdout.write(
-                    f'- {match.date}: {match.home_team} vs {match.away_team}'
+                    f'- {match.datetime}: {match.home_team} vs {match.away_team}'
                 )
 
         if matches.exists():
@@ -45,7 +45,7 @@ class Command(BaseCommand):
             
             for match in matches:
                 try:
-                    msg = f'Simulating match: {match.home_team} vs {match.away_team} (scheduled for {match.date})'
+                    msg = f'Simulating match: {match.home_team} vs {match.away_team} (scheduled for {match.datetime})'
                     self.stdout.write(msg)
                     logger.info(msg)
                     
