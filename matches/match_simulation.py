@@ -176,7 +176,7 @@ def simulate_one_minute(match):
                 possessing_team = match.home_team
                 starting_player = choose_player(match.home_team, "GK")
                 match.current_player_with_ball = starting_player
-                match.st_posseions += 1
+                match.st_posessions += 1
 
             # Создаем событие начала минуты
             start_event_desc = f"Начало минуты {minute}: команда {possessing_team} начинает атаку."
@@ -198,7 +198,7 @@ def simulate_one_minute(match):
                     
                 if match.current_zone != "FWD":
                     target_zone = transition_map.get(match.current_zone, match.current_zone)
-                    match.st_posseions += 1
+                    match.st_posessions += 1
                     if random.random() < PASS_SUCCESS_PROB:
                         new_player = choose_player(possessing_team, target_zone,
                             exclude_ids={match.current_player_with_ball.id} if match.current_player_with_ball else set())
