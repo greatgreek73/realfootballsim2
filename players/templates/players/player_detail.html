@@ -482,13 +482,15 @@
                         {% endif %}
                     </div>
 
-                    <!-- Кнопка "Improve Stats" -->
+                    <!-- Кнопка "Improve Stats" только для владельца команды -->
+                    {% if user.is_authenticated and player.club.owner == user %}
                     <div class="mt-4 text-center">
                         <!-- При клике открываем модальное окно -->
                         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#boostModal">
                             Improve Stats
                         </button>
                     </div>
+                    {% endif %}
 
                     <!-- Если текущий пользователь — владелец клуба, показать кнопку «Удалить игрока» -->
                     {% if user.is_authenticated and player.club.owner == user %}
