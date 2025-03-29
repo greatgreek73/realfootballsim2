@@ -42,6 +42,14 @@ def transfer_market(request):
     if max_price:
         listings = listings.filter(asking_price__lte=max_price)
     
+    # Получаем все ставки для активных листингов
+    listing_offers = {}
+    for listing in listings:
+        # Получаем все ставки для данного листинга, отсортированные по времени (сначала новые)
+        offers = listing.offers.exclude(status='cancelled').order_by('-created_at')
+        if offers.exists():
+            listing_offers[listing.id] = offers
+    
     # Добавляем пагинацию
     paginator = Paginator(listings, 30)  # 30 листингов на страницу
     page_number = request.GET.get('page', 1)
@@ -56,6 +64,7 @@ def transfer_market(request):
     
     context = {
         'listings': page_obj,  # пагинированные листинги
+        'listing_offers': listing_offers,  # словарь со ставками для каждого листинга
         'user_club': user_club,
         'positions': Player.POSITIONS,
         'filters': {
@@ -146,6 +155,18 @@ def create_transfer_listing(request):
         messages.error(request, 'You need to have a club to list players for transfer.')
         return redirect('transfers:transfer_market')
     
+    # Проверяем, был ли передан ID игрока в URL
+    player_id = request.GET.get('player')
+    initial_data = {}
+    
+    # Если ID игрока передан и игрок существует, предварительно заполняем форму
+    if player_id:
+        try:
+            player = Player.objects.get(id=player_id, club=user_club)
+            initial_data['player'] = player.id
+        except Player.DoesNotExist:
+            pass
+    
     if request.method == 'POST':
         form = TransferListingForm(request.POST, club=user_club)
         if form.is_valid():
@@ -155,7 +176,7 @@ def create_transfer_listing(request):
             messages.success(request, f'{listing.player.full_name} has been listed on the transfer market.')
             return redirect('transfers:club_transfers')
     else:
-        form = TransferListingForm(club=user_club)
+        form = TransferListingForm(club=user_club, initial=initial_data)
     
     context = {
         'form': form,

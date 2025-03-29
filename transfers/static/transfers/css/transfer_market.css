@@ -1,0 +1,39 @@
+/* Стили для кликабельных цен в трансферном рынке */
+.price-container {
+    padding: 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.price-container:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+    transform: scale(1.02);
+}
+
+.price-container:active {
+    transform: scale(0.98);
+}
+
+/* Значок для указания на возможность клика */
+.price-container:after {
+    content: '👁️';
+    display: inline-block;
+    margin-left: 5px;
+    opacity: 0.5;
+    font-size: 14px;
+}
+
+/* Стили для отображения бейджа с количеством ставок */
+.price-container .badge {
+    display: inline-block;
+    margin-left: 5px;
+}
+
+/* Стили для модального окна истории ставок */
+.modal .list-group-item {
+    transition: background-color 0.2s;
+}
+
+.modal .list-group-item:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
