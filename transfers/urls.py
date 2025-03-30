@@ -14,4 +14,5 @@ urlpatterns = [
     path('offer/<int:offer_id>/reject/', views.reject_transfer_offer, name='reject_transfer_offer'),
     path('history/', views.transfer_history, name='transfer_history'),
     path('api/expire-listing/<int:listing_id>/', views.expire_transfer_listing, name='expire_transfer_listing'),
+    path('api/listing-info/<int:listing_id>/', views.get_listing_info, name='get_listing_info'),
 ]

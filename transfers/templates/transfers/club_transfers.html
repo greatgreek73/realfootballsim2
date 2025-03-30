@@ -28,7 +28,7 @@
                                         <span class="text-danger">{{ listing.asking_price }} tokens</span>
                                         <div>
                                             <a href="{% url 'transfers:transfer_listing_detail' listing.id %}" class="btn btn-sm btn-primary">View</a>
-                                            <a href="{% url 'transfers:cancel_transfer_listing' listing.id %}" class="btn btn-sm btn-danger">Cancel</a>
+                                            <!-- Кнопка отмены листинга отключена -->
                                         </div>
                                     </div>
                                 </div>

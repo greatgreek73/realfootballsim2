@@ -235,80 +235,27 @@ def club_transfers(request):
 @login_required
 def cancel_transfer_listing(request, listing_id):
     """
-    Отменяет трансферный листинг
+    Отменяет трансферный листинг - функция отключена
     """
-    listing = get_object_or_404(TransferListing, id=listing_id)
-    
-    # Проверяем, является ли пользователь владельцем клуба-продавца
-    try:
-        user_club = request.user.club
-    except:
-        return HttpResponseForbidden("You don't have permission to cancel this listing.")
-    
-    if user_club != listing.club:
-        return HttpResponseForbidden("You don't have permission to cancel this listing.")
-    
-    if listing.status != 'active':
-        messages.error(request, 'This listing cannot be cancelled.')
-        return redirect('transfers:club_transfers')
-    
-    listing.cancel()
-    messages.success(request, f'Listing for {listing.player.full_name} has been cancelled.')
+    messages.info(request, 'Отмена трансферного листинга не разрешена. Если действие сделано, то сделано.')
     return redirect('transfers:club_transfers')
 
 @login_required
 def cancel_transfer_offer(request, offer_id):
     """
-    Отменяет предложение по трансферу
+    Отменяет предложение по трансферу - функция отключена
     """
     offer = get_object_or_404(TransferOffer, id=offer_id)
-    
-    # Проверяем, является ли пользователь владельцем клуба-покупателя
-    try:
-        user_club = request.user.club
-    except:
-        return HttpResponseForbidden("You don't have permission to cancel this offer.")
-    
-    if user_club != offer.bidding_club:
-        return HttpResponseForbidden("You don't have permission to cancel this offer.")
-    
-    if offer.status != 'pending':
-        messages.error(request, 'This offer cannot be cancelled.')
-        return redirect('transfers:transfer_listing_detail', listing_id=offer.transfer_listing.id)
-    
-    offer.cancel()
-    messages.success(request, 'Your offer has been cancelled.')
+    messages.info(request, 'Отмена ставки не разрешена. Если действие сделано, то сделано.')
     return redirect('transfers:transfer_listing_detail', listing_id=offer.transfer_listing.id)
 
 @login_required
 def accept_transfer_offer(request, offer_id):
     """
-    Принимает предложение по трансферу
+    Принимает предложение по трансферу - теперь эта функция недоступна вручную
+    Аукционы заканчиваются только автоматически по истечении времени
     """
-    offer = get_object_or_404(TransferOffer, id=offer_id)
-    
-    # Проверяем, является ли пользователь владельцем клуба-продавца
-    try:
-        user_club = request.user.club
-    except:
-        return HttpResponseForbidden("You don't have permission to accept this offer.")
-    
-    if user_club != offer.transfer_listing.club:
-        return HttpResponseForbidden("You don't have permission to accept this offer.")
-    
-    if offer.status != 'pending' or offer.transfer_listing.status != 'active':
-        messages.error(request, 'This offer cannot be accepted.')
-        return redirect('transfers:club_transfers')
-    
-    # Принимаем предложение, что запускает процесс трансфера
-    if offer.accept():
-        messages.success(
-            request, 
-            f'Transfer completed! {offer.transfer_listing.player.full_name} has been transferred to {offer.bidding_club.name} for {offer.bid_amount} монет.'
-        )
-    else:
-        messages.error(request, 'There was an error processing the transfer.')
-    
+    messages.info(request, 'Аукционы теперь заканчиваются автоматически по истечении времени. Ручное принятие ставок отключено.')
     return redirect('transfers:club_transfers')
 
 @login_required
@@ -399,4 +346,24 @@ def expire_transfer_listing(request, listing_id):
         return JsonResponse({
             'success': success,
             'message': 'Listing marked as expired' if success else 'Failed to expire listing'
+        })
+
+def get_listing_info(request, listing_id):
+    """
+    API-эндпоинт для получения информации о текущем времени окончания аукциона
+    """
+    listing = get_object_or_404(TransferListing, id=listing_id)
+    
+    # Если листинг активен, отправляем информацию о нем
+    if listing.status == 'active':
+        return JsonResponse({
+            'success': True,
+            'expires_at': listing.expires_at.isoformat(),
+            'time_remaining': listing.time_remaining(),
+            'highest_bid': listing.get_highest_offer().bid_amount if listing.get_highest_offer() else listing.asking_price
+        })
+    else:
+        return JsonResponse({
+            'success': False,
+            'message': 'Listing is not active'
         })

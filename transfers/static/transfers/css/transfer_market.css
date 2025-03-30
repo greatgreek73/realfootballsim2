@@ -37,3 +37,56 @@
 .modal .list-group-item:hover {
     background-color: rgba(0, 123, 255, 0.05);
 }
+
+/* Стили для счетчика времени */
+.countdown-timer {
+    font-family: monospace;
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+/* Стиль для окончания времени (менее 30 секунд) */
+.countdown-ending {
+    background-color: rgba(255, 0, 0, 0.1);
+    color: #dc3545;
+    font-weight: bold;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+/* Анимация пульсации для окончания времени */
+@keyframes pulse {
+    0% { opacity: 0.8; }
+    50% { opacity: 1; }
+    100% { opacity: 0.8; }
+}
+
+/* Стиль для отображения продления времени */
+.time-extended {
+    background-color: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+    animation: highlight 1s ease-in-out;
+}
+
+/* Анимация подсветки при продлении времени */
+@keyframes highlight {
+    0% { transform: scale(1); background-color: rgba(40, 167, 69, 0.2); }
+    50% { transform: scale(1.1); background-color: rgba(40, 167, 69, 0.5); }
+    100% { transform: scale(1); background-color: rgba(40, 167, 69, 0.2); }
+}
+
+/* Информационное сообщение о правилах аукциона */
+.auction-info {
+    background-color: rgba(0, 123, 255, 0.1);
+    border-left: 4px solid #007bff;
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+}
+
+.auction-info-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #007bff;
+}
