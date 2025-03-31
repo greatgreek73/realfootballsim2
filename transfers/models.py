@@ -134,6 +134,39 @@ class TransferOffer(models.Model):
     def __str__(self):
         return f"{self.bidding_club.name} - {self.bid_amount} монет for {self.transfer_listing.player.full_name}"
     
+    def save(self, *args, **kwargs):
+        """
+        Переопределяем метод save для проверки необходимости продления времени аукциона
+        """
+        is_new = self.pk is None  # Проверка, является ли объект новым
+        
+        result = super().save(*args, **kwargs)
+        
+        # Если это новая ставка и она является ставкой на активный листинг
+        if is_new and self.transfer_listing and self.transfer_listing.status == 'active':
+            # Проверяем, нужно ли продлить время аукциона
+            self.extend_auction_if_needed()
+            
+        return result
+    
+    def extend_auction_if_needed(self):
+        """
+        Продлевает время аукциона на 10 секунд, если до окончания осталось менее 30 секунд
+        """
+        transfer_listing = self.transfer_listing
+        time_remaining = transfer_listing.time_remaining()
+        
+        # Если до окончания аукциона осталось менее 30 секунд
+        if time_remaining > 0 and time_remaining < 30:
+            from django.utils import timezone
+            
+            # Продлеваем время аукциона на 10 секунд
+            transfer_listing.expires_at = timezone.now() + timedelta(seconds=time_remaining + 10)
+            transfer_listing.save(update_fields=['expires_at'])
+            
+            return True
+        return False
+    
     def accept(self):
         """
         Принимает предложение и выполняет трансфер

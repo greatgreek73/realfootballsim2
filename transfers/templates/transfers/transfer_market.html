@@ -1,7 +1,12 @@
 {% extends 'core/base.html' %}
 {% load static %}
+{% load transfer_tags %}
 
 {% block title %}Transfer Market{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'transfers/css/transfer_market.css' %}">
+{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
@@ -46,6 +51,18 @@
         </div>
     </div>
     
+    <!-- Информация о новых правилах аукциона -->
+    <div class="auction-info mb-4">
+        <div class="auction-info-title">Новые правила аукциона</div>
+        <ul class="mb-0">
+            <li>Аукционы завершаются <strong>только автоматически</strong> по истечении времени</li>
+            <li>Если до окончания аукциона остаётся <strong>менее 30 секунд</strong> и поступает новая ставка, время аукциона продлевается на <strong>10 секунд</strong></li>
+            <li>Ручное принятие ставок владельцем листинга больше не доступно</li>
+            <li><strong>Нельзя отменить</strong> выставленный на продажу листинг игрока</li>
+            <li><strong>Нельзя отменить</strong> сделанную ставку: если действие сделано, то сделано</li>
+        </ul>
+    </div>
+
     <!-- Таблица трансферов -->
     <div class="card mb-4">
         <div class="card-header">
@@ -82,13 +99,21 @@
                             <td>{{ listing.player.overall_rating }}</td>
                             <td>
                                 {% with highest_offer=listing.get_highest_offer %}
-                                {% if highest_offer %}
-                                    <strong class="text-danger">{{ highest_offer.bid_amount }} монет</strong>
-                                    <small class="d-block text-muted">Bid by {{ highest_offer.bidding_club.name }}</small>
-                                {% else %}
-                                    <strong class="text-danger">{{ listing.asking_price }} монет</strong>
-                                    <small class="d-block text-muted">Starting price</small>
-                                {% endif %}
+                                <div class="price-container" data-listing-id="{{ listing.id }}" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#offerHistoryModal-{{ listing.id }}">
+                                    {% if highest_offer %}
+                                        <strong class="text-danger">{{ highest_offer.bid_amount }} монет</strong>
+                                        <small class="d-block text-muted">Bid by {{ highest_offer.bidding_club.name }}</small>
+                                    {% else %}
+                                        <strong class="text-danger">{{ listing.asking_price }} монет</strong>
+                                        <small class="d-block text-muted">Starting price</small>
+                                    {% endif %}
+                                    
+                                    {% if listing.id in listing_offers %}
+                                        <small class="badge bg-info text-white mt-1">
+                                            {{ listing_offers|get_item:listing.id|length }} offer(s)
+                                        </small>
+                                    {% endif %}
+                                </div>
                                 {% endwith %}
                             </td>
                             <td>
@@ -192,4 +217,46 @@
         </div>
     {% endif %}
 </div>
+
+<!-- Модальные окна для истории ставок -->
+{% for listing in listings %}
+    {% if listing.id in listing_offers %}
+        <div class="modal fade" id="offerHistoryModal-{{ listing.id }}" tabindex="-1" aria-labelledby="offerHistoryModalLabel-{{ listing.id }}" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="offerHistoryModalLabel-{{ listing.id }}">
+                            Bid History for {{ listing.player.full_name }}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="list-group">
+                            {% for offer in listing_offers|get_item:listing.id %}
+                                <div class="list-group-item list-group-item-action {% if forloop.first %}list-group-item-success{% endif %}">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ offer.bidding_club.name }}</h6>
+                                        <small>{{ offer.created_at|timesince }} ago</small>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <strong class="text-danger">{{ offer.bid_amount }} монет</strong>
+                                        <span class="badge {% if offer.status == 'pending' %}bg-primary{% elif offer.status == 'accepted' %}bg-success{% elif offer.status == 'rejected' %}bg-danger{% elif offer.status == 'cancelled' %}bg-secondary{% endif %}">
+                                            {{ offer.get_status_display }}
+                                        </span>
+                                    </div>
+                                    {% if offer.message %}
+                                        <small class="text-muted mt-2 d-block">{{ offer.message }}</small>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endfor %}
 {% endblock %}

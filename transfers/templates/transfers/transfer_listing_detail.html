@@ -164,7 +164,9 @@
                     <div class="card-body">
                         <p>Вы являетесь продавцом этого игрока.</p>
                         {% if listing.status == 'active' %}
-                            <a href="{% url 'transfers:cancel_transfer_listing' listing.id %}" class="btn btn-danger w-100 mb-3">Отменить листинг</a>
+                            <div class="alert alert-info mb-3">
+                                Отмена листинга игрока невозможна: если действие сделано, то сделано.
+                            </div>
                         {% else %}
                             <div class="alert alert-info">
                                 Этот листинг имеет статус: {{ listing.get_status_display }}.
@@ -220,7 +222,9 @@
                                         <p class="text-success fw-bold">{{ offer.bid_amount }} монет</p>
                                         <p class="small text-muted">Статус: {{ offer.get_status_display }}</p>
                                         {% if offer.status == 'pending' %}
-                                            <a href="{% url 'transfers:cancel_transfer_offer' offer.id %}" class="btn btn-danger btn-sm">Отменить ставку</a>
+                                            <div class="alert alert-info small mb-0">
+                                                Отмена ставки невозможна: если действие сделано, то сделано.
+                                            </div>
                                         {% endif %}
                                     </div>
                                 </div>

@@ -28,6 +28,11 @@ def boost_player(request, player_id):
     player = get_object_or_404(Player, pk=player_id)
     user = request.user
 
+    # Проверяем, является ли пользователь владельцем клуба
+    if player.club and player.club.owner != user:
+        messages.error(request, "У вас нет прав на улучшение этого игрока.")
+        return redirect('players:player_detail', pk=player_id)
+
     if request.method == 'POST':
         group_name = request.POST.get('group', '').strip()
         if not group_name:
@@ -94,6 +99,13 @@ def boost_player_ajax(request, player_id):
 
     player = get_object_or_404(Player, pk=player_id)
     user = request.user
+
+    # Проверяем, является ли пользователь владельцем клуба
+    if player.club and player.club.owner != user:
+        return JsonResponse({
+            'success': False,
+            'message': "У вас нет прав на улучшение этого игрока."
+        }, status=403)
 
     try:
         data = json.loads(request.body)
