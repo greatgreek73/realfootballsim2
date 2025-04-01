@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.events && Array.isArray(data.events)) {
                     const eventsList = document.getElementById('originalEvents');
                     if (eventsList) {
-                        const listGroup = eventsList.querySelector('.list-group');
+                        const listGroup = eventsList.querySelector('.events-box');
                         if (listGroup) {
                             // Если это частичное обновление (например, всего одно событие)
                             // то просто добавляем его в начало списка, а не заменяем весь список
