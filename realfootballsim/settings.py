@@ -157,7 +157,7 @@ CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_BEAT_SCHEDULE = {
     'simulate-every-5-seconds': {
         'task': 'tournaments.simulate_active_matches',
-        'schedule': 1.0,
+        'schedule': 5.0,
     },
     'check-season-end': {
         'task': 'tournaments.check_season_end',
