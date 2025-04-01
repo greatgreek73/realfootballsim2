@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const eventsList = document.getElementById('originalEvents');
                     if (eventsList) {
                         const listGroup = eventsList.querySelector('.events-box');
-                        const stat = eventsList.querySelector('.stat-box');
+                        const stat = document.querySelector('.stat-box');
                         stat.innerHTML = `
                         <h5>Passes : ${data.events[0].st_passes}</h5>
                         <h5>Shoots : ${data.events[0].st_shoots}</h5>
