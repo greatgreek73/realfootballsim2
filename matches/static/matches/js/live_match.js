@@ -57,14 +57,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.events && Array.isArray(data.events)) {
                     const eventsList = document.getElementById('originalEvents');
                     if (eventsList) {
-                        const listGroup = eventsList.querySelector('.events-box');
                         const stat = document.querySelector('.stat-box');
+                        console.log('stat',data.events[0].st_passes)
                         stat.innerHTML = `
                         <h5>Passes : ${data.events[0].st_passes}</h5>
                         <h5>Shoots : ${data.events[0].st_shoots}</h5>
                         <h5>Posessions : ${data.events[0].st_posessions}</h5>
                         <h5>Fouls : ${data.events[0].st_fouls}</h5>
                         `;
+                        const listGroup = eventsList.querySelector('.events-box');
                         if (listGroup) {
                             // Если это частичное обновление (например, всего одно событие)
                             // то просто добавляем его в начало списка, а не заменяем весь список
