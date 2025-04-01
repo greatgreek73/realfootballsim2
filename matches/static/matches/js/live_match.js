@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         matchSocket.onmessage = function(e) {
-            console.log('Received WebSocket message:', e.data);
+            // console.log('Received WebSocket message:', e.data);
             
             try {
                 const data = JSON.parse(e.data);
@@ -60,10 +60,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         const stat = document.querySelector('.stat-box');
                         console.log('stat',data.events[0].st_passes)
                         stat.innerHTML = `
-                        <h5>Passes : ${data.events[0].st_passes}</h5>
-                        <h5>Shoots : ${data.events[0].st_shoots}</h5>
-                        <h5>Posessions : ${data.events[0].st_posessions}</h5>
-                        <h5>Fouls : ${data.events[0].st_fouls}</h5>
+                        <h5>Passes : ${data.st_passes}</h5>
+                        <h5>Shoots : ${data.st_shoots}</h5>
+                        <h5>Posessions : ${data.st_posessions}</h5>
+                        <h5>Fouls : ${data.st_fouls}</h5>
                         `;
                         const listGroup = eventsList.querySelector('.events-box');
                         if (listGroup) {
