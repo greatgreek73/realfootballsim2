@@ -145,12 +145,12 @@
                         <!-- Изначальный список событий -->
                         <div id="originalEvents" class="mb-4 col-md-4">
                             <div class="list-group events-box">
-                                <!-- {% for event in match_events %} -->
+                                {% for event in match_events %}
                                 <div class="list-group-item">
                                     <strong>{{ event.minute }}'</strong>
                                     - {{ event.event_type }}: {{ event.description }}
                                 </div>
-                                <!-- {% endfor %} -->
+                                {% endfor %}
                             </div>
                         </div>
 
@@ -544,6 +544,7 @@
     }
     #originalEvents {
         overflow-y: auto;
+        height: 60px;
     }
 </style>
 {% endblock %}

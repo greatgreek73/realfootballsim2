@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('WebSocket connection closed:', e.code, e.reason);
             console.error('Match socket closed unexpectedly');
             // Попытка переподключения через 5 секунд
-            setTimeout(() => window.location.reload(), 5000);
+            // setTimeout(() => window.location.reload(), 5000);
         };
 
         matchSocket.onerror = function(e) {
