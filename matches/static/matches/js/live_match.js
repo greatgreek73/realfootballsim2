@@ -58,6 +58,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     const eventsList = document.getElementById('originalEvents');
                     if (eventsList) {
                         const listGroup = eventsList.querySelector('.events-box');
+                        const stat = eventsList.querySelector('.stat-box');
+                        stat.innerHTML = `
+                        <h5>Passes : ${data.events[0].st_passes}</h5>
+                        <h5>Shoots : ${data.events[0].st_shoots}</h5>
+                        <h5>Posessions : ${data.events[0].st_posessions}</h5>
+                        <h5>Fouls : ${data.events[0].st_fouls}</h5>
+                        `;
                         if (listGroup) {
                             // Если это частичное обновление (например, всего одно событие)
                             // то просто добавляем его в начало списка, а не заменяем весь список
@@ -99,13 +106,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                 }
 
                                 // Добавляем анимацию появления
-                                setTimeout(() => {
-                                    eventDiv.classList.add('new-event-visible');
-                                }, 50);
+                                // setTimeout(() => {
+                                //     eventDiv.classList.add('new-event-visible');
+                                // }, 50);
                             } else {
                                 // Полное обновление - как сейчас
                                 // Очищаем старые события
-                                listGroup.innerHTML = '';
+                                //listGroup.innerHTML = '';
                                 
                                 // Добавляем новые события (сортируем в порядке минут)
                                 data.events
