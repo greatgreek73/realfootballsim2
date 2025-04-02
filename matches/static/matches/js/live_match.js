@@ -110,6 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 // setTimeout(() => {
                                 //     eventDiv.classList.add('new-event-visible');
                                 // }, 50);
+                                eventDiv.classList.add('new-event-visible');
                             } else {
                                 // Полное обновление - как сейчас
                                 // Очищаем старые события
