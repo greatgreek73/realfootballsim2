@@ -220,6 +220,7 @@ class PreMatchPreparation:
                 'positioning': player.positioning,
                 'aerial': player.aerial,
                 'command': player.command,
+                'morale': player.morale,
                 'shot_reading': player.shot_reading
             }
         elif 'Back' in player.position:
@@ -229,6 +230,7 @@ class PreMatchPreparation:
                 'marking': player.marking,
                 'tackling': player.tackling,
                 'strength': player.strength,
+                'morale': player.morale,
                 'positioning': player.positioning
             }
         elif 'Midfielder' in player.position:
@@ -238,6 +240,7 @@ class PreMatchPreparation:
                 'passing': player.passing,
                 'vision': player.vision,
                 'stamina': player.stamina,
+                'morale': player.morale,
                 'work_rate': player.work_rate
             }
         else:
@@ -247,6 +250,7 @@ class PreMatchPreparation:
                 'finishing': player.finishing,
                 'dribbling': player.dribbling,
                 'long_range': player.long_range,
+                'morale': player.morale,
                 'accuracy': player.accuracy
             }
 

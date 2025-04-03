@@ -296,6 +296,30 @@ def simulate_one_minute(match):
         logger.error(f"simulate_one_minute({match.id}) => {str(e)}")
         raise
 
+def passed_0_30():
+    return
+
+def passed_31_40():
+    return
+
+def passed_41_50():
+    return
+
+def passed_51_60():
+    return
+
+def passed_61_70():
+    return
+
+def passed_71_80():
+    return
+
+def passed_81_90():
+    return
+
+def passed_91_100():
+    return
+
 def simulate_match(match_id: int):
     """
     Полная симуляция матча (от 0 до 90 минут) в реальном времени.
@@ -324,6 +348,8 @@ def simulate_match(match_id: int):
 
         for _ in range(90):
             match = simulate_one_minute(match)
+            if _ >30:
+                passed_0_30()
             match.save()
             match.refresh_from_db()
             if match.status == 'finished':
