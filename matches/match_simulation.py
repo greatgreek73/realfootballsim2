@@ -144,6 +144,19 @@ def ensure_match_lineup_set(match: Match, for_home: bool) -> None:
 
 def process_injury():
     return
+
+def decrease_stamina(team, player, val):
+    return
+
+def increase_stamina(team, player, val):
+    return
+
+def decrease_morale(team, player, val):
+    return
+
+def increase_morale(team, player, val):
+    return
+
 def simulate_one_minute(match):
     """
     Симулирует одну минуту матча, создавая события и обновляя состояние.
@@ -169,6 +182,7 @@ def simulate_one_minute(match):
                 return match
 
             minute = match.current_minute + 1
+            decrease_stamina('all', 'all', 1)
 
             # Определяем владеющую команду
             if match.current_player_with_ball:
@@ -202,6 +216,7 @@ def simulate_one_minute(match):
                     if random.random() < INJURY_PROB:
                         match.st_injury += 1
                         process_injury();
+                        decrease_morale(possessing_team, 'all', 1)
                     
                 if match.current_zone != "FWD":
                     target_zone = transition_map.get(match.current_zone, match.current_zone)
