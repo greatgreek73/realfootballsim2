@@ -306,25 +306,28 @@ def simulate_one_minute(match):
 def passed_0_30():
     return
 
-def passed_31_40():
+def passed_30_41():
     return
 
-def passed_41_50():
+def passed_40_51():
     return
 
-def passed_51_60():
+def passed_50_61():
     return
 
-def passed_61_70():
+def passed_60_71():
     return
 
-def passed_71_80():
+def passed_70_81():
     return
 
-def passed_81_90():
+def passed_80_91():
     return
 
-def passed_91_100():
+def passed_90_100():
+    return
+
+def change_all_morale_value():
     return
 
 def simulate_match(match_id: int):
@@ -355,8 +358,22 @@ def simulate_match(match_id: int):
 
         for _ in range(90):
             match = simulate_one_minute(match)
-            if _ >30:
+            if _ >0 and _<31:
                 passed_0_30()
+            if _ >30 and _<41:
+                passed_30_41()
+            if _ >40 and _<51:
+                passed_40_51()
+            if _ >50 and _<61:
+                passed_50_61()
+            if _ >60 and _<71:
+                passed_60_71()
+            if _ >70 and _<81:
+                passed_70_81()
+            if _ >80 and _<91:
+                passed_80_91()
+            if _ >90:
+                passed_90_100()
             match.save()
             match.refresh_from_db()
             if match.status == 'finished':

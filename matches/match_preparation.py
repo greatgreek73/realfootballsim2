@@ -14,6 +14,7 @@ class PreMatchPreparation:
         'marking': 0.3,
         'tackling': 0.3,
         'strength': 0.2,
+        'stamina': 0.2,
         'positioning': 0.2
     }
 
@@ -28,6 +29,7 @@ class PreMatchPreparation:
         'finishing': 0.3,
         'dribbling': 0.3,
         'long_range': 0.2,
+        'stamina': 0.2,
         'accuracy': 0.2
     }
 
@@ -36,6 +38,7 @@ class PreMatchPreparation:
         'handling': 0.25,
         'positioning': 0.2,
         'aerial': 0.1,
+        'stamina': 0.2,
         'command': 0.1,
         'shot_reading': 0.1
     }
@@ -219,6 +222,7 @@ class PreMatchPreparation:
                 'handling': player.handling,
                 'positioning': player.positioning,
                 'aerial': player.aerial,
+                'stamina': player.stamina,
                 'command': player.command,
                 'morale': player.morale,
                 'shot_reading': player.shot_reading
@@ -230,6 +234,7 @@ class PreMatchPreparation:
                 'marking': player.marking,
                 'tackling': player.tackling,
                 'strength': player.strength,
+                'stamina': player.stamina,
                 'morale': player.morale,
                 'positioning': player.positioning
             }
@@ -250,6 +255,7 @@ class PreMatchPreparation:
                 'finishing': player.finishing,
                 'dribbling': player.dribbling,
                 'long_range': player.long_range,
+                'stamina': player.stamina,
                 'morale': player.morale,
                 'accuracy': player.accuracy
             }
