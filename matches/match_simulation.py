@@ -32,6 +32,7 @@ def send_update(match):
         "st_passes": match.st_passes,
         "st_posessions": match.st_posessions,
         "st_fouls": match.st_fouls,
+        "st_injury": match.st_injury,
         "status": match.status,
         "events": events_data,
     }
@@ -141,6 +142,8 @@ def ensure_match_lineup_set(match: Match, for_home: bool) -> None:
         else:
             match.away_lineup = club_lineup
 
+def process_injury():
+    return
 def simulate_one_minute(match):
     """
     Симулирует одну минуту матча, создавая события и обновляя состояние.
@@ -150,6 +153,7 @@ def simulate_one_minute(match):
     # BALL_OUT_PROB = 0.6
     BOUNCE_PROB = 0.7
     FOUL_PROB = 0.15
+    INJURY_PROB = 0.3
     transition_map = {"GK": "DEF", "DEF": "DM", "DM": "AM", "AM": "FWD"}
 
     try:
@@ -195,6 +199,9 @@ def simulate_one_minute(match):
                 if random.random() < FOUL_PROB:
                     match.st_fouls += 1
                     #To DO : process foul
+                    if random.random() < INJURY_PROB:
+                        match.st_injury += 1
+                        process_injury();
                     
                 if match.current_zone != "FWD":
                     target_zone = transition_map.get(match.current_zone, match.current_zone)

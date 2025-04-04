@@ -17,6 +17,11 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='match',
+            name='st_injury',
+            field=models.PositiveBigIntegerField(default=0),
+        ),
+        migrations.AddField(
+            model_name='match',
             name='st_passes',
             field=models.PositiveBigIntegerField(default=0),
         ),

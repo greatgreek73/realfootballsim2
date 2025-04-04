@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <h5>Shoots : ${data.st_shoots}</h5>
                         <h5>Posessions : ${data.st_posessions}</h5>
                         <h5>Fouls : ${data.st_fouls}</h5>
+                        <h5>Injuries : ${data.st_injury}</h5>
                         `;
                         const listGroup = eventsList.querySelector('.events-box');
                         if (listGroup) {
