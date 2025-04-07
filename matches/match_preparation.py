@@ -315,8 +315,8 @@ class PreMatchPreparation:
             return False
 
         # 2) Рассчитываем силы
-        self.team_strengths['home'] = self.calculate_team_strength(self.home_lineup, self.home_team, True)
-        self.team_strengths['away'] = self.calculate_team_strength(self.away_lineup, self.away_team, False)
+        # self.team_strengths['home'] = self.calculate_team_strength(self.home_lineup, self.home_team, True)
+        # self.team_strengths['away'] = self.calculate_team_strength(self.away_lineup, self.away_team, False)
         logger.info(f"prepare 2")
 
         # 3) Начальные параметры
