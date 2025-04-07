@@ -77,6 +77,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
                 "st_passes": match.st_passes,
                 "st_posessions": match.st_posessions,
                 "st_fouls": match.st_fouls,
+                "st_injury": match.st_injury,
                 "events": list(
                     match.events.all().values(
                         'minute', 

@@ -87,6 +87,7 @@ def broadcast_minute_events_in_chunks(match_id: int, minute: int, duration: int 
                 "st_passes": match.st_passes,
                 "st_posessions": match.st_posessions,
                 "st_fouls": match.st_fouls,
+                "st_injury": match.st_injury,
                 "status": match.status,
                 # В этот раз отправляем только 1 событие (event),
                 # чтобы на фронте поочередно "проигрывать" их внутри одной минуты

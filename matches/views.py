@@ -233,38 +233,8 @@ def get_match_events(request, match_id):
 
 @login_required
 def simulate_match_view(request, match_id):
-    return
-    if match_id == 0:
-        club = request.user.club
-        return render(request, 'matches/no_opponent.html', {'club': club})
-        opponent = Club.objects.filter(is_bot=True).exclude(id=club.id).order_by('?').first()
-        if not opponent:
-            return render(request, 'matches/no_opponent.html', {'club': club})
-
-        match = Match.objects.create(
-            home_team=club,
-            away_team=opponent,
-            datetime=timezone.now(),
-            status='scheduled',
-            current_minute=0,
-            home_tactic='balanced',
-            away_tactic='balanced',
-        )
-        
-        # Предматчевая подготовка
-        from .match_preparation import PreMatchPreparation
-        prep = PreMatchPreparation(match)
-        if not prep.prepare_match():
-            errors = prep.get_validation_errors()
-            messages.error(request, f"Match preparation failed: {'; '.join(errors)}")
-            match.delete()
-            return redirect('clubs:club_detail', pk=club.id)
-            
-        match.status = 'in_progress'
-        match.save()
-        match_id = match.id
-
-    return redirect('matches:match_detail', pk=match_id)
+    print("dddd")
+    return true
 
 
 @login_required
