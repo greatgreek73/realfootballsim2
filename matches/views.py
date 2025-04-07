@@ -233,6 +233,7 @@ def get_match_events(request, match_id):
 
 @login_required
 def simulate_match_view(request, match_id):
+    return
     if match_id == 0:
         club = request.user.club
         return render(request, 'matches/no_opponent.html', {'club': club})
