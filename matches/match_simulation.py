@@ -197,7 +197,7 @@ def simulate_one_minute(match):
                 match.st_posessions += 1
 
             # Создаем событие начала минуты
-            start_event_desc = f"Начало минуты {minute}: команда {possessing_team} начинает атаку."
+            start_event_desc = f"Entering minutes {minute} of game: Team {possessing_team} starting to attack."
             MatchEvent.objects.create(
                 match=match,
                 minute=minute,
@@ -226,8 +226,8 @@ def simulate_one_minute(match):
                             exclude_ids={match.current_player_with_ball.id} if match.current_player_with_ball else set())
                         if new_player:
                             match.st_passes += 1
-                            pass_event_desc = (f"Пас успешен: {match.current_player_with_ball.first_name if match.current_player_with_ball else 'Unknown'} "
-                                               f"передаёт мяч {new_player.first_name} {new_player.last_name} в зону {target_zone}.")
+                            pass_event_desc = (f"Successfull pass from: {match.current_player_with_ball.first_name if match.current_player_with_ball else 'Unknown'} "
+                                               f"to player {new_player.first_name} {new_player.last_name} in zone {target_zone}.")
                             MatchEvent.objects.create(
                                 match=match,
                                 minute=minute,
@@ -244,8 +244,8 @@ def simulate_one_minute(match):
                     else:
                         opponent_team = get_opponent_team(match, possessing_team)
                         interceptor = choose_player(opponent_team, match.current_zone)
-                        intercept_desc = (f"Перехват! {interceptor.first_name} {interceptor.last_name} из команды {opponent_team} "
-                                          f"перехватывает мяч в зоне {match.current_zone}.")
+                        intercept_desc = (f"Interception! {interceptor.first_name} {interceptor.last_name} from team {opponent_team} "
+                                          f"Ball intercepted in zone {match.current_zone}.")
                         MatchEvent.objects.create(
                             match=match,
                             minute=minute,
@@ -267,8 +267,8 @@ def simulate_one_minute(match):
                         else:
                             match.away_score += 1
                         shooter = match.current_player_with_ball
-                        shot_event_desc = (f"Успешный удар! {shooter.first_name} {shooter.last_name} из команды {possessing_team} "
-                                           f"забивает гол на {minute} минуте!")
+                        shot_event_desc = (f"Goal! {shooter.first_name} {shooter.last_name} for team {possessing_team} "
+                                           f"scores a goal in {minute} minute!")
                         MatchEvent.objects.create(
                             match=match,
                             minute=minute,
@@ -279,7 +279,7 @@ def simulate_one_minute(match):
                         logger.info(shot_event_desc)
                     else:
                         shooter = match.current_player_with_ball
-                        shot_miss_desc = (f"Удар промахнулся! {shooter.first_name} {shooter.last_name} не реализует шанс на {minute} минуте.")
+                        shot_miss_desc = (f"Missed a shot! {shooter.first_name} {shooter.last_name} lost a shot at {minute} minute.")
                         MatchEvent.objects.create(
                             match=match,
                             minute=minute,
