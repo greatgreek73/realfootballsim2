@@ -215,7 +215,7 @@ def simulate_one_minute(match):
                     #To DO : process foul
                     if random.random() < INJURY_PROB:
                         match.st_injury += 1
-                        process_injury();
+                        process_injury()
                         decrease_morale(possessing_team, 'all', 1)
                     
                 if match.current_zone != "FWD":
