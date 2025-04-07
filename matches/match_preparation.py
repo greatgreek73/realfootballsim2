@@ -309,6 +309,7 @@ class PreMatchPreparation:
         # 1) Проверяем составы
         self.validation_results['home_valid'] = self.validate_lineup(self.home_lineup, self.home_team)
         self.validation_results['away_valid'] = self.validate_lineup(self.away_lineup, self.away_team)
+        logger.info(f"prepare 1")
 
         if not (self.validation_results['home_valid'] and self.validation_results['away_valid']):
             return False
@@ -316,6 +317,7 @@ class PreMatchPreparation:
         # 2) Рассчитываем силы
         self.team_strengths['home'] = self.calculate_team_strength(self.home_lineup, self.home_team, True)
         self.team_strengths['away'] = self.calculate_team_strength(self.away_lineup, self.away_team, False)
+        logger.info(f"prepare 2")
 
         # 3) Начальные параметры
         self._calculate_initial_parameters('home')
