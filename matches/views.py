@@ -251,12 +251,12 @@ def simulate_match_view(request, match_id):
         
         # Предматчевая подготовка
         from .match_preparation import PreMatchPreparation
-        # prep = PreMatchPreparation(match)
-        # if not prep.prepare_match():
-        #     errors = prep.get_validation_errors()
-        #     messages.error(request, f"Match preparation failed: {'; '.join(errors)}")
-        #     match.delete()
-        #     return redirect('clubs:club_detail', pk=club.id)
+        prep = PreMatchPreparation(match)
+        if not prep.prepare_match():
+            errors = prep.get_validation_errors()
+            messages.error(request, f"Match preparation failed: {'; '.join(errors)}")
+            match.delete()
+            return redirect('clubs:club_detail', pk=club.id)
             
         match.status = 'in_progress'
         match.save()
