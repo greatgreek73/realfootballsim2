@@ -15,6 +15,7 @@ class PreMatchPreparation:
         'tackling': 0.3,
         'strength': 0.2,
         'stamina': 0.2,
+        'morale': 0.2,
         'positioning': 0.2
     }
 
@@ -22,6 +23,7 @@ class PreMatchPreparation:
         'passing': 0.3,
         'vision': 0.3,
         'stamina': 0.2,
+        'morale': 0.2,
         'work_rate': 0.2
     }
 
@@ -30,6 +32,7 @@ class PreMatchPreparation:
         'dribbling': 0.3,
         'long_range': 0.2,
         'stamina': 0.2,
+        'morale': 0.2,
         'accuracy': 0.2
     }
 
@@ -39,6 +42,7 @@ class PreMatchPreparation:
         'positioning': 0.2,
         'aerial': 0.1,
         'stamina': 0.2,
+        'morale': 0.2,
         'command': 0.1,
         'shot_reading': 0.1
     }
