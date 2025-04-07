@@ -14,6 +14,8 @@ class PreMatchPreparation:
         'marking': 0.3,
         'tackling': 0.3,
         'strength': 0.2,
+        'stamina': 0.2,
+        'morale': 0.2,
         'positioning': 0.2
     }
 
@@ -21,6 +23,7 @@ class PreMatchPreparation:
         'passing': 0.3,
         'vision': 0.3,
         'stamina': 0.2,
+        'morale': 0.2,
         'work_rate': 0.2
     }
 
@@ -28,6 +31,8 @@ class PreMatchPreparation:
         'finishing': 0.3,
         'dribbling': 0.3,
         'long_range': 0.2,
+        'stamina': 0.2,
+        'morale': 0.2,
         'accuracy': 0.2
     }
 
@@ -36,6 +41,8 @@ class PreMatchPreparation:
         'handling': 0.25,
         'positioning': 0.2,
         'aerial': 0.1,
+        'stamina': 0.2,
+        'morale': 0.2,
         'command': 0.1,
         'shot_reading': 0.1
     }
@@ -219,7 +226,9 @@ class PreMatchPreparation:
                 'handling': player.handling,
                 'positioning': player.positioning,
                 'aerial': player.aerial,
+                'stamina': player.stamina,
                 'command': player.command,
+                'morale': player.morale,
                 'shot_reading': player.shot_reading
             }
         elif 'Back' in player.position:
@@ -229,6 +238,8 @@ class PreMatchPreparation:
                 'marking': player.marking,
                 'tackling': player.tackling,
                 'strength': player.strength,
+                'stamina': player.stamina,
+                'morale': player.morale,
                 'positioning': player.positioning
             }
         elif 'Midfielder' in player.position:
@@ -238,6 +249,7 @@ class PreMatchPreparation:
                 'passing': player.passing,
                 'vision': player.vision,
                 'stamina': player.stamina,
+                'morale': player.morale,
                 'work_rate': player.work_rate
             }
         else:
@@ -247,6 +259,8 @@ class PreMatchPreparation:
                 'finishing': player.finishing,
                 'dribbling': player.dribbling,
                 'long_range': player.long_range,
+                'stamina': player.stamina,
+                'morale': player.morale,
                 'accuracy': player.accuracy
             }
 
@@ -295,6 +309,7 @@ class PreMatchPreparation:
         # 1) Проверяем составы
         self.validation_results['home_valid'] = self.validate_lineup(self.home_lineup, self.home_team)
         self.validation_results['away_valid'] = self.validate_lineup(self.away_lineup, self.away_team)
+        logger.info(f"prepare 1")
 
         if not (self.validation_results['home_valid'] and self.validation_results['away_valid']):
             return False
@@ -302,6 +317,7 @@ class PreMatchPreparation:
         # 2) Рассчитываем силы
         self.team_strengths['home'] = self.calculate_team_strength(self.home_lineup, self.home_team, True)
         self.team_strengths['away'] = self.calculate_team_strength(self.away_lineup, self.away_team, False)
+        logger.info(f"prepare 2")
 
         # 3) Начальные параметры
         self._calculate_initial_parameters('home')
