@@ -235,6 +235,7 @@ def get_match_events(request, match_id):
 def simulate_match_view(request, match_id):
     if match_id == 0:
         club = request.user.club
+        return render(request, 'matches/no_opponent.html', {'club': club})
         opponent = Club.objects.filter(is_bot=True).exclude(id=club.id).order_by('?').first()
         if not opponent:
             return render(request, 'matches/no_opponent.html', {'club': club})
@@ -262,7 +263,7 @@ def simulate_match_view(request, match_id):
         match.save()
         match_id = match.id
 
-    # return redirect('matches:match_detail', pk=match_id)
+    return redirect('matches:match_detail', pk=match_id)
 
 
 @login_required
