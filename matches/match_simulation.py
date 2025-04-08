@@ -371,38 +371,38 @@ def simulate_match(match_id: int):
             match.save()
             send_update(match)
 
-        # for _ in range(90):
-        #     match = simulate_one_minute(match)
-        #     if _ >0 and _<31:
-        #         passed_0_30()
-        #     if _ >30 and _<41:
-        #         passed_30_41()
-        #     if _ >40 and _<51:
-        #         passed_40_51()
-        #     if _ >50 and _<61:
-        #         passed_50_61()
-        #     if _ >60 and _<71:
-        #         passed_60_71()
-        #     if _ >70 and _<81:
-        #         passed_70_81()
-        #     if _ >80 and _<91:
-        #         passed_80_91()
-        #     if _ >90:
-        #         passed_90_100()
-        #     match.save()
-        #     match.refresh_from_db()
-        #     if match.status == 'finished':
-        #         break
+        for _ in range(90):
+            match = simulate_one_minute(match)
+            if _ >0 and _<31:
+                passed_0_30()
+            if _ >30 and _<41:
+                passed_30_41()
+            if _ >40 and _<51:
+                passed_40_51()
+            if _ >50 and _<61:
+                passed_50_61()
+            if _ >60 and _<71:
+                passed_60_71()
+            if _ >70 and _<81:
+                passed_70_81()
+            if _ >80 and _<91:
+                passed_80_91()
+            if _ >90:
+                passed_90_100()
+            match.save()
+            match.refresh_from_db()
+            if match.status == 'finished':
+                break
 
-        # if match.status != 'finished':
-        #     with transaction.atomic():
-        #         match = Match.objects.select_for_update().get(id=match_id)
-        #         match.status = 'finished'
-        #         match.current_minute = 90
-        #         match.save()
-        #         send_update(match)
+        if match.status != 'finished':
+            with transaction.atomic():
+                match = Match.objects.select_for_update().get(id=match_id)
+                match.status = 'finished'
+                match.current_minute = 90
+                match.save()
+                send_update(match)
 
-        # logger.info(f"simulate_match({match_id}) завершён: {match.home_score}-{match.away_score}")
+        logger.info(f"simulate_match({match_id}) завершён: {match.home_score}-{match.away_score}")
 
     except Match.DoesNotExist:
         logger.error(f"simulate_match: матч {match_id} не найден.")
