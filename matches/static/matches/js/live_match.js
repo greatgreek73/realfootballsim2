@@ -50,7 +50,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Обновляем счет
                 const scoreElement = document.getElementById('score');
                 if (scoreElement && data.home_score !== undefined && data.away_score !== undefined) {
-                    scoreElement.textContent = `${data.home_score} - ${data.away_score}`;
+                    //scoreElement.textContent = `${data.home_score} - ${data.away_score}`;
+                    document.querySelector('.home-score').textContent = data.home_score;
+                    document.querySelector('.away-score').textContent = data.away_score;
                 }
 
                 // Обновляем события
