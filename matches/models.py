@@ -24,6 +24,7 @@ class Match(models.Model):
         choices=[
             ('scheduled', 'Scheduled'),
             ('in_progress', 'In Progress'),
+            ('paused', 'Paused'),
             ('finished', 'Finished'),
             ('cancelled', 'Cancelled')
         ],

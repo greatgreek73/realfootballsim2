@@ -357,7 +357,7 @@ def simulate_match(match_id: int):
         with transaction.atomic():
             match = Match.objects.select_for_update().get(id=match_id)
             if match.status != 'scheduled':
-                logger.warning(f"simulate_match: матч {match.id} не в статусе scheduled => пропускаем.")
+                logger.warning(f"simulate_match: match {match.id} not in status scheduled => bypassing.")
                 return
             ensure_match_lineup_set(match, True)
             ensure_match_lineup_set(match, False)
@@ -402,7 +402,7 @@ def simulate_match(match_id: int):
                 match.save()
                 send_update(match)
 
-        logger.info(f"simulate_match({match_id}) завершён: {match.home_score}-{match.away_score}")
+        logger.info(f"simulate_match({match_id}) finished: {match.home_score}-{match.away_score}")
 
     except Match.DoesNotExist:
         logger.error(f"simulate_match: матч {match_id} не найден.")

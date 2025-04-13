@@ -48,7 +48,7 @@
                             <div class="col-md-2">
                                 <!-- Счёт -->
                                 <h3 class="score mb-0" id="score">
-                                    {{ match.home_score }} - {{ match.away_score }}
+                                    <span class="score-title">{{ match.home_score }}</span> - <span class="score-title">{{ match.away_score }}</span>
                                 </h3>
                                 <!-- Минуты -->
                                 <div class="small text-muted" id="matchTime">
@@ -140,8 +140,7 @@
                 <div class="card-header">
                     <h3 class="h5 mb-0">Match Events and Statistics</h3>
                 </div>
-                <row>
-                    <div class="card-body col-12">
+                    <div class="card-body col-12 row">
                         <!-- Изначальный список событий -->
                         <div id="originalEvents" class="mb-4 col-md-4">
                             <div class="list-group events-box">
@@ -181,7 +180,6 @@
                         </div>
 
                     </div>
-                </row>
             </div>
 
             <!-- 4) Если матч scheduled: BEST PLAYERS и PREVIOUS MATCHES & LINEUPS -->
@@ -544,6 +542,11 @@
     #originalEvents {
         overflow-y: auto;
         height: 180px;
+    }
+    .score-title {
+        padding:6px;
+        background-color: gray;
+        color: white;
     }
 </style>
 {% endblock %}

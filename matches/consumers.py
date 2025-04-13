@@ -83,7 +83,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
                         'minute', 
                         'event_type', 
                         'description'
-                    ).order_by('-minute')[:10]  # Последние 10 событий
+                    ).order_by('-minute')[:3]  # Последние 10 событий
                 ),
                 "status": match.status
             }
