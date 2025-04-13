@@ -5,6 +5,9 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
+    dependencies = [
+        ('matches', '0007_match_st_fouls_match_st_injury_match_st_passes_and_more'),
+    ]
 
     operations = [
         migrations.AlterField(
