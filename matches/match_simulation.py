@@ -204,10 +204,13 @@ def simulate_one_minute(match):
             if match.current_player_with_ball:
                 if match.current_player_with_ball in match.home_team.player_set.all():
                     possessing_team = match.home_team
+                    match.current_posses = 1
                 else:
                     possessing_team = match.away_team
+                    match.current_posses = 2
             else:
                 possessing_team = match.home_team
+                match.current_posses = 1
                 starting_player = choose_player(match.home_team, "GK")
                 match.current_player_with_ball = starting_player
                 match.st_posessions += 1
@@ -315,7 +318,7 @@ def simulate_one_minute(match):
                     send_update(match, possessing_team)
                     break
 
-                send_update(match)
+                send_update(match, possessing_team)
 
             # Обновляем минуту и проверяем завершение матча
             match.current_minute = minute
@@ -335,22 +338,26 @@ def simulate_one_minute(match):
         raise
 
 def passed_time(match, t):
+    if match.current_posses ==1:
+        possesing_team = match.home_team
+    else:
+        possesing_team = match.away_team
     if t >0 and t <31:
-        decrease_stamina(10)
+        decrease_stamina(possesing_team,'',10)
     if t >30 and t <41:
-        decrease_stamina(8)
+        decrease_stamina(possesing_team,'',8)
     if t >40 and t <51:
-        decrease_stamina(5)
+        decrease_stamina(possesing_team,'',5)
     if t >50 and t <61:
-        decrease_stamina(3)
+        decrease_stamina(possesing_team,'',3)
     if t >60 and t <71:
-        decrease_stamina(2)
+        decrease_stamina(possesing_team,'',2)
     if t >70 and t <81:
-        decrease_stamina(1)
+        decrease_stamina(possesing_team,'',1)
     if t >80 and t <91:
-        decrease_stamina(0.5)
+        decrease_stamina(possesing_team,'',0.5)
     if t >90 and t <101:
-        decrease_stamina(0.2)
+        decrease_stamina(possesing_team,'',0.2)
     return
 
 def change_all_morale_value():

@@ -19,6 +19,7 @@ class Match(models.Model):
     )
     home_score = models.PositiveIntegerField(default=0)
     away_score = models.PositiveIntegerField(default=0)
+    curent_posses = models.PositiveIntegerField(default=0)
     status = models.CharField(
         max_length=20,
         choices=[
