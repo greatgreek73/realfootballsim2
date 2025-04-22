@@ -159,7 +159,31 @@
                                 <h5>{{Match.st_passes}}</h5>
                                 <h5>{{Match.st_posessions}}</h5>
                                 <h5>{{Match.st_fouls}}</h5>
-                                <h5>{{Match.st_injury}}</h5>
+                                <h5><span id="inj">{{Match.st_injury}}</span></h5>
+                            </div>
+                        </div>
+                        <div id="matchUserAction-inj" class="matchUserAction mb-4 col-md-4">
+                            <div class="row">
+                                <div class="col-12">
+                                    {{Match.actionMessage}}
+                                </div>
+                                <div class="col-12">
+                                    <div class="col-12">
+                                        <select name="Match.player" id="Match.player" 
+                                                class="form-select ">
+                                            {% for player in Match.players %}
+                                                <option value="{{ player.id }}"
+                                                        >
+                                                    {{ player.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-12">
+                                        <input type="button" value="Replace"  id="replace-player" />
+                                    </div>
+
+                                </div>
                             </div>
                         </div>
                         <!-- Область реплея (скрыта, если match.status != 'finished') -->
@@ -547,6 +571,17 @@
         padding:6px;
         background-color: gray;
         color: white;
+    }
+    .matchUserAction {
+        display: none;
+        position: fixed;
+        width:50%;
+        height: 300px;
+        background-color: gray;
+        z-index:9;
+    }
+    .display-action {
+        display: block;
     }
 </style>
 {% endblock %}

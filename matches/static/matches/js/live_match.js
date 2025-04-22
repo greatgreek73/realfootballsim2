@@ -60,13 +60,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     const eventsList = document.getElementById('originalEvents');
                     if (eventsList) {
                         const stat = document.querySelector('.stat-box');
-                        console.log('stat',data.events[0].st_passes)
+                        //Handle user activity
+                        const inj = parseInt(document.querySelector('#inj').innerText);
+                        if(inj != data.st_injury)
+                        {
+                            const action = document.querySelector('#matchUserAction-inj');
+                            action.classList.add('display-action');
+                            setTimeout(()=>{
+                                action.classList.remove('display-action');
+                            },5000);
+                        }
                         stat.innerHTML = `
                         <h5>Passes : ${data.st_passes}</h5>
                         <h5>Shoots : ${data.st_shoots}</h5>
                         <h5>Posessions : ${data.st_posessions}</h5>
                         <h5>Fouls : ${data.st_fouls}</h5>
-                        <h5>Injuries : ${data.st_injury}</h5>
+                        <h5>Injuries : <span id="inj">${data.st_injury}</span></h5>
                         `;
                         const listGroup = eventsList.querySelector('.events-box');
                         if (listGroup) {
