@@ -12,7 +12,7 @@ from asgiref.sync import async_to_sync
 
 logger = logging.getLogger(__name__)
 
-def send_update(match):
+def send_update(match, possessing_team):
     recent_events_qs = match.events.all().order_by('-id')[:5]
     recent_events = list(reversed(recent_events_qs))
     events_data = []
@@ -34,6 +34,7 @@ def send_update(match):
         "st_fouls": match.st_fouls,
         "st_injury": match.st_injury,
         "status": match.status,
+        "players": choose_players(possessing_team, 'GK'),
         "events": events_data,
     }
     async_to_sync(channel_layer.group_send)(
@@ -75,6 +76,21 @@ def choose_player(team: Club, zone: str, exclude_ids: set = None) -> Player:
     if candidates:
         return random.choice(candidates)
     return None
+
+def choose_players(team: Club, zone: str, exclude_ids: set = None):
+    """
+    Выбирает случайного игрока из команды, удовлетворяющего условию для зоны.
+    Если кандидатов нет, возвращает случайного игрока (с исключением exclude_ids).
+    """
+    if exclude_ids is None:
+        exclude_ids = set()
+    # commented cause : make sure after failed shot the ball might end with any of team member
+    # condition = zone_conditions(zone)
+    # candidates = [p for p in team.player_set.all() if condition(p) and p.id not in exclude_ids]
+    # if candidates:
+    #     return random.choice(candidates)
+    candidates = [p for p in team.player_set.all() if p.id not in exclude_ids]
+    return candidates
 
 def get_opponent_team(match: Match, possessing_team: Club) -> Club:
     """
@@ -296,7 +312,7 @@ def simulate_one_minute(match):
                     match.current_player_with_ball = new_owner
                     match.current_zone = "GK"
                     # match.save()
-                    send_update(match)
+                    send_update(match, possessing_team)
                     break
 
                 send_update(match)
@@ -318,28 +334,23 @@ def simulate_one_minute(match):
         logger.error(f"simulate_one_minute({match.id}) => {str(e)}")
         raise
 
-def passed_0_30():
-    return
-
-def passed_30_41():
-    return
-
-def passed_40_51():
-    return
-
-def passed_50_61():
-    return
-
-def passed_60_71():
-    return
-
-def passed_70_81():
-    return
-
-def passed_80_91():
-    return
-
-def passed_90_100():
+def passed_time(match, t):
+    if t >0 and t <31:
+        decrease_stamina(10)
+    if t >30 and t <41:
+        decrease_stamina(8)
+    if t >40 and t <51:
+        decrease_stamina(5)
+    if t >50 and t <61:
+        decrease_stamina(3)
+    if t >60 and t <71:
+        decrease_stamina(2)
+    if t >70 and t <81:
+        decrease_stamina(1)
+    if t >80 and t <91:
+        decrease_stamina(0.5)
+    if t >90 and t <101:
+        decrease_stamina(0.2)
     return
 
 def change_all_morale_value():
@@ -373,22 +384,7 @@ def simulate_match(match_id: int):
 
         for _ in range(90):
             match = simulate_one_minute(match)
-            if _ >0 and _<31:
-                passed_0_30()
-            if _ >30 and _<41:
-                passed_30_41()
-            if _ >40 and _<51:
-                passed_40_51()
-            if _ >50 and _<61:
-                passed_50_61()
-            if _ >60 and _<71:
-                passed_60_71()
-            if _ >70 and _<81:
-                passed_70_81()
-            if _ >80 and _<91:
-                passed_80_91()
-            if _ >90:
-                passed_90_100()
+            passed_time(match, _)
             match.save()
             match.refresh_from_db()
             if match.status == 'finished':
