@@ -158,7 +158,16 @@ def ensure_match_lineup_set(match: Match, for_home: bool) -> None:
         else:
             match.away_lineup = club_lineup
 
-def process_injury():
+def process_injury(match):
+    match.status = 'paused'
+    shot_miss_desc = (f"Match paused.")
+    MatchEvent.objects.create(
+        match=match,
+        minute=match.current_minute,
+        event_type='match_paused',
+        description=shot_miss_desc
+        )
+    logger.info(shot_miss_desc)
     return
 
 def decrease_stamina(team, player, val):
@@ -234,7 +243,7 @@ def simulate_one_minute(match):
                     #To DO : process foul
                     if random.random() < INJURY_PROB:
                         match.st_injury += 1
-                        process_injury()
+                        process_injury(match)
                         decrease_morale(possessing_team, 'all', 1)
                     
                 if match.current_zone != "FWD":
@@ -391,6 +400,9 @@ def simulate_match(match_id: int):
 
         for _ in range(90):
             match = simulate_one_minute(match)
+            if match.status == 'paused':
+                time.sleep(5)  #wait for user action
+                match.status = 'in_progress'
             passed_time(match, _)
             match.save()
             match.refresh_from_db()

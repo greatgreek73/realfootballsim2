@@ -1,3 +1,9 @@
+const replaceButton = document.querySelector('#replace-player');
+replaceButton.addEventListener('click', function(){
+    const actionForm = document.querySelector('matchUserAction-inj');
+    actionForm.classList.remove('display-action');
+})
+
 document.addEventListener('DOMContentLoaded', function() {
     const matchInfoArea = document.getElementById('matchInfoArea');
     if (!matchInfoArea) {
