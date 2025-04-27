@@ -142,7 +142,7 @@
                 </div>
                     <div class="card-body col-12 row">
                         <!-- Изначальный список событий -->
-                        <div id="originalEvents" class="mb-4 col-md-4">
+                        <div id="originalEvents" class="event-log mb-4 col-md-4">
                             <div class="list-group events-box">
                                 {% for event in match_events %}
                                 <div class="list-group-item">
@@ -532,6 +532,19 @@
         </div><!-- /.col-12 -->
     </div><!-- /.row -->
 </div><!-- /.container -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const log = document.getElementById('originalEvents');
+    if (log) {
+        const observer = new MutationObserver(function() {
+            log.scrollTop = log.scrollHeight;
+        });
+        observer.observe(log.querySelector('.events-box'), { childList: true });
+        // Прокрутить вниз при первой загрузке
+        log.scrollTop = log.scrollHeight;
+    }
+});
+</script>
 {% endblock %}
 
 {% block extra_js %}
@@ -563,10 +576,10 @@
     .new-event-visible {
         opacity: 1;
     }
-    #originalEvents {
+    /* #originalEvents {
         overflow-y: auto;
         height: 183px;
-    }
+    } */
     .score-title {
         padding:6px;
         background-color: gray;

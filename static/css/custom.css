@@ -1,6 +1,6 @@
-.navbar {
-    padding:2rem;
-}
-.main_logo {
-    width:1.6rem;
+.event-log {
+    max-height: 540px;
+    min-height: 540px;
+    overflow-y: auto;
+    scroll-behavior: smooth;
 }

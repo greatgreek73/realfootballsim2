@@ -12,6 +12,15 @@ from asgiref.sync import async_to_sync
 
 logger = logging.getLogger(__name__)
 
+def serialize_player(p: Player):
+    return {
+        "id": p.id,
+        "first_name": p.first_name,
+        "last_name": p.last_name,
+        "position": p.position,
+        # при необходимости: "overall": p.overall_rating
+    }
+
 def send_update(match, possessing_team):
     recent_events_qs = match.events.all().order_by('-id')[:5]
     recent_events = list(reversed(recent_events_qs))
@@ -34,7 +43,7 @@ def send_update(match, possessing_team):
         "st_fouls": match.st_fouls,
         "st_injury": match.st_injury,
         "status": match.status,
-        "players": choose_players(possessing_team, 'GK'),
+        "players": [serialize_player(p) for p in choose_players(possessing_team, 'GK')],
         "events": events_data,
     }
     async_to_sync(channel_layer.group_send)(
@@ -233,7 +242,7 @@ def simulate_one_minute(match):
                 description=start_event_desc
             )
             logger.info(start_event_desc)
-            send_update(match)
+            send_update(match, possessing_team)
 
             # Симулируем события минуты
             subevents = 3
@@ -243,7 +252,7 @@ def simulate_one_minute(match):
                     #To DO : process foul
                     if random.random() < INJURY_PROB:
                         match.st_injury += 1
-                        process_injury(match)
+                        # process_injury(match)
                         decrease_morale(possessing_team, 'all', 1)
                     
                 if match.current_zone != "FWD":
@@ -285,7 +294,9 @@ def simulate_one_minute(match):
                         match.current_player_with_ball = interceptor
                         match.current_zone = "GK"
                         match.save()
-                        send_update(match)
+                        # владение сменилось на opponent_team
+                        possessing_team = opponent_team
+                        send_update(match, possessing_team)
                         break
                 else:
                     match.st_shoots += 1
@@ -396,13 +407,14 @@ def simulate_match(match_id: int):
             match.current_player_with_ball = starting_player
             match.current_zone = "GK"
             match.save()
-            send_update(match)
+            send_update(match, match.home_team)
 
         for _ in range(90):
             match = simulate_one_minute(match)
             if match.status == 'paused':
                 time.sleep(5)  #wait for user action
                 match.status = 'in_progress'
+                send_update(match, match.current_player_with_ball.club if match.current_player_with_ball else match.home_team)
             passed_time(match, _)
             match.save()
             match.refresh_from_db()
@@ -415,7 +427,7 @@ def simulate_match(match_id: int):
                 match.status = 'finished'
                 match.current_minute = 90
                 match.save()
-                send_update(match)
+                send_update(match, match.home_team)
 
         logger.info(f"simulate_match({match_id}) finished: {match.home_score}-{match.away_score}")
 
