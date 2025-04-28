@@ -1,8 +1,12 @@
 const replaceButton = document.querySelector('#replace-player');
-replaceButton.addEventListener('click', function(){
-    const actionForm = document.querySelector('matchUserAction-inj');
-    actionForm.classList.remove('display-action');
-})
+if (replaceButton) {
+    replaceButton.addEventListener('click', function(){
+        const actionForm = document.querySelector('matchUserAction-inj');
+        if (actionForm) {
+            actionForm.classList.remove('display-action');
+        }
+    });
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     const matchInfoArea = document.getElementById('matchInfoArea');
@@ -21,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const wsUrl = `${wsScheme}://${window.location.host}/ws/match/${matchId}/`;
-        console.log('WebSocket URL:', wsUrl);
+        console.log('WebSocket URL:', wsUrl) ;
         
         const matchSocket = new WebSocket(wsUrl);
 
@@ -41,8 +45,6 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         matchSocket.onmessage = function(e) {
-            // console.log('Received WebSocket message:', e.data);
-            
             try {
                 const data = JSON.parse(e.data);
                 console.log('Parsed data:', data);
@@ -56,9 +58,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Обновляем счет
                 const scoreElement = document.getElementById('score');
                 if (scoreElement && data.home_score !== undefined && data.away_score !== undefined) {
-                    //scoreElement.textContent = `${data.home_score} - ${data.away_score}`;
-                    document.querySelector('.home-score').textContent = data.home_score;
-                    document.querySelector('.away-score').textContent = data.away_score;
+                    const homeScoreElement = document.querySelector('.home-score');
+                    const awayScoreElement = document.querySelector('.away-score');
+                    
+                    if (homeScoreElement) {
+                        homeScoreElement.textContent = data.home_score;
+                    }
+                    
+                    if (awayScoreElement) {
+                        awayScoreElement.textContent = data.away_score;
+                    }
                 }
 
                 // Обновляем события
@@ -67,72 +76,87 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (eventsList) {
                         const stat = document.querySelector('.stat-box');
                         //Handle user activity
-                        const inj = parseInt(document.querySelector('#inj').innerText);
-                        if(inj != data.st_injury)
-                        {
-                            const action = document.querySelector('#matchUserAction-inj');
-                            action.classList.add('display-action');
-                            setTimeout(()=>{
-                                action.classList.remove('display-action');
-                            },5000);
+                        const injElement = document.querySelector('#inj');
+                        if (injElement) {
+                            const inj = parseInt(injElement.innerText);
+                            if (inj != data.st_injury) {
+                                const action = document.querySelector('#matchUserAction-inj');
+                                if (action) {
+                                    action.classList.add('display-action');
+                                    setTimeout(() => {
+                                        action.classList.remove('display-action');
+                                    }, 5000);
+                                }
+                            }
                         }
-                        stat.innerHTML = `
-                        <h5>Passes : ${data.st_passes}</h5>
-                        <h5>Shoots : ${data.st_shoots}</h5>
-                        <h5>Posessions : ${data.st_posessions}</h5>
-                        <h5>Fouls : ${data.st_fouls}</h5>
-                        <h5>Injuries : <span id="inj">${data.st_injury}</span></h5>
-                        `;
+                        
+                        if (stat) {
+                            stat.innerHTML = `
+                            <h5>Passes : ${data.st_passes}</h5>
+                            <h5>Shoots : ${data.st_shoots}</h5>
+                            <h5>Posessions : ${data.st_posessions}</h5>
+                            <h5>Fouls : ${data.st_fouls}</h5>
+                            <h5>Injuries : <span id="inj">${data.st_injury}</span></h5>
+                            `;
+                        }
+                        
                         const listGroup = eventsList.querySelector('.events-box');
                         if (listGroup) {
-                            // Если это частичное обновление (например, всего одно событие)
-                            // то просто добавляем его в начало списка, а не заменяем весь список
-                            if (data.events.length === 1 && data.partial_update) {
-                                const event = data.events[0];
-                                const eventDiv = document.createElement('div');
-                                eventDiv.className = 'list-group-item new-event'; // Добавляем класс для анимации
+                            // Проверяем, является ли это частичным обновлением
+                            if (data.partial_update) {
+                                console.log('Получено частичное обновление с событиями:', data.events);
                                 
-                                let icon = '📝';
-                                if (event.event_type === 'goal') {
-                                    icon = '⚽';
-                                } else if (event.event_type === 'interception') {
-                                    icon = '🔄';
-                                } else if (event.event_type === 'shot_miss') {
-                                    icon = '❌';
-                                } else if (event.event_type === 'pass') {
-                                    icon = '➡️';
-                                } else if (event.event_type === 'yellow_card') {
-                                    icon = '🟨';
-                                } else if (event.event_type === 'red_card') {
-                                    icon = '🟥';
-                                }
-                        
-                                eventDiv.innerHTML = `
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <strong>${event.minute}'</strong> 
-                                            <span class="event-icon">${icon}</span>
-                                            ${event.description}
+                                // Обрабатываем каждое событие в частичном обновлении
+                                data.events.forEach(event => {
+                                    // Создаем новый элемент события с анимацией
+                                    const eventDiv = document.createElement('div');
+                                    eventDiv.className = 'list-group-item new-event'; // Класс для анимации
+                                    
+                                    // Выбираем иконку в зависимости от типа события
+                                    let icon = '📝';
+                                    if (event.event_type === 'goal') {
+                                        icon = '⚽';
+                                    } else if (event.event_type === 'interception') {
+                                        icon = '🔄';
+                                    } else if (event.event_type === 'shot_miss') {
+                                        icon = '❌';
+                                    } else if (event.event_type === 'pass') {
+                                        icon = '➡️';
+                                    } else if (event.event_type === 'yellow_card') {
+                                        icon = '🟨';
+                                    } else if (event.event_type === 'red_card') {
+                                        icon = '🟥';
+                                    }
+                            
+                                    // Формируем HTML содержимое события
+                                    eventDiv.innerHTML = `
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>${event.minute}'</strong> 
+                                                <span class="event-icon">${icon}</span>
+                                                ${event.description}
+                                            </div>
                                         </div>
-                                    </div>
-                                `;
-                                
-                                // Вставляем в начало списка
-                                if (listGroup.firstChild) {
-                                    listGroup.insertBefore(eventDiv, listGroup.firstChild);
-                                } else {
-                                    listGroup.appendChild(eventDiv);
-                                }
+                                    `;
+                                    
+                                    // Вставляем в начало списка
+                                    if (listGroup.firstChild) {
+                                        listGroup.insertBefore(eventDiv, listGroup.firstChild);
+                                    } else {
+                                        listGroup.appendChild(eventDiv);
+                                    }
 
-                                // Добавляем анимацию появления
-                                // setTimeout(() => {
-                                //     eventDiv.classList.add('new-event-visible');
-                                // }, 50);
-                                eventDiv.classList.add('new-event-visible');
+                                    // Добавляем анимацию появления с небольшой задержкой
+                                    setTimeout(() => {
+                                        eventDiv.classList.add('new-event-visible');
+                                    }, 50);
+                                });
                             } else {
-                                // Полное обновление - как сейчас
+                                // Полное обновление - заменяем все события
+                                console.log('Получено полное обновление с событиями:', data.events);
+                                
                                 // Очищаем старые события
-                                //listGroup.innerHTML = '';
+                                listGroup.innerHTML = '';
                                 
                                 // Добавляем новые события (сортируем в порядке минут)
                                 data.events

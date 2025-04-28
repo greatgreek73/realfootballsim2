@@ -534,17 +534,53 @@
 </div><!-- /.container -->
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    const log = document.getElementById('originalEvents');
-    if (log) {
-        const observer = new MutationObserver(function() {
-            log.scrollTop = log.scrollHeight;
-        });
-        observer.observe(log.querySelector('.events-box'), { childList: true });
-        // Прокрутить вниз при первой загрузке
-        log.scrollTop = log.scrollHeight;
+    // Очередь событий с задержкой
+    const DELAY = 1200; // задержка между событиями (мс)
+    let eventQueue = [];
+    let processing = false;
+
+    // Функция для добавления событий в очередь
+    function addEventsToQueue(events) {
+        eventQueue = eventQueue.concat(events);
+        if (!processing) { processNext(); }
     }
-});
-</script>
+    window.addEventsToQueue = addEventsToQueue;
+
+    // Функция обработки очереди
+    function processNext() {
+        if (eventQueue.length === 0) { processing = false; return; }
+        processing = true;
+        renderEvent(eventQueue.shift());
+        setTimeout(processNext, DELAY);
+    }
+
+    // Функция рендера одного события
+    function renderEvent(ev) {
+        const log = document.getElementById('originalEvents');
+        const box = log.querySelector('.events-box');
+        const div = document.createElement("div");
+        div.classList.add("list-group-item", "mb-1");
+        div.innerText = `${ev.minute}' • ${ev.event_type}: ${ev.description}`;
+        box.prepend(div);
+        // автопрокрутка вверх
+        log.scrollTop = 0;
+    }
+
+    // Пример интеграции с WebSocket (замените на ваш реальный обработчик)
+    if (window.socket) {
+        window.socket.onmessage = function(e) {
+            const payload = JSON.parse(e.data);
+            if (payload.type === "match_update" && payload.data && payload.data.events) {
+                addEventsToQueue(payload.data.events);
+                // ...остальная логика (например, обновление счёта)
+            }
+        };
+    }
+
+    // Для начального рендера (если события уже есть на странице)
+    // Можно раскомментировать, если нужно "оживить" уже отрендеренные события
+    // const initialEvents = [...document.querySelectorAll('.events-box .list-group-item')];
+    // initialEvents.forEach((el, idx) => setTimeout(() => el.style.opacity = 1, DELAY * idx));
 {% endblock %}
 
 {% block extra_js %}
