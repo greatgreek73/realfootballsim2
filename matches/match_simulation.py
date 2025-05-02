@@ -242,7 +242,7 @@ def simulate_one_minute(match):
                 description=start_event_desc
             )
             logger.info(start_event_desc)
-            send_update(match, possessing_team)
+#             send_update(match, possessing_team)
 
             # Симулируем события минуты
             subevents = 3
@@ -296,7 +296,7 @@ def simulate_one_minute(match):
                         match.save()
                         # владение сменилось на opponent_team
                         possessing_team = opponent_team
-                        send_update(match, possessing_team)
+#                         send_update(match, possessing_team)
                         break
                 else:
                     match.st_shoots += 1
@@ -335,10 +335,10 @@ def simulate_one_minute(match):
                     match.current_player_with_ball = new_owner
                     match.current_zone = "GK"
                     # match.save()
-                    send_update(match, possessing_team)
+#                     send_update(match, possessing_team)
                     break
 
-                send_update(match, possessing_team)
+#                 send_update(match, possessing_team)
 
             # Обновляем минуту и проверяем завершение матча
             match.current_minute = minute
