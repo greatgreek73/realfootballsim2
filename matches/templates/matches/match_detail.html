@@ -2,33 +2,37 @@
 {% load static %}
 
 {% block content %}
-<div class="container">
+<div class="container mt-4"> {# Добавлен отступ сверху #}
     <div class="row">
         <div class="col-12">
 
             <!-- 1) MATCH CENTER -->
-            <div class="card mb-4"
+            <div class="card mb-4 shadow-sm" {# Добавлены тени для красоты #}
                  id="matchInfoArea"
                  data-match-id="{{ match.id }}"
                  data-match-status="{{ match.status }}">
-                <div class="card-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h2 class="mb-0">
-                            {{ match.home_team.name }} vs {{ match.away_team.name }}
+                <div class="card-header bg-light"> {# Светлый фон заголовка #}
+                    <div class="d-flex justify-content-between align-items-center flex-wrap"> {# flex-wrap для мобильных #}
+                        <h2 class="h4 mb-0 me-3"> {# Уменьшен заголовок #}
+                            <a href="{% url 'clubs:club_detail' match.home_team.id %}" class="text-decoration-none text-dark">{{ match.home_team.name }}</a> 
+                            vs 
+                            <a href="{% url 'clubs:club_detail' match.away_team.id %}" class="text-decoration-none text-dark">{{ match.away_team.name }}</a>
                         </h2>
-                        <div class="text-muted">
+                        <div class="text-muted small"> {# Уменьшен шрифт даты #}
                             {{ match.datetime|date:"d M Y H:i" }}
                         </div>
                     </div>
-                    <div class="text-muted mt-2">
-                        {% if match.championship and match.championship.league %}
-                            {{ match.championship.league.name }}
+                    <div class="text-muted small mt-1"> {# Уменьшен шрифт и добавлен отступ #}
+                        {% if match.championshipmatch_set.first.championship.league %} {# Более надежный способ получить лигу #}
+                            {{ match.championshipmatch_set.first.championship.league.name }}
                         {% endif %}
-                        {% if match.round %}
-                            - Round {{ match.round }}
-                        {% endif %}
-                        &nbsp;|&nbsp;
-                        Status: {{ match.get_status_display }}
+                        {% with match.championshipmatch_set.first as cm %}
+                            {% if cm and cm.round %}
+                                - Round {{ cm.round }}
+                            {% endif %}
+                        {% endwith %}
+                         | 
+                        Status: <span id="matchStatusDisplay">{{ match.get_status_display }}</span> {# ID для возможного обновления статуса #}
                     </div>
                 </div>
 
@@ -36,37 +40,39 @@
                     <!-- Верхняя часть: названия команд и счёт -->
                     <div class="text-center mb-4">
                         <div class="row align-items-center">
-                            <div class="col-md-5">
+                            <div class="col-5"> {# Используем col-5 для симметрии #}
                                 <a href="{% url 'clubs:club_detail' match.home_team.id %}" class="text-decoration-none">
-                                    <h3>{{ match.home_team.name }}</h3>
+                                    <h4 class="h5 mb-1">{{ match.home_team.name }}</h4> {# Уменьшен заголовок #}
                                     {% if match.home_team.is_bot %}
-                                        <span class="text-muted">(Bot)</span>
+                                        <span class="badge bg-secondary">Bot</span> {# Бейдж для бота #}
                                     {% endif %}
                                 </a>
                             </div>
 
-                            <div class="col-md-2">
+                            <div class="col-2">
                                 <!-- Счёт -->
                                 <h3 class="score mb-0" id="score">
-                                    <span class="score-title home-score">{{ match.home_score }}</span> - <span class="score-title away-score">{{ match.away_score }}</span>
+                                    <span class="score-box home-score">{{ match.home_score }}</span> {# Используем span и класс #}
+                                    <span class="score-separator">-</span>
+                                    <span class="score-box away-score">{{ match.away_score }}</span> {# Используем span и класс #}
                                 </h3>
                                 <!-- Минуты -->
-                                <div class="small text-muted" id="matchTime">
+                                <div class="match-time small text-muted mt-1" id="matchTime"> {# Класс и отступ #}
                                     {% if match.status == 'in_progress' %}
                                         {{ match.current_minute }}'
                                     {% elif match.status == 'finished' %}
-                                        90'
+                                        FT {# Full Time #}
                                     {% else %}
                                         0'
                                     {% endif %}
                                 </div>
                             </div>
 
-                            <div class="col-md-5">
+                            <div class="col-5"> {# Используем col-5 для симметрии #}
                                 <a href="{% url 'clubs:club_detail' match.away_team.id %}" class="text-decoration-none">
-                                    <h3>{{ match.away_team.name }}</h3>
+                                    <h4 class="h5 mb-1">{{ match.away_team.name }}</h4> {# Уменьшен заголовок #}
                                     {% if match.away_team.is_bot %}
-                                        <span class="text-muted">(Bot)</span>
+                                         <span class="badge bg-secondary">Bot</span> {# Бейдж для бота #}
                                     {% endif %}
                                 </a>
                             </div>
@@ -75,385 +81,136 @@
 
                     <!-- Кнопка Replay, если матч завершён -->
                     {% if match.status == 'finished' %}
-                    <div class="text-end mb-3">
-                        <button id="startReplayBtn" class="btn btn-primary">
-                            Watch Replay
+                    <div class="text-center mb-3"> {# Центрируем кнопку #}
+                        <button id="startReplayBtn" class="btn btn-sm btn-outline-primary"> {# Уменьшена кнопка #}
+                            <i class="fas fa-play me-1"></i> Watch Replay {# Добавлена иконка (требует Font Awesome) #}
                         </button>
                     </div>
                     {% endif %}
                 </div>
             </div>
 
-            <!-- 2) TEAM STATISTICS (пример) -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h3 class="h5 mb-0">Team Statistics</h3>
+            <!-- 2) ОБЛАСТЬ СОБЫТИЙ И СТАТИСТИКИ -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-light">
+                     <h3 class="h5 mb-0">Match Log & Stats</h3>
                 </div>
-                <div class="card-body">
+                 <div class="card-body">
                     <div class="row">
-                        <!-- Home statistics -->
-                        <div class="col-md-6 mb-3">
-                            <h4 class="h6">{{ match.home_team.name }}</h4>
-                            <div class="table-responsive">
-                                <table class="table">
-                                    <tr>
-                                        <td>Team Rating</td>
-                                        <td class="text-end">
-                                            {{ home_team_stats.rating|default:"-" }}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>Recent Form</td>
-                                        <td class="text-end">
-                                            {{ home_team_stats.form|default:"-" }}
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </div>
-                        <!-- Away statistics -->
-                        <div class="col-md-6 mb-3">
-                            <h4 class="h6">{{ match.away_team.name }}</h4>
-                            <div class="table-responsive">
-                                <table class="table">
-                                    <tr>
-                                        <td>Team Rating</td>
-                                        <td class="text-end">
-                                            {{ away_team_stats.rating|default:"-" }}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>Recent Form</td>
-                                        <td class="text-end">
-                                            {{ away_team_stats.form|default:"-" }}
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </div>
-                    </div><!-- /.row -->
-                </div>
-            </div>
-
-            <!-- 3) MATCH EVENTS + REPLAY -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h3 class="h5 mb-0">Match Events and Statistics</h3>
-                </div>
-                    <div class="card-body col-12 row">
-                        <!-- Изначальный список событий -->
-                        <div id="originalEvents" class="event-log mb-4 col-md-4">
-                            <div class="list-group events-box">
-                                {% for event in match_events %}
-                                <div class="list-group-item">
-                                    <strong>{{ event.minute }}'</strong>
-                                    - {{ event.event_type }}: {{ event.description }}
+                        <!-- Лог событий (Левая колонка) -->
+                        <div class="col-md-7 mb-3 mb-md-0"> {# Больше места для лога #}
+                            <h4 class="h6 mb-3">Events</h4>
+                            <div id="originalEvents" class="event-log"> {# Контейнер для лога #}
+                                <div class="list-group events-box"> {# Сюда JS будет добавлять события #}
+                                    {# Начальные события, если матч не live (опционально) #}
+                                    {% if match.status != 'in_progress' %}
+                                        {% for event in match_events %}
+                                        <div class="list-group-item">
+                                            {# Отображение начальных событий (можно улучшить формат) #}
+                                            <strong>{{ event.minute }}'</strong>
+                                            {% if event.event_type == 'goal' %}⚽{% elif event.event_type == 'interception' %}🔄{% elif event.event_type == 'shot_miss' %}❌{% elif event.event_type == 'pass' %}➡️{% elif event.event_type == 'foul' %}⚠️{% elif event.event_type == 'injury_concern' %}✚{% else %} M {% endif %}
+                                            {{ event.description }}
+                                            {# Отображение игроков #}
+                                            {% if event.player %}
+                                            <small class="text-muted">({{ event.player.last_name }}{% if event.related_player %} -> {{ event.related_player.last_name }}{% endif %})</small>
+                                            {% endif %}
+                                        </div>
+                                        {% empty %}
+                                         <div class="list-group-item text-muted">No events yet.</div>
+                                        {% endfor %}
+                                    {% else %}
+                                         <div class="list-group-item text-muted">Waiting for live events...</div>
+                                    {% endif %}
                                 </div>
-                                {% endfor %}
                             </div>
                         </div>
 
-                        <div id="matchStatistics" class="mb-4 col-md-4">
-                            <div class="list-group stat-box">
-                                <h5>{{Match.st_shoots}}</h5>
-                                <h5>{{Match.st_passes}}</h5>
-                                <h5>{{Match.st_posessions}}</h5>
-                                <h5>{{Match.st_fouls}}</h5>
-                                <h5><span id="inj">{{Match.st_injury}}</span></h5>
-                            </div>
-                        </div>
-                        <div id="matchUserAction-inj" class="matchUserAction mb-4 col-md-4">
-                            <div class="row">
-                                <div class="col-md-12">
-                                    {{Match.actionMessage}}
-                                </div>
-                                <div class="col-md-12">
-                                    <div class="col-md-12">
-                                        <select name="Match.player" id="Match.player" 
-                                                class="form-select ">
-                                            {% for player in Match.players %}
-                                                <option value="{{ player.id }}"
-                                                        >
-                                                    {{ player.first_name }}
-                                                </option>
-                                            {% endfor %}
-                                        </select>
+                        <!-- Статистика (Правая колонка) -->
+                        <div class="col-md-5">
+                             <h4 class="h6 mb-3">Statistics</h4>
+                            <div id="matchStatistics" class="mb-4">
+                                <div class="list-group stat-box">
+                                    {# Начальные значения статистики из контекста #}
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Passes</span>
+                                        <span class="badge bg-primary rounded-pill">{{ match.st_passes|default:0 }}</span>
                                     </div>
-                                    <div class="col-md-12">
-                                        <input type="button" value="Replace"  id="replace-player" />
+                                     <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Shoots</span>
+                                        <span class="badge bg-info rounded-pill">{{ match.st_shoots|default:0 }}</span>
                                     </div>
-
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Область реплея (скрыта, если match.status != 'finished') -->
-                        <div id="replayArea" class="col-md-4" style="display: none;">
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h4 class="mb-0" id="replayTime">0'</h4>
-                                        <h4 class="mb-0" id="replayScore"></h4>
+                                     <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Possessions</span>
+                                        <span class="badge bg-secondary rounded-pill">{{ match.st_possessions|default:0 }}</span>
                                     </div>
-                                </div>
-                                <div class="card-body">
-                                    <div id="replayEvents" class="list-group">
-                                        <!-- События реплея (динамически) -->
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Fouls</span>
+                                        <span class="badge bg-warning text-dark rounded-pill">{{ match.st_fouls|default:0 }}</span>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Injuries</span>
+                                        <span class="badge bg-danger rounded-pill" id="inj">{{ match.st_injury|default:0 }}</span>
                                     </div>
                                 </div>
                             </div>
+                             <!-- Форма реакции на травму (скрыта по умолчанию) -->
+                             <div id="matchUserAction-inj" class="matchUserAction card bg-light p-3" style="display: none;"> {# Стилизовано как карточка #}
+                                <h5 class="h6 mb-2 text-danger">Injury Detected!</h5>
+                                <p class="small mb-2">Select player to substitute:</p> {# Уточнено сообщение #}
+                                <div class="mb-2">
+                                    {# Выпадающий список игроков команды ПОЛЬЗОВАТЕЛЯ (если применимо) #}
+                                    {# ПРЕДПОЛОЖЕНИЕ: user_club и user_players передаются в контекст #}
+                                    <select name="playerToReplace" id="playerToReplaceSelect" class="form-select form-select-sm">
+                                        <option value="">-- Select Player --</option>
+                                        {% with user_club_id=request.user.club.id|default:None %}
+                                            {% if match.home_team_id == user_club_id and match.home_lineup %}
+                                                {% for slot, p_data in match.home_lineup.items %}
+                                                    {% if p_data.playerId %}
+                                                        <option value="{{ p_data.playerId }}">
+                                                            {{ p_data.slotLabel }}: {{ p_data.playerName|default:p_data.playerId }} {# Используем имя, если есть #}
+                                                        </option>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% elif match.away_team_id == user_club_id and match.away_lineup %}
+                                                 {% for slot, p_data in match.away_lineup.items %}
+                                                    {% if p_data.playerId %}
+                                                        <option value="{{ p_data.playerId }}">
+                                                            {{ p_data.slotLabel }}: {{ p_data.playerName|default:p_data.playerId }}
+                                                        </option>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
+                                        {% endwith %}
+                                    </select>
+                                </div>
+                                <div class="text-end">
+                                    <button type="button" class="btn btn-sm btn-danger" id="replace-player">Replace</button> {# Кнопка замены #}
+                                    <button type="button" class="btn btn-sm btn-secondary ms-1" onclick="this.closest('.matchUserAction').style.display='none'">Ignore</button> {# Кнопка игнорирования #}
+                                </div>
+                             </div>
                         </div>
 
                     </div>
-            </div>
-
-            <!-- 4) Если матч scheduled: BEST PLAYERS и PREVIOUS MATCHES & LINEUPS -->
-            {% if match.status == 'scheduled' %}
-            <!-- 4.a) BEST PLAYERS -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h3 class="h5 mb-0">Best Players</h3>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <!-- Home best players -->
-                        <div class="col-md-6 mb-3">
-                            <h4 class="h6 mb-3">{{ match.home_team.name }}</h4>
-                            <div class="table-responsive">
-                                <table class="table">
-                                    <tbody>
-                                        <tr>
-                                            <td>GK</td>
-                                            <td>
-                                                {% if home_best.GK %}
-                                                    {{ home_best.GK.first_name }} {{ home_best.GK.last_name }}
-                                                    <div class="small text-muted">
-                                                        Rating: {{ home_best.GK.sum_attributes }}
-                                                    </div>
-                                                {% else %}
-                                                    <em>No GK found</em>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>DEF</td>
-                                            <td>
-                                                {% if home_best.DEF %}
-                                                    {{ home_best.DEF.first_name }} {{ home_best.DEF.last_name }}
-                                                    <div class="small text-muted">
-                                                        Rating: {{ home_best.DEF.sum_attributes }}
-                                                    </div>
-                                                {% else %}
-                                                    <em>No Defender found</em>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>MID</td>
-                                            <td>
-                                                {% if home_best.MID %}
-                                                    {{ home_best.MID.first_name }} {{ home_best.MID.last_name }}
-                                                    <div class="small text-muted">
-                                                        Rating: {{ home_best.MID.sum_attributes }}
-                                                    </div>
-                                                {% else %}
-                                                    <em>No Midfielder found</em>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>FWD</td>
-                                            <td>
-                                                {% if home_best.FWD %}
-                                                    {{ home_best.FWD.first_name }} {{ home_best.FWD.last_name }}
-                                                    <div class="small text-muted">
-                                                        Rating: {{ home_best.FWD.sum_attributes }}
-                                                    </div>
-                                                {% else %}
-                                                    <em>No Forward found</em>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <!-- Away best players -->
-                        <div class="col-md-6 mb-3">
-                            <h4 class="h6 mb-3">{{ match.away_team.name }}</h4>
-                            <div class="table-responsive">
-                                <table class="table">
-                                    <tbody>
-                                        <tr>
-                                            <td>GK</td>
-                                            <td>
-                                                {% if away_best.GK %}
-                                                    {{ away_best.GK.first_name }} {{ away_best.GK.last_name }}
-                                                    <div class="small text-muted">
-                                                        Rating: {{ away_best.GK.sum_attributes }}
-                                                    </div>
-                                                {% else %}
-                                                    <em>No GK found</em>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>DEF</td>
-                                            <td>
-                                                {% if away_best.DEF %}
-                                                    {{ away_best.DEF.first_name }} {{ away_best.DEF.last_name }}
-                                                    <div class="small text-muted">
-                                                        Rating: {{ away_best.DEF.sum_attributes }}
-                                                    </div>
-                                                {% else %}
-                                                    <em>No Defender found</em>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>MID</td>
-                                            <td>
-                                                {% if away_best.MID %}
-                                                    {{ away_best.MID.first_name }} {{ away_best.MID.last_name }}
-                                                    <div class="small text-muted">
-                                                        Rating: {{ away_best.MID.sum_attributes }}
-                                                    </div>
-                                                {% else %}
-                                                    <em>No Midfielder found</em>
-                                                {% endif %} 
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>FWD</td>
-                                            <td>
-                                                {% if away_best.FWD %}
-                                                    {{ away_best.FWD.first_name }} {{ away_best.FWD.last_name }}
-                                                    <div class="small text-muted">
-                                                        Rating: {{ away_best.FWD.sum_attributes }}
-                                                    </div>
-                                                {% else %}
-                                                    <em>No Forward found</em>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div><!-- /.row -->
                 </div>
             </div>
 
-            <!-- 4.b) PREVIOUS MATCHES & LINEUPS, ВЫВОД РЯДОМ -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h3 class="h5 mb-0">Previous Matches & Lineups</h3>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <!-- Левая колонка: Home previous match -->
-                        {% if home_prev_match %}
-                        <div class="col-md-6 mb-4">
-                            <h6 class="mb-2">
-                                Home Team's Previous Match:
-                                {{ home_prev_match.home_team.name }} vs {{ home_prev_match.away_team.name }}
-                                ({{ home_prev_match.datetime|date:"d M Y" }})
-                            </h6>
-                            <p class="mb-1">
-                                Score: {{ home_prev_match.home_score }} - {{ home_prev_match.away_score }}
-                            </p>
-                            <p class="text-muted mb-2">
-                                <small>Match ID #{{ home_prev_match.id }}</small>
-                            </p>
-                            <div class="table-responsive">
-                                <table class="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Slot</th>
-                                            <th>{{ match.home_team.name }} lineup</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for slot, player in home_prev_lineup_list %}
-                                        <tr>
-                                            <td>Slot {{ slot }}</td>
-                                            <td>
-                                                {% if player %}
-                                                    {{ player.first_name }} {{ player.last_name }}
-                                                    <small class="text-muted">({{ player.position }})</small>
-                                                {% else %}
-                                                    <em class="text-muted">No player assigned</em>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        {% endif %}
 
-                        <!-- Правая колонка: Away previous match -->
-                        {% if away_prev_match %}
-                        <div class="col-md-6 mb-4">
-                            <h6 class="mb-2">
-                                Away Team's Previous Match:
-                                {{ away_prev_match.home_team.name }} vs {{ away_prev_match.away_team.name }}
-                                ({{ away_prev_match.datetime|date:"d M Y" }})
-                            </h6>
-                            <p class="mb-1">
-                                Score: {{ away_prev_match.home_score }} - {{ away_prev_match.away_score }}
-                            </p>
-                            <p class="text-muted mb-2">
-                                <small>Match ID #{{ away_prev_match.id }}</small>
-                            </p>
-                            <div class="table-responsive">
-                                <table class="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Slot</th>
-                                            <th>{{ match.away_team.name }} lineup</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for slot, player in away_prev_lineup_list %}
-                                        <tr>
-                                            <td>Slot {{ slot }}</td>
-                                            <td>
-                                                {% if player %}
-                                                    {{ player.first_name }} {{ player.last_name }}
-                                                    <small class="text-muted">({{ player.position }})</small>
-                                                {% else %}
-                                                    <em class="text-muted">No player assigned</em>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div><!-- /.row -->
-                </div>
-            </div>
-            {% endif %} <!-- /if match.status == 'scheduled' -->
-
-            <!-- 5) Если матч in_progress или finished, показать фактические составы этого матча -->
+            <!-- 3) СОСТАВЫ МАТЧА (если матч идет или завершен) -->
             {% if match.status == 'in_progress' or match.status == 'finished' %}
-            <div class="card mb-4">
-                <div class="card-header">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-light">
                     <h3 class="h5 mb-0">Lineups Used in This Match</h3>
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <!-- Домашняя команда (левая колонка) -->
+                        <!-- Домашняя команда -->
                         <div class="col-md-6 mb-4">
-                            <h6 class="mb-2">Lineup: {{ match.home_team.name }}</h6>
+                            <h6 class="mb-2">{{ match.home_team.name }} <small class="text-muted">({{ match.home_tactic|default:'balanced' }})</small></h6>
                             <div class="table-responsive">
-                                <table class="table">
+                                <table class="table table-sm table-striped table-hover"> {# Добавлены классы для таблицы #}
                                     <thead>
                                         <tr>
-                                            <th>Slot</th>
+                                            <th style="width: 20%;">Slot</th>
                                             <th>Player</th>
                                         </tr>
                                     </thead>
@@ -467,14 +224,14 @@
                                                         {{ player.first_name }} {{ player.last_name }}
                                                         <small class="text-muted">({{ player.position }})</small>
                                                     {% else %}
-                                                        <em>No player</em>
+                                                        <em class="text-danger">No player</em> {# Выделяем отсутствие игрока #}
                                                     {% endif %}
                                                 </td>
                                             </tr>
                                             {% endfor %}
                                         {% else %}
                                             <tr>
-                                                <td colspan="2"><em>No lineup data</em></td>
+                                                <td colspan="2" class="text-center text-muted"><em>No lineup data available</em></td>
                                             </tr>
                                         {% endif %}
                                     </tbody>
@@ -482,14 +239,14 @@
                             </div>
                         </div>
 
-                        <!-- Гостевая команда (правая колонка) -->
+                        <!-- Гостевая команда -->
                         <div class="col-md-6 mb-4">
-                            <h6 class="mb-2">Lineup: {{ match.away_team.name }}</h6>
+                             <h6 class="mb-2">{{ match.away_team.name }} <small class="text-muted">({{ match.away_tactic|default:'balanced' }})</small></h6>
                             <div class="table-responsive">
-                                <table class="table">
+                                <table class="table table-sm table-striped table-hover"> {# Добавлены классы для таблицы #}
                                     <thead>
                                         <tr>
-                                            <th>Slot</th>
+                                            <th style="width: 20%;">Slot</th>
                                             <th>Player</th>
                                         </tr>
                                     </thead>
@@ -503,14 +260,14 @@
                                                         {{ player.first_name }} {{ player.last_name }}
                                                         <small class="text-muted">({{ player.position }})</small>
                                                     {% else %}
-                                                        <em>No player</em>
+                                                         <em class="text-danger">No player</em> {# Выделяем отсутствие игрока #}
                                                     {% endif %}
                                                 </td>
                                             </tr>
                                             {% endfor %}
                                         {% else %}
-                                            <tr>
-                                                <td colspan="2"><em>No lineup data</em></td>
+                                             <tr>
+                                                <td colspan="2" class="text-center text-muted"><em>No lineup data available</em></td>
                                             </tr>
                                         {% endif %}
                                     </tbody>
@@ -520,118 +277,117 @@
                     </div><!-- /.row -->
                 </div>
             </div>
-            {% endif %}
+            {% endif %} {# Конец блока для составов матча #}
+
+             <!-- Область реплея (если нужна) -->
+             <div id="replayArea" style="display: none;">
+                 {# Сюда можно добавить элементы управления реплеем #}
+             </div>
 
             <!-- Кнопка "Back to Matches" -->
-            <div class="text-center mb-4">
-                <a href="{% url 'matches:match_list' %}" class="btn btn-outline-primary">
-                    Back to Matches
+            <div class="text-center mb-5"> {# Увеличен нижний отступ #}
+                <a href="{% url 'matches:match_list' %}" class="btn btn-outline-secondary"> {# Изменен цвет кнопки #}
+                    <i class="fas fa-arrow-left me-1"></i> Back to Matches {# Добавлена иконка (требует Font Awesome) #}
                 </a>
             </div>
 
         </div><!-- /.col-12 -->
     </div><!-- /.row -->
 </div><!-- /.container -->
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    // Очередь событий с задержкой
-    const DELAY = 1200; // задержка между событиями (мс)
-    let eventQueue = [];
-    let processing = false;
-
-    // Функция для добавления событий в очередь
-    function addEventsToQueue(events) {
-        eventQueue = eventQueue.concat(events);
-        if (!processing) { processNext(); }
-    }
-    window.addEventsToQueue = addEventsToQueue;
-
-    // Функция обработки очереди
-    function processNext() {
-        if (eventQueue.length === 0) { processing = false; return; }
-        processing = true;
-        renderEvent(eventQueue.shift());
-        setTimeout(processNext, DELAY);
-    }
-
-    // Функция рендера одного события
-    function renderEvent(ev) {
-        const log = document.getElementById('originalEvents');
-        const box = log.querySelector('.events-box');
-        const div = document.createElement("div");
-        div.classList.add("list-group-item", "mb-1");
-        div.innerText = `${ev.minute}' • ${ev.event_type}: ${ev.description}`;
-        box.prepend(div);
-        // автопрокрутка вверх
-        log.scrollTop = 0;
-    }
-
-    // Пример интеграции с WebSocket (замените на ваш реальный обработчик)
-    if (window.socket) {
-        window.socket.onmessage = function(e) {
-            const payload = JSON.parse(e.data);
-            if (payload.type === "match_update" && payload.data && payload.data.events) {
-                addEventsToQueue(payload.data.events);
-                // ...остальная логика (например, обновление счёта)
-            }
-        };
-    }
-
-    // Для начального рендера (если события уже есть на странице)
-    // Можно раскомментировать, если нужно "оживить" уже отрендеренные события
-    // const initialEvents = [...document.querySelectorAll('.events-box .list-group-item')];
-    // initialEvents.forEach((el, idx) => setTimeout(() => el.style.opacity = 1, DELAY * idx));
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'matches/js/match_replay.js' %}"></script>
+{# Подключаем внешние скрипты #}
+<script src="{% static 'matches/js/match_replay.js' %}"></script> {# Если есть скрипт реплея #}
 {% if match.status == 'in_progress' %}
-<script src="{% static 'matches/js/live_match.js' %}"></script>
+    {# Подключаем основной скрипт только если матч идет #}
+    <script src="{% static 'matches/js/live_match.js' %}"></script>
 {% endif %}
+{% endblock %}
 
+
+{% block extra_css %} {# Используем отдельный блок для стилей #}
 <style>
-    .score {
+    .score-box {
+        display: inline-block;
+        padding: 0.3rem 0.8rem;
+        background-color: #343a40; /* Темный фон */
+        color: white;
+        font-weight: bold;
+        border-radius: 0.25rem;
+        min-width: 40px; /* Минимальная ширина для выравнивания */
+        text-align: center;
+    }
+    .score-separator {
+        margin: 0 0.5rem;
         font-weight: bold;
     }
-    .match-event {
-        padding: 10px;
-        border-bottom: 1px solid #eee;
-        animation: fadeIn 0.5s;
+    .match-time {
+        font-size: 0.9em;
     }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
+    .event-log {
+        height: 300px; /* Задаем высоту для скролла */
+        overflow-y: auto; /* Включаем вертикальный скролл */
+        border: 1px solid #eee;
+        border-radius: 0.25rem;
+        padding: 0; /* Убираем padding у контейнера */
     }
+    .events-box .list-group-item {
+        border: none; /* Убираем границы у элементов */
+        border-bottom: 1px dashed #eee; /* Добавляем пунктир */
+        padding: 0.5rem 0.75rem; /* Уменьшаем padding */
+        font-size: 0.9em;
+    }
+     .events-box .list-group-item:last-child {
+         border-bottom: none; /* Убираем границу у последнего */
+     }
     
-    /* Стили для последовательного появления событий */
+    /* Стили для анимации появления нового события */
     .new-event {
         opacity: 0;
-        transition: opacity 0.5s ease-in-out;
+        transform: translateY(-10px); /* Начинаем чуть выше */
+        transition: opacity 0.4s ease-out, transform 0.4s ease-out;
     }
-    
     .new-event-visible {
         opacity: 1;
+        transform: translateY(0);
     }
-    /* #originalEvents {
-        overflow-y: auto;
-        height: 183px;
-    } */
-    .score-title {
-        padding:6px;
-        background-color: gray;
-        color: white;
+
+    /* Статистика */
+    .stat-box .list-group-item {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9em;
+         border: none;
+         border-bottom: 1px solid #eee;
     }
+    .stat-box .list-group-item:last-child {
+         border-bottom: none;
+     }
+
+    /* Форма реакции на травму */
     .matchUserAction {
-        display: none;
-        position: fixed;
-        width:50%;
-        height: 300px;
-        background-color: silver;
-        z-index:9;
-        padding:12px;
+        /* display: none; */ /* Скрыто по умолчанию, JS будет показывать */
+        /* position: fixed; */ /* Убрали fixed, будет в потоке */
+        /* width:50%; */ /* Убрали фикс. ширину */
+        /* height: 300px; */ /* Убрали фикс. высоту */
+        /* background-color: silver; */ /* Используем стили card */
+        /* z-index:9; */
+        /* padding:12px; */
+        border: 1px solid #dc3545; /* Красная рамка */
+        border-radius: 0.25rem;
     }
-    .display-action {
-        display: block;
+    .display-action { /* Класс для показа формы */
+        display: block !important; /* Важно, чтобы перекрыть style="display: none;" */
+    }
+
+    /* Стили для таблицы составов */
+    .table-sm th, .table-sm td {
+        padding: 0.4rem;
+        font-size: 0.9em;
     }
 </style>
+
+{# Подключение Font Awesome (если нужно для иконок) - добавьте в base.html #}
+{# <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"> #}
+
 {% endblock %}
