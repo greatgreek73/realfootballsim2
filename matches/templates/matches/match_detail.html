@@ -14,8 +14,8 @@
                 <div class="card-header bg-light"> {# Светлый фон заголовка #}
                     <div class="d-flex justify-content-between align-items-center flex-wrap"> {# flex-wrap для мобильных #}
                         <h2 class="h4 mb-0 me-3"> {# Уменьшен заголовок #}
-                            <a href="{% url 'clubs:club_detail' match.home_team.id %}" class="text-decoration-none text-dark">{{ match.home_team.name }}</a> 
-                            vs 
+                            <a href="{% url 'clubs:club_detail' match.home_team.id %}" class="text-decoration-none text-dark">{{ match.home_team.name }}</a>
+                            vs
                             <a href="{% url 'clubs:club_detail' match.away_team.id %}" class="text-decoration-none text-dark">{{ match.away_team.name }}</a>
                         </h2>
                         <div class="text-muted small"> {# Уменьшен шрифт даты #}
@@ -102,25 +102,21 @@
                             <h4 class="h6 mb-3">Events</h4>
                             <div id="originalEvents" class="event-log"> {# Контейнер для лога #}
                                 <div class="list-group events-box"> {# Сюда JS будет добавлять события #}
-                                    {# Начальные события, если матч не live (опционально) #}
-                                    {% if match.status != 'in_progress' %}
-                                        {% for event in match_events %}
-                                        <div class="list-group-item">
-                                            {# Отображение начальных событий (можно улучшить формат) #}
-                                            <strong>{{ event.minute }}'</strong>
-                                            {% if event.event_type == 'goal' %}⚽{% elif event.event_type == 'interception' %}🔄{% elif event.event_type == 'shot_miss' %}❌{% elif event.event_type == 'pass' %}➡️{% elif event.event_type == 'foul' %}⚠️{% elif event.event_type == 'injury_concern' %}✚{% else %} M {% endif %}
-                                            {{ event.description }}
-                                            {# Отображение игроков #}
-                                            {% if event.player %}
-                                            <small class="text-muted">({{ event.player.last_name }}{% if event.related_player %} -> {{ event.related_player.last_name }}{% endif %})</small>
-                                            {% endif %}
-                                        </div>
-                                        {% empty %}
-                                         <div class="list-group-item text-muted">No events yet.</div>
-                                        {% endfor %}
-                                    {% else %}
-                                         <div class="list-group-item text-muted">Waiting for live events...</div>
-                                    {% endif %}
+                                    {# Выводим все события, загруженные представлением #}
+                                    {% for event in match_events %}
+                                    <div class="list-group-item">
+                                        {# Отображение начальных событий (можно улучшить формат) #}
+                                        <strong>{{ event.minute }}'</strong>
+                                        {% if event.event_type == 'goal' %}⚽{% elif event.event_type == 'interception' %}🔄{% elif event.event_type == 'shot_miss' %}❌{% elif event.event_type == 'pass' %}➡️{% elif event.event_type == 'foul' %}⚠️{% elif event.event_type == 'injury_concern' %}✚{% else %} M {% endif %}
+                                        {{ event.description }}
+                                        {# Отображение игроков #}
+                                        {% if event.player %}
+                                        <small class="text-muted">({{ event.player.last_name }}{% if event.related_player %} -> {{ event.related_player.last_name }}{% endif %})</small>
+                                        {% endif %}
+                                    </div>
+                                    {% empty %}
+                                     <div class="list-group-item text-muted">No events found for this match yet.</div> {# Изменен текст #}
+                                    {% endfor %}
                                 </div>
                             </div>
                         </div>
@@ -133,23 +129,23 @@
                                     {# Начальные значения статистики из контекста #}
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <span>Passes</span>
-                                        <span class="badge bg-primary rounded-pill">{{ match.st_passes|default:0 }}</span>
+                                        <span class="badge bg-primary rounded-pill stat-passes">{{ match.st_passes|default:0 }}</span> {# Добавлен класс #}
                                     </div>
                                      <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <span>Shoots</span>
-                                        <span class="badge bg-info rounded-pill">{{ match.st_shoots|default:0 }}</span>
+                                        <span class="badge bg-info rounded-pill stat-shoots">{{ match.st_shoots|default:0 }}</span> {# Добавлен класс #}
                                     </div>
                                      <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <span>Possessions</span>
-                                        <span class="badge bg-secondary rounded-pill">{{ match.st_possessions|default:0 }}</span>
+                                        <span class="badge bg-secondary rounded-pill stat-possessions">{{ match.st_possessions|default:0 }}</span> {# Добавлен класс #}
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <span>Fouls</span>
-                                        <span class="badge bg-warning text-dark rounded-pill">{{ match.st_fouls|default:0 }}</span>
+                                        <span class="badge bg-warning text-dark rounded-pill stat-fouls">{{ match.st_fouls|default:0 }}</span> {# Добавлен класс #}
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <span>Injuries</span>
-                                        <span class="badge bg-danger rounded-pill" id="inj">{{ match.st_injury|default:0 }}</span>
+                                        <span class="badge bg-danger rounded-pill stat-injuries" id="inj">{{ match.st_injury|default:0 }}</span> {# Добавлен класс #}
                                     </div>
                                 </div>
                             </div>
@@ -341,7 +337,7 @@
      .events-box .list-group-item:last-child {
          border-bottom: none; /* Убираем границу у последнего */
      }
-    
+
     /* Стили для анимации появления нового события */
     .new-event {
         opacity: 0;

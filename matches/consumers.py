@@ -1,14 +1,13 @@
 # matches/consumers.py
-
+import logging
 import json
 import traceback
-
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.core.serializers.json import DjangoJSONEncoder
-
 from .models import Match, MatchEvent
 
+logger = logging.getLogger('match_creation')
 
 class MatchConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -18,6 +17,8 @@ class MatchConsumer(AsyncWebsocketConsumer):
         try:
             await self.channel_layer.group_add(self.group_name, self.channel_name)
             await self.accept()
+
+            logger.info(f'[WebSocket] Подключение установлено: матч ID={self.match_id}, канал {self.channel_name}')
             print(f"WebSocket accepted for match {self.match_id}")
 
             match_data = await self.get_match_data()
@@ -28,6 +29,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
                 }, cls=DjangoJSONEncoder))
                 print("Initial match data sent")
             else:
+                logger.warning(f'[WebSocket] Матч ID={self.match_id} не найден — отправка ошибки клиенту и закрытие соединения')
                 print(f"No match data found for ID: {self.match_id}")
                 await self.send(text_data=json.dumps({
                     'type': 'error',
@@ -36,23 +38,23 @@ class MatchConsumer(AsyncWebsocketConsumer):
                 await self.close()
 
         except Exception as e:
+            logger.error(f'[WebSocket] Ошибка в connect для матча ID={self.match_id}: {e}')
             print(f"Error in connect for match {self.match_id}: {e}")
             traceback.print_exc()
             await self.close(code=1011)
 
     async def disconnect(self, close_code):
+        logger.info(f'[WebSocket] Отключение: матч ID={self.match_id}, код={close_code}, канал={self.channel_name}')
         print(f"WebSocket disconnecting from match {self.match_id} (code {close_code})")
         try:
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
+            logger.info(f'[WebSocket] Клиент удалён из группы {self.group_name}')
             print(f"Removed from group {self.group_name}")
         except Exception as e:
+            logger.error(f'[WebSocket] Ошибка в disconnect для матча ID={self.match_id}: {e}')
             print(f"Error in disconnect for match {self.match_id}: {e}")
 
     async def match_update(self, event):
-        """
-        Handles broadcasted updates. Merges partial updates by fetching
-        full state when needed.
-        """
         try:
             data = event.get('data', {})
             is_partial = 'minute' not in data or 'status' not in data
@@ -63,7 +65,6 @@ class MatchConsumer(AsyncWebsocketConsumer):
                 if not full:
                     print(f"Unable to fetch full match data for {self.match_id}")
                     return
-                # overlay partial onto full
                 full.update(data)
                 if 'events' in data:
                     full['events'] = data['events']
@@ -84,18 +85,13 @@ class MatchConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def get_match_data(self):
-        """
-        Fetches the current match state and the last 10 events.
-        """
         try:
-            # load the match
             match = Match.objects.select_related(
                 'home_team',
                 'away_team',
                 'current_player_with_ball',
             ).get(id=self.match_id)
 
-            # fetch the last 10 events separately
             recent_events = (
                 MatchEvent.objects
                 .filter(match_id=self.match_id)
@@ -113,14 +109,12 @@ class MatchConsumer(AsyncWebsocketConsumer):
                     'related_player_name': evt.related_player.last_name if evt.related_player else None,
                 })
 
-            # determine who has possession
             possessing_team_id = None
             if match.possession_indicator == 1:
                 possessing_team_id = str(match.home_team_id)
             elif match.possession_indicator == 2:
                 possessing_team_id = str(match.away_team_id)
 
-            # build the payload
             return {
                 "match_id": str(match.id),
                 "minute": match.current_minute,

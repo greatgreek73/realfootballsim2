@@ -4,7 +4,7 @@
 const replaceButton = document.querySelector('#replace-player');
 if (replaceButton) {
     replaceButton.addEventListener('click', function(){
-        const actionForm = document.querySelector('.matchUserAction'); // Используем класс вместо ID для формы
+        const actionForm = document.querySelector('.matchUserAction');
         if (actionForm) {
             actionForm.classList.remove('display-action');
         }
@@ -24,9 +24,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const matchId = matchInfoArea.dataset.matchId;
-    const initialStatus = matchInfoArea.dataset.matchStatus; 
+    const initialStatus = matchInfoArea.dataset.matchStatus;
     let currentMatchStatus = initialStatus; // Сохраняем текущий статус для проверок
-    let isLive = initialStatus === 'in_progress'; 
+    let isLive = initialStatus === 'in_progress';
 
     console.log('Match setup:', { matchId, isLive, status: initialStatus });
 
@@ -47,13 +47,24 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!statBox) { console.error('Element .stat-box not found!'); }
     // injuryActionForm может отсутствовать, это не критично
 
+     // --- Функция для отображения сообщений пользователю ---
+     function showMessage(text, type = 'info') {
+        // Эта функция должна быть реализована где-то в вашем коде (например, в core/base.html)
+        // Временно выведем в консоль
+        console.log(`MESSAGE (${type}): ${text}`);
+        // Если у вас есть элементы для сообщений (как в base.html с alert-ами), используйте их:
+        // const messagesContainer = document.getElementById('messagesContainer'); // Пример
+        // if (messagesContainer) { /* Создать и добавить alert */ }
+     }
+
+
     // --- Функция обновления статистики ---
     function updateStatistics(data) {
         // Обновляем только если statBox найден
-        if (!statBox) return; 
+        if (!statBox) return;
 
         // Ищем счетчик травм (может быть внутри statBox или отдельно)
-        const injCounterElement = document.getElementById('inj'); 
+        const injCounterElement = document.getElementById('inj');
 
         // Показываем форму реакции на травму, если счетчик изменился и форма есть
         if (injCounterElement && injuryActionForm && data.st_injury !== undefined) {
@@ -62,11 +73,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(`Injury count changed from ${currentInjuries} to ${data.st_injury}. Showing action form.`);
                 injuryActionForm.style.display = 'block'; // Показываем форму
                 injuryActionForm.classList.add('display-action'); // Добавляем класс (если нужен для стилей)
-                // Можно добавить автоскрытие
-                // setTimeout(() => {
-                //     injuryActionForm.style.display = 'none';
-                //     injuryActionForm.classList.remove('display-action');
-                // }, 15000); 
+                // Можно добавить автоскрытие через таймаут, если нужно
+                // setTimeout(() => { /* скрыть форму */ }, 15000);
             }
         }
 
@@ -88,25 +96,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
     }
 
-    // --- Функция добавления одного события в лог ---
+    // --- Функция добавления одного события в лог (теперь добавляет в начало для обратного порядка) ---
     function addEventToList(event) {
         // Добавляем логирование в начало функции
-        console.log(">>> addEventToList called with event:", event); 
+        console.log(">>> addEventToList called with event:", event);
 
         // Проверяем наличие контейнера .events-box
         if (!eventsBox) {
-             console.error("!!! eventsBox element not found inside #originalEvents! Cannot add event."); 
-             return; 
+             console.error("!!! eventsBox element not found inside #originalEvents! Cannot add event.");
+             return;
         }
         // Логируем, что контейнер найден
-        console.log(">>> Found eventsBox element:", eventsBox); 
+        console.log(">>> Found eventsBox element:", eventsBox);
 
         // Создаем новый элемент события
         const eventDiv = document.createElement('div');
         eventDiv.className = 'list-group-item new-event'; // Класс для анимации
 
         // Иконки для событий
-        let icon = ' M '; 
+        let icon = ' M ';
         switch(event.event_type) {
             case 'goal': icon = ' ⚽ '; break;
             case 'interception': icon = ' 🔄 '; break;
@@ -120,6 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'match_start': icon = ' ▶️ '; break;
             case 'match_end': icon = ' ⏹️ '; break;
             case 'match_paused': icon = ' ⏸️ '; break;
+             case 'info': icon = ' ⓘ '; break; // Добавлено для информационных сообщений
         }
 
         // Имена игроков
@@ -132,51 +141,54 @@ document.addEventListener('DOMContentLoaded', function() {
         eventDiv.innerHTML = `
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <strong>${event.minute}'</strong> 
+                    <strong>${event.minute}'</strong>
                     <span class="event-icon">${icon}</span>
                     ${event.description}
-                    <small class="text-muted">${playerInfo}</small> 
+                    <small class="text-muted">${playerInfo}</small>
                 </div>
             </div>
         `;
-        
-        // Вставляем в начало списка
-        if (eventsBox.firstChild) {
-            eventsBox.insertBefore(eventDiv, eventsBox.firstChild);
-            console.log(">>> Event prepended to eventsBox"); 
-        } else {
-            // Если список был пуст (например, содержал "Waiting..."), очистим его перед добавлением
-            eventsBox.innerHTML = ''; 
-            eventsBox.appendChild(eventDiv);
-            console.log(">>> Event appended to initially empty eventsBox"); 
-        }
 
-        // Ограничиваем количество событий
-        while (eventsBox.children.length > 30) {
-            eventsBox.removeChild(eventsBox.lastChild);
+        // Вставляем в НАЧАЛО списка для обратного хронологического порядка (новые сверху)
+        eventsBox.insertBefore(eventDiv, eventsBox.firstChild);
+        console.log(">>> Event prepended to eventsBox");
+
+        // Ограничиваем количество событий (опционально, но хорошая практика)
+        // Удаляем старые события снизу
+        while (eventsBox.children.length > 100) { // Можно увеличить лимит, если нужно
+            eventsBox.removeChild(eventsBox.lastChild); // Удаляем с конца
         }
 
         // Анимация появления
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                  eventDiv.classList.add('new-event-visible');
-                 console.log(">>> Animation class added for:", eventDiv); 
+                 console.log(">>> Animation class added for:", eventDiv);
             });
         });
+
+        // Автоматическая прокрутка вверх к новым событиям (если лог уже заполнен)
+         if (eventsListContainer) {
+              // eventsListContainer.scrollTop = 0; // Прокрутка в самый верх
+              // Или плавная прокрутка:
+              eventsListContainer.scrollTo({ top: 0, behavior: 'smooth' });
+         }
     }
 
     // --- Логика WebSocket ---
     if (isLive) {
         console.log('Match is live, attempting WebSocket connection...');
-        
+
         const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const wsUrl = `${wsScheme}://${window.location.host}/ws/match/${matchId}/`;
         console.log('WebSocket URL:', wsUrl) ;
-        
+
         const matchSocket = new WebSocket(wsUrl);
 
         matchSocket.onopen = function(e) {
             console.log('WebSocket connection established successfully!');
+             // При успешном подключении консьюмер пришлет первое сообщение с начальным состоянием и всей историей событий.
+             // Эти события будут обработаны в onmessage.
         };
 
         matchSocket.onclose = function(e) {
@@ -194,36 +206,65 @@ document.addEventListener('DOMContentLoaded', function() {
         matchSocket.onmessage = function(e) {
             try {
                 const messageData = JSON.parse(e.data);
-                
+
                 // Проверяем базовую структуру
                 if (messageData.type !== 'match_update' || !messageData.data) {
                      console.warn("Received message is not 'match_update' or missing 'data'.", messageData);
                      return;
                 }
-                
-                // Логируем ПОЛУЧЕННОЕ сообщение
-                console.log('Received WS message data:', messageData.data); 
 
-                const data = messageData.data; 
+                const data = messageData.data;
+                console.log('Received WS message data:', data); // Логируем ПОЛУЧЕННОЕ сообщение
 
-                // --- Разделение логики ---
+                // --- Обработка полного обновления состояния и ИСТОРИИ (обычно первое сообщение) ---
+                // Проверяем, что это не одиночное событие (нет partial_update: true)
+                // и что есть список событий.
+                if (data.partial_update === undefined && data.events && Array.isArray(data.events)) {
+                    console.log(`Processing initial FULL STATE + HISTORY update (${data.events.length} events)`);
 
-                // 1. Обновление СОБЫТИЯ (от broadcast...)
-                // Проверяем наличие 'events' и 'partial_update'
-                if (data.events && data.partial_update === true && Array.isArray(data.events) && data.events.length > 0) {
-                    console.log('Processing EVENT update (from broadcast_minute_events_in_chunks):', data.events[0]);
-                    addEventToList(data.events[0]); 
-                } 
-                // 2. Обновление СОСТОЯНИЯ (от send_update)
-                // Проверяем ОТСУТСТВИЕ 'events'
-                else if (data.events === undefined) { 
+                     // Очищаем текущий лог событий (включая те, что вывел шаблон)
+                     if (eventsBox) {
+                         eventsBox.innerHTML = '';
+                         console.log("Cleared eventsBox for initial load.");
+                     }
+
+                    // Добавляем все исторические события.
+                    // Так как addEventToList добавляет в начало,
+                    // а события в массиве data.events приходят в хронологическом порядке с бэкенда,
+                    // итоговый список будет в обратном хронологическом порядке.
+                    data.events.forEach(event => {
+                         addEventToList(event);
+                    });
+                    console.log(`Added ${data.events.length} historical events from initial message.`);
+
+                     // Обновляем состояние после загрузки всех исторических событий
+                     if (timeElement && data.minute !== undefined) timeElement.textContent = `${data.minute}'`;
+                     if (homeScoreElement && data.home_score !== undefined) homeScoreElement.textContent = data.home_score;
+                     if (awayScoreElement && data.away_score !== undefined) awayScoreElement.textContent = data.away_score;
+                     updateStatistics(data);
+
+                }
+                 // --- Обработка одиночного события (от broadcast_minute_events_in_chunks) ---
+                else if (data.partial_update === true && data.events && Array.isArray(data.events) && data.events.length > 0) {
+                    console.log('Processing single EVENT update (from broadcast_minute_events_in_chunks):', data.events[0]);
+                    // Добавляем событие в список (функция addEventToList добавляет в начало)
+                    addEventToList(data.events[0]);
+                    // Также обновляем состояние, если оно пришло в этом же сообщении (обычно нет)
+                    if (data.minute !== undefined) timeElement.textContent = `${data.minute}'`;
+                    if (data.home_score !== undefined) homeScoreElement.textContent = data.home_score;
+                    if (data.away_score !== undefined) awayScoreElement.textContent = data.away_score;
+                    updateStatistics(data);
+
+                }
+                 // --- Обработка только обновления состояния (от send_update) ---
+                else if (data.partial_update === undefined && data.events === undefined) {
                     console.log('Processing STATE update (from send_update)');
-                    
+
                     // Обновляем время
                     if (timeElement && data.minute !== undefined) {
                         timeElement.textContent = `${data.minute}'`;
                     } else if(timeElement) {
-                        console.warn("State update received, but 'minute' is missing or undefined.");
+                         console.warn("State update received, but 'minute' is missing or undefined.");
                     }
 
                     // Обновляем счет
@@ -240,30 +281,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     // Обновляем статистику
                     updateStatistics(data);
-
-                    // Обновляем статус матча и закрываем сокет, если матч закончился
-                    if (data.status && data.status !== currentMatchStatus) {
-                         console.log(`Match status changed from ${currentMatchStatus} to: ${data.status}`);
-                         currentMatchStatus = data.status; // Обновляем текущий статус
-                         const statusDisplay = document.getElementById('matchStatusDisplay');
-                         if(statusDisplay) statusDisplay.textContent = data.status; // Обновляем отображение статуса
-
-                         if (currentMatchStatus === 'finished' || currentMatchStatus === 'cancelled' || currentMatchStatus === 'error') {
-                              console.log("Match ended. Closing WebSocket.");
-                              showMessage(`Match ${currentMatchStatus}. Live updates stopped.`, 'info');
-                              matchSocket.close(); 
-                              // Можно добавить логику для кнопки реплея и т.д.
-                              const replayButton = document.getElementById('startReplayBtn');
-                              if (replayButton && currentMatchStatus === 'finished') {
-                                   replayButton.style.display = 'block'; // Показываем кнопку реплея
-                              }
-                         }
-                    }
                 } else {
-                     // Сообщение имеет ключ 'events', но не имеет флага partial_update
-                     // или events - пустой массив. Игнорируем или логируем.
-                     console.warn("Received message seems like a state update but contains 'events' key, or 'events' is empty. Ignored.", data);
+                     // Неизвестный формат сообщения
+                     console.warn("Received message format not recognized. Ignored.", data);
                 }
+
+
+                // --- Проверка статуса матча (независимо от типа сообщения) ---
+                if (data.status && data.status !== currentMatchStatus) {
+                     console.log(`Match status changed from ${currentMatchStatus} to: ${data.status}`);
+                     currentMatchStatus = data.status; // Обновляем текущий статус
+                     const statusDisplay = document.getElementById('matchStatusDisplay');
+                     if(statusDisplay) statusDisplay.textContent = data.status; // Обновляем отображение статуса
+
+                     if (['finished', 'cancelled', 'error'].includes(currentMatchStatus)) {
+                          console.log("Match ended. Closing WebSocket.");
+                           // Показываем сообщение о завершении матча
+                           showMessage(`Match ${currentMatchStatus}. Live updates stopped.`, 'info');
+                          // Закрываем сокет
+                          matchSocket.close();
+                          // Можно добавить логику для кнопки реплея и т.д.
+                          const replayButton = document.getElementById('startReplayBtn');
+                          if (replayButton && currentMatchStatus === 'finished') {
+                               replayButton.style.display = 'block'; // Показываем кнопку реплея
+                          }
+                     }
+                }
+
 
             } catch (error) {
                 console.error('Error parsing WebSocket message or processing data:', error);
@@ -273,9 +317,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     } else {
         console.log('Match is not live (' + initialStatus + '), skipping WebSocket setup.');
-        // Инициализация статистики из начальных данных (если нужно)
-        // Предполагаем, что начальные данные переданы в data-атрибуты или JS переменные
-        // const initialData = { ... }; 
-        // updateStatistics(initialData);
+        // Если матч не live (например, finished или scheduled), события уже выведены шаблоном.
+        // Ничего дополнительно делать не нужно, WebSocket не требуется.
     }
 }); // End DOMContentLoaded

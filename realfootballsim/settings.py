@@ -172,25 +172,39 @@ CELERY_BEAT_SCHEDULE = {
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+
     'formatters': {
         'verbose': {
             'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
             'style': '{',
         },
+        'standard': {
+            'format': '[{asctime}] {levelname} {message}',
+            'style': '{',
+        },
     },
+
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
-            'stream': 'ext://sys.stdout',  # Явно указываем stdout
+            'stream': 'ext://sys.stdout',
         },
         'file': {
             'class': 'logging.FileHandler',
-            'filename': 'debug.log',
+            'filename': os.path.join(BASE_DIR, 'logs', 'debug.log'),
             'formatter': 'verbose',
-            'encoding': 'utf-8',  # Явно указываем UTF-8 для файла
+            'encoding': 'utf-8',
+        },
+        'match_creation_handler': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'match_creation.log'),
+            'formatter': 'standard',
+            'encoding': 'utf-8',
         },
     },
+
     'loggers': {
         'clubs': {
             'handlers': ['console', 'file'],
@@ -207,8 +221,14 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
+        'match_creation': {
+            'handlers': ['match_creation_handler'],
+            'level': 'INFO',
+            'propagate': False,
+        },
     },
 }
+
 
 TOURNAMENT_TIMEZONES = [
     ('UTC', 'UTC'),

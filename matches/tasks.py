@@ -78,11 +78,16 @@ def broadcast_minute_events_in_chunks(match_id: int, minute: int, duration: int 
     """
     logger.debug(f"Task broadcast_minute_events received for match {match_id}, minute {minute}")
     try:
-        # Проверяем существование матча по ID
-        # Полный объект Match не загружаем, чтобы сэкономить ресурсы, если он не нужен
-        if not Match.objects.filter(id=match_id).exists():
+        # Проверяем существование и статус матча
+        match = Match.objects.filter(id=match_id).first()
+        if not match:
              logger.error(f"Match {match_id} does not exist for broadcasting events.")
              return f"Match {match_id} not found"
+        
+        # Если матч завершен и это не финальные минуты, прекращаем трансляцию
+        if match.status in ['finished', 'error', 'cancelled'] and minute < 89:
+            logger.info(f"Match {match_id} already {match.status}. Skipping broadcast for minute {minute}.")
+            return f"Match {match_id} {match.status}, no broadcast needed for minute {minute}"
 
         # Получаем все события минуты, включая связанные объекты для имен
         events = list(
