@@ -153,22 +153,6 @@ CELERY_TASK_SOFT_TIME_LIMIT = 240
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 50
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 
-# Обновляем расписание задач Celery Beat
-CELERY_BEAT_SCHEDULE = {
-    'simulate-every-5-seconds': {
-        'task': 'tournaments.simulate_active_matches',
-        'schedule': 5.0,
-    },
-    'check-season-end': {
-        'task': 'tournaments.check_season_end',
-        'schedule': crontab(hour=0, minute=0),
-    },
-    'start-scheduled-matches-every-minute': {
-        'task': 'tournaments.start_scheduled_matches',
-        'schedule': crontab(minute='*'),
-    },
-}
-
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

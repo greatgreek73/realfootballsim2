@@ -1,4 +1,10 @@
 @echo off
+tasklist | find /i "celery.exe" > nul
+if not errorlevel 1 (
+    echo Celery уже запущен. Пожалуйста, закройте старые процессы перед запуском.
+    pause
+    exit
+)
 title Celery Processes + Flower
 color 0A
 chcp 65001 > nul

@@ -92,15 +92,16 @@ class MatchConsumer(AsyncWebsocketConsumer):
                 'current_player_with_ball',
             ).get(id=self.match_id)
 
-            recent_events = (
+            all_events = (
                 MatchEvent.objects
                 .filter(match_id=self.match_id)
                 .select_related('player', 'related_player')
-                .order_by('-timestamp')[:10]
+                .order_by('minute', 'timestamp')
+                # Убрано ограничение [:10] для получения всех событий
             )
 
             events_list = []
-            for evt in recent_events:
+            for evt in all_events:
                 events_list.append({
                     'minute': evt.minute,
                     'event_type': evt.event_type,
