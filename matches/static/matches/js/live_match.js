@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const initialStatus = matchInfoArea.dataset.matchStatus;
     let currentMatchStatus = initialStatus; // Сохраняем текущий статус для проверок
     let isLive = initialStatus === 'in_progress';
+    let matchSocket;
 
     console.log('Match setup:', { matchId, isLive, status: initialStatus });
 
@@ -38,7 +39,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const eventsBox = eventsListContainer ? eventsListContainer.querySelector('.events-box') : null; // Внутренний блок для добавления
     const statBox = document.querySelector('.stat-box'); // Блок для статистики
     const injuryActionForm = document.querySelector('#matchUserAction-inj'); // Форма для травмы
-    const continueBtn = document.getElementById('continueMinute');
+    const nextMinuteBtn = document.getElementById('nextMinuteBtn');
+    const tickSeconds = parseFloat(matchInfoArea.dataset.tickSeconds) || 0;
+    let nextMinuteTimeout = null;
 
     // Проверяем наличие основных элементов для обновления
     if (!timeElement) { console.error('Element #matchTime not found!'); }
@@ -48,12 +51,19 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!statBox) { console.error('Element .stat-box not found!'); }
 
     function handleStatusChange(status) {
-        if (continueBtn) {
+        if (nextMinuteBtn) {
             if (status === 'paused') {
-                continueBtn.style.display = 'block';
-                continueBtn.disabled = false;
+                nextMinuteBtn.style.display = 'block';
+                nextMinuteBtn.disabled = false;
+                if (tickSeconds > 0) {
+                    clearTimeout(nextMinuteTimeout);
+                    nextMinuteTimeout = setTimeout(() => {
+                        sendNextMinute();
+                    }, tickSeconds * 1000);
+                }
             } else {
-                continueBtn.style.display = 'none';
+                nextMinuteBtn.style.display = 'none';
+                clearTimeout(nextMinuteTimeout);
             }
         }
     }
@@ -68,12 +78,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 match_id: matchId
             }));
         }
+        if (nextMinuteBtn) {
+            nextMinuteBtn.style.display = 'none';
+        }
+        clearTimeout(nextMinuteTimeout);
     }
 
-    if (continueBtn) {
-        continueBtn.addEventListener('click', function() {
+    if (nextMinuteBtn) {
+        nextMinuteBtn.addEventListener('click', function() {
             sendNextMinute();
-            continueBtn.disabled = true;
         });
     }
     // injuryActionForm может отсутствовать, это не критично
@@ -214,7 +227,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const wsUrl = `${wsScheme}://${window.location.host}/ws/match/${matchId}/`;
         console.log('WebSocket URL:', wsUrl) ;
 
-        const matchSocket = new WebSocket(wsUrl);
+        matchSocket = new WebSocket(wsUrl);
 
         matchSocket.onopen = function(e) {
             console.log('WebSocket connection established successfully!');

@@ -50,6 +50,10 @@ def simulate_next_minute(match_id: int):
 
             minute = match.current_minute
             match.save()
+            minute = updated.current_minute
+            updated.save()
+
+        broadcast_minute_events_in_chunks.delay(match_id, minute)
 
         broadcast_minute_events_in_chunks.delay(
             match_id, minute, duration=TICK_SECONDS
@@ -127,7 +131,7 @@ def simulate_match_minute(match_id: int):
 
 # --- ИЗМЕНЕННАЯ ЗАДАЧА broadcast_minute_events_in_chunks ---
 @shared_task(name='matches.broadcast_minute_events_in_chunks')
-def broadcast_minute_events_in_chunks(match_id: int, minute: int, duration: int = 10):
+def broadcast_minute_events_in_chunks(match_id: int, minute: int, duration: int = 4):
     """
     Поштучно (с паузой) отправляет по WebSocket ТОЛЬКО СОБЫТИЯ, 
     созданные в указанную минуту матча.
@@ -140,9 +144,11 @@ def broadcast_minute_events_in_chunks(match_id: int, minute: int, duration: int 
              logger.error(f"Match {match_id} does not exist for broadcasting events.")
              return f"Match {match_id} not found"
         
-        # Если матч завершен и это не финальные минуты, прекращаем трансляцию
-        if match.status in ['finished', 'error', 'cancelled'] and minute < 89:
-            logger.info(f"Match {match_id} already {match.status}. Skipping broadcast for minute {minute}.")
+        # Если матч завершён с ошибкой или отменён, прекращаем трансляцию
+        if match.status in ['error', 'cancelled']:
+            logger.info(
+                f"Match {match_id} already {match.status}. Skipping broadcast for minute {minute}."
+            )
             return f"Match {match_id} {match.status}, no broadcast needed for minute {minute}"
 
         # Получаем все события минуты, включая связанные объекты для имен
