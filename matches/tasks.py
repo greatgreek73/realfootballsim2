@@ -117,7 +117,10 @@ def broadcast_minute_events_in_chunks(match_id: int, minute: int, duration: int 
         for i, event in enumerate(events):
             # Формируем данные ТОЛЬКО для этого события
             event_player_name = f"{event.player.first_name} {event.player.last_name}" if event.player else ""
-            related_player_name = f"{event.related_player.first_name} {event.related_player.last_name}" if event.related_player else ""
+            related_player_name = (
+                f"{event.related_player.first_name} {event.related_player.last_name}"
+                if event.related_player else ""
+            )
             
             single_event_data = {
                 "minute": event.minute,
@@ -130,12 +133,21 @@ def broadcast_minute_events_in_chunks(match_id: int, minute: int, duration: int 
 
             # --- Собираем структуру данных ТОЛЬКО с событием и флагом ---
             message_payload = {
-                "type": "match_update", # Тип сообщения для consumer
+                "type": "match_update",  # Тип сообщения для consumer
                 "data": {
-                    "match_id": match_id, # Добавим ID матча
-                    "events": [single_event_data], # Массив с одним событием
-                    "partial_update": True  # Флаг, что это только событие
-                }
+                    "match_id": match_id,
+                    "minute": minute,  # Передаем минуту события явно
+                    "home_score": match.home_score,
+                    "away_score": match.away_score,
+                    "status": match.status,
+                    "st_shoots": match.st_shoots,
+                    "st_passes": match.st_passes,
+                    "st_possessions": match.st_possessions,
+                    "st_fouls": match.st_fouls,
+                    "st_injury": match.st_injury,
+                    "events": [single_event_data],
+                    "partial_update": True,  # Помечаем как частичное обновление
+                },
             }
             # -----------------------------------------------------------
 
