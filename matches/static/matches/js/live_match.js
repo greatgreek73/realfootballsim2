@@ -119,15 +119,15 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'goal': icon = ' ⚽ '; break;
             case 'interception': icon = ' 🔄 '; break;
             case 'shot_miss': icon = ' ❌ '; break;
-            case 'pass': icon = ' ➡️ '; break;
-            case 'foul': icon = ' ⚠️ '; break;
+            case 'pass': icon = ' ➡ '; break;
+            case 'foul': icon = ' ⚠ '; break;
             case 'injury_concern': icon = ' ✚ '; break;
             case 'yellow_card': icon = ' 🟨 '; break;
             case 'red_card': icon = ' 🟥 '; break;
             case 'substitution': icon = ' ⇆ '; break;
-            case 'match_start': icon = ' ▶️ '; break;
-            case 'match_end': icon = ' ⏹️ '; break;
-            case 'match_paused': icon = ' ⏸️ '; break;
+            case 'match_start': icon = ' ▶ '; break;
+            case 'match_end': icon = ' ⏹ '; break;
+            case 'match_paused': icon = ' ⏸ '; break;
              case 'info': icon = ' ⓘ '; break; // Добавлено для информационных сообщений
         }
 
