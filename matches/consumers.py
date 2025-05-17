@@ -54,6 +54,19 @@ class MatchConsumer(AsyncWebsocketConsumer):
             logger.error(f'[WebSocket] Ошибка в disconnect для матча ID={self.match_id}: {e}')
             print(f"Error in disconnect for match {self.match_id}: {e}")
 
+    async def receive_json(self, content, **kwargs):
+        """Handle control messages from the client."""
+        try:
+            if content.get("type") == "control" and content.get("action") == "next_minute":
+                await self.start_next_minute()
+        except Exception as e:
+            logger.error(f"Error processing incoming message for match {self.match_id}: {e}")
+
+    @database_sync_to_async
+    def start_next_minute(self):
+        from .tasks import simulate_next_minute
+        simulate_next_minute.delay(int(self.match_id))
+
     async def match_update(self, event):
         try:
             data = event.get('data', {})

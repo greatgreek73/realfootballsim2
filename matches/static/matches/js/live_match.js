@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const eventsBox = eventsListContainer ? eventsListContainer.querySelector('.events-box') : null; // Внутренний блок для добавления
     const statBox = document.querySelector('.stat-box'); // Блок для статистики
     const injuryActionForm = document.querySelector('#matchUserAction-inj'); // Форма для травмы
+    const continueBtn = document.getElementById('continueMinute');
 
     // Проверяем наличие основных элементов для обновления
     if (!timeElement) { console.error('Element #matchTime not found!'); }
@@ -45,6 +46,36 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!awayScoreElement) { console.error('Element .away-score not found!'); }
     if (!eventsBox) { console.error('Element .events-box inside #originalEvents not found!'); }
     if (!statBox) { console.error('Element .stat-box not found!'); }
+
+    function handleStatusChange(status) {
+        if (continueBtn) {
+            if (status === 'paused') {
+                continueBtn.style.display = 'block';
+                continueBtn.disabled = false;
+            } else {
+                continueBtn.style.display = 'none';
+            }
+        }
+    }
+
+    handleStatusChange(initialStatus);
+
+    function sendNextMinute() {
+        if (matchSocket && matchSocket.readyState === WebSocket.OPEN) {
+            matchSocket.send(JSON.stringify({
+                type: 'control',
+                action: 'next_minute',
+                match_id: matchId
+            }));
+        }
+    }
+
+    if (continueBtn) {
+        continueBtn.addEventListener('click', function() {
+            sendNextMinute();
+            continueBtn.disabled = true;
+        });
+    }
     // injuryActionForm может отсутствовать, это не критично
 
      // --- Функция для отображения сообщений пользователю ---
@@ -291,6 +322,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.status && data.status !== currentMatchStatus) {
                      console.log(`Match status changed from ${currentMatchStatus} to: ${data.status}`);
                      currentMatchStatus = data.status; // Обновляем текущий статус
+                     handleStatusChange(data.status);
                      const statusDisplay = document.getElementById('matchStatusDisplay');
                      if(statusDisplay) statusDisplay.textContent = data.status; // Обновляем отображение статуса
 
