@@ -6,6 +6,8 @@ from celery import shared_task
 from django.utils import timezone
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from django.db import transaction # Импортируем transaction
+from django.conf import settings
 from django.db import transaction  # Импортируем transaction
 
 # Убедитесь, что импорты Player и Club есть
@@ -19,10 +21,60 @@ from .models import Match, MatchEvent
 
 logger = logging.getLogger(__name__)
 
+# Duration of one simulated minute in seconds. Set MATCH_TICK_SECONDS in
+# Django settings to override. Use 60 for real time or shorter for testing.
+TICK_SECONDS = getattr(settings, "MATCH_TICK_SECONDS", 5)
+
+
+# --- Interactive minute simulation task ---
+@shared_task(name="matches.simulate_next_minute")
+def simulate_next_minute(match_id: int):
+    """Simulate a single minute and pause the match until the next command."""
+    start = time.monotonic()
+    try:
+        with transaction.atomic():
+            match = Match.objects.select_for_update().get(id=match_id)
+
+            if match.status != "in_progress":
+                logger.info(
+                    f"Match {match_id} not in progress (status {match.status})."
+                )
+                return f"Match {match_id} not in progress"
+
+            from .match_simulation import simulate_one_minute
+
+            updated = simulate_one_minute(match)
+            if not updated:
+                logger.error(f"simulate_one_minute failed for match {match_id}")
+                return f"Simulation failed {match_id}"
+
+            minute = updated.current_minute
+            updated.save()
+
+        broadcast_minute_events_in_chunks.delay(match_id, minute, duration=10)
+
+        elapsed = time.monotonic() - start
+        remain = TICK_SECONDS - elapsed
+        if remain > 0:
+            time.sleep(remain)
+
+        with transaction.atomic():
+            match = Match.objects.select_for_update().get(id=match_id)
+            if match.current_minute >= 90:
+                match.status = "finished"
+            elif match.status == "in_progress":
+                match.status = "paused"
+            match.save()
+
+        return f"Minute {minute} done for match {match_id}"
+
+    except Match.DoesNotExist:
+        logger.error(f"Match {match_id} does not exist in simulate_next_minute")
+    except Exception as e:
+        logger.exception(f"Error in simulate_next_minute {match_id}: {e}")
 # --- Duration of one simulated minute ---
 # Adjust TICK_SECONDS to control how fast real-time simulation runs.
 TICK_SECONDS = 5  # seconds per simulated minute
-
 
 # --- ЗАДАЧА СИМУЛЯЦИИ МИНУТЫ ---
 # ПРЕДУПРЕЖДЕНИЕ: Эта задача здесь для примера. Если реальный вызов 

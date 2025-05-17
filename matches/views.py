@@ -13,7 +13,7 @@ from .models import Match, MatchEvent
 from clubs.models import Club
 from players.models import Player
 # Импорт Celery-задач
-from .tasks import simulate_match_minute, broadcast_minute_events_in_chunks
+from .tasks import simulate_match_minute, broadcast_minute_events_in_chunks, simulate_next_minute
 from .utils import extract_player_id
 from tournaments.models import Championship, League
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -276,6 +276,7 @@ def simulate_match_view(request, match_id):
 
             match.status = 'in_progress'
             match.save()
+            simulate_next_minute.delay(match.id)
             logger.info(f'Матч ID={match.id} успешно подготовлен и переведён в статус "in_progress"')
 
             match_id = match.id
@@ -290,11 +291,9 @@ def simulate_match_minute_view(request, match_id):
         return HttpResponseNotAllowed(['POST'], "This endpoint requires POST request")
 
     match = get_object_or_404(Match, id=match_id)
-    simulate_match_minute.delay(match_id)
-    next_minute = match.current_minute + 1
-    broadcast_minute_events_in_chunks.delay(match_id, next_minute, duration=10)
+    simulate_next_minute.delay(match_id)
 
     return JsonResponse({
         'status': 'ok',
-        'message': f"Requested simulation of 1 minute for match {match_id} + chunked broadcast."
+        'message': f"Scheduled next minute for match {match_id}."
     })
