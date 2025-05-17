@@ -29,7 +29,7 @@ TICK_SECONDS = getattr(settings, "MATCH_TICK_SECONDS", 5)
 # --- Interactive minute simulation task ---
 @shared_task(name="matches.simulate_next_minute")
 def simulate_next_minute(match_id: int):
-    """Simulate a single minute and pause the match until the next command."""
+    """Simulate one minute, broadcast events and pause the match."""
     start = time.monotonic()
     try:
         with transaction.atomic():
@@ -43,28 +43,34 @@ def simulate_next_minute(match_id: int):
 
             from .match_simulation import simulate_one_minute
 
-            updated = simulate_one_minute(match)
-            if not updated:
+            match = simulate_one_minute(match)
+            if not match:
                 logger.error(f"simulate_one_minute failed for match {match_id}")
                 return f"Simulation failed {match_id}"
 
+            minute = match.current_minute
+            match.save()
             minute = updated.current_minute
             updated.save()
 
         broadcast_minute_events_in_chunks.delay(match_id, minute)
 
-        elapsed = time.monotonic() - start
-        remain = TICK_SECONDS - elapsed
-        if remain > 0:
-            time.sleep(remain)
+        broadcast_minute_events_in_chunks.delay(
+            match_id, minute, duration=TICK_SECONDS
+        )
 
         with transaction.atomic():
             match = Match.objects.select_for_update().get(id=match_id)
             if match.current_minute >= 90:
                 match.status = "finished"
-            elif match.status == "in_progress":
+            else:
                 match.status = "paused"
             match.save()
+
+        elapsed = time.monotonic() - start
+        remain = TICK_SECONDS - elapsed
+        if remain > 0:
+            time.sleep(remain)
 
         return f"Minute {minute} done for match {match_id}"
 
@@ -72,9 +78,7 @@ def simulate_next_minute(match_id: int):
         logger.error(f"Match {match_id} does not exist in simulate_next_minute")
     except Exception as e:
         logger.exception(f"Error in simulate_next_minute {match_id}: {e}")
-# --- Duration of one simulated minute ---
-# Adjust TICK_SECONDS to control how fast real-time simulation runs.
-TICK_SECONDS = 5  # seconds per simulated minute
+
 
 # --- ЗАДАЧА СИМУЛЯЦИИ МИНУТЫ ---
 # ПРЕДУПРЕЖДЕНИЕ: Эта задача здесь для примера. Если реальный вызов 
