@@ -6,7 +6,7 @@ from celery import shared_task
 from django.utils import timezone
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from django.db import transaction # Импортируем transaction
+from django.db import transaction  # Импортируем transaction
 
 # Убедитесь, что импорты Player и Club есть
 from players.models import Player 
@@ -18,6 +18,10 @@ from .models import Match, MatchEvent
 # from .match_simulation import simulate_one_minute 
 
 logger = logging.getLogger(__name__)
+
+# --- Duration of one simulated minute ---
+# Adjust TICK_SECONDS to control how fast real-time simulation runs.
+TICK_SECONDS = 5  # seconds per simulated minute
 
 
 # --- ЗАДАЧА СИМУЛЯЦИИ МИНУТЫ ---
@@ -170,11 +174,67 @@ def broadcast_minute_events_in_chunks(match_id: int, minute: int, duration: int 
         return f"Broadcasted {total_events} events for M{match_id} Min{minute}"
 
     # Обработка конкретных ожидаемых исключений
-    except Match.DoesNotExist: 
+    except Match.DoesNotExist:
         logger.error(f"Match {match_id} does not exist (broadcast task race condition?)")
     # Обработка всех остальных исключений
     except Exception as e:
         logger.exception(f"Error in broadcast_minute_events_in_chunks for match {match_id}, minute {minute}: {e}")
         # Не перевыбрасываем ошибку, чтобы не зацикливать задачу при сбое
+
+
+@shared_task(name='matches.simulate_match_realtime')
+def simulate_match_realtime(match_id: int, tick_seconds: int = TICK_SECONDS):
+    """Simulate a match minute by minute using a fixed tick duration."""
+    logger.info(
+        f"Starting realtime simulation for match {match_id} with tick={tick_seconds}s"
+    )
+    while True:
+        tick_start = time.monotonic()
+        try:
+            with transaction.atomic():
+                match = Match.objects.select_for_update().get(id=match_id)
+
+                if match.status != 'in_progress':
+                    logger.info(
+                        f"Match {match_id} ended with status {match.status}. Stopping realtime simulation."
+                    )
+                    break
+
+                minute_to_simulate = match.current_minute
+                from .match_simulation import simulate_one_minute
+
+                updated_match = simulate_one_minute(match)
+                if updated_match:
+                    updated_match.save()
+                    logger.info(
+                        f"Simulated minute {minute_to_simulate + 1} for match {match_id}"
+                    )
+                else:
+                    logger.warning(
+                        f"Simulation returned None for match {match_id} at minute {minute_to_simulate + 1}"
+                    )
+
+        except Match.DoesNotExist:
+            logger.error(f"Match {match_id} not found during realtime simulation")
+            break
+        except Exception as e:
+            logger.exception(
+                f"Error during realtime simulation of match {match_id}: {e}"
+            )
+
+        # Отправляем события этой минуты отдельной задачей
+        broadcast_minute_events_in_chunks.delay(match_id, minute_to_simulate + 1, duration=4)
+
+        elapsed = time.monotonic() - tick_start
+        remaining = tick_seconds - elapsed
+        if remaining > 0:
+            time.sleep(remaining)
+        else:
+            logger.warning(
+                f"Minute {minute_to_simulate + 1} for match {match_id} took {elapsed:.2f}s which exceeds tick"
+            )
+
+    logger.info(f"Realtime simulation completed for match {match_id}")
+    return f"Match {match_id} simulation finished"
 
 # --- КОНЕЦ ФАЙЛА matches/tasks.py ---
