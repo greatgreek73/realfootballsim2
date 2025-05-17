@@ -19,6 +19,7 @@ from .tasks import (
     simulate_next_minute,
     TICK_SECONDS,
 )
+from .tasks import simulate_match_minute, simulate_next_minute
 from .utils import extract_player_id
 from tournaments.models import Championship, League
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
