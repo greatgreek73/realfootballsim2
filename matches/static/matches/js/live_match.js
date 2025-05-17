@@ -283,8 +283,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                      // Обновляем состояние после загрузки всех исторических событий
                      if (timeElement && data.minute !== undefined) timeElement.textContent = `${data.minute}'`;
-                     if (homeScoreElement && data.home_score !== undefined) homeScoreElement.textContent = data.home_score;
-                     if (awayScoreElement && data.away_score !== undefined) awayScoreElement.textContent = data.away_score;
                      updateStatistics(data);
 
                 }
@@ -292,12 +290,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 else if (data.partial_update === true && data.events && Array.isArray(data.events) && data.events.length > 0) {
                     console.log('Processing single EVENT update (from broadcast_minute_events_in_chunks):', data.events[0]);
                     // Добавляем событие в список (функция addEventToList добавляет в начало)
-                    addEventToList(data.events[0]);
+                    const eventObj = data.events[0];
+                    addEventToList(eventObj);
                     // Также обновляем состояние, если оно пришло в этом же сообщении (обычно нет)
                     if (data.minute !== undefined) timeElement.textContent = `${data.minute}'`;
-                    if (data.home_score !== undefined) homeScoreElement.textContent = data.home_score;
-                    if (data.away_score !== undefined) awayScoreElement.textContent = data.away_score;
-                    updateStatistics(data);
+                    // Обновляем счет только при показе события "goal"
+                    if (eventObj.event_type === "goal") {
+                        if (data.home_score !== undefined) homeScoreElement.textContent = data.home_score;
+                        if (data.away_score !== undefined) awayScoreElement.textContent = data.away_score;
+                    }
 
                 }
                  // --- Обработка только обновления состояния (от send_update) ---
@@ -310,20 +311,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else if(timeElement) {
                          console.warn("State update received, but 'minute' is missing or undefined.");
                     }
-
-                    // Обновляем счет
-                    if (homeScoreElement && data.home_score !== undefined) {
-                        homeScoreElement.textContent = data.home_score;
-                    } else if(homeScoreElement) {
-                         console.warn("State update received, but 'home_score' is missing or undefined.");
-                    }
-                     if (awayScoreElement && data.away_score !== undefined) {
-                        awayScoreElement.textContent = data.away_score;
-                    } else if(awayScoreElement) {
-                         console.warn("State update received, but 'away_score' is missing or undefined.");
-                    }
+                    // Счет не обновляем здесь, он изменится вместе с событием
 
                     // Обновляем статистику
+
+
                     updateStatistics(data);
                 } else {
                      // Неизвестный формат сообщения
