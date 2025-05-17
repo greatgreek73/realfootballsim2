@@ -471,8 +471,10 @@ def simulate_one_minute(match: Match) -> Match | None:
         except Exception as celery_e:
              logger.exception(f"Error scheduling broadcast task for match {match.id}: {celery_e}")
         # -------------------------------------------------------
+        # Broadcasting is scheduled by the Celery task controlling the simulation
+        # so no manual scheduling occurs here.
 
-        return match 
+        return match
 
     # Обработка ЛЮБОЙ ошибки внутри основной симуляции минуты
     except Exception as e:

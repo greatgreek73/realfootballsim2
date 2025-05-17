@@ -58,7 +58,10 @@ class MatchConsumer(AsyncWebsocketConsumer):
         """Handle control messages from the client."""
         try:
             if content.get("type") == "control" and content.get("action") == "next_minute":
-                await self.start_next_minute()
+                status = await self.get_match_status()
+                if status == "paused":
+                    await self.update_match_status("in_progress")
+                    await self.start_next_minute()
         except Exception as e:
             logger.error(f"Error processing incoming message for match {self.match_id}: {e}")
 
@@ -156,3 +159,14 @@ class MatchConsumer(AsyncWebsocketConsumer):
             print(f"Error getting match data for match {self.match_id}: {e}")
             traceback.print_exc()
             return None
+
+    @database_sync_to_async
+    def get_match_status(self):
+        try:
+            return Match.objects.get(id=self.match_id).status
+        except Match.DoesNotExist:
+            return None
+
+    @database_sync_to_async
+    def update_match_status(self, status: str):
+        Match.objects.filter(id=self.match_id).update(status=status)
