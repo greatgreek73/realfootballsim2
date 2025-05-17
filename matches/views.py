@@ -13,7 +13,7 @@ from .models import Match, MatchEvent
 from clubs.models import Club
 from players.models import Player
 # Импорт Celery-задач
-from .tasks import simulate_match_minute, broadcast_minute_events_in_chunks, simulate_next_minute
+from .tasks import simulate_next_minute
 from .utils import extract_player_id
 from tournaments.models import Championship, League
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
