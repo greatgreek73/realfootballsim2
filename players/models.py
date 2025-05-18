@@ -125,6 +125,8 @@ class Player(models.Model):
     long_range = models.IntegerField(default=0, verbose_name="Long Range")
     vision = models.IntegerField(default=0, verbose_name="Vision")
     accuracy = models.IntegerField(default=0, verbose_name="Accuracy")
+    # New attribute to influence foul probability
+    aggression = models.IntegerField(default=0, verbose_name="Aggression")
 
     # Новое поле опыта
     experience = models.FloatField(default=0.0, verbose_name="Experience")
@@ -150,7 +152,7 @@ class Player(models.Model):
         # Атакующие
         'attacking': ('finishing', 'heading', 'long_range'),
         # Ментальные
-        'mental': ('vision', 'flair'),
+        'mental': ('vision', 'flair', 'aggression'),
         # Технические
         'technical': ('dribbling', 'crossing', 'passing'),
         # Тактические

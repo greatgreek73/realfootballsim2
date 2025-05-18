@@ -176,6 +176,38 @@ def get_opponent_team(match: Match, possessing_team: Club) -> Club:
          return match.home_team 
     return match.away_team if possessing_team.id == match.home_team.id else match.home_team
 
+def get_team_tactic(match: Match, team: Club) -> str:
+    """Return tactic string for given team in this match."""
+    if team.id == match.home_team_id:
+        return match.home_tactic or "balanced"
+    return match.away_tactic or "balanced"
+
+def _tactic_bonus(tactic: str) -> float:
+    return {"attacking": 0.05, "defensive": -0.05}.get(tactic, 0.0)
+
+def calc_pass_success(player: Player, tactic: str) -> float:
+    base = 0.4 + player.passing / 200.0
+    return max(0.05, min(base + _tactic_bonus(tactic), 0.95))
+
+def calc_shot_success(player: Player, tactic: str) -> float:
+    base = 0.1 + player.finishing / 200.0
+    return max(0.05, min(base + _tactic_bonus(tactic), 0.9))
+
+def calc_tackle_success(player: Player, tactic: str) -> float:
+    base = 0.3 + player.tackling / 200.0
+    mod = _tactic_bonus(tactic)
+    if tactic == "defensive":
+        mod += 0.05
+    return max(0.05, min(base + mod, 0.95))
+
+def calc_foul_prob(player: Player, tactic: str) -> float:
+    base = 0.05 + (50 - player.tackling) / 200.0 + player.aggression / 300.0
+    if tactic == "attacking":
+        base += 0.02
+    elif tactic == "defensive":
+        base -= 0.02
+    return max(0.01, min(base, 0.5))
+
 def auto_select_lineup(club: Club) -> dict | None:
     """
     Пытается сгенерировать автосостав через complete_lineup.
@@ -260,14 +292,9 @@ def simulate_one_minute(match: Match) -> Match | None:
     Возвращает обновленный объект match или текущий в случае ошибки.
     Предполагается, что match.save() будет вызван ВНЕ этой функции.
     """
-    PASS_SUCCESS_PROB = 0.65 
-    SHOT_SUCCESS_PROB = 0.18 
-    BOUNCE_PROB = 0.60 
-    FOUL_PROB = 0.12 
-    INJURY_PROB = 0.05 
-    GK_PASS_SUCCESS_PROB = 0.10 
-    GK_INTERCEPTION_SHOT_SUCCESS_PROB = 0.90
-    transition_map = {"GK": "DEF", "DEF": "DM", "DM": "MID", "MID":"AM", "AM": "FWD"} 
+    BOUNCE_PROB = 0.60
+    INJURY_PROB = 0.05
+    transition_map = {"GK": "DEF", "DEF": "DM", "DM": "MID", "MID":"AM", "AM": "FWD"}
 
     try:
         # Проверки статуса и времени матча
@@ -300,7 +327,7 @@ def simulate_one_minute(match: Match) -> Match | None:
             match.current_zone = "GK"
             match.st_possessions += 1 # Используем правильное имя поля
             logger.info(f"Match {match.id} min {minute}: Possession reset to home GK {current_player}.")
-        match.current_posses = 1 if possessing_team.id == match.home_team.id else 2
+        match.possession_indicator = 1 if possessing_team.id == match.home_team.id else 2
 
         # Событие начала минуты
         start_event_desc = (f"Minute {minute}: Team '{possessing_team.name}' starts with ball. "
@@ -316,7 +343,8 @@ def simulate_one_minute(match: Match) -> Match | None:
             logger.info(f"Match {match.id} Min {minute}: GK ({current_player.last_name}) action.")
             gk_player = current_player
             opponent_team = get_opponent_team(match, possessing_team)
-            if random.random() < GK_PASS_SUCCESS_PROB: # Пас успешен (10%)
+            pass_prob = calc_pass_success(gk_player, get_team_tactic(match, possessing_team)) * 0.5
+            if random.random() < pass_prob:
                 target_zone = "DEF"
                 recipient = choose_player(possessing_team, target_zone, exclude_ids={gk_player.id}, match=match)
                 if recipient:
@@ -332,18 +360,19 @@ def simulate_one_minute(match: Match) -> Match | None:
                      any_player = choose_player(possessing_team, "ANY", exclude_ids={gk_player.id}, match=match)
                      if any_player: match.current_player_with_ball = any_player; match.current_zone = "DEF"; logger.info(f"Ball to {any_player.last_name}"); send_update(match, possessing_team); minute_action_resolved = True
                      else: logger.error(f"Match {match.id} Min {minute}: No players for {possessing_team.name}!"); minute_action_resolved = False 
-            else: # Пас перехвачен (90%)
-                interceptor = choose_player(opponent_team, "FWD", match=match) 
-                if interceptor:
+            else: # Пас перехвачен
+                interceptor = choose_player(opponent_team, "FWD", match=match)
+                if interceptor and random.random() < calc_tackle_success(interceptor, get_team_tactic(match, opponent_team)):
                     intercept_desc = f"INTERCEPTION! GK {gk_player.last_name} pass intercepted by {interceptor.last_name} ({opponent_team.name})!"
                     MatchEvent.objects.create(match=match, minute=minute, event_type='interception', player=interceptor, related_player=gk_player, description=intercept_desc)
                     logger.info(intercept_desc)
-                    match.current_player_with_ball = interceptor; possessing_team = opponent_team; match.current_posses = 1 if possessing_team.id == match.home_team.id else 2
+                    match.current_player_with_ball = interceptor; possessing_team = opponent_team; match.possession_indicator = 1 if possessing_team.id == match.home_team.id else 2
                     send_update(match, possessing_team) 
                     # Удар
                     logger.info(f"Match {match.id} Min {minute}: {interceptor.last_name} immediate shot!")
                     match.st_shoots += 1; shooter = interceptor
-                    is_goal = random.random() < GK_INTERCEPTION_SHOT_SUCCESS_PROB
+                    shot_prob = min(0.95, calc_shot_success(shooter, get_team_tactic(match, possessing_team)) + 0.2)
+                    is_goal = random.random() < shot_prob
                     if is_goal: # Гол
                         if possessing_team.id == match.home_team.id: match.home_score += 1
                         else: match.away_score += 1
@@ -358,11 +387,11 @@ def simulate_one_minute(match: Match) -> Match | None:
                     reset_team = get_opponent_team(match, possessing_team) 
                     new_owner = choose_player(reset_team, "GK", match=match)
                     if new_owner:
-                        match.current_player_with_ball = new_owner; match.current_zone = "GK"; possessing_team = reset_team 
-                        match.current_posses = 1 if possessing_team.id == match.home_team.id else 2
+                        match.current_player_with_ball = new_owner; match.current_zone = "GK"; possessing_team = reset_team
+                        match.possession_indicator = 1 if possessing_team.id == match.home_team.id else 2
                         logger.info(f"Match {match.id} Min {minute}: Ball resets to GK {new_owner.last_name} ({reset_team.name}).")
                     else: # Аварийный сброс
-                         match.current_player_with_ball = choose_player(match.home_team, "GK", match=match); match.current_zone = "GK"; possessing_team = match.home_team; match.current_posses = 1
+                         match.current_player_with_ball = choose_player(match.home_team, "GK", match=match); match.current_zone = "GK"; possessing_team = match.home_team; match.possession_indicator = 1
                          logger.error(f"Match {match.id} Min {minute}: No GK for {reset_team.name}. Reset home GK.")
                     send_update(match, possessing_team) 
                     minute_action_resolved = True 
@@ -375,15 +404,21 @@ def simulate_one_minute(match: Match) -> Match | None:
                  if match.status != 'in_progress': break 
                  current_player = match.current_player_with_ball
                  if not current_player: 
-                      match.current_player_with_ball = choose_player(match.home_team, "GK", match=match); match.current_zone = "GK"; possessing_team = match.home_team; match.current_posses = 1
+                     match.current_player_with_ball = choose_player(match.home_team, "GK", match=match); match.current_zone = "GK"; possessing_team = match.home_team; match.possession_indicator = 1
                       logger.error(f"Match {match.id} Min {minute}: Lost player! Resetting."); send_update(match, possessing_team)
                       break 
                  logger.debug(f"Sub-event {i+1}: Player {current_player.last_name}, Zone {match.current_zone}")
 
                  # Фол
-                 if random.random() < FOUL_PROB:
+                 foul_prob = 0.0
+                 fouler = None
+                 if possessing_team:
+                     opponent_team = get_opponent_team(match, possessing_team)
+                     fouler = choose_player(opponent_team, "ANY", match=match)
+                     foul_prob = calc_foul_prob(fouler, get_team_tactic(match, opponent_team)) if fouler else 0.0
+                 if random.random() < foul_prob:
                      match.st_fouls += 1
-                     opponent_team = get_opponent_team(match, possessing_team); fouler = choose_player(opponent_team, "ANY", match=match); fouled = current_player
+                     fouled = current_player
                      if fouler and fouled:
                           foul_desc = f"Foul! {fouler.last_name} ({opponent_team.name}) on {fouled.last_name} in {match.current_zone}."
                           MatchEvent.objects.create(match=match, minute=minute, event_type='foul', player=fouler, related_player=fouled, description=foul_desc)
@@ -401,7 +436,8 @@ def simulate_one_minute(match: Match) -> Match | None:
                      match.st_possessions += 1 # <--- ИЗМЕНЕНО ЗДЕСЬ
                      # ------------------------------------------
 
-                     if random.random() < PASS_SUCCESS_PROB: # Успешный пас
+                     pass_prob = calc_pass_success(current_player, get_team_tactic(match, possessing_team))
+                     if random.random() < pass_prob:
                          recipient = choose_player(possessing_team, target_zone, exclude_ids={current_player.id}, match=match)
                          if recipient:
                              match.st_passes += 1
@@ -412,8 +448,8 @@ def simulate_one_minute(match: Match) -> Match | None:
                              send_update(match, possessing_team)
                          else: logger.warning(f"Match {match.id} Min {minute}: Pass OK, no player in {target_zone}.")
                      else: # Перехват
-                         opponent_team = get_opponent_team(match, possessing_team); interceptor = choose_player(opponent_team, match.current_zone, match=match) 
-                         if interceptor:
+                         opponent_team = get_opponent_team(match, possessing_team); interceptor = choose_player(opponent_team, match.current_zone, match=match)
+                         if interceptor and random.random() < calc_tackle_success(interceptor, get_team_tactic(match, opponent_team)):
                              intercept_desc = f"INTERCEPTION! {interceptor.last_name} ({opponent_team.name}) from {current_player.last_name} in {match.current_zone}."
                              MatchEvent.objects.create(match=match, minute=minute, event_type='interception', player=interceptor, related_player=current_player, description=intercept_desc)
                              logger.info(intercept_desc)
@@ -421,13 +457,14 @@ def simulate_one_minute(match: Match) -> Match | None:
                              if not new_gk: match.current_player_with_ball = interceptor; match.current_zone = "DEF" 
                              else: match.current_player_with_ball = new_gk; match.current_zone = "GK"
                              possessing_team = opponent_team
-                             match.current_posses = 1 if possessing_team.id == match.home_team.id else 2
+                             match.possession_indicator = 1 if possessing_team.id == match.home_team.id else 2
                              send_update(match, possessing_team) 
                              break # Смена владения
                          else: logger.warning(f"Match {match.id} Min {minute}: Pass failed, no interceptor. Ball out?"); break 
                  else: # Удар (зона FWD)
                      match.st_shoots += 1; shooter = current_player
-                     is_goal = random.random() < SHOT_SUCCESS_PROB
+                     shot_prob = calc_shot_success(shooter, get_team_tactic(match, possessing_team))
+                     is_goal = random.random() < shot_prob
                      if is_goal: # Гол
                          if possessing_team.id == match.home_team.id: match.home_score += 1
                          else: match.away_score += 1
@@ -442,11 +479,11 @@ def simulate_one_minute(match: Match) -> Match | None:
                      reset_team = get_opponent_team(match, possessing_team) 
                      new_owner = choose_player(reset_team, "GK", match=match)
                      if new_owner:
-                         match.current_player_with_ball = new_owner; match.current_zone = "GK"; possessing_team = reset_team
-                         match.current_posses = 1 if possessing_team.id == match.home_team.id else 2
+                        match.current_player_with_ball = new_owner; match.current_zone = "GK"; possessing_team = reset_team
+                        match.possession_indicator = 1 if possessing_team.id == match.home_team.id else 2
                          logger.info(f"Match {match.id} Min {minute}: Ball resets to GK {new_owner.last_name} ({reset_team.name}).")
                      else: # Аварийный сброс
-                          match.current_player_with_ball = choose_player(match.home_team, "GK", match=match); match.current_zone = "GK"; possessing_team = match.home_team; match.current_posses = 1
+                          match.current_player_with_ball = choose_player(match.home_team, "GK", match=match); match.current_zone = "GK"; possessing_team = match.home_team; match.possession_indicator = 1
                           logger.error(f"Match {match.id} Min {minute}: No GK for {reset_team.name}. Reset home GK.")
                      send_update(match, possessing_team) 
                      break # Выход из subevents после удара
