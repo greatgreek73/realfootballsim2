@@ -50,10 +50,6 @@ def simulate_next_minute(match_id: int):
 
             minute = match.current_minute
             match.save()
-            minute = updated.current_minute
-            updated.save()
-
-        broadcast_minute_events_in_chunks.delay(match_id, minute)
 
         broadcast_minute_events_in_chunks.delay(
             match_id, minute, duration=TICK_SECONDS
