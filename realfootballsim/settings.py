@@ -7,6 +7,10 @@ IS_PRODUCTION = os.environ.get('IS_PRODUCTION')  # If not set, will be None
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Global duration of one simulated minute (seconds).
+# Can be overridden via the MATCH_TICK_SECONDS environment variable.
+MATCH_TICK_SECONDS = int(os.environ.get('MATCH_TICK_SECONDS', 5))
+
 # Default dev settings
 SECRET_KEY = 'django-insecure-0p3aqax2r2xolyvtfda6q_aa@q1l6n!w4$8sjo1ed&*)h*2l37'
 DEBUG = True
