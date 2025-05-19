@@ -13,14 +13,12 @@ from .models import Match, MatchEvent
 from clubs.models import Club
 from players.models import Player
 # Импорт Celery-задач
-from .tasks import simulate_next_minute
+from django.conf import settings
 from .tasks import (
     simulate_match_minute,
-    broadcast_minute_events_in_chunks,
     simulate_next_minute,
-    TICK_SECONDS,
+    broadcast_minute_events_in_chunks,
 )
-from .tasks import simulate_match_minute, simulate_next_minute
 from .utils import extract_player_id
 from tournaments.models import Championship, League
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -179,7 +177,7 @@ def match_detail(request, pk):
         'home_prev_lineup_list': home_prev_lineup_list,
         'away_prev_match': away_prev_match,
         'away_prev_lineup_list': away_prev_lineup_list,
-        'tick_seconds': TICK_SECONDS,
+        'tick_seconds': settings.MATCH_TICK_SECONDS,
     }
 
     logger.info(f'[match_detail] Контекст подготовлен. Рендер страницы match_detail.html для матча ID={pk}')

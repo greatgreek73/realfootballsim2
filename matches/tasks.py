@@ -21,9 +21,10 @@ from .models import Match, MatchEvent
 
 logger = logging.getLogger(__name__)
 
-# Duration of one simulated minute in seconds. Set MATCH_TICK_SECONDS in
-# Django settings to override. Use 60 for real time or shorter for testing.
-TICK_SECONDS = getattr(settings, "MATCH_TICK_SECONDS", 5)
+# Duration of one simulated minute in seconds.
+# The value comes solely from settings.MATCH_TICK_SECONDS so that
+# changing the setting updates the tick everywhere.
+TICK_SECONDS = settings.MATCH_TICK_SECONDS
 
 
 # --- Interactive minute simulation task ---
@@ -54,6 +55,10 @@ def simulate_next_minute(match_id: int):
         broadcast_minute_events_in_chunks.delay(
             match_id, minute, duration=TICK_SECONDS
         )
+            minute = updated.current_minute
+            updated.save()
+
+        broadcast_minute_events_in_chunks.delay(match_id, minute, duration=TICK_SECONDS)
 
         with transaction.atomic():
             match = Match.objects.select_for_update().get(id=match_id)
@@ -127,7 +132,7 @@ def simulate_match_minute(match_id: int):
 
 # --- ИЗМЕНЕННАЯ ЗАДАЧА broadcast_minute_events_in_chunks ---
 @shared_task(name='matches.broadcast_minute_events_in_chunks')
-def broadcast_minute_events_in_chunks(match_id: int, minute: int, duration: int = 4):
+def broadcast_minute_events_in_chunks(match_id: int, minute: int, duration: int = TICK_SECONDS):
     """
     Поштучно (с паузой) отправляет по WebSocket ТОЛЬКО СОБЫТИЯ, 
     созданные в указанную минуту матча.
@@ -207,7 +212,6 @@ def broadcast_minute_events_in_chunks(match_id: int, minute: int, duration: int 
                     "partial_update": True,  # Помечаем как частичное обновление
                 },
             }
-            # -----------------------------------------------------------
 
             logger.info(
                 f"Broadcasting event {i+1}/{total_events} for match {match_id}, minute {minute} (Type: {event.event_type})"
@@ -277,7 +281,7 @@ def simulate_match_realtime(match_id: int, tick_seconds: int = TICK_SECONDS):
             )
 
         # Отправляем события этой минуты отдельной задачей
-        broadcast_minute_events_in_chunks.delay(match_id, minute_to_simulate + 1, duration=4)
+        broadcast_minute_events_in_chunks.delay(match_id, minute_to_simulate + 1, duration=tick_seconds)
 
         elapsed = time.monotonic() - tick_start
         remaining = tick_seconds - elapsed
