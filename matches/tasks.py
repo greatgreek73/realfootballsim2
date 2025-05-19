@@ -51,6 +51,10 @@ def simulate_next_minute(match_id: int):
 
             minute = match.current_minute
             match.save()
+
+        broadcast_minute_events_in_chunks.delay(
+            match_id, minute, duration=TICK_SECONDS
+        )
             minute = updated.current_minute
             updated.save()
 
@@ -208,7 +212,6 @@ def broadcast_minute_events_in_chunks(match_id: int, minute: int, duration: int 
                     "partial_update": True,  # Помечаем как частичное обновление
                 },
             }
-            # -----------------------------------------------------------
 
             logger.info(
                 f"Broadcasting event {i+1}/{total_events} for match {match_id}, minute {minute} (Type: {event.event_type})"

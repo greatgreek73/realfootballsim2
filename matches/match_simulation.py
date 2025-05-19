@@ -439,17 +439,6 @@ def simulate_one_minute(match: Match) -> Match | None:
 
         logger.debug(f"--- Minute {minute} simulation ended for Match {match.id} ---")
 
-        # --- ИЗМЕНЕНО: Вызов задачи Celery РАСКОММЕНТИРОВАН ---
-        try:
-            # Импорт внутри функции, чтобы избежать проблем с циклическим импортом при запуске
-            from .tasks import broadcast_minute_events_in_chunks
-            broadcast_minute_events_in_chunks.delay(match.id, minute)
-            logger.debug(f"Scheduled broadcast task for match {match.id}, minute {minute}")
-        except ImportError:
-             logger.error("Could not import broadcast_minute_events_in_chunks from .tasks. Event broadcasting skipped.")
-        except Exception as celery_e:
-             logger.exception(f"Error scheduling broadcast task for match {match.id}: {celery_e}")
-        # -------------------------------------------------------
         # Broadcasting is scheduled by the Celery task controlling the simulation
         # so no manual scheduling occurs here.
 
