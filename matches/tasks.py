@@ -30,7 +30,7 @@ TICK_SECONDS = settings.MATCH_TICK_SECONDS
 # --- Interactive minute simulation task ---
 @shared_task(name="matches.simulate_next_minute")
 def simulate_next_minute(match_id: int):
-    """Simulate one minute, broadcast events and pause the match."""
+    """Simulate one minute and automatically schedule the next."""
     start = time.monotonic()
     try:
         with transaction.atomic():
@@ -55,23 +55,22 @@ def simulate_next_minute(match_id: int):
         broadcast_minute_events_in_chunks.delay(
             match_id, minute, duration=TICK_SECONDS
         )
-            minute = updated.current_minute
-            updated.save()
-
-        broadcast_minute_events_in_chunks.delay(match_id, minute, duration=TICK_SECONDS)
 
         with transaction.atomic():
             match = Match.objects.select_for_update().get(id=match_id)
             if match.current_minute >= 90:
                 match.status = "finished"
+                schedule_next = False
             else:
-                match.status = "paused"
+                match.status = "in_progress"
+                schedule_next = True
             match.save()
 
         elapsed = time.monotonic() - start
-        remain = TICK_SECONDS - elapsed
-        if remain > 0:
-            time.sleep(remain)
+        remain = max(0, TICK_SECONDS - elapsed)
+
+        if schedule_next:
+            simulate_next_minute.apply_async(args=[match_id], countdown=remain)
 
         return f"Minute {minute} done for match {match_id}"
 
