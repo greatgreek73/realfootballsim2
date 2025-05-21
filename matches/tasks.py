@@ -44,12 +44,19 @@ def simulate_next_minute(match_id: int):
 
             from .match_simulation import simulate_one_minute
 
+            minute_before = match.current_minute
+
             match = simulate_one_minute(match)
             if not match:
                 logger.error(f"simulate_one_minute failed for match {match_id}")
                 return f"Simulation failed {match_id}"
 
             minute = match.current_minute
+            if minute != minute_before + 1:
+                logger.warning(
+                    f"Match {match_id} minute desync: {minute_before}->{minute}"
+                )
+
             match.save()
 
         broadcast_minute_events_in_chunks.delay(
