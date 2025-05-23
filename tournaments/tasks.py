@@ -57,6 +57,57 @@ def simulate_active_matches(self):
                         f"{updated_match.home_team} vs {updated_match.away_team}, "
                         f"счёт: {updated_match.home_score}:{updated_match.away_score}"
                     )
+                    
+                    # ДОБАВЛЯЕМ: Отправка событий через WebSocket
+                    from matches.tasks import broadcast_minute_events_in_chunks
+                    from django.conf import settings
+                    
+                    # Минута, которая была симулирована - это current_minute после симуляции
+                    simulated_minute = updated_match.current_minute
+                    tick_seconds = getattr(settings, 'MATCH_TICK_SECONDS', 5)
+                    
+                    # Запускаем broadcast событий этой минуты
+                    broadcast_minute_events_in_chunks.delay(
+                        match_locked.id, 
+                        simulated_minute, 
+                        duration=tick_seconds
+                    )
+                    
+                    logger.info(
+                        f"📡 Запланирована трансляция событий минуты {simulated_minute} "
+                        f"для матча ID={match_locked.id}"
+                    )
+                    
+                    # Также отправляем текущее состояние матча сразу
+                    from channels.layers import get_channel_layer
+                    from asgiref.sync import async_to_sync
+
+                    channel_layer = get_channel_layer()
+                    if channel_layer:
+                        update_data = {
+                            "type": "match_update",
+                            "data": {
+                                "match_id": match_locked.id,
+                                "minute": updated_match.current_minute,
+                                "home_score": updated_match.home_score,
+                                "away_score": updated_match.away_score,
+                                "status": updated_match.status,
+                                "st_shoots": updated_match.st_shoots,
+                                "st_passes": updated_match.st_passes,
+                                "st_possessions": updated_match.st_possessions,
+                                "st_fouls": updated_match.st_fouls,
+                                "st_injury": updated_match.st_injury,
+                            }
+                        }
+                        
+                        async_to_sync(channel_layer.group_send)(
+                            f"match_{match_locked.id}",
+                            update_data
+                        )
+                        
+                        logger.info(
+                            f"📡 Отправлено обновление состояния для матча ID={match_locked.id}"
+                        )
                 else:
                     logger.warning(
                         f"⚠️ simulate_one_minute вернула None для матча ID={match.id}"

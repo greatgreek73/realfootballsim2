@@ -144,6 +144,19 @@ document.addEventListener('DOMContentLoaded', function() {
     function addEventToList(event) {
         // Добавляем логирование в начало функции
         console.log(">>> addEventToList called with event:", event);
+        
+        // Защита от дублирования событий
+        const eventSignature = `${event.minute}-${event.event_type}-${event.description}`;
+        if (!window.processedEvents) {
+            window.processedEvents = new Set();
+        }
+        
+        if (window.processedEvents.has(eventSignature)) {
+            console.log(">>> Duplicate event detected, skipping:", eventSignature);
+            return;
+        }
+        
+        window.processedEvents.add(eventSignature);
 
         // Проверяем наличие контейнера .events-box
         if (!eventsBox) {

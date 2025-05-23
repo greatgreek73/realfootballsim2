@@ -28,63 +28,105 @@ TICK_SECONDS = settings.MATCH_TICK_SECONDS
 
 
 # --- Interactive minute simulation task ---
-@shared_task(name="matches.simulate_next_minute")
-def simulate_next_minute(match_id: int):
+@shared_task(name="matches.simulate_next_minute", bind=True, max_retries=0)
+def simulate_next_minute(self, match_id: int):
     """Simulate one minute and automatically schedule the next."""
+    task_id = self.request.id if hasattr(self.request, 'id') else 'unknown'
     start = time.monotonic()
+    
+    logger.info(f"[TASK-{task_id}] Starting simulate_next_minute for match {match_id}")
+    
     try:
         with transaction.atomic():
             match = Match.objects.select_for_update().get(id=match_id)
-
+            
             if match.status != "in_progress":
                 logger.info(
-                    f"Match {match_id} not in progress (status {match.status})."
+                    f"[TASK-{task_id}] Match {match_id} not in progress (status {match.status})."
                 )
                 return f"Match {match_id} not in progress"
+            
+            # Проверяем, что минута еще не была симулирована
+            expected_minute = match.current_minute + 1
+            existing_events = MatchEvent.objects.filter(
+                match_id=match_id,
+                minute=expected_minute
+            ).exists()
+            
+            if existing_events:
+                logger.warning(
+                    f"[TASK-{task_id}] Minute {expected_minute} already has events for match {match_id}. Skipping."
+                )
+                # Планируем следующую минуту если нужно
+                if expected_minute < 90:
+                    countdown = max(0.1, TICK_SECONDS)
+                    simulate_next_minute.apply_async(
+                        args=[match_id],
+                        countdown=countdown
+                    )
+                return f"Minute {expected_minute} already simulated"
 
             from .match_simulation import simulate_one_minute
 
+            # ВАЖНО: Сохраняем минуту ДО симуляции
             minute_before = match.current_minute
+            
+            logger.info(f"[TASK-{task_id}] Simulating minute {minute_before + 1} for match {match_id}")
 
             match = simulate_one_minute(match)
             if not match:
-                logger.error(f"simulate_one_minute failed for match {match_id}")
+                logger.error(f"[TASK-{task_id}] simulate_one_minute failed for match {match_id}")
                 return f"Simulation failed {match_id}"
 
-            minute = match.current_minute
-            if minute != minute_before + 1:
+            # Минута, для которой были созданы события
+            simulated_minute = minute_before + 1
+            
+            # Проверка синхронизации
+            if match.current_minute != simulated_minute:
                 logger.warning(
-                    f"Match {match_id} minute desync: {minute_before}->{minute}"
+                    f"[TASK-{task_id}] Match {match_id} minute desync: expected {simulated_minute}, got {match.current_minute}"
                 )
 
             match.save()
+            
+            # Логируем успешную симуляцию
+            logger.info(f"[TASK-{task_id}] Successfully simulated minute {simulated_minute} for match {match_id}")
 
-        broadcast_minute_events_in_chunks.delay(
-            match_id, minute, duration=TICK_SECONDS
-        )
+            # Планируем broadcast
+            broadcast_minute_events_in_chunks.delay(
+                match_id, simulated_minute, duration=TICK_SECONDS
+            )
 
-        with transaction.atomic():
-            match = Match.objects.select_for_update().get(id=match_id)
+            # Проверяем, нужно ли планировать следующую минуту
             if match.current_minute >= 90:
                 match.status = "finished"
+                match.save()
                 schedule_next = False
             else:
-                match.status = "in_progress"
                 schedule_next = True
-            match.save()
 
-        elapsed = time.monotonic() - start
-        remain = max(0, TICK_SECONDS - elapsed)
+            # Планируем следующую минуту если нужно
+            if schedule_next:
+                elapsed = time.monotonic() - start
+                remain = max(0.1, TICK_SECONDS - elapsed)
+                
+                logger.info(
+                    f"[TASK-{task_id}] Scheduling next minute for match {match_id} in {remain:.2f} seconds"
+                )
+                
+                simulate_next_minute.apply_async(
+                    args=[match_id], 
+                    countdown=remain
+                )
 
-        if schedule_next:
-            simulate_next_minute.apply_async(args=[match_id], countdown=remain)
-
-        return f"Minute {minute} done for match {match_id}"
+            return f"Minute {simulated_minute} done for match {match_id}"
 
     except Match.DoesNotExist:
-        logger.error(f"Match {match_id} does not exist in simulate_next_minute")
+        logger.error(f"[TASK-{task_id}] Match {match_id} does not exist")
+        return f"Match {match_id} not found"
     except Exception as e:
-        logger.exception(f"Error in simulate_next_minute {match_id}: {e}")
+        logger.exception(f"[TASK-{task_id}] Error in simulate_next_minute for match {match_id}: {e}")
+        return f"Error: {str(e)}"
 
 
 # --- ЗАДАЧА СИМУЛЯЦИИ МИНУТЫ ---
@@ -143,7 +185,7 @@ def broadcast_minute_events_in_chunks(match_id: int, minute: int, duration: int 
     Поштучно (с паузой) отправляет по WebSocket ТОЛЬКО СОБЫТИЯ, 
     созданные в указанную минуту матча.
     """
-    logger.debug(f"Task broadcast_minute_events received for match {match_id}, minute {minute}")
+    logger.info(f"[BROADCAST] Starting broadcast for match {match_id}, minute {minute}, duration {duration}s")
     try:
         # Проверяем существование и статус матча
         match = Match.objects.filter(id=match_id).first()
@@ -165,6 +207,8 @@ def broadcast_minute_events_in_chunks(match_id: int, minute: int, duration: int 
             .order_by('timestamp', 'id') # Сортируем по времени создания + ID
         )
         total_events = len(events)
+        
+        logger.info(f"[BROADCAST] Found {total_events} events for match {match_id}, minute {minute}")
 
         if total_events == 0:
             logger.info(f"No events to broadcast for match {match_id}, minute {minute}")

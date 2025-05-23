@@ -283,6 +283,7 @@ def simulate_match_view(request, match_id):
             match.status = 'in_progress'
             match.save()
             simulate_next_minute.delay(match.id)
+            logger.info(f'[VIEW] Started simulation task for match ID={match.id} at minute {match.current_minute}')
             logger.info(f'Матч ID={match.id} успешно подготовлен и переведён в статус "in_progress"')
 
             match_id = match.id

@@ -9,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Global duration of one simulated minute (seconds).
 # Can be overridden via the MATCH_TICK_SECONDS environment variable.
-MATCH_TICK_SECONDS = int(os.environ.get('MATCH_TICK_SECONDS', 5))
+MATCH_TICK_SECONDS = int(os.environ.get('MATCH_TICK_SECONDS', 30))
 
 # Default dev settings
 SECRET_KEY = 'django-insecure-0p3aqax2r2xolyvtfda6q_aa@q1l6n!w4$8sjo1ed&*)h*2l37'
@@ -156,6 +156,19 @@ CELERY_TASK_SOFT_TIME_LIMIT = 240
 
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 50
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+
+# Предотвращаем автоматические повторы задач
+CELERY_TASK_ACKS_LATE = True
+CELERY_TASK_REJECT_ON_WORKER_LOST = True
+CELERY_TASK_IGNORE_RESULT = False
+
+# Настройки для конкретных задач
+CELERY_TASK_ROUTES = {
+    'matches.simulate_next_minute': {
+        'queue': 'matches',
+        'routing_key': 'matches.simulate',
+    },
+}
 
 LOGGING = {
     'version': 1,

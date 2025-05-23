@@ -73,27 +73,41 @@ class MatchConsumer(AsyncWebsocketConsumer):
     async def match_update(self, event):
         try:
             data = event.get('data', {})
-            is_partial = 'minute' not in data or 'status' not in data
-
-            if is_partial:
-                print(f"Partial update for match {self.match_id}, fetching full data...")
-                full = await self.get_match_data()
-                if not full:
-                    print(f"Unable to fetch full match data for {self.match_id}")
-                    return
-                full.update(data)
-                if 'events' in data:
-                    full['events'] = data['events']
-                payload = full
+            
+            # ИСПРАВЛЕНИЕ: Проверяем, является ли это частичным обновлением с событием
+            if data.get('partial_update') and 'events' in data:
+                # Для частичных обновлений с событиями просто отправляем данные как есть
+                # НЕ загружаем все события из БД заново
+                await self.send(text_data=json.dumps({
+                    'type': 'match_update',
+                    'data': data
+                }, cls=DjangoJSONEncoder))
+                print(f"Sent partial update with event to client for match {self.match_id}")
             else:
-                print(f"Full update for match {self.match_id}")
-                payload = data
+                # Для обычных обновлений состояния (без событий) или полных обновлений
+                is_partial = 'minute' not in data or 'status' not in data
 
-            await self.send(text_data=json.dumps({
-                'type': 'match_update',
-                'data': payload
-            }, cls=DjangoJSONEncoder))
-            print(f"Sent update to client for match {self.match_id}")
+                if is_partial:
+                    print(f"Partial update for match {self.match_id}, fetching full data...")
+                    full = await self.get_match_data()
+                    if not full:
+                        print(f"Unable to fetch full match data for {self.match_id}")
+                        return
+                    # Обновляем только те поля, которые пришли в data
+                    full.update(data)
+                    # НЕ перезаписываем события, если они не пришли в обновлении
+                    if 'events' in data:
+                        full['events'] = data['events']
+                    payload = full
+                else:
+                    print(f"Full update for match {self.match_id}")
+                    payload = data
+
+                await self.send(text_data=json.dumps({
+                    'type': 'match_update',
+                    'data': payload
+                }, cls=DjangoJSONEncoder))
+                print(f"Sent update to client for match {self.match_id}")
 
         except Exception as e:
             print(f"Error in match_update for match {self.match_id}: {e}")
@@ -108,13 +122,25 @@ class MatchConsumer(AsyncWebsocketConsumer):
                 'current_player_with_ball',
             ).get(id=self.match_id)
 
-            all_events = (
-                MatchEvent.objects
-                .filter(match_id=self.match_id)
-                .select_related('player', 'related_player')
-                .order_by('minute', 'timestamp')
-                # Убрано ограничение [:10] для получения всех событий
-            )
+            # Не загружаем события текущей минуты для live-матча
+            # Они придут через broadcast
+            if match.status == 'in_progress':
+                all_events = (
+                    MatchEvent.objects
+                    .filter(match_id=self.match_id)
+                    .exclude(minute=match.current_minute)  # Исключаем текущую минуту
+                    .select_related('player', 'related_player')
+                    .order_by('minute', 'timestamp')
+                )
+                logger.info(f'[WebSocket] Загружаем события для матча {self.match_id}, исключая текущую минуту {match.current_minute}')
+            else:
+                # Для завершенных матчей загружаем все
+                all_events = (
+                    MatchEvent.objects
+                    .filter(match_id=self.match_id)
+                    .select_related('player', 'related_player')
+                    .order_by('minute', 'timestamp')
+                )
 
             events_list = []
             for evt in all_events:

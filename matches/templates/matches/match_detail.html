@@ -105,21 +105,26 @@
                             <h4 class="h6 mb-3">Events</h4>
                             <div id="originalEvents" class="event-log"> {# Контейнер для лога #}
                                 <div class="list-group events-box"> {# Сюда JS будет добавлять события #}
-                                    {# Выводим все события, загруженные представлением #}
-                                    {% for event in match_events %}
-                                    <div class="list-group-item">
-                                        {# Отображение начальных событий (можно улучшить формат) #}
-                                        <strong>{{ event.minute }}'</strong>
-                                        {% if event.event_type == 'goal' %}⚽{% elif event.event_type == 'interception' %}🔄{% elif event.event_type == 'shot_miss' %}❌{% elif event.event_type == 'pass' %}➡️{% elif event.event_type == 'foul' %}⚠️{% elif event.event_type == 'injury_concern' %}✚{% else %} M {% endif %}
-                                        {{ event.description }}
-                                        {# Отображение игроков #}
-                                        {% if event.player %}
-                                        <small class="text-muted">({{ event.player.last_name }}{% if event.related_player %} -> {{ event.related_player.last_name }}{% endif %})</small>
-                                        {% endif %}
-                                    </div>
-                                    {% empty %}
-                                     <div class="list-group-item text-muted">No events found for this match yet.</div> {# Изменен текст #}
-                                    {% endfor %}
+                                    {% if match.status != 'in_progress' %}
+                                        {# Выводим события только для завершенных матчей #}
+                                        {% for event in match_events %}
+                                        <div class="list-group-item">
+                                            {# Отображение начальных событий (можно улучшить формат) #}
+                                            <strong>{{ event.minute }}'</strong>
+                                            {% if event.event_type == 'goal' %}⚽{% elif event.event_type == 'interception' %}🔄{% elif event.event_type == 'shot_miss' %}❌{% elif event.event_type == 'pass' %}➡️{% elif event.event_type == 'foul' %}⚠️{% elif event.event_type == 'injury_concern' %}✚{% else %} M {% endif %}
+                                            {{ event.description }}
+                                            {# Отображение игроков #}
+                                            {% if event.player %}
+                                            <small class="text-muted">({{ event.player.last_name }}{% if event.related_player %} -> {{ event.related_player.last_name }}{% endif %})</small>
+                                            {% endif %}
+                                        </div>
+                                        {% empty %}
+                                         <div class="list-group-item text-muted">No events found for this match yet.</div> {# Изменен текст #}
+                                        {% endfor %}
+                                    {% else %}
+                                        {# Для live-матчей события придут через WebSocket #}
+                                        <div class="list-group-item text-muted">Waiting for match events...</div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>

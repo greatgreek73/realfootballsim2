@@ -153,3 +153,6 @@ class MatchEvent(models.Model):
         ordering = ['match', 'minute', 'timestamp']
         verbose_name = "Match Event"
         verbose_name_plural = "Match Events"
+        indexes = [
+            models.Index(fields=['match', 'minute']),  # Индекс для оптимизации запросов событий по матчу и минуте
+        ]
