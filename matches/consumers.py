@@ -61,14 +61,9 @@ class MatchConsumer(AsyncWebsocketConsumer):
                 status = await self.get_match_status()
                 if status == "paused":
                     await self.update_match_status("in_progress")
-                    await self.start_next_minute()
         except Exception as e:
             logger.error(f"Error processing incoming message for match {self.match_id}: {e}")
 
-    @database_sync_to_async
-    def start_next_minute(self):
-        from .tasks import simulate_next_minute
-        simulate_next_minute.delay(int(self.match_id))
 
     async def match_update(self, event):
         try:

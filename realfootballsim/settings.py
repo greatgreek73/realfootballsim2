@@ -163,12 +163,7 @@ CELERY_TASK_REJECT_ON_WORKER_LOST = True
 CELERY_TASK_IGNORE_RESULT = False
 
 # Настройки для конкретных задач
-CELERY_TASK_ROUTES = {
-    'matches.simulate_next_minute': {
-        'queue': 'matches',
-        'routing_key': 'matches.simulate',
-    },
-}
+CELERY_TASK_ROUTES = {}
 
 # Настройки Celery Beat для периодических задач
 CELERY_BEAT_SCHEDULE = {
