@@ -170,6 +170,22 @@ CELERY_TASK_ROUTES = {
     },
 }
 
+# Настройки Celery Beat для периодических задач
+CELERY_BEAT_SCHEDULE = {
+    'simulate-active-matches': {
+        'task': 'tournaments.simulate_active_matches',
+        'schedule': 2.0,  # Каждые 2 секунды для пошаговой симуляции
+    },
+    'check-season-end': {
+        'task': 'tournaments.check_season_end',
+        'schedule': crontab(hour=0, minute=0),  # Каждый день в полночь
+    },
+    'start-scheduled-matches': {
+        'task': 'tournaments.start_scheduled_matches',
+        'schedule': 60.0,  # Каждую минуту
+    },
+}
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

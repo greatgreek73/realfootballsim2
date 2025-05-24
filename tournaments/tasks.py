@@ -6,7 +6,7 @@ from celery import shared_task
 from django.utils import timezone
 from django.db import transaction, OperationalError
 from django.core.management import call_command
-from matches.models import Match
+from matches.models import Match, MatchEvent
 from players.models import Player # Убедитесь, что импорт есть
 from clubs.models import Club     # Убедитесь, что импорт есть
 from .models import Season, Championship, League
@@ -20,8 +20,8 @@ logger = logging.getLogger("match_creation")
 @shared_task(name='tournaments.simulate_active_matches', bind=True)
 def simulate_active_matches(self):
     """
-    Пошаговая симуляция матчей (каждая «минута»).
-    Запускается периодически (например, каждые 5 секунд).
+    Пошаговая симуляция матчей - теперь по ДЕЙСТВИЯМ, а не по минутам.
+    Запускается периодически (например, каждые 2 секунды).
     """
     now = timezone.now()
     logger.info(f"🔁 [simulate_active_matches] Запуск симуляции активных матчей в {now}")
@@ -33,7 +33,12 @@ def simulate_active_matches(self):
 
     logger.info(f"✅ Найдено {matches.count()} матчей для симуляции.")
 
-    from matches.match_simulation import simulate_one_minute
+    from matches.match_simulation import simulate_one_action
+    from channels.layers import get_channel_layer
+    from asgiref.sync import async_to_sync
+    from django.core.cache import cache
+    
+    channel_layer = get_channel_layer()
 
     for match in matches:
         try:
@@ -41,77 +46,169 @@ def simulate_active_matches(self):
 
             with transaction.atomic():
                 match_locked = Match.objects.select_for_update().get(id=match.id)
-                minute_to_simulate = match_locked.current_minute
-
+                
+                # Получаем счетчик действий из кеша
+                cache_key = f"match_{match_locked.id}_actions_in_minute"
+                actions_in_current_minute = cache.get(cache_key, 0)
+                
+                # Проверяем, не закончился ли матч
+                if match_locked.current_minute >= 90:
+                    match_locked.status = 'finished'
+                    match_locked.save()
+                    cache.delete(cache_key)  # Очищаем кеш
+                    logger.info(f"🏁 Матч ID={match_locked.id} завершен")
+                    continue
+                
+                # Симулируем одно действие
                 logger.info(
-                    f"⚙️ Начинаем симуляцию минуты {minute_to_simulate} "
-                    f"для матча ID={match_locked.id}"
+                    f"⚙️ Симуляция действия для матча ID={match_locked.id}, "
+                    f"минута {match_locked.current_minute}, действие #{actions_in_current_minute + 1}"
                 )
-
-                updated_match = simulate_one_minute(match_locked)
-
-                if updated_match:
-                    updated_match.save()
+                
+                result = simulate_one_action(match_locked)
+                
+                # Создаем событие, если оно есть
+                if result.get('event'):
+                    event = MatchEvent.objects.create(**result['event'])
                     logger.info(
-                        f"✅ Минута {minute_to_simulate} симулирована успешно: "
-                        f"{updated_match.home_team} vs {updated_match.away_team}, "
-                        f"счёт: {updated_match.home_score}:{updated_match.away_score}"
-                    )
-                    
-                    # ДОБАВЛЯЕМ: Отправка событий через WebSocket
-                    from matches.tasks import broadcast_minute_events_in_chunks
-                    from django.conf import settings
-                    
-                    # Минута, которая была симулирована - это current_minute после симуляции
-                    simulated_minute = updated_match.current_minute
-                    tick_seconds = getattr(settings, 'MATCH_TICK_SECONDS', 5)
-                    
-                    # Запускаем broadcast событий этой минуты
-                    broadcast_minute_events_in_chunks.delay(
-                        match_locked.id, 
-                        simulated_minute, 
-                        duration=tick_seconds
-                    )
-                    
-                    logger.info(
-                        f"📡 Запланирована трансляция событий минуты {simulated_minute} "
+                        f"✅ Действие создано: {result['action_type']} "
                         f"для матча ID={match_locked.id}"
                     )
                     
-                    # Также отправляем текущее состояние матча сразу
-                    from channels.layers import get_channel_layer
-                    from asgiref.sync import async_to_sync
-
-                    channel_layer = get_channel_layer()
+                    # Отправляем событие СРАЗУ через WebSocket
                     if channel_layer:
-                        update_data = {
+                        event_data = {
+                            "minute": event.minute,
+                            "event_type": event.event_type,
+                            "description": event.description,
+                            "player_name": f"{event.player.first_name} {event.player.last_name}" if event.player else "",
+                            "related_player_name": f"{event.related_player.first_name} {event.related_player.last_name}" if event.related_player else ""
+                        }
+                        
+                        message_payload = {
                             "type": "match_update",
                             "data": {
                                 "match_id": match_locked.id,
-                                "minute": updated_match.current_minute,
-                                "home_score": updated_match.home_score,
-                                "away_score": updated_match.away_score,
-                                "status": updated_match.status,
-                                "st_shoots": updated_match.st_shoots,
-                                "st_passes": updated_match.st_passes,
-                                "st_possessions": updated_match.st_possessions,
-                                "st_fouls": updated_match.st_fouls,
-                                "st_injury": updated_match.st_injury,
+                                "minute": match_locked.current_minute,
+                                "home_score": match_locked.home_score,
+                                "away_score": match_locked.away_score,
+                                "status": match_locked.status,
+                                "st_shoots": match_locked.st_shoots,
+                                "st_passes": match_locked.st_passes,
+                                "st_possessions": match_locked.st_possessions,
+                                "st_fouls": match_locked.st_fouls,
+                                "st_injury": match_locked.st_injury,
+                                "events": [event_data],
+                                "partial_update": True,
+                                "action_based": True  # Новый флаг для пошаговой симуляции
                             }
                         }
                         
                         async_to_sync(channel_layer.group_send)(
                             f"match_{match_locked.id}",
-                            update_data
+                            message_payload
                         )
                         
                         logger.info(
-                            f"📡 Отправлено обновление состояния для матча ID={match_locked.id}"
+                            f"📡 Событие отправлено через WebSocket для матча ID={match_locked.id}"
                         )
-                else:
-                    logger.warning(
-                        f"⚠️ simulate_one_minute вернула None для матча ID={match.id}"
+                
+                # Проверяем дополнительное событие (например, травма после фола)
+                if result.get('additional_event'):
+                    add_event = MatchEvent.objects.create(**result['additional_event'])
+                    # Отправляем и его через WebSocket
+                    if channel_layer:
+                        add_event_data = {
+                            "minute": add_event.minute,
+                            "event_type": add_event.event_type,
+                            "description": add_event.description,
+                            "player_name": f"{add_event.player.first_name} {add_event.player.last_name}" if add_event.player else "",
+                            "related_player_name": ""
+                        }
+                        
+                        add_message_payload = {
+                            "type": "match_update",
+                            "data": {
+                                "match_id": match_locked.id,
+                                "minute": match_locked.current_minute,
+                                "home_score": match_locked.home_score,
+                                "away_score": match_locked.away_score,
+                                "status": match_locked.status,
+                                "st_shoots": match_locked.st_shoots,
+                                "st_passes": match_locked.st_passes,
+                                "st_possessions": match_locked.st_possessions,
+                                "st_fouls": match_locked.st_fouls,
+                                "st_injury": match_locked.st_injury,
+                                "events": [add_event_data],
+                                "partial_update": True,
+                                "action_based": True
+                            }
+                        }
+                        
+                        async_to_sync(channel_layer.group_send)(
+                            f"match_{match_locked.id}",
+                            add_message_payload
+                        )
+                
+                # Увеличиваем счетчик действий
+                actions_in_current_minute += 1
+                
+                # Если прошло достаточно действий или атака завершена, переходим к следующей минуте
+                if actions_in_current_minute >= 3 or not result.get('continue', True):
+                    match_locked.current_minute += 1
+                    cache.delete(cache_key)  # Сбрасываем счетчик
+                    
+                    # Отправляем информационное событие о новой минуте
+                    if match_locked.current_minute <= 90:
+                        info_event = MatchEvent.objects.create(
+                            match=match_locked,
+                            minute=match_locked.current_minute,
+                            event_type='info',
+                            description=f"Minute {match_locked.current_minute}: Play continues..."
+                        )
+                        
+                        if channel_layer:
+                            info_event_data = {
+                                "minute": info_event.minute,
+                                "event_type": info_event.event_type,
+                                "description": info_event.description,
+                                "player_name": "",
+                                "related_player_name": ""
+                            }
+                            
+                            info_message_payload = {
+                                "type": "match_update",
+                                "data": {
+                                    "match_id": match_locked.id,
+                                    "minute": match_locked.current_minute,
+                                    "home_score": match_locked.home_score,
+                                    "away_score": match_locked.away_score,
+                                    "status": match_locked.status,
+                                    "st_shoots": match_locked.st_shoots,
+                                    "st_passes": match_locked.st_passes,
+                                    "st_possessions": match_locked.st_possessions,
+                                    "st_fouls": match_locked.st_fouls,
+                                    "st_injury": match_locked.st_injury,
+                                    "events": [info_event_data],
+                                    "partial_update": True,
+                                    "action_based": True
+                                }
+                            }
+                            
+                            async_to_sync(channel_layer.group_send)(
+                                f"match_{match_locked.id}",
+                                info_message_payload
+                            )
+                    
+                    logger.info(
+                        f"📅 Переход к минуте {match_locked.current_minute} для матча ID={match_locked.id}"
                     )
+                else:
+                    # Сохраняем счетчик действий
+                    cache.set(cache_key, actions_in_current_minute, timeout=300)  # 5 минут таймаут
+                
+                # Сохраняем состояние матча
+                match_locked.save()
 
         except Match.DoesNotExist:
             logger.warning(f"❌ Матч ID={match.id} исчез из базы во время симуляции.")
@@ -120,7 +217,7 @@ def simulate_active_matches(self):
         except Exception as e:
             logger.exception(f"🔥 Ошибка при симуляции матча {match.id}: {e}")
 
-    return f"Simulated {matches.count()} matches"
+    return f"Simulated actions for {matches.count()} matches"
 
 
 

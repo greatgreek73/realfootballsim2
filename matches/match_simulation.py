@@ -453,4 +453,207 @@ def simulate_one_minute(match: Match) -> Match | None:
         # match.save() # Если меняем статус, нужно сохранить
         return match # Возвращаем текущий объект match, чтобы внешний цикл мог продолжить или остановиться
 
+def simulate_one_action(match: Match) -> dict:
+    """
+    Симулирует ОДНО действие в матче (пас, перехват, удар и т.д.)
+    Возвращает словарь с информацией о действии и событии
+    """
+    # Константы вероятностей (те же, что в simulate_one_minute)
+    PASS_SUCCESS_PROB = 0.65 
+    SHOT_SUCCESS_PROB = 0.18 
+    FOUL_PROB = 0.12 
+    INJURY_PROB = 0.05 
+    GK_PASS_SUCCESS_PROB = 0.90
+    
+    # Определяем текущее состояние
+    current_player = match.current_player_with_ball
+    current_zone = match.current_zone
+    possessing_team = None
+    
+    # Определяем команду владения
+    if current_player:
+        if current_player.club_id == match.home_team_id:
+            possessing_team = match.home_team
+        elif current_player.club_id == match.away_team_id:
+            possessing_team = match.away_team
+    
+    # Если нет текущего игрока, начинаем с вратаря домашней команды
+    if not current_player or not possessing_team:
+        possessing_team = match.home_team
+        current_player = choose_player(possessing_team, "GK", match=match)
+        if not current_player:
+            return {
+                'event': None,
+                'action_type': 'error',
+                'continue': False
+            }
+        match.current_player_with_ball = current_player
+        match.current_zone = "GK"
+    
+    # Обновляем индикатор владения
+    match.possession_indicator = 1 if possessing_team.id == match.home_team_id else 2
+    
+    # Проверяем на фол
+    if random.random() < FOUL_PROB:
+        opponent_team = get_opponent_team(match, possessing_team)
+        fouler = choose_player(opponent_team, "ANY", match=match)
+        if fouler:
+            match.st_fouls += 1
+            event_data = {
+                'match': match,
+                'minute': match.current_minute,
+                'event_type': 'foul',
+                'player': fouler,
+                'related_player': current_player,
+                'description': f"Foul! {fouler.last_name} ({opponent_team.name}) on {current_player.last_name} in {current_zone}."
+            }
+            
+            # Проверка на травму
+            if random.random() < INJURY_PROB:
+                match.st_injury += 1
+                injury_event = {
+                    'match': match,
+                    'minute': match.current_minute,
+                    'event_type': 'injury_concern',
+                    'player': current_player,
+                    'description': f"Injury concern for {current_player.last_name}!"
+                }
+                return {
+                    'event': event_data,
+                    'additional_event': injury_event,
+                    'action_type': 'foul_with_injury',
+                    'continue': True
+                }
+            
+            return {
+                'event': event_data,
+                'action_type': 'foul',
+                'continue': True
+            }
+    
+    # Основная логика действия в зависимости от зоны
+    if current_zone == "FWD":
+        # Зона атаки - удар по воротам
+        match.st_shoots += 1
+        shooter = current_player
+        is_goal = random.random() < SHOT_SUCCESS_PROB
+        
+        if is_goal:
+            if possessing_team.id == match.home_team_id:
+                match.home_score += 1
+            else:
+                match.away_score += 1
+            
+            event_data = {
+                'match': match,
+                'minute': match.current_minute,
+                'event_type': 'goal',
+                'player': shooter,
+                'description': f"GOAL!!! {shooter.first_name} {shooter.last_name} ({possessing_team.name})! Score: {match.home_score}-{match.away_score}"
+            }
+        else:
+            event_data = {
+                'match': match,
+                'minute': match.current_minute,
+                'event_type': 'shot_miss',
+                'player': shooter,
+                'description': f"Missed shot by {shooter.first_name} {shooter.last_name} ({possessing_team.name})."
+            }
+        
+        # После удара мяч переходит к вратарю соперника
+        opponent_team = get_opponent_team(match, possessing_team)
+        new_keeper = choose_player(opponent_team, "GK", match=match)
+        if new_keeper:
+            match.current_player_with_ball = new_keeper
+            match.current_zone = "GK"
+        
+        return {
+            'event': event_data,
+            'action_type': 'shot',
+            'continue': False  # Конец атаки
+        }
+    
+    else:
+        # Попытка паса в следующую зону
+        transition_map = {
+            "GK": "DEF",
+            "DEF": "DM", 
+            "DM": "MID",
+            "MID": "AM",
+            "AM": "FWD"
+        }
+        
+        target_zone = transition_map.get(current_zone, current_zone)
+        match.st_possessions += 1
+        
+        pass_prob = GK_PASS_SUCCESS_PROB if current_zone == "GK" else PASS_SUCCESS_PROB
+        
+        if random.random() < pass_prob:
+            # Успешный пас
+            recipient = choose_player(possessing_team, target_zone, exclude_ids={current_player.id}, match=match)
+            
+            if recipient:
+                match.st_passes += 1
+                
+                event_data = {
+                    'match': match,
+                    'minute': match.current_minute,
+                    'event_type': 'pass',
+                    'player': current_player,
+                    'related_player': recipient,
+                    'description': f"Pass: {current_player.last_name} -> {recipient.last_name} ({current_zone}->{target_zone})"
+                }
+                
+                match.current_player_with_ball = recipient
+                match.current_zone = target_zone
+                
+                return {
+                    'event': event_data,
+                    'action_type': 'pass',
+                    'continue': True
+                }
+            else:
+                # Не нашли получателя
+                return {
+                    'event': None,
+                    'action_type': 'no_recipient',
+                    'continue': False
+                }
+        
+        else:
+            # Перехват
+            opponent_team = get_opponent_team(match, possessing_team)
+            interceptor = choose_player(opponent_team, current_zone, match=match)
+            
+            if interceptor:
+                event_data = {
+                    'match': match,
+                    'minute': match.current_minute,
+                    'event_type': 'interception',
+                    'player': interceptor,
+                    'related_player': current_player,
+                    'description': f"INTERCEPTION! {interceptor.last_name} ({opponent_team.name}) from {current_player.last_name} in {current_zone}."
+                }
+                
+                # Мяч переходит к перехватившему или к вратарю его команды
+                new_keeper = choose_player(opponent_team, "GK", match=match)
+                if new_keeper:
+                    match.current_player_with_ball = new_keeper
+                    match.current_zone = "GK"
+                else:
+                    match.current_player_with_ball = interceptor
+                    match.current_zone = "DEF"
+                
+                return {
+                    'event': event_data,
+                    'action_type': 'interception',
+                    'continue': False  # Смена владения
+                }
+            
+            return {
+                'event': None,
+                'action_type': 'failed_interception',
+                'continue': False
+            }
+
 # Конец файла match_simulation.py
