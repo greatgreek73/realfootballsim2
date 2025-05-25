@@ -47,6 +47,13 @@ def simulate_active_matches(self):
 
             with transaction.atomic():
                 match_locked = Match.objects.select_for_update().get(id=match.id)
+
+                # Если ожидаем начала следующей минуты, пропускаем обработку
+                if match_locked.waiting_for_next_minute:
+                    logger.info(
+                        f"⏭️ Матч ID={match_locked.id} ждёт следующую минуту, пропуск."
+                    )
+                    continue
                 
                 # Получаем счетчик действий из кеша
                 cache_key = f"match_{match_locked.id}_actions_in_minute"
@@ -67,6 +74,11 @@ def simulate_active_matches(self):
                 )
                 
                 result = simulate_one_action(match_locked)
+
+                # Если действие завершает атаку, ждём следующей минуты
+                if result.get('continue', True) is False:
+                    match_locked.waiting_for_next_minute = True
+                
                 
                 # Создаем событие, если оно есть
                 if result.get('event'):
@@ -455,6 +467,7 @@ def start_scheduled_matches():
                     now_ts = timezone.now()
                     match_locked.started_at = now_ts
                     match_locked.last_minute_update = now_ts
+                    match_locked.waiting_for_next_minute = False
                     match_locked.save()
                     started_count += 1
                 else:
@@ -542,6 +555,7 @@ def advance_match_minutes():
         match.last_minute_update = match.last_minute_update + timedelta(
             seconds=minutes_passed * settings.MATCH_MINUTE_REAL_SECONDS
         )
+        match.waiting_for_next_minute = False
         match.save()
 
     return f'Updated {matches.count()} matches'

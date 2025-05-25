@@ -61,6 +61,9 @@ class Match(models.Model):
     started_at = models.DateTimeField(null=True, blank=True)
     last_minute_update = models.DateTimeField(null=True, blank=True)
 
+    # Флаг ожидания перехода на следующую минуту
+    waiting_for_next_minute = models.BooleanField(default=False)
+
     # Текущий игрок, владеющий мячом, и текущая зона
     current_player_with_ball = models.ForeignKey(
         Player,
