@@ -300,43 +300,6 @@ def simulate_one_action(match: Match) -> dict:
     # Обновляем индикатор владения
     match.possession_indicator = 1 if possessing_team.id == match.home_team_id else 2
     
-    # Проверяем на фол
-    if random.random() < FOUL_PROB:
-        opponent_team = get_opponent_team(match, possessing_team)
-        fouler = choose_player(opponent_team, "ANY", match=match)
-        if fouler:
-            match.st_fouls += 1
-            event_data = {
-                'match': match,
-                'minute': match.current_minute,
-                'event_type': 'foul',
-                'player': fouler,
-                'related_player': current_player,
-                'description': f"Foul! {fouler.last_name} ({opponent_team.name}) on {current_player.last_name} in {current_zone}."
-            }
-            
-            # Проверка на травму
-            if random.random() < INJURY_PROB:
-                match.st_injury += 1
-                injury_event = {
-                    'match': match,
-                    'minute': match.current_minute,
-                    'event_type': 'injury_concern',
-                    'player': current_player,
-                    'description': f"Injury concern for {current_player.last_name}!"
-                }
-                return {
-                    'event': event_data,
-                    'additional_event': injury_event,
-                    'action_type': 'foul_with_injury',
-                    'continue': True
-                }
-            
-            return {
-                'event': event_data,
-                'action_type': 'foul',
-                'continue': True
-            }
     
     # Основная логика действия в зависимости от зоны
     if current_zone == "FWD":
@@ -413,7 +376,28 @@ def simulate_one_action(match: Match) -> dict:
                 
                 match.current_player_with_ball = recipient
                 match.current_zone = target_zone
-                
+
+                # После паса возможен фол
+                if random.random() < FOUL_PROB:
+                    opponent_team = get_opponent_team(match, possessing_team)
+                    fouler = choose_player(opponent_team, "ANY", match=match)
+                    if fouler:
+                        match.st_fouls += 1
+                        foul_event = {
+                            'match': match,
+                            'minute': match.current_minute,
+                            'event_type': 'foul',
+                            'player': fouler,
+                            'related_player': recipient,
+                            'description': f"Foul! {fouler.last_name} ({opponent_team.name}) on {recipient.last_name} in {target_zone}.",
+                        }
+                        return {
+                            'event': event_data,
+                            'additional_event': foul_event,
+                            'action_type': 'pass',
+                            'continue': True
+                        }
+
                 return {
                     'event': event_data,
                     'action_type': 'pass',
