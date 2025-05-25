@@ -4,7 +4,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse
-from django.http import JsonResponse, HttpResponseNotAllowed
+from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.utils import timezone
 from django.db.models import Q
@@ -14,11 +14,6 @@ from clubs.models import Club
 from players.models import Player
 # Импорт Celery-задач
 from django.conf import settings
-from .tasks import (
-    simulate_match_minute,
-    simulate_next_minute,
-    broadcast_minute_events_in_chunks,
-)
 from .utils import extract_player_id
 from tournaments.models import Championship, League
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -265,7 +260,7 @@ def simulate_match_view(request, match_id):
                 away_team=opponent,
                 datetime=timezone.now(),
                 status='scheduled',
-                current_minute=0,
+                current_minute=1,
                 home_tactic='balanced',
                 away_tactic='balanced',
             )
@@ -282,8 +277,7 @@ def simulate_match_view(request, match_id):
 
             match.status = 'in_progress'
             match.save()
-            simulate_next_minute.delay(match.id)
-            logger.info(f'[VIEW] Started simulation task for match ID={match.id} at minute {match.current_minute}')
+            logger.info(f'[VIEW] Match ID={match.id} set to in_progress')
             logger.info(f'Матч ID={match.id} успешно подготовлен и переведён в статус "in_progress"')
 
             match_id = match.id
@@ -292,15 +286,3 @@ def simulate_match_view(request, match_id):
         logger.info(f'Перенаправление пользователя на страницу матча ID={match_id}')
         return redirect('matches:match_detail', pk=match_id)
 
-@login_required
-def simulate_match_minute_view(request, match_id):
-    if request.method != 'POST':
-        return HttpResponseNotAllowed(['POST'], "This endpoint requires POST request")
-
-    match = get_object_or_404(Match, id=match_id)
-    simulate_next_minute.delay(match_id)
-
-    return JsonResponse({
-        'status': 'ok',
-        'message': f"Scheduled next minute for match {match_id}."
-    })
