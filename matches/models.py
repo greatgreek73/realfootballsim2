@@ -55,7 +55,7 @@ class Match(models.Model):
     away_tactic = models.CharField(max_length=20, default='balanced')
 
     # Текущая минута матча
-    current_minute = models.PositiveIntegerField(default=0)
+    current_minute = models.PositiveIntegerField(default=1)
 
     # Текущий игрок, владеющий мячом, и текущая зона
     current_player_with_ball = models.ForeignKey(

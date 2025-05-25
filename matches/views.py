@@ -260,7 +260,7 @@ def simulate_match_view(request, match_id):
                 away_team=opponent,
                 datetime=timezone.now(),
                 status='scheduled',
-                current_minute=0,
+                current_minute=1,
                 home_tactic='balanced',
                 away_tactic='balanced',
             )
