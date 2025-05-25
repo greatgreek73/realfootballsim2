@@ -40,7 +40,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const statBox = document.querySelector('.stat-box'); // Блок для статистики
     const injuryActionForm = document.querySelector('#matchUserAction-inj'); // Форма для травмы
     const nextMinuteBtn = document.getElementById('nextMinuteBtn');
-    const tickSeconds = parseFloat(matchInfoArea.dataset.tickSeconds) || 0;
+    // Duration of one simulated minute in real seconds
+    const minuteSeconds = parseFloat(matchInfoArea.dataset.minuteSeconds) || 0;
     let nextMinuteTimeout = null;
 
     // Проверяем наличие основных элементов для обновления
@@ -55,11 +56,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (status === 'paused') {
                 nextMinuteBtn.style.display = 'block';
                 nextMinuteBtn.disabled = false;
-                if (tickSeconds > 0) {
+                if (minuteSeconds > 0) {
                     clearTimeout(nextMinuteTimeout);
                     nextMinuteTimeout = setTimeout(() => {
                         sendNextMinute();
-                    }, tickSeconds * 1000);
+                    }, minuteSeconds * 1000);
                 }
             } else {
                 nextMinuteBtn.style.display = 'none';
