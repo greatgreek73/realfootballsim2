@@ -152,10 +152,11 @@ def simulate_active_matches(self):
                 
                 # Увеличиваем счетчик действий
                 actions_in_current_minute += 1
-                
-                # Если прошло достаточно действий или атака завершена, переходим к следующей минуте
-                if actions_in_current_minute >= 3 or not result.get('continue', True):
+
+                # Переходим к новой минуте только по завершении атаки
+                if not result.get('continue', True):
                     match_locked.current_minute += 1
+                    actions_in_current_minute = 0
                     cache.delete(cache_key)  # Сбрасываем счетчик
                     
                     # Отправляем информационное событие о новой минуте
