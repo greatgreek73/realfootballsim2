@@ -172,7 +172,8 @@ def match_detail(request, pk):
         'home_prev_lineup_list': home_prev_lineup_list,
         'away_prev_match': away_prev_match,
         'away_prev_lineup_list': away_prev_lineup_list,
-        'tick_seconds': settings.MATCH_TICK_SECONDS,
+        # Pass duration of one simulated minute to the template
+        'match_minute_seconds': settings.MATCH_MINUTE_REAL_SECONDS,
     }
 
     logger.info(f'[match_detail] Контекст подготовлен. Рендер страницы match_detail.html для матча ID={pk}')
