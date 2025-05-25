@@ -57,6 +57,10 @@ class Match(models.Model):
     # Текущая минута матча
     current_minute = models.PositiveIntegerField(default=1)
 
+    # Метка времени начала матча и последнего обновления минуты
+    started_at = models.DateTimeField(null=True, blank=True)
+    last_minute_update = models.DateTimeField(null=True, blank=True)
+
     # Текущий игрок, владеющий мячом, и текущая зона
     current_player_with_ball = models.ForeignKey(
         Player,

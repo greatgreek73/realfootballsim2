@@ -174,6 +174,10 @@ CELERY_BEAT_SCHEDULE = {
         # Will be overridden in the database to MATCH_MINUTE_REAL_SECONDS
         'schedule': MATCH_MINUTE_REAL_SECONDS,
     },
+    'advance-match-minutes': {
+        'task': 'tournaments.advance_match_minutes',
+        'schedule': 1.0,
+    },
     'check-season-end': {
         'task': 'tournaments.check_season_end',
         'schedule': crontab(hour=0, minute=0),  # Каждый день в полночь

@@ -5,6 +5,7 @@ import logging
 from celery import shared_task
 from django.utils import timezone
 from django.db import transaction, OperationalError
+from django.conf import settings
 from django.core.management import call_command
 from matches.models import Match, MatchEvent
 from players.models import Player # Убедитесь, что импорт есть
@@ -152,61 +153,7 @@ def simulate_active_matches(self):
                 
                 # Увеличиваем счетчик действий
                 actions_in_current_minute += 1
-
-                # Переходим к новой минуте только по завершении атаки
-                if not result.get('continue', True):
-                    match_locked.current_minute += 1
-                    actions_in_current_minute = 0
-                    cache.delete(cache_key)  # Сбрасываем счетчик
-                    
-                    # Отправляем информационное событие о новой минуте
-                    if match_locked.current_minute <= 90:
-                        info_event = MatchEvent.objects.create(
-                            match=match_locked,
-                            minute=match_locked.current_minute,
-                            event_type='info',
-                            description=f"Minute {match_locked.current_minute}: Play continues..."
-                        )
-                        
-                        if channel_layer:
-                            info_event_data = {
-                                "minute": info_event.minute,
-                                "event_type": info_event.event_type,
-                                "description": info_event.description,
-                                "player_name": "",
-                                "related_player_name": ""
-                            }
-                            
-                            info_message_payload = {
-                                "type": "match_update",
-                                "data": {
-                                    "match_id": match_locked.id,
-                                    "minute": match_locked.current_minute,
-                                    "home_score": match_locked.home_score,
-                                    "away_score": match_locked.away_score,
-                                    "status": match_locked.status,
-                                    "st_shoots": match_locked.st_shoots,
-                                    "st_passes": match_locked.st_passes,
-                                    "st_possessions": match_locked.st_possessions,
-                                    "st_fouls": match_locked.st_fouls,
-                                    "st_injury": match_locked.st_injury,
-                                    "events": [info_event_data],
-                                    "partial_update": True,
-                                    "action_based": True
-                                }
-                            }
-                            
-                            async_to_sync(channel_layer.group_send)(
-                                f"match_{match_locked.id}",
-                                info_message_payload
-                            )
-                    
-                    logger.info(
-                        f"📅 Переход к минуте {match_locked.current_minute} для матча ID={match_locked.id}"
-                    )
-                else:
-                    # Сохраняем счетчик действий
-                    cache.set(cache_key, actions_in_current_minute, timeout=300)  # 5 минут таймаут
+                cache.set(cache_key, actions_in_current_minute, timeout=300)  # 5 минут таймаут
                 
                 # Сохраняем состояние матча
                 match_locked.save()
@@ -505,6 +452,9 @@ def start_scheduled_matches():
                     match_locked.away_lineup = final_away_lineup
                     match_locked.away_tactic = away_tactic
                     match_locked.status = 'in_progress'
+                    now_ts = timezone.now()
+                    match_locked.started_at = now_ts
+                    match_locked.last_minute_update = now_ts
                     match_locked.save()
                     started_count += 1
                 else:
@@ -520,5 +470,80 @@ def start_scheduled_matches():
              skipped_count += 1
 
     return f"{started_count} matches started, {skipped_count} skipped."
+
+
+@shared_task(name='tournaments.advance_match_minutes')
+def advance_match_minutes():
+    """Advance match minutes based on real elapsed time."""
+    now = timezone.now()
+    matches = Match.objects.filter(status='in_progress')
+    if not matches:
+        return 'No matches to update'
+
+    from channels.layers import get_channel_layer
+    from asgiref.sync import async_to_sync
+
+    channel_layer = get_channel_layer()
+
+    for match in matches:
+        if match.last_minute_update is None:
+            match.last_minute_update = now
+            match.save(update_fields=['last_minute_update'])
+            continue
+
+        elapsed = (now - match.last_minute_update).total_seconds()
+        minutes_passed = int(elapsed // settings.MATCH_MINUTE_REAL_SECONDS)
+        if minutes_passed <= 0:
+            continue
+
+        new_minute = min(90, match.current_minute + minutes_passed)
+        for m in range(match.current_minute + 1, new_minute + 1):
+            info_event = MatchEvent.objects.create(
+                match=match,
+                minute=m,
+                event_type='info',
+                description=f"Minute {m}: Play continues...",
+            )
+
+            if channel_layer:
+                info_event_data = {
+                    'minute': info_event.minute,
+                    'event_type': info_event.event_type,
+                    'description': info_event.description,
+                    'player_name': '',
+                    'related_player_name': ''
+                }
+
+                payload = {
+                    'type': 'match_update',
+                    'data': {
+                        'match_id': match.id,
+                        'minute': m,
+                        'home_score': match.home_score,
+                        'away_score': match.away_score,
+                        'status': match.status,
+                        'st_shoots': match.st_shoots,
+                        'st_passes': match.st_passes,
+                        'st_possessions': match.st_possessions,
+                        'st_fouls': match.st_fouls,
+                        'st_injury': match.st_injury,
+                        'events': [info_event_data],
+                        'partial_update': True,
+                        'action_based': True,
+                    }
+                }
+
+                async_to_sync(channel_layer.group_send)(
+                    f'match_{match.id}',
+                    payload,
+                )
+
+        match.current_minute = new_minute
+        match.last_minute_update = match.last_minute_update + timedelta(
+            seconds=minutes_passed * settings.MATCH_MINUTE_REAL_SECONDS
+        )
+        match.save()
+
+    return f'Updated {matches.count()} matches'
 
 # --- КОНЕЦ ФАЙЛА tournaments/tasks.py ---
