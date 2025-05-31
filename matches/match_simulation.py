@@ -260,6 +260,45 @@ def decrease_morale(team, player, val):
 def increase_morale(team, player, val):
     pass
 
+# --- Probability helper functions ---
+def clamp(value: float, min_value: float = 0.0, max_value: float = 1.0) -> float:
+    return max(min_value, min(max_value, value))
+
+
+def pass_success_probability(
+    passer: Player,
+    recipient: Player,
+    opponent: Player | None,
+    *,
+    is_goalkeeper_pass: bool = False,
+) -> float:
+    base = 0.6 if is_goalkeeper_pass else 0.5
+    bonus = (passer.passing + passer.vision) / 200
+    rec_bonus = recipient.positioning / 200 if recipient else 0
+    penalty = 0
+    if opponent:
+        penalty = (opponent.marking + opponent.tackling) / 200
+    stamina_factor = passer.stamina / 100
+    morale_factor = 0.5 + passer.morale / 200
+    return clamp((base + bonus + rec_bonus - penalty) * stamina_factor * morale_factor)
+
+
+def shot_success_probability(shooter: Player, goalkeeper: Player | None) -> float:
+    base = 0.1
+    bonus = (shooter.finishing + shooter.long_range + shooter.accuracy) / 300
+    penalty = 0
+    if goalkeeper:
+        penalty = (goalkeeper.reflexes + goalkeeper.handling + goalkeeper.positioning) / 300
+    stamina_factor = shooter.stamina / 100
+    morale_factor = 0.5 + shooter.morale / 200
+    return clamp((base + bonus - penalty) * stamina_factor * morale_factor)
+
+
+def foul_probability(tackler: Player, dribbler: Player) -> float:
+    base = 0.05
+    diff = tackler.tackling - dribbler.dribbling
+    return clamp(base + diff / 200)
+
 def simulate_one_action(match: Match) -> dict:
     """
     Симулирует ОДНО действие в матче (пас, перехват, удар и т.д.)
@@ -306,7 +345,9 @@ def simulate_one_action(match: Match) -> dict:
         # Зона атаки - удар по воротам
         match.st_shoots += 1
         shooter = current_player
-        is_goal = random.random() < SHOT_SUCCESS_PROB
+        opponent_team = get_opponent_team(match, possessing_team)
+        goalkeeper = choose_player(opponent_team, "GK", match=match)
+        is_goal = random.random() < shot_success_probability(shooter, goalkeeper)
         
         if is_goal:
             if possessing_team.id == match.home_team_id:
@@ -356,14 +397,19 @@ def simulate_one_action(match: Match) -> dict:
         target_zone = transition_map.get(current_zone, current_zone)
         match.st_possessions += 1
         
-        pass_prob = GK_PASS_SUCCESS_PROB if current_zone == "GK" else PASS_SUCCESS_PROB
-        
-        if random.random() < pass_prob:
-            # Успешный пас
-            recipient = choose_player(possessing_team, target_zone, exclude_ids={current_player.id}, match=match)
-            
-            if recipient:
-                match.st_passes += 1
+        recipient = choose_player(possessing_team, target_zone, exclude_ids={current_player.id}, match=match)
+
+        opponent_team = get_opponent_team(match, possessing_team)
+        opponent = choose_player(opponent_team, target_zone, match=match)
+        pass_prob = pass_success_probability(
+            current_player,
+            recipient,
+            opponent,
+            is_goalkeeper_pass=current_zone == "GK",
+        ) if recipient else 0
+
+        if random.random() < pass_prob and recipient:
+            match.st_passes += 1
                 
                 event_data = {
                     'match': match,
@@ -378,10 +424,10 @@ def simulate_one_action(match: Match) -> dict:
                 match.current_zone = target_zone
 
                 # После паса возможен фол
-                if random.random() < FOUL_PROB:
-                    opponent_team = get_opponent_team(match, possessing_team)
-                    fouler = choose_player(opponent_team, "ANY", match=match)
-                    if fouler:
+                fouler = choose_player(opponent_team, "ANY", match=match)
+                if fouler:
+                    foul_chance = foul_probability(fouler, recipient)
+                    if random.random() < foul_chance:
                         match.st_fouls += 1
                         foul_event = {
                             'match': match,
@@ -395,7 +441,7 @@ def simulate_one_action(match: Match) -> dict:
                             'event': event_data,
                             'additional_event': foul_event,
                             'action_type': 'pass',
-                            'continue': True
+                            'continue': True,
                         }
 
                 return {

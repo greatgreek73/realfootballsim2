@@ -10,4 +10,5 @@ urlpatterns = [
     path('<int:match_id>/simulate/', views.simulate_match_view, name='simulate_match'),
     path('championship/<int:championship_id>/matches/', views.MatchListView.as_view(), name='championship_matches'),
     path('<int:match_id>/events-json/', views.get_match_events, name='match_events_json'),
+    path('<int:match_id>/substitute/', views.substitute_player, name='substitute_player'),
 ]
