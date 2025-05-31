@@ -287,3 +287,35 @@ def simulate_match_view(request, match_id):
         logger.info(f'Перенаправление пользователя на страницу матча ID={match_id}')
         return redirect('matches:match_detail', pk=match_id)
 
+
+@login_required
+@require_http_methods(["POST"])
+def substitute_player(request, match_id):
+    """Handle a simple substitution triggered from the live match page."""
+    match = get_object_or_404(Match, pk=match_id)
+    if match.status != 'in_progress':
+        return JsonResponse({"success": False, "error": "Match not running"}, status=400)
+
+    try:
+        payload = json.loads(request.body)
+        out_player_id = int(payload.get('out_player_id', 0))
+    except (ValueError, TypeError, json.JSONDecodeError):
+        return JsonResponse({"success": False, "error": "Invalid data"}, status=400)
+
+    player = Player.objects.filter(id=out_player_id).first()
+    if not player:
+        return JsonResponse({"success": False, "error": "Player not found"}, status=404)
+
+    MatchEvent.objects.create(
+        match=match,
+        minute=match.current_minute,
+        event_type='substitution',
+        player=player,
+        description=f"Substitution: {player.full_name} leaves the pitch"
+    )
+
+    if match.st_injury > 0:
+        match.st_injury -= 1
+    match.save(update_fields=["st_injury"])
+
+    return JsonResponse({"success": True})

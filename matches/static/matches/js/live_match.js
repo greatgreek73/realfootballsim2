@@ -1,6 +1,22 @@
 // matches/static/matches/js/live_match.js
+let matchId = null; // set on DOMContentLoaded
 
-// --- Обработчик кнопки замены (оставляем как есть) ---
+// --- Обработчик кнопки замены ---
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 const replaceButton = document.querySelector('#replace-player');
 if (replaceButton) {
     replaceButton.addEventListener('click', function(){
@@ -8,10 +24,25 @@ if (replaceButton) {
         if (actionForm) {
             actionForm.classList.remove('display-action');
         }
-        // TODO: Добавить логику отправки данных о замене на сервер
-        console.log("Replace button clicked - Implement replacement logic.");
-        // Пример: получить выбранного игрока из select#playerToReplaceSelect
-        // Отправить AJAX/fetch запрос на бэкенд с ID матча и ID игрока
+        const select = document.getElementById('playerToReplaceSelect');
+        if (!select || !select.value) {
+            console.warn('No player selected for substitution');
+            return;
+        }
+        const csrftoken = getCookie('csrftoken');
+        fetch(`/matches/${matchId}/substitute/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ out_player_id: select.value })
+        })
+        .then(resp => resp.json())
+        .then(data => {
+            console.log('Substitution response', data);
+        })
+        .catch(err => console.error('Substitution error', err));
     });
 }
 
@@ -23,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    const matchId = matchInfoArea.dataset.matchId;
+    matchId = matchInfoArea.dataset.matchId;
     const initialStatus = matchInfoArea.dataset.matchStatus;
     let currentMatchStatus = initialStatus; // Сохраняем текущий статус для проверок
     let isLive = initialStatus === 'in_progress';
