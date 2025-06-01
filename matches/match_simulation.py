@@ -449,20 +449,29 @@ def simulate_one_action(match: Match) -> dict:
                     'event': event_data,
                     'action_type': 'pass',
                     'continue': True
-                }
             else:
-                # Перехват
+                # Неудачный пас и возможный перехват
                 opponent_team = get_opponent_team(match, possessing_team)
                 interceptor = choose_player(opponent_team, current_zone, match=match)
 
+                # Событие попытки паса
+                pass_event = {
+                    'match': match,
+                    'minute': match.current_minute,
+                    'event_type': 'pass',
+                    'player': current_player,
+                    'related_player': recipient,
+                    'description': f"Pass attempt: {current_player.last_name} -> {recipient.last_name} ({current_zone}->{target_zone})",
+                }
+
                 if interceptor:
-                    event_data = {
+                    interception_event = {
                         'match': match,
                         'minute': match.current_minute,
                         'event_type': 'interception',
                         'player': interceptor,
                         'related_player': current_player,
-                        'description': f"INTERCEPTION! {interceptor.last_name} ({opponent_team.name}) from {current_player.last_name} in {current_zone}."
+                        'description': f"INTERCEPTION! {interceptor.last_name} ({opponent_team.name}) from {current_player.last_name} in {current_zone}.",
                     }
 
                     # Мяч переходит к перехватившему или к вратарю его команды
@@ -475,13 +484,14 @@ def simulate_one_action(match: Match) -> dict:
                         match.current_zone = "DEF"
 
                     return {
-                        'event': event_data,
+                        'event': pass_event,
+                        'additional_event': interception_event,
                         'action_type': 'interception',
                         'continue': False  # Смена владения
                     }
 
                 return {
-                    'event': None,
+                    'event': pass_event,
                     'action_type': 'failed_interception',
                     'continue': False
                 }
