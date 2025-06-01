@@ -408,9 +408,10 @@ def simulate_one_action(match: Match) -> dict:
             is_goalkeeper_pass=current_zone == "GK",
         ) if recipient else 0
 
-        if random.random() < pass_prob and recipient:
-            match.st_passes += 1
-                
+        if recipient:
+            if random.random() < pass_prob:
+                match.st_passes += 1
+
                 event_data = {
                     'match': match,
                     'minute': match.current_minute,
@@ -419,7 +420,7 @@ def simulate_one_action(match: Match) -> dict:
                     'related_player': recipient,
                     'description': f"Pass: {current_player.last_name} -> {recipient.last_name} ({current_zone}->{target_zone})"
                 }
-                
+
                 match.current_player_with_ball = recipient
                 match.current_zone = target_zone
 
@@ -450,46 +451,45 @@ def simulate_one_action(match: Match) -> dict:
                     'continue': True
                 }
             else:
-                # Не нашли получателя
+                # Перехват
+                opponent_team = get_opponent_team(match, possessing_team)
+                interceptor = choose_player(opponent_team, current_zone, match=match)
+
+                if interceptor:
+                    event_data = {
+                        'match': match,
+                        'minute': match.current_minute,
+                        'event_type': 'interception',
+                        'player': interceptor,
+                        'related_player': current_player,
+                        'description': f"INTERCEPTION! {interceptor.last_name} ({opponent_team.name}) from {current_player.last_name} in {current_zone}."
+                    }
+
+                    # Мяч переходит к перехватившему или к вратарю его команды
+                    new_keeper = choose_player(opponent_team, "GK", match=match)
+                    if new_keeper:
+                        match.current_player_with_ball = new_keeper
+                        match.current_zone = "GK"
+                    else:
+                        match.current_player_with_ball = interceptor
+                        match.current_zone = "DEF"
+
+                    return {
+                        'event': event_data,
+                        'action_type': 'interception',
+                        'continue': False  # Смена владения
+                    }
+
                 return {
                     'event': None,
-                    'action_type': 'no_recipient',
+                    'action_type': 'failed_interception',
                     'continue': False
                 }
-        
         else:
-            # Перехват
-            opponent_team = get_opponent_team(match, possessing_team)
-            interceptor = choose_player(opponent_team, current_zone, match=match)
-            
-            if interceptor:
-                event_data = {
-                    'match': match,
-                    'minute': match.current_minute,
-                    'event_type': 'interception',
-                    'player': interceptor,
-                    'related_player': current_player,
-                    'description': f"INTERCEPTION! {interceptor.last_name} ({opponent_team.name}) from {current_player.last_name} in {current_zone}."
-                }
-                
-                # Мяч переходит к перехватившему или к вратарю его команды
-                new_keeper = choose_player(opponent_team, "GK", match=match)
-                if new_keeper:
-                    match.current_player_with_ball = new_keeper
-                    match.current_zone = "GK"
-                else:
-                    match.current_player_with_ball = interceptor
-                    match.current_zone = "DEF"
-                
-                return {
-                    'event': event_data,
-                    'action_type': 'interception',
-                    'continue': False  # Смена владения
-                }
-            
+            # Не нашли получателя
             return {
                 'event': None,
-                'action_type': 'failed_interception',
+                'action_type': 'no_recipient',
                 'continue': False
             }
 
