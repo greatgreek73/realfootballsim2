@@ -34,7 +34,7 @@ def simulate_active_matches(self):
 
     logger.info(f"✅ Найдено {matches.count()} матчей для симуляции.")
 
-    from matches.match_simulation import simulate_one_action
+    from matches.match_simulation import simulate_one_action, send_update
     from channels.layers import get_channel_layer
     from asgiref.sync import async_to_sync
     from django.core.cache import cache
@@ -162,6 +162,17 @@ def simulate_active_matches(self):
                             f"match_{match_locked.id}",
                             add_message_payload
                         )
+
+                # Если событие не создано, отправляем обновление состояния
+                if result.get('event') is None:
+                    possessing_team = None
+                    player_with_ball = match_locked.current_player_with_ball
+                    if player_with_ball:
+                        if player_with_ball.club_id == match_locked.home_team_id:
+                            possessing_team = match_locked.home_team
+                        elif player_with_ball.club_id == match_locked.away_team_id:
+                            possessing_team = match_locked.away_team
+                    send_update(match_locked, possessing_team)
                 
                 # Увеличиваем счетчик действий
                 actions_in_current_minute += 1
