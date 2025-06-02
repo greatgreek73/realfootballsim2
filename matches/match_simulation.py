@@ -272,12 +272,23 @@ def pass_success_probability(
     *,
     is_goalkeeper_pass: bool = False,
 ) -> float:
-    base = 0.6 if is_goalkeeper_pass else 0.5
+    # Slightly higher base chance so passes succeed more often, especially
+    # goalkeeper distributions which were failing too frequently in practice.
+    base = 0.7 if is_goalkeeper_pass else 0.6
+
+    # Passing and vision continue to provide the main boost.  Values are in the
+    # range 0-100 so the maximum bonus is around +1.0 when both stats are high.
     bonus = (passer.passing + passer.vision) / 200
+
+    # Receiver positioning also helps.  Unpositioned passes still have a chance
+    # but we favour well‑positioned targets.
     rec_bonus = recipient.positioning / 200 if recipient else 0
+
     penalty = 0
     if opponent:
-        penalty = (opponent.marking + opponent.tackling) / 200
+        # Reduce the weight of defensive skills so a single opponent does not
+        # negate a reasonable passing attempt quite as often.
+        penalty = (opponent.marking + opponent.tackling) / 400
     stamina_factor = passer.stamina / 100
     morale_factor = 0.5 + passer.morale / 200
     return clamp((base + bonus + rec_bonus - penalty) * stamina_factor * morale_factor)
@@ -448,7 +459,8 @@ def simulate_one_action(match: Match) -> dict:
                 return {
                     'event': event_data,
                     'action_type': 'pass',
-                    'continue': True
+                    'continue': True,
+                }
             else:
                 # Неудачный пас и возможный перехват
                 opponent_team = get_opponent_team(match, possessing_team)
