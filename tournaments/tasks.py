@@ -506,67 +506,70 @@ def advance_match_minutes():
 
     from channels.layers import get_channel_layer
     from asgiref.sync import async_to_sync
+    from django.core.cache import cache
 
     channel_layer = get_channel_layer()
 
     for match in matches:
         if match.last_minute_update is None:
             match.last_minute_update = now
-            match.save(update_fields=['last_minute_update'])
+            match.save(update_fields=["last_minute_update"])
+            continue
+
+        if not match.waiting_for_next_minute:
             continue
 
         elapsed = (now - match.last_minute_update).total_seconds()
-        minutes_passed = int(elapsed // settings.MATCH_MINUTE_REAL_SECONDS)
-        if minutes_passed <= 0:
+        if elapsed < settings.MATCH_MINUTE_REAL_SECONDS:
             continue
 
-        new_minute = min(90, match.current_minute + minutes_passed)
-        for m in range(match.current_minute + 1, new_minute + 1):
+        if match.current_minute < 90:
+            match.current_minute += 1
             info_event = MatchEvent.objects.create(
                 match=match,
-                minute=m,
-                event_type='info',
-                description=f"Minute {m}: Play continues...",
+                minute=match.current_minute,
+                event_type="info",
+                description=f"Minute {match.current_minute}: Play continues...",
             )
 
             if channel_layer:
                 info_event_data = {
-                    'minute': info_event.minute,
-                    'event_type': info_event.event_type,
-                    'description': info_event.description,
-                    'player_name': '',
-                    'related_player_name': ''
+                    "minute": info_event.minute,
+                    "event_type": info_event.event_type,
+                    "description": info_event.description,
+                    "player_name": "",
+                    "related_player_name": "",
                 }
 
                 payload = {
-                    'type': 'match_update',
-                    'data': {
-                        'match_id': match.id,
-                        'minute': m,
-                        'home_score': match.home_score,
-                        'away_score': match.away_score,
-                        'status': match.status,
-                        'st_shoots': match.st_shoots,
-                        'st_passes': match.st_passes,
-                        'st_possessions': match.st_possessions,
-                        'st_fouls': match.st_fouls,
-                        'st_injury': match.st_injury,
-                        'events': [info_event_data],
-                        'partial_update': True,
-                        'action_based': True,
-                    }
+                    "type": "match_update",
+                    "data": {
+                        "match_id": match.id,
+                        "minute": match.current_minute,
+                        "home_score": match.home_score,
+                        "away_score": match.away_score,
+                        "status": match.status,
+                        "st_shoots": match.st_shoots,
+                        "st_passes": match.st_passes,
+                        "st_possessions": match.st_possessions,
+                        "st_fouls": match.st_fouls,
+                        "st_injury": match.st_injury,
+                        "events": [info_event_data],
+                        "partial_update": True,
+                        "action_based": True,
+                    },
                 }
 
                 async_to_sync(channel_layer.group_send)(
-                    f'match_{match.id}',
+                    f"match_{match.id}",
                     payload,
                 )
 
-        match.current_minute = new_minute
-        match.last_minute_update = match.last_minute_update + timedelta(
-            seconds=minutes_passed * settings.MATCH_MINUTE_REAL_SECONDS
-        )
+        cache.delete(f"match_{match.id}_actions_in_minute")
         match.waiting_for_next_minute = False
+        match.last_minute_update = match.last_minute_update + timedelta(
+            seconds=settings.MATCH_MINUTE_REAL_SECONDS
+        )
         match.save()
 
     return f'Updated {matches.count()} matches'
