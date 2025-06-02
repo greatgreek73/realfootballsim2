@@ -11,7 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Used by both Celery Beat and the frontend.  Change this value to
 # speed up or slow down match simulation.
 # Can be overridden via the MATCH_MINUTE_REAL_SECONDS environment variable.
-MATCH_MINUTE_REAL_SECONDS = int(os.environ.get('MATCH_MINUTE_REAL_SECONDS', 60))
+MATCH_MINUTE_REAL_SECONDS = int(os.environ.get('MATCH_MINUTE_REAL_SECONDS', 20))
 
 # Default dev settings
 SECRET_KEY = 'django-insecure-0p3aqax2r2xolyvtfda6q_aa@q1l6n!w4$8sjo1ed&*)h*2l37'

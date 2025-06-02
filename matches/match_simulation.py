@@ -141,6 +141,11 @@ def choose_player(team: Club, zone: str, exclude_ids: set = None, match: Match =
             candidates = [p for p in available_players if condition(p)]
 
         if candidates:
+            # ИЗМЕНЕНИЕ: Взвешенный выбор для защитников
+            if zone.upper() == "DEF":
+                weights = [max(p.positioning, 0) for p in candidates]
+                if any(weights):
+                    return random.choices(candidates, weights=weights, k=1)[0]
             return random.choice(candidates)
         elif available_players:
             return random.choice(available_players)

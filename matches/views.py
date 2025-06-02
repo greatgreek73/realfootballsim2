@@ -18,6 +18,8 @@ from .utils import extract_player_id
 from tournaments.models import Championship, League
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .match_preparation import PreMatchPreparation
+from django.views.decorators.http import require_http_methods
+
 
 
 logger = logging.getLogger('match_creation')
