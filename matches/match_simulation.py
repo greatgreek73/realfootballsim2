@@ -104,7 +104,8 @@ def zone_conditions(zone: str):
 
 def choose_player(team: Club, zone: str, exclude_ids: set = None, match: Match = None) -> Player | None:
     """
-    Выбирает случайного игрока из стартового состава команды для указанной зоны.
+    Выбирает игрока из стартового состава команды для указанной зоны.
+    Для защитников вероятность выбора зависит от их навыка позиционирования.
     """
     if not team or not match:
         logger.error("choose_player called with None team or None match")
@@ -141,6 +142,10 @@ def choose_player(team: Club, zone: str, exclude_ids: set = None, match: Match =
             candidates = [p for p in available_players if condition(p)]
 
         if candidates:
+            if zone.upper() == "DEF":
+                weights = [max(p.positioning, 0) for p in candidates]
+                if any(weights):
+                    return random.choices(candidates, weights=weights, k=1)[0]
             return random.choice(candidates)
         elif available_players:
             return random.choice(available_players)
