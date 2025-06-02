@@ -459,7 +459,8 @@ def simulate_one_action(match: Match) -> dict:
                 return {
                     'event': event_data,
                     'action_type': 'pass',
-                    'continue': True
+                    'continue': True,
+                }
             else:
                 # Неудачный пас и возможный перехват
                 opponent_team = get_opponent_team(match, possessing_team)
