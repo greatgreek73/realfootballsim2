@@ -1,27 +1,36 @@
 from django.test import TestCase
-from matches.match_simulation import simulate_one_action
+from matches.match_simulation import simulate_one_action, choose_player
 from matches.models import Match
 from clubs.models import Club
 from players.models import Player
 
+# Один раз задаём код страны, чтобы не дублировать строку.
+DEFAULT_COUNTRY = "RUS"
+
+
 class MatchSimulationTests(TestCase):
     def setUp(self):
-        self.home = Club.objects.create(name="Home", is_bot=True)
-        self.away = Club.objects.create(name="Away", is_bot=True)
+        # ‼️ добавлен аргумент country
+        self.home = Club.objects.create(name="Home", is_bot=True, country=DEFAULT_COUNTRY)
+        self.away = Club.objects.create(name="Away", is_bot=True, country=DEFAULT_COUNTRY)
+
         self.home_players = [
-            Player.objects.create(first_name=f"H{i}", last_name="P", club=self.home, position="Center Forward")
+            Player.objects.create(first_name=f"H{i}", last_name="P",
+                                  club=self.home, position="Center Forward")
             for i in range(11)
         ]
         self.away_players = [
-            Player.objects.create(first_name=f"A{i}", last_name="P", club=self.away, position="Center Forward")
+            Player.objects.create(first_name=f"A{i}", last_name="P",
+                                  club=self.away, position="Center Forward")
             for i in range(11)
         ]
+
         self.match = Match.objects.create(
             home_team=self.home,
             away_team=self.away,
-            status='in_progress',
-            home_lineup={str(i): {'playerId': str(p.id)} for i,p in enumerate(self.home_players)},
-            away_lineup={str(i): {'playerId': str(p.id)} for i,p in enumerate(self.away_players)},
+            status="in_progress",
+            home_lineup={str(i): {"playerId": str(p.id)} for i, p in enumerate(self.home_players)},
+            away_lineup={str(i): {"playerId": str(p.id)} for i, p in enumerate(self.away_players)},
         )
         self.match.current_player_with_ball = self.home_players[0]
         self.match.save()
@@ -29,4 +38,56 @@ class MatchSimulationTests(TestCase):
     def test_simulate_one_action_returns_dict(self):
         result = simulate_one_action(self.match)
         self.assertIsInstance(result, dict)
-        self.assertIn('action_type', result)
+        self.assertIn("action_type", result)
+
+
+class DMRecipientTests(TestCase):
+    def setUp(self):
+        # ‼️ добавлен аргумент country
+        self.home = Club.objects.create(name="Home DM", is_bot=True, country=DEFAULT_COUNTRY)
+        self.away = Club.objects.create(name="Away DM", is_bot=True, country=DEFAULT_COUNTRY)
+
+        # домашняя команда: полный набор позиций
+        self.home_players = [
+            Player.objects.create(first_name="GK", last_name="H", club=self.home, position="Goalkeeper"),
+            Player.objects.create(first_name="RB", last_name="H", club=self.home, position="Right Back"),
+            Player.objects.create(first_name="CB1", last_name="H", club=self.home, position="Center Back"),
+            Player.objects.create(first_name="CB2", last_name="H", club=self.home, position="Center Back"),
+            Player.objects.create(first_name="LB", last_name="H", club=self.home, position="Left Back"),
+            Player.objects.create(first_name="DM1", last_name="H", club=self.home, position="Defensive Midfielder"),
+            Player.objects.create(first_name="CM", last_name="H", club=self.home, position="Central Midfielder"),
+            Player.objects.create(first_name="RM", last_name="H", club=self.home, position="Right Midfielder"),
+            Player.objects.create(first_name="LM", last_name="H", club=self.home, position="Left Midfielder"),
+            Player.objects.create(first_name="AM", last_name="H", club=self.home, position="Attacking Midfielder"),
+            Player.objects.create(first_name="ST", last_name="H", club=self.home, position="Center Forward"),
+        ]
+        self.away_players = [
+            Player.objects.create(first_name=f"A{i}", last_name="P",
+                                  club=self.away, position="Center Forward")
+            for i in range(11)
+        ]
+
+        self.match = Match.objects.create(
+            home_team=self.home,
+            away_team=self.away,
+            status="in_progress",
+            home_lineup={str(i): {"playerId": str(p.id)} for i, p in enumerate(self.home_players)},
+            away_lineup={str(i): {"playerId": str(p.id)} for i, p in enumerate(self.away_players)},
+        )
+        # начинаем с правым защитником (RB) у мяча
+        self.match.current_player_with_ball = self.home_players[1]
+        self.match.save()
+
+    def test_dm_recipient_position(self):
+        defender = self.home_players[1]  # тот самый RB
+        dm_positions = {"Defensive Midfielder", "Central Midfielder"}
+
+        for _ in range(50):
+            recipient = choose_player(
+                self.home,
+                "DM",
+                exclude_ids={defender.id},
+                match=self.match,
+            )
+            self.assertIsNotNone(recipient)
+            self.assertIn(recipient.position, dm_positions)

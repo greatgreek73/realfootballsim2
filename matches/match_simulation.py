@@ -92,7 +92,16 @@ def zone_conditions(zone: str):
     elif zone_upper == "DEF":
         return lambda p: "Back" in p.position or "Defender" in p.position or p.position == "CB" or p.position == "LB" or p.position == "RB"
     elif zone_upper in ["DM", "MID"]:
-        return lambda p: ("Midfielder" in p.position and "Defensive" in p.position) or p.position == "CM"
+        # Defensive/Central midfielders. The initial logic only handled
+        # "Defensive Midfielder" or the short "CM" abbreviation which meant
+        # players registered as "Central Midfielder" were ignored. When no
+        # candidates matched the zone the function would fall back to choosing
+        # any available player – sometimes even the goalkeeper.  Include the
+        # full position names so a proper recipient is always found.
+        return lambda p: (
+            p.position in ["Defensive Midfielder", "Central Midfielder", "CM"]
+            or ("Midfielder" in p.position and "Defensive" in p.position)
+        )
     elif zone_upper == "AM":
         return lambda p: ("Midfielder" in p.position and "Attacking" in p.position) or p.position == "CAM"
     elif zone_upper == "WING":
