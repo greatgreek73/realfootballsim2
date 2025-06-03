@@ -7,7 +7,6 @@ from matches.models import Match
 from datetime import datetime, timedelta, time
 import pytz
 import calendar
-from .date_utils import get_next_season_dates  # Изменен импорт
 
 class Season(models.Model):
     """Model for representing a game season"""
