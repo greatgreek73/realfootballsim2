@@ -103,7 +103,13 @@ def zone_conditions(zone: str):
             or ("Midfielder" in p.position and "Defensive" in p.position)
         )
     elif zone_upper == "AM":
-        return lambda p: ("Midfielder" in p.position and "Attacking" in p.position) or p.position == "CAM"
+        return lambda p: (
+            ("Midfielder" in p.position and "Attacking" in p.position)
+            or p.position == "CAM"
+            or "Forward" in p.position
+            or "Striker" in p.position
+            or p.position in ["ST", "CF"]
+        )
     elif zone_upper == "WING":
          return lambda p: p.position in ["LW", "RW", "LM", "RM"]
     elif zone_upper == "FWD":
