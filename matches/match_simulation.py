@@ -285,11 +285,19 @@ def pass_success_probability(
     recipient: Player,
     opponent: Player | None,
     *,
-    is_goalkeeper_pass: bool = False,
+    from_zone: str,
+    to_zone: str,
 ) -> float:
-    # Slightly higher base chance so passes succeed more often, especially
-    # goalkeeper distributions which were failing too frequently in practice.
-    base = 0.7 if is_goalkeeper_pass else 0.6
+    """Return probability that a pass succeeds for a given zone transition."""
+    zone_base = {
+        ("GK", "DEF"): 0.9,
+        ("DEF", "DM"): 0.8,
+        ("DM", "MID"): 0.75,
+        ("MID", "AM"): 0.7,
+        ("AM", "FWD"): 0.65,
+    }
+
+    base = zone_base.get((from_zone, to_zone), 0.6)
 
     # Passing and vision continue to provide the main boost.  Values are in the
     # range 0-100 so the maximum bonus is around +1.0 when both stats are high.
@@ -431,7 +439,8 @@ def simulate_one_action(match: Match) -> dict:
             current_player,
             recipient,
             opponent,
-            is_goalkeeper_pass=current_zone == "GK",
+            from_zone=current_zone,
+            to_zone=target_zone,
         ) if recipient else 0
 
         if recipient:
