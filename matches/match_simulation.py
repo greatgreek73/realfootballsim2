@@ -150,8 +150,9 @@ def choose_player(team: Club, zone: str, exclude_ids: set = None, match: Match =
             candidates = [p for p in available_players if condition(p)]
 
         if candidates:
-            # ИЗМЕНЕНИЕ: Взвешенный выбор для защитников
-            if zone.upper() == "DEF":
+            # Weighted choice by positioning for most zones. Previously this
+            # only applied to defenders when the goalkeeper was passing.
+            if zone.upper() in ["DEF", "DM", "MID", "AM", "FWD"]:
                 weights = [max(p.positioning, 0) for p in candidates]
                 if any(weights):
                     return random.choices(candidates, weights=weights, k=1)[0]
