@@ -334,6 +334,18 @@ def shot_success_probability(shooter: Player, goalkeeper: Player | None) -> floa
     return clamp((base + bonus - penalty) * stamina_factor * morale_factor)
 
 
+def long_shot_success_probability(shooter: Player, goalkeeper: Player | None) -> float:
+    """Probability of scoring with a long range shot."""
+    base = 0.05
+    bonus = (shooter.long_range * 2 + shooter.finishing + shooter.accuracy) / 400
+    penalty = 0
+    if goalkeeper:
+        penalty = (goalkeeper.reflexes + goalkeeper.handling + goalkeeper.positioning) / 300
+    stamina_factor = shooter.stamina / 100
+    morale_factor = 0.5 + shooter.morale / 200
+    return clamp((base + bonus - penalty) * stamina_factor * morale_factor)
+
+
 def foul_probability(tackler: Player, dribbler: Player) -> float:
     base = 0.05
     diff = tackler.tackling - dribbler.dribbling
@@ -523,13 +535,59 @@ def simulate_one_action(match: Match) -> dict:
 
                     if special_counter:
                         match.current_player_with_ball = interceptor
-                        match.current_zone = "DM"
-                        return {
-                            'event': pass_event,
-                            'additional_event': interception_event,
-                            'action_type': 'counterattack',
-                            'continue': True
-                        }
+                        if current_zone == "GK" and target_zone == "DEF":
+                            # Перехват в зоне защиты соперника – мгновенный пас вперёд
+                            match.current_zone = "FWD"
+                            return {
+                                'event': interception_event,
+                                'action_type': 'counterattack',
+                                'continue': True
+                            }
+                        else:
+                            # Перехват в центре поля: шанс на дальний удар
+                            long_shot = random.random() < 0.5
+                            if long_shot:
+                                match.st_shoots += 1
+                                goalkeeper = choose_player(possessing_team, "GK", match=match)
+                                is_goal = random.random() < long_shot_success_probability(interceptor, goalkeeper)
+                                if is_goal:
+                                    if opponent_team.id == match.home_team_id:
+                                        match.home_score += 1
+                                    else:
+                                        match.away_score += 1
+                                    shot_event = {
+                                        'match': match,
+                                        'minute': match.current_minute,
+                                        'event_type': 'goal',
+                                        'player': interceptor,
+                                        'description': f"Long shot goal by {interceptor.last_name} ({opponent_team.name})!"
+                                    }
+                                else:
+                                    shot_event = {
+                                        'match': match,
+                                        'minute': match.current_minute,
+                                        'event_type': 'shot_miss',
+                                        'player': interceptor,
+                                        'description': f"Long shot missed by {interceptor.last_name} ({opponent_team.name})."
+                                    }
+
+                                new_keeper = choose_player(possessing_team, "GK", match=match)
+                                if new_keeper:
+                                    match.current_player_with_ball = new_keeper
+                                    match.current_zone = "GK"
+                                return {
+                                    'event': interception_event,
+                                    'additional_event': shot_event,
+                                    'action_type': 'counterattack',
+                                    'continue': False
+                                }
+                            else:
+                                match.current_zone = "FWD"
+                                return {
+                                    'event': interception_event,
+                                    'action_type': 'counterattack',
+                                    'continue': True
+                                }
 
                     # Мяч переходит к перехватившему или к вратарю его команды
                     new_keeper = choose_player(opponent_team, "GK", match=match)
