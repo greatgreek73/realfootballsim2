@@ -206,6 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let icon = ' M ';
         switch(event.event_type) {
             case 'goal': icon = ' ⚽ '; break;
+            case 'counterattack': icon = ' ⚡ '; break;
             case 'interception': icon = ' 🔄 '; break;
             case 'shot_miss': icon = ' ❌ '; break;
             case 'pass': icon = ' ➡ '; break;

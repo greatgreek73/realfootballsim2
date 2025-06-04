@@ -50,7 +50,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('minute', models.PositiveIntegerField(db_index=True)),
-                ('event_type', models.CharField(choices=[('goal', 'Goal'), ('pass', 'Pass'), ('interception', 'Interception'), ('shot_miss', 'Shot Miss'), ('foul', 'Foul'), ('injury_concern', 'Injury Concern'), ('info', 'Info'), ('match_start', 'Match Start'), ('half_time', 'Half Time'), ('match_end', 'Match End'), ('match_paused', 'Match Paused'), ('yellow_card', 'Yellow Card'), ('red_card', 'Red Card'), ('substitution', 'Substitution')], db_index=True, max_length=30)),
+                ('event_type', models.CharField(choices=[('goal', 'Goal'), ('pass', 'Pass'), ('interception', 'Interception'), ('counterattack', 'Counterattack'), ('shot_miss', 'Shot Miss'), ('foul', 'Foul'), ('injury_concern', 'Injury Concern'), ('info', 'Info'), ('match_start', 'Match Start'), ('half_time', 'Half Time'), ('match_end', 'Match End'), ('match_paused', 'Match Paused'), ('yellow_card', 'Yellow Card'), ('red_card', 'Red Card'), ('substitution', 'Substitution')], db_index=True, max_length=30)),
                 ('description', models.TextField(blank=True)),
                 ('timestamp', models.DateTimeField(auto_now_add=True, db_index=True)),
                 ('match', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='events', to='matches.match')),

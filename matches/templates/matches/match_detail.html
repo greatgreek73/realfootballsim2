@@ -111,7 +111,7 @@
                                         <div class="list-group-item">
                                             {# Отображение начальных событий (можно улучшить формат) #}
                                             <strong>{{ event.minute }}'</strong>
-                                            {% if event.event_type == 'goal' %}⚽{% elif event.event_type == 'interception' %}🔄{% elif event.event_type == 'shot_miss' %}❌{% elif event.event_type == 'pass' %}➡️{% elif event.event_type == 'foul' %}⚠️{% elif event.event_type == 'injury_concern' %}✚{% else %} M {% endif %}
+                                            {% if event.event_type == 'goal' %}⚽{% elif event.event_type == 'counterattack' %}⚡{% elif event.event_type == 'interception' %}🔄{% elif event.event_type == 'shot_miss' %}❌{% elif event.event_type == 'pass' %}➡️{% elif event.event_type == 'foul' %}⚠️{% elif event.event_type == 'injury_concern' %}✚{% else %} M {% endif %}
                                             {{ event.description }}
                                             {# Отображение игроков #}
                                             {% if event.player %}
