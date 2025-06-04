@@ -117,6 +117,7 @@ class MatchEvent(models.Model):
             ('goal', 'Goal'),
             ('pass', 'Pass'),
             ('interception', 'Interception'),
+            ('counterattack', 'Counterattack'),
             ('shot_miss', 'Shot Miss'),
             ('foul', 'Foul'),
             ('injury_concern', 'Injury Concern'),

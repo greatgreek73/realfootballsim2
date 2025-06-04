@@ -507,14 +507,29 @@ def simulate_one_action(match: Match) -> dict:
                 }
 
                 if interceptor:
+                    special_counter = (
+                        (current_zone == "GK" and target_zone == "DEF") or
+                        (current_zone == "DEF" and target_zone == "DM")
+                    )
+
                     interception_event = {
                         'match': match,
                         'minute': match.current_minute,
-                        'event_type': 'interception',
+                        'event_type': 'counterattack' if special_counter else 'interception',
                         'player': interceptor,
                         'related_player': current_player,
                         'description': f"INTERCEPTION! {interceptor.last_name} ({opponent_team.name}) from {current_player.last_name} in {current_zone}.",
                     }
+
+                    if special_counter:
+                        match.current_player_with_ball = interceptor
+                        match.current_zone = "DM"
+                        return {
+                            'event': pass_event,
+                            'additional_event': interception_event,
+                            'action_type': 'counterattack',
+                            'continue': True
+                        }
 
                     # Мяч переходит к перехватившему или к вратарю его команды
                     new_keeper = choose_player(opponent_team, "GK", match=match)
