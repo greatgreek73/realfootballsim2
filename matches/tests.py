@@ -1,5 +1,6 @@
 from django.test import TestCase
 from matches.match_simulation import simulate_one_action, choose_player
+from unittest.mock import patch
 from matches.models import Match
 from clubs.models import Club
 from players.models import Player
@@ -91,3 +92,39 @@ class DMRecipientTests(TestCase):
             )
             self.assertIsNotNone(recipient)
             self.assertIn(recipient.position, dm_positions)
+
+
+class SpecialCounterLoggingTests(TestCase):
+    def setUp(self):
+        self.home = Club.objects.create(name="SC Home", is_bot=True, country=DEFAULT_COUNTRY)
+        self.away = Club.objects.create(name="SC Away", is_bot=True, country=DEFAULT_COUNTRY)
+
+        self.home_gk = Player.objects.create(first_name="HGK", last_name="P", club=self.home, position="Goalkeeper")
+        self.home_def = Player.objects.create(first_name="HDEF", last_name="P", club=self.home, position="Right Back")
+        self.away_gk = Player.objects.create(first_name="AGK", last_name="P", club=self.away, position="Goalkeeper")
+        self.away_def = Player.objects.create(first_name="ADEF", last_name="P", club=self.away, position="Center Back")
+
+        self.match = Match.objects.create(
+            home_team=self.home,
+            away_team=self.away,
+            status="in_progress",
+            home_lineup={"0": {"playerId": str(self.home_gk.id)}, "1": {"playerId": str(self.home_def.id)}},
+            away_lineup={"0": {"playerId": str(self.away_gk.id)}, "1": {"playerId": str(self.away_def.id)}}
+        )
+        self.match.current_player_with_ball = self.home_gk
+        self.match.current_zone = "GK"
+        self.match.save()
+
+    def test_pass_event_returned_for_special_counter(self):
+        def choose_stub(team, zone, exclude_ids=None, match=None):
+            if team == self.home:
+                return self.home_def if zone == "DEF" else self.home_gk
+            else:
+                return self.away_gk if zone == "GK" else self.away_def
+
+        with patch("matches.match_simulation.choose_player", side_effect=choose_stub):
+            with patch("matches.match_simulation.random.random", side_effect=[0.99, 0.6]):
+                result = simulate_one_action(self.match)
+
+        self.assertEqual(result["event"]["event_type"], "pass")
+        self.assertEqual(result["additional_event"]["event_type"], "counterattack")

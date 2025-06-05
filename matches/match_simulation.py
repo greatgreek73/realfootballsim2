@@ -539,7 +539,8 @@ def simulate_one_action(match: Match) -> dict:
                             # Перехват в зоне защиты соперника – мгновенный пас вперёд
                             match.current_zone = "FWD"
                             return {
-                                'event': interception_event,
+                                'event': pass_event,
+                                'additional_event': interception_event,
                                 'action_type': 'counterattack',
                                 'continue': True
                             }
@@ -576,15 +577,17 @@ def simulate_one_action(match: Match) -> dict:
                                     match.current_player_with_ball = new_keeper
                                     match.current_zone = "GK"
                                 return {
-                                    'event': interception_event,
-                                    'additional_event': shot_event,
+                                    'event': pass_event,
+                                    'additional_event': interception_event,
+                                    'second_additional_event': shot_event,
                                     'action_type': 'counterattack',
                                     'continue': False
                                 }
                             else:
                                 match.current_zone = "FWD"
                                 return {
-                                    'event': interception_event,
+                                    'event': pass_event,
+                                    'additional_event': interception_event,
                                     'action_type': 'counterattack',
                                     'continue': True
                                 }

@@ -163,6 +163,42 @@ def simulate_active_matches(self):
                             add_message_payload
                         )
 
+                # Обрабатываем второе дополнительное событие (например, удар после перехвата)
+                if result.get('second_additional_event'):
+                    add_event2 = MatchEvent.objects.create(**result['second_additional_event'])
+                    if channel_layer:
+                        add_event_data2 = {
+                            "minute": add_event2.minute,
+                            "event_type": add_event2.event_type,
+                            "description": add_event2.description,
+                            "player_name": f"{add_event2.player.first_name} {add_event2.player.last_name}" if add_event2.player else "",
+                            "related_player_name": ""
+                        }
+
+                        add_message_payload2 = {
+                            "type": "match_update",
+                            "data": {
+                                "match_id": match_locked.id,
+                                "minute": match_locked.current_minute,
+                                "home_score": match_locked.home_score,
+                                "away_score": match_locked.away_score,
+                                "status": match_locked.status,
+                                "st_shoots": match_locked.st_shoots,
+                                "st_passes": match_locked.st_passes,
+                                "st_possessions": match_locked.st_possessions,
+                                "st_fouls": match_locked.st_fouls,
+                                "st_injury": match_locked.st_injury,
+                                "events": [add_event_data2],
+                                "partial_update": True,
+                                "action_based": True
+                            }
+                        }
+
+                        async_to_sync(channel_layer.group_send)(
+                            f"match_{match_locked.id}",
+                            add_message_payload2
+                        )
+
                 # Если событие не создано, отправляем обновление состояния
                 if result.get('event') is None:
                     possessing_team = None
