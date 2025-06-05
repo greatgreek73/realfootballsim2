@@ -584,13 +584,84 @@ def simulate_one_action(match: Match) -> dict:
                                     'continue': False
                                 }
                             else:
-                                match.current_zone = "FWD"
-                                return {
-                                    'event': pass_event,
-                                    'additional_event': interception_event,
-                                    'action_type': 'counterattack',
-                                    'continue': True
-                                }
+                                # Быстрый пас после перехвата вместо мгновенного
+                                # перемещения в атаку
+                                recipient = choose_player(
+                                    opponent_team,
+                                    "FWD",
+                                    exclude_ids={interceptor.id},
+                                    match=match,
+                                )
+                                opponent_def = choose_player(
+                                    possessing_team,
+                                    "DEF",
+                                    match=match,
+                                )
+                                pass_prob2 = pass_success_probability(
+                                    interceptor,
+                                    recipient,
+                                    opponent_def,
+                                    from_zone="DM",
+                                    to_zone="FWD",
+                                ) if recipient else 0
+
+                                if recipient and random.random() < pass_prob2:
+                                    match.st_passes += 1
+                                    counter_pass_event = {
+                                        'match': match,
+                                        'minute': match.current_minute,
+                                        'event_type': 'pass',
+                                        'player': interceptor,
+                                        'related_player': recipient,
+                                        'description': f"Counter pass: {interceptor.last_name} -> {recipient.last_name} (DM->FWD)",
+                                    }
+                                    match.current_player_with_ball = recipient
+                                    match.current_zone = "FWD"
+                                    return {
+                                        'event': pass_event,
+                                        'additional_event': interception_event,
+                                        'second_additional_event': counter_pass_event,
+                                        'action_type': 'counterattack',
+                                        'continue': True
+                                    }
+                                else:
+                                    fail_interceptor = choose_player(
+                                        possessing_team,
+                                        "DEF",
+                                        match=match,
+                                    )
+                                    if fail_interceptor:
+                                        interception2_event = {
+                                            'match': match,
+                                            'minute': match.current_minute,
+                                            'event_type': 'interception',
+                                            'player': fail_interceptor,
+                                            'related_player': interceptor,
+                                            'description': f"INTERCEPTION! {fail_interceptor.last_name} ({possessing_team.name}) from {interceptor.last_name} in DM.",
+                                        }
+                                        new_keeper2 = choose_player(possessing_team, "GK", match=match)
+                                        if new_keeper2:
+                                            match.current_player_with_ball = new_keeper2
+                                            match.current_zone = "GK"
+                                        else:
+                                            match.current_player_with_ball = fail_interceptor
+                                            match.current_zone = "DEF"
+                                        return {
+                                            'event': pass_event,
+                                            'additional_event': interception_event,
+                                            'second_additional_event': interception2_event,
+                                            'action_type': 'counterattack',
+                                            'continue': False
+                                        }
+                                    else:
+                                        match.current_player_with_ball = interceptor
+                                        match.current_zone = "DM"
+                                        return {
+                                            'event': pass_event,
+                                            'additional_event': interception_event,
+                                            'action_type': 'counterattack',
+                                            'continue': True
+                                        }
 
                     # Мяч переходит к перехватившему или к вратарю его команды
                     new_keeper = choose_player(opponent_team, "GK", match=match)
