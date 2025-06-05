@@ -115,7 +115,21 @@ def zone_conditions(zone: str):
     elif zone_upper == "FWD":
         return lambda p: "Forward" in p.position or "Striker" in p.position or p.position == "ST" or p.position == "CF"
     else: # 'ANY' или неизвестная зона
-        return lambda p: True 
+        return lambda p: True
+
+def mirrored_zone(zone: str) -> str:
+    """Return the zone on the pitch where an opponent would most likely intercept."""
+    mapping = {
+        "GK": "FWD",   # pressing forwards near the goalkeeper
+        "DEF": "AM",   # attackers step up against defenders
+        "DM": "AM",    # attacking mids challenge defensive mids
+        "MID": "MID",  # symmetrical centre of the pitch
+        "AM": "DM",    # defensive mids track attacking mids
+        "FWD": "DEF",  # defenders battle with forwards
+        "WING": "WING", # wingers oppose each other
+        "ANY": "ANY",
+    }
+    return mapping.get(zone.upper(), zone)
 
 def choose_player(team: Club, zone: str, exclude_ids: set = None, match: Match = None) -> Player | None:
     """
@@ -506,7 +520,8 @@ def simulate_one_action(match: Match) -> dict:
             else:
                 # Неудачный пас и возможный перехват
                 opponent_team = get_opponent_team(match, possessing_team)
-                interceptor = choose_player(opponent_team, current_zone, match=match)
+                intercept_zone = mirrored_zone(current_zone)
+                interceptor = choose_player(opponent_team, intercept_zone, match=match)
 
                 # Событие попытки паса
                 pass_event = {
