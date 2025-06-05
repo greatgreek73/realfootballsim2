@@ -128,3 +128,55 @@ class SpecialCounterLoggingTests(TestCase):
 
         self.assertEqual(result["event"]["event_type"], "pass")
         self.assertEqual(result["additional_event"]["event_type"], "counterattack")
+
+class CounterPassAfterInterceptionTests(TestCase):
+    def setUp(self):
+        self.home = Club.objects.create(name="CP Home", is_bot=True, country=DEFAULT_COUNTRY)
+        self.away = Club.objects.create(name="CP Away", is_bot=True, country=DEFAULT_COUNTRY)
+
+        self.home_gk = Player.objects.create(first_name="HGK", last_name="P", club=self.home, position="Goalkeeper")
+        self.home_def = Player.objects.create(first_name="HDEF", last_name="P", club=self.home, position="Right Back")
+        self.home_dm = Player.objects.create(first_name="HDM", last_name="P", club=self.home, position="Defensive Midfielder")
+
+        self.away_gk = Player.objects.create(first_name="AGK", last_name="P", club=self.away, position="Goalkeeper")
+        self.away_def = Player.objects.create(first_name="ADEF", last_name="P", club=self.away, position="Center Back")
+        self.away_fwd = Player.objects.create(first_name="AFWD", last_name="P", club=self.away, position="Center Forward")
+
+        self.match = Match.objects.create(
+            home_team=self.home,
+            away_team=self.away,
+            status="in_progress",
+            home_lineup={"0": {"playerId": str(self.home_gk.id)}, "1": {"playerId": str(self.home_def.id)}, "2": {"playerId": str(self.home_dm.id)}},
+            away_lineup={"0": {"playerId": str(self.away_gk.id)}, "1": {"playerId": str(self.away_def.id)}, "2": {"playerId": str(self.away_fwd.id)}}
+        )
+        self.match.current_player_with_ball = self.home_def
+        self.match.current_zone = "DEF"
+        self.match.save()
+
+    def test_counter_pass_created_when_no_long_shot(self):
+        def choose_stub(team, zone, exclude_ids=None, match=None):
+            if team == self.home:
+                if zone == "DM":
+                    return self.home_dm
+                if zone == "DEF":
+                    return self.home_def
+                if zone == "GK":
+                    return self.home_gk
+                return self.home_dm
+            else:
+                if zone == "GK":
+                    return self.away_gk
+                if zone == "DEF":
+                    return self.away_def
+                if zone == "FWD":
+                    return self.away_fwd
+                return self.away_def
+
+        with patch("matches.match_simulation.choose_player", side_effect=choose_stub):
+            with patch("matches.match_simulation.random.random", side_effect=[0.99, 0.6, 0.1, 0.99]):
+                result = simulate_one_action(self.match)
+
+        self.assertEqual(result["action_type"], "counterattack")
+        self.assertEqual(result["additional_event"]["event_type"], "counterattack")
+        self.assertIn("second_additional_event", result)
+        self.assertEqual(result["second_additional_event"]["event_type"], "pass")
