@@ -180,3 +180,60 @@ class CounterPassAfterInterceptionTests(TestCase):
         self.assertEqual(result["additional_event"]["event_type"], "counterattack")
         self.assertIn("second_additional_event", result)
         self.assertEqual(result["second_additional_event"]["event_type"], "pass")
+
+
+class LongPassProbabilityTests(TestCase):
+    def test_heading_affects_long_pass(self):
+        club = Club.objects.create(name="LP", is_bot=True, country=DEFAULT_COUNTRY)
+        opp = Club.objects.create(name="OPP", is_bot=True, country=DEFAULT_COUNTRY)
+
+        passer = Player.objects.create(
+            first_name="P",
+            last_name="P",
+            club=club,
+            position="Central Midfielder",
+            passing=80,
+            vision=80,
+        )
+        recipient_good = Player.objects.create(
+            first_name="R",
+            last_name="H",
+            club=club,
+            position="Center Forward",
+            heading=90,
+            positioning=80,
+        )
+        opponent = Player.objects.create(
+            first_name="O",
+            last_name="O",
+            club=opp,
+            position="Center Back",
+            marking=50,
+            tackling=50,
+        )
+        prob_high = pass_success_probability(
+            passer,
+            recipient_good,
+            opponent,
+            from_zone="DM",
+            to_zone="FWD",
+            high=True,
+        )
+
+        recipient_bad = Player.objects.create(
+            first_name="R2",
+            last_name="L",
+            club=club,
+            position="Center Forward",
+            heading=10,
+            positioning=80,
+        )
+        prob_low = pass_success_probability(
+            passer,
+            recipient_bad,
+            opponent,
+            from_zone="DM",
+            to_zone="FWD",
+            high=True,
+        )
+        self.assertGreater(prob_high, prob_low)
