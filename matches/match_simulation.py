@@ -300,6 +300,9 @@ def clamp(value: float, min_value: float = 0.0, max_value: float = 1.0) -> float
     return max(min_value, min(max_value, value))
 
 
+ZONE_SEQUENCE = ["GK", "DEF", "DM", "MID", "AM", "FWD"]
+
+
 def pass_success_probability(
     passer: Player,
     recipient: Player,
@@ -307,6 +310,7 @@ def pass_success_probability(
     *,
     from_zone: str,
     to_zone: str,
+    high: bool = False,
 ) -> float:
     """Return probability that a pass succeeds for a given zone transition."""
     zone_base = {
@@ -319,6 +323,14 @@ def pass_success_probability(
 
     base = zone_base.get((from_zone, to_zone), 0.6)
 
+    if high:
+        try:
+            distance = ZONE_SEQUENCE.index(to_zone) - ZONE_SEQUENCE.index(from_zone)
+        except ValueError:
+            distance = 1
+        base -= 0.05 * max(distance - 1, 0)
+
+
     # Passing and vision continue to provide the main boost.  Values are in the
     # range 0-100 so the maximum bonus is around +1.0 when both stats are high.
     bonus = (passer.passing + passer.vision) / 200
@@ -326,6 +338,7 @@ def pass_success_probability(
     # Receiver positioning also helps.  Unpositioned passes still have a chance
     # but we favour well‑positioned targets.
     rec_bonus = recipient.positioning / 200 if recipient else 0
+    heading_bonus = recipient.heading / 200 if high and recipient else 0
 
     penalty = 0
     if opponent:
@@ -334,7 +347,7 @@ def pass_success_probability(
         penalty = (opponent.marking + opponent.tackling) / 400
     stamina_factor = passer.stamina / 100
     morale_factor = 0.5 + passer.morale / 200
-    return clamp((base + bonus + rec_bonus - penalty) * stamina_factor * morale_factor)
+    return clamp((base + bonus + rec_bonus + heading_bonus - penalty) * stamina_factor * morale_factor)
 
 
 def shot_success_probability(shooter: Player, goalkeeper: Player | None) -> float:
@@ -461,6 +474,14 @@ def simulate_one_action(match: Match) -> dict:
         }
         
         target_zone = transition_map.get(current_zone, current_zone)
+        is_long = False
+        zone_index = ZONE_SEQUENCE.index(current_zone)
+        available_steps = len(ZONE_SEQUENCE) - zone_index - 1
+        if available_steps > 1 and random.random() < 0.2:
+            steps = random.randint(2, min(3, available_steps))
+            target_zone = ZONE_SEQUENCE[zone_index + steps]
+            is_long = True
+
         match.st_possessions += 1
         
         recipient = choose_player(possessing_team, target_zone, exclude_ids={current_player.id}, match=match)
@@ -473,6 +494,7 @@ def simulate_one_action(match: Match) -> dict:
             opponent,
             from_zone=current_zone,
             to_zone=target_zone,
+            high=is_long,
         ) if recipient else 0
 
         if recipient:
@@ -485,7 +507,7 @@ def simulate_one_action(match: Match) -> dict:
                     'event_type': 'pass',
                     'player': current_player,
                     'related_player': recipient,
-                    'description': f"Pass: {current_player.last_name} -> {recipient.last_name} ({current_zone}->{target_zone})"
+                    'description': f"{'Long pass' if is_long else 'Pass'}: {current_player.last_name} -> {recipient.last_name} ({current_zone}->{target_zone})"
                 }
 
                 match.current_player_with_ball = recipient
@@ -530,7 +552,7 @@ def simulate_one_action(match: Match) -> dict:
                     'event_type': 'pass',
                     'player': current_player,
                     'related_player': recipient,
-                    'description': f"Pass attempt: {current_player.last_name} -> {recipient.last_name} ({current_zone}->{target_zone})",
+                    'description': f"{'Long pass attempt' if is_long else 'Pass attempt'}: {current_player.last_name} -> {recipient.last_name} ({current_zone}->{target_zone})",
                 }
 
                 if interceptor:
@@ -618,6 +640,7 @@ def simulate_one_action(match: Match) -> dict:
                                     opponent_def,
                                     from_zone="DM",
                                     to_zone="FWD",
+                                    high=True,
                                 ) if recipient else 0
 
                                 if recipient and random.random() < pass_prob2:
