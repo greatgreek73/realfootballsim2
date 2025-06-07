@@ -89,9 +89,9 @@ def zone_conditions(zone: str):
     zone_upper = zone.upper() # Приводим к верхнему регистру для надежности
     if zone_upper == "GK":
         return lambda p: p.position == "Goalkeeper"
-    elif zone_upper == "DEF":
-        return lambda p: "Back" in p.position or "Defender" in p.position or p.position == "CB" or p.position == "LB" or p.position == "RB"
-    elif zone_upper in ["DM", "MID"]:
+    elif zone_upper.startswith("DEF"):
+        return lambda p: "Back" in p.position or "Defender" in p.position or p.position in ["CB", "LB", "RB"]
+    elif zone_upper.startswith("DM") or zone_upper == "MID":
         # Defensive/Central midfielders. The initial logic only handled
         # "Defensive Midfielder" or the short "CM" abbreviation which meant
         # players registered as "Central Midfielder" were ignored. When no
@@ -102,7 +102,7 @@ def zone_conditions(zone: str):
             p.position in ["Defensive Midfielder", "Central Midfielder", "CM"]
             or ("Midfielder" in p.position and "Defensive" in p.position)
         )
-    elif zone_upper == "AM":
+    elif zone_upper.startswith("AM"):
         return lambda p: (
             ("Midfielder" in p.position and "Attacking" in p.position)
             or p.position == "CAM"
@@ -112,24 +112,28 @@ def zone_conditions(zone: str):
         )
     elif zone_upper == "WING":
          return lambda p: p.position in ["LW", "RW", "LM", "RM"]
-    elif zone_upper == "FWD":
+    elif zone_upper.startswith("FWD"):
         return lambda p: "Forward" in p.position or "Striker" in p.position or p.position == "ST" or p.position == "CF"
     else: # 'ANY' или неизвестная зона
         return lambda p: True
 
 def mirrored_zone(zone: str) -> str:
     """Return the zone on the pitch where an opponent would most likely intercept."""
-    mapping = {
-        "GK": "FWD",   # pressing forwards near the goalkeeper
-        "DEF": "AM",   # attackers step up against defenders
-        "DM": "AM",    # attacking mids challenge defensive mids
-        "MID": "MID",  # symmetrical centre of the pitch
-        "AM": "DM",    # defensive mids track attacking mids
-        "FWD": "DEF",  # defenders battle with forwards
-        "WING": "WING", # wingers oppose each other
-        "ANY": "ANY",
+    prefix = zone_prefix(zone)
+    side = zone_side(zone)
+    mirror_map = {
+        "GK": make_zone("FWD", "C"),
+        "DEF": make_zone("AM", side),
+        "DM": make_zone("AM", side),
+        "MID": make_zone("MID", side),
+        "AM": make_zone("DM", side),
+        "FWD": make_zone("DEF", side),
     }
-    return mapping.get(zone.upper(), zone)
+    if prefix in mirror_map:
+        return mirror_map[prefix]
+    if prefix == "WING" or zone.upper() == "WING":
+        return "WING"
+    return zone
 
 def choose_player(team: Club, zone: str, exclude_ids: set = None, match: Match = None) -> Player | None:
     """
@@ -172,7 +176,7 @@ def choose_player(team: Club, zone: str, exclude_ids: set = None, match: Match =
         if candidates:
             # Weighted choice by positioning for most zones. Previously this
             # only applied to defenders when the goalkeeper was passing.
-            if zone.upper() in ["DEF", "DM", "MID", "AM", "FWD"]:
+            if zone_prefix(zone) in ["DEF", "DM", "MID", "AM", "FWD"]:
                 weights = [max(p.positioning, 0) for p in candidates]
                 if any(weights):
                     return random.choices(candidates, weights=weights, k=1)[0]
@@ -300,7 +304,45 @@ def clamp(value: float, min_value: float = 0.0, max_value: float = 1.0) -> float
     return max(min_value, min(max_value, value))
 
 
-ZONE_SEQUENCE = ["GK", "DEF", "DM", "MID", "AM", "FWD"]
+# --- Expanded 16 zone grid ---
+ZONE_GRID = [
+    "GK",
+    "DEF-L", "DEF-C", "DEF-R",
+    "DM-L", "DM-C", "DM-R",
+    "MID-L", "MID-C", "MID-R",
+    "AM-L", "AM-C", "AM-R",
+    "FWD-L", "FWD-C", "FWD-R",
+]
+
+# Helper mappings to work with the grid
+ROW_PREFIX = ["GK", "DEF", "DM", "MID", "AM", "FWD"]
+ROW_INDEX = {p: i for i, p in enumerate(ROW_PREFIX)}
+
+def zone_prefix(zone: str) -> str:
+    return zone.split("-")[0]
+
+def zone_side(zone: str) -> str:
+    parts = zone.split("-")
+    return parts[1] if len(parts) > 1 else "C"
+
+def make_zone(prefix: str, side: str) -> str:
+    if prefix == "GK":
+        return "GK"
+    return f"{prefix}-{side}"
+
+def next_zone(zone: str) -> str:
+    """Return the next zone forward keeping the same side."""
+    prefix = zone_prefix(zone)
+    side = zone_side(zone)
+    next_map = {
+        "GK": "DEF",
+        "DEF": "DM",
+        "DM": "MID",
+        "MID": "AM",
+        "AM": "FWD",
+        "FWD": "FWD",
+    }
+    return make_zone(next_map.get(prefix, prefix), side)
 
 
 def pass_success_probability(
@@ -313,20 +355,25 @@ def pass_success_probability(
     high: bool = False,
 ) -> float:
     """Return probability that a pass succeeds for a given zone transition."""
-    zone_base = {
-        ("GK", "DEF"): 0.9,
-        ("DEF", "DM"): 0.8,
-        ("DM", "MID"): 0.75,
-        ("MID", "AM"): 0.7,
-        ("AM", "FWD"): 0.65,
-    }
-
-    base = zone_base.get((from_zone, to_zone), 0.6)
+    f_prefix = zone_prefix(from_zone)
+    t_prefix = zone_prefix(to_zone)
+    def_base = 0.6
+    if f_prefix == "GK" and t_prefix == "DEF":
+        def_base = 0.9
+    elif f_prefix == "DEF" and t_prefix == "DM":
+        def_base = 0.8
+    elif f_prefix == "DM" and t_prefix == "MID":
+        def_base = 0.75
+    elif f_prefix == "MID" and t_prefix == "AM":
+        def_base = 0.7
+    elif f_prefix == "AM" and t_prefix == "FWD":
+        def_base = 0.65
+    base = def_base
 
     if high:
         try:
-            distance = ZONE_SEQUENCE.index(to_zone) - ZONE_SEQUENCE.index(from_zone)
-        except ValueError:
+            distance = ROW_INDEX[t_prefix] - ROW_INDEX[f_prefix]
+        except Exception:
             distance = 1
         base -= 0.05 * max(distance - 1, 0)
 
@@ -432,7 +479,7 @@ def simulate_one_action(match: Match) -> dict:
     
     
     # Основная логика действия в зависимости от зоны
-    if current_zone == "FWD":
+    if zone_prefix(current_zone) == "FWD":
         # Зона атаки - удар по воротам
         match.st_shoots += 1
         shooter = current_player
@@ -476,22 +523,15 @@ def simulate_one_action(match: Match) -> dict:
         }
     
     else:
-        # Попытка паса в следующую зону
-        transition_map = {
-            "GK": "DEF",
-            "DEF": "DM", 
-            "DM": "MID",
-            "MID": "AM",
-            "AM": "FWD"
-        }
-        
-        target_zone = transition_map.get(current_zone, current_zone)
+        # Attempt a pass to the next zone keeping the same side
+        target_zone = next_zone(current_zone)
         is_long = False
-        zone_index = ZONE_SEQUENCE.index(current_zone)
-        available_steps = len(ZONE_SEQUENCE) - zone_index - 1
-        if available_steps > 1 and random.random() < 0.2:
-            steps = random.randint(2, min(3, available_steps))
-            target_zone = ZONE_SEQUENCE[zone_index + steps]
+        current_row = ROW_INDEX.get(zone_prefix(current_zone), 0)
+        available_rows = len(ROW_PREFIX) - 1 - current_row
+        if available_rows > 1 and random.random() < 0.2:
+            steps = random.randint(2, min(3, available_rows))
+            next_row = current_row + steps
+            target_zone = make_zone(ROW_PREFIX[next_row], zone_side(current_zone))
             is_long = True
 
         match.st_possessions += 1
@@ -644,8 +684,8 @@ def simulate_one_action(match: Match) -> dict:
 
                 if interceptor:
                     special_counter = (
-                        (current_zone == "GK" and target_zone == "DEF") or
-                        (current_zone == "DEF" and target_zone == "DM")
+                        (zone_prefix(current_zone) == "GK" and zone_prefix(target_zone) == "DEF") or
+                        (zone_prefix(current_zone) == "DEF" and zone_prefix(target_zone) == "DM")
                     )
 
                     interception_event = {
@@ -659,9 +699,9 @@ def simulate_one_action(match: Match) -> dict:
 
                     if special_counter:
                         match.current_player_with_ball = interceptor
-                        if current_zone == "GK" and target_zone == "DEF":
+                        if zone_prefix(current_zone) == "GK" and zone_prefix(target_zone) == "DEF":
                             # Перехват в зоне защиты соперника – мгновенный пас вперёд
-                            match.current_zone = "FWD"
+                            match.current_zone = make_zone("FWD", zone_side(target_zone))
                             return {
                                 'event': pass_event,
                                 'additional_event': interception_event,
@@ -712,21 +752,21 @@ def simulate_one_action(match: Match) -> dict:
                                 # перемещения в атаку
                                 recipient = choose_player(
                                     opponent_team,
-                                    "FWD",
+                                    make_zone("FWD", zone_side(target_zone)),
                                     exclude_ids={interceptor.id},
                                     match=match,
                                 )
                                 opponent_def = choose_player(
                                     possessing_team,
-                                    "DEF",
+                                    make_zone("DEF", zone_side(target_zone)),
                                     match=match,
                                 )
                                 pass_prob2 = pass_success_probability(
                                     interceptor,
                                     recipient,
                                     opponent_def,
-                                    from_zone="DM",
-                                    to_zone="FWD",
+                                    from_zone=make_zone("DM", zone_side(target_zone)),
+                                    to_zone=make_zone("FWD", zone_side(target_zone)),
                                     high=True,
                                 ) if recipient else 0
 
@@ -738,10 +778,10 @@ def simulate_one_action(match: Match) -> dict:
                                         'event_type': 'pass',
                                         'player': interceptor,
                                         'related_player': recipient,
-                                        'description': f"Counter pass: {interceptor.last_name} -> {recipient.last_name} (DM->FWD)",
+                                        'description': f"Counter pass: {interceptor.last_name} -> {recipient.last_name} (DM-{zone_side(target_zone)}->FWD-{zone_side(target_zone)})",
                                     }
                                     match.current_player_with_ball = recipient
-                                    match.current_zone = "FWD"
+                                    match.current_zone = make_zone("FWD", zone_side(target_zone))
                                     return {
                                         'event': pass_event,
                                         'additional_event': interception_event,
@@ -752,7 +792,7 @@ def simulate_one_action(match: Match) -> dict:
                                 else:
                                     fail_interceptor = choose_player(
                                         possessing_team,
-                                        "DEF",
+                                        make_zone("DEF", zone_side(target_zone)),
                                         match=match,
                                     )
                                     if fail_interceptor:
@@ -762,7 +802,7 @@ def simulate_one_action(match: Match) -> dict:
                                             'event_type': 'interception',
                                             'player': fail_interceptor,
                                             'related_player': interceptor,
-                                            'description': f"INTERCEPTION! {fail_interceptor.last_name} ({possessing_team.name}) from {interceptor.last_name} in DM.",
+                                            'description': f"INTERCEPTION! {fail_interceptor.last_name} ({possessing_team.name}) from {interceptor.last_name} in DM-{zone_side(target_zone)}.",
                                         }
                                         new_keeper2 = choose_player(possessing_team, "GK", match=match)
                                         if new_keeper2:
@@ -770,7 +810,7 @@ def simulate_one_action(match: Match) -> dict:
                                             match.current_zone = "GK"
                                         else:
                                             match.current_player_with_ball = fail_interceptor
-                                            match.current_zone = "DEF"
+                                            match.current_zone = make_zone("DEF", zone_side(target_zone))
                                         return {
                                             'event': pass_event,
                                             'additional_event': interception_event,
@@ -780,7 +820,7 @@ def simulate_one_action(match: Match) -> dict:
                                         }
                                     else:
                                         match.current_player_with_ball = interceptor
-                                        match.current_zone = "DM"
+                                        match.current_zone = make_zone("DM", zone_side(target_zone))
                                         return {
                                             'event': pass_event,
                                             'additional_event': interception_event,
@@ -795,7 +835,7 @@ def simulate_one_action(match: Match) -> dict:
                         match.current_zone = "GK"
                     else:
                         match.current_player_with_ball = interceptor
-                        match.current_zone = "DEF"
+                        match.current_zone = make_zone("DEF", zone_side(intercept_zone))
 
                     return {
                         'event': pass_event,
