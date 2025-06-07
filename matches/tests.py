@@ -237,3 +237,47 @@ class LongPassProbabilityTests(TestCase):
             high=True,
         )
         self.assertGreater(prob_high, prob_low)
+
+
+class DribbleProbabilityTests(TestCase):
+    def test_dribbling_attributes_affect_probability(self):
+        club = Club.objects.create(name="DR", is_bot=True, country=DEFAULT_COUNTRY)
+        opp = Club.objects.create(name="OP", is_bot=True, country=DEFAULT_COUNTRY)
+
+        dribbler_good = Player.objects.create(
+            first_name="D",
+            last_name="G",
+            club=club,
+            position="Attacking Midfielder",
+            dribbling=90,
+            pace=85,
+            flair=80,
+            stamina=80,
+            morale=80,
+        )
+        dribbler_bad = Player.objects.create(
+            first_name="D",
+            last_name="B",
+            club=club,
+            position="Attacking Midfielder",
+            dribbling=30,
+            pace=30,
+            flair=20,
+            stamina=80,
+            morale=80,
+        )
+        defender = Player.objects.create(
+            first_name="DEF",
+            last_name="D",
+            club=opp,
+            position="Center Back",
+            tackling=60,
+            marking=60,
+            strength=60,
+        )
+
+        from matches.match_simulation import dribble_success_probability
+
+        prob_good = dribble_success_probability(dribbler_good, defender)
+        prob_bad = dribble_success_probability(dribbler_bad, defender)
+        self.assertGreater(prob_good, prob_bad)
