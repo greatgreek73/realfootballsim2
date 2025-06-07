@@ -86,7 +86,7 @@ class DMRecipientTests(TestCase):
         for _ in range(50):
             recipient = choose_player(
                 self.home,
-                "DM",
+                "DM-C",
                 exclude_ids={defender.id},
                 match=self.match,
             )
@@ -118,7 +118,7 @@ class SpecialCounterLoggingTests(TestCase):
     def test_pass_event_returned_for_special_counter(self):
         def choose_stub(team, zone, exclude_ids=None, match=None):
             if team == self.home:
-                return self.home_def if zone == "DEF" else self.home_gk
+                return self.home_def if zone == "DEF-C" else self.home_gk
             else:
                 return self.away_gk if zone == "GK" else self.away_def
 
@@ -150,15 +150,15 @@ class CounterPassAfterInterceptionTests(TestCase):
             away_lineup={"0": {"playerId": str(self.away_gk.id)}, "1": {"playerId": str(self.away_def.id)}, "2": {"playerId": str(self.away_fwd.id)}}
         )
         self.match.current_player_with_ball = self.home_def
-        self.match.current_zone = "DEF"
+        self.match.current_zone = "DEF-C"
         self.match.save()
 
     def test_counter_pass_created_when_no_long_shot(self):
         def choose_stub(team, zone, exclude_ids=None, match=None):
             if team == self.home:
-                if zone == "DM":
+                if zone == "DM-C":
                     return self.home_dm
-                if zone == "DEF":
+                if zone == "DEF-C":
                     return self.home_def
                 if zone == "GK":
                     return self.home_gk
@@ -166,9 +166,9 @@ class CounterPassAfterInterceptionTests(TestCase):
             else:
                 if zone == "GK":
                     return self.away_gk
-                if zone == "DEF":
+                if zone == "DEF-C":
                     return self.away_def
-                if zone == "FWD":
+                if zone == "FWD-C":
                     return self.away_fwd
                 return self.away_def
 
@@ -215,8 +215,8 @@ class LongPassProbabilityTests(TestCase):
             passer,
             recipient_good,
             opponent,
-            from_zone="DM",
-            to_zone="FWD",
+            from_zone="DM-C",
+            to_zone="FWD-C",
             high=True,
         )
 
@@ -232,8 +232,8 @@ class LongPassProbabilityTests(TestCase):
             passer,
             recipient_bad,
             opponent,
-            from_zone="DM",
-            to_zone="FWD",
+            from_zone="DM-C",
+            to_zone="FWD-C",
             high=True,
         )
         self.assertGreater(prob_high, prob_low)

@@ -77,13 +77,13 @@ class Match(models.Model):
         max_length=10,
         choices=[
             ('GK', 'GK'),
-            ('DEF', 'DEF'),
-            ('DM', 'DM'),
-            ('MID', 'MID'),
-            ('AM', 'AM'),
-            ('FWD', 'FWD')
+            ('DEF-L', 'DEF-L'), ('DEF-C', 'DEF-C'), ('DEF-R', 'DEF-R'),
+            ('DM-L', 'DM-L'), ('DM-C', 'DM-C'), ('DM-R', 'DM-R'),
+            ('MID-L', 'MID-L'), ('MID-C', 'MID-C'), ('MID-R', 'MID-R'),
+            ('AM-L', 'AM-L'), ('AM-C', 'AM-C'), ('AM-R', 'AM-R'),
+            ('FWD-L', 'FWD-L'), ('FWD-C', 'FWD-C'), ('FWD-R', 'FWD-R'),
         ],
-        default='GK', # Убедитесь, что GK - подходящее значение по умолчанию
+        default='GK',
         verbose_name="Current Zone"
     )
 
