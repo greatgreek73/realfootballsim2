@@ -176,7 +176,7 @@ def choose_player(team: Club, zone: str, exclude_ids: set = None, match: Match =
         if candidates:
             # Weighted choice by positioning for most zones. Previously this
             # only applied to defenders when the goalkeeper was passing.
-            if zone.upper() in ["DEF", "DM", "MID", "AM", "FWD"]:
+            if zone_prefix(zone) in ["DEF", "DM", "MID", "AM", "FWD"]:
                 weights = [max(p.positioning, 0) for p in candidates]
                 if any(weights):
                     return random.choices(candidates, weights=weights, k=1)[0]
@@ -684,8 +684,8 @@ def simulate_one_action(match: Match) -> dict:
 
                 if interceptor:
                     special_counter = (
-                        (current_zone == "GK" and target_zone == "DEF") or
-                        (current_zone == "DEF" and target_zone == "DM")
+                        (zone_prefix(current_zone) == "GK" and zone_prefix(target_zone) == "DEF") or
+                        (zone_prefix(current_zone) == "DEF" and zone_prefix(target_zone) == "DM")
                     )
 
                     interception_event = {
@@ -699,9 +699,9 @@ def simulate_one_action(match: Match) -> dict:
 
                     if special_counter:
                         match.current_player_with_ball = interceptor
-                        if current_zone == "GK" and target_zone == "DEF":
+                        if zone_prefix(current_zone) == "GK" and zone_prefix(target_zone) == "DEF":
                             # Перехват в зоне защиты соперника – мгновенный пас вперёд
-                            match.current_zone = "FWD"
+                            match.current_zone = make_zone("FWD", zone_side(target_zone))
                             return {
                                 'event': pass_event,
                                 'additional_event': interception_event,
@@ -752,21 +752,21 @@ def simulate_one_action(match: Match) -> dict:
                                 # перемещения в атаку
                                 recipient = choose_player(
                                     opponent_team,
-                                    "FWD",
+                                    make_zone("FWD", zone_side(target_zone)),
                                     exclude_ids={interceptor.id},
                                     match=match,
                                 )
                                 opponent_def = choose_player(
                                     possessing_team,
-                                    "DEF",
+                                    make_zone("DEF", zone_side(target_zone)),
                                     match=match,
                                 )
                                 pass_prob2 = pass_success_probability(
                                     interceptor,
                                     recipient,
                                     opponent_def,
-                                    from_zone="DM",
-                                    to_zone="FWD",
+                                    from_zone=make_zone("DM", zone_side(target_zone)),
+                                    to_zone=make_zone("FWD", zone_side(target_zone)),
                                     high=True,
                                 ) if recipient else 0
 
@@ -778,10 +778,10 @@ def simulate_one_action(match: Match) -> dict:
                                         'event_type': 'pass',
                                         'player': interceptor,
                                         'related_player': recipient,
-                                        'description': f"Counter pass: {interceptor.last_name} -> {recipient.last_name} (DM->FWD)",
+                                        'description': f"Counter pass: {interceptor.last_name} -> {recipient.last_name} (DM-{zone_side(target_zone)}->FWD-{zone_side(target_zone)})",
                                     }
                                     match.current_player_with_ball = recipient
-                                    match.current_zone = "FWD"
+                                    match.current_zone = make_zone("FWD", zone_side(target_zone))
                                     return {
                                         'event': pass_event,
                                         'additional_event': interception_event,
@@ -792,7 +792,7 @@ def simulate_one_action(match: Match) -> dict:
                                 else:
                                     fail_interceptor = choose_player(
                                         possessing_team,
-                                        "DEF",
+                                        make_zone("DEF", zone_side(target_zone)),
                                         match=match,
                                     )
                                     if fail_interceptor:
@@ -802,7 +802,7 @@ def simulate_one_action(match: Match) -> dict:
                                             'event_type': 'interception',
                                             'player': fail_interceptor,
                                             'related_player': interceptor,
-                                            'description': f"INTERCEPTION! {fail_interceptor.last_name} ({possessing_team.name}) from {interceptor.last_name} in DM.",
+                                            'description': f"INTERCEPTION! {fail_interceptor.last_name} ({possessing_team.name}) from {interceptor.last_name} in DM-{zone_side(target_zone)}.",
                                         }
                                         new_keeper2 = choose_player(possessing_team, "GK", match=match)
                                         if new_keeper2:
@@ -810,7 +810,7 @@ def simulate_one_action(match: Match) -> dict:
                                             match.current_zone = "GK"
                                         else:
                                             match.current_player_with_ball = fail_interceptor
-                                            match.current_zone = "DEF"
+                                            match.current_zone = make_zone("DEF", zone_side(target_zone))
                                         return {
                                             'event': pass_event,
                                             'additional_event': interception_event,
@@ -820,7 +820,7 @@ def simulate_one_action(match: Match) -> dict:
                                         }
                                     else:
                                         match.current_player_with_ball = interceptor
-                                        match.current_zone = "DM"
+                                        match.current_zone = make_zone("DM", zone_side(target_zone))
                                         return {
                                             'event': pass_event,
                                             'additional_event': interception_event,
@@ -835,7 +835,7 @@ def simulate_one_action(match: Match) -> dict:
                         match.current_zone = "GK"
                     else:
                         match.current_player_with_ball = interceptor
-                        match.current_zone = "DEF"
+                        match.current_zone = make_zone("DEF", zone_side(intercept_zone))
 
                     return {
                         'event': pass_event,
