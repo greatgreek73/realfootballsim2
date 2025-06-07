@@ -542,7 +542,10 @@ def simulate_one_action(match: Match) -> dict:
             else:
                 # Неудачный пас и возможный перехват
                 opponent_team = get_opponent_team(match, possessing_team)
-                intercept_zone = mirrored_zone(current_zone)
+                # Determine where the ball would likely be intercepted.
+                # Use the zone of the intended target so interceptions from
+                # long passes happen closer to their destination.
+                intercept_zone = mirrored_zone(target_zone)
                 interceptor = choose_player(opponent_team, intercept_zone, match=match)
 
                 # Событие попытки паса
