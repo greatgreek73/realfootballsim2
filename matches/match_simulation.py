@@ -378,6 +378,18 @@ def foul_probability(tackler: Player, dribbler: Player) -> float:
     diff = tackler.tackling - dribbler.dribbling
     return clamp(base + diff / 200)
 
+
+def dribble_success_probability(dribbler: Player, defender: Player | None) -> float:
+    """Probability that a dribble attempt succeeds."""
+    base = 0.55
+    bonus = (dribbler.dribbling + dribbler.pace + dribbler.flair) / 300
+    penalty = 0
+    if defender:
+        penalty = (defender.tackling + defender.marking + defender.strength) / 300
+    stamina_factor = dribbler.stamina / 100
+    morale_factor = 0.5 + dribbler.morale / 200
+    return clamp((base + bonus - penalty) * stamina_factor * morale_factor)
+
 def simulate_one_action(match: Match) -> dict:
     """
     Симулирует ОДНО действие в матче (пас, перехват, удар и т.д.)
@@ -483,10 +495,82 @@ def simulate_one_action(match: Match) -> dict:
             is_long = True
 
         match.st_possessions += 1
-        
-        recipient = choose_player(possessing_team, target_zone, exclude_ids={current_player.id}, match=match)
+
+        # --- New dribbling logic ---
+        attempt_dribble = False
+        if current_player.position != "Goalkeeper" and current_player.dribbling > 50:
+            dribble_chance = clamp((current_player.dribbling + current_player.pace) / 200, 0, 0.8)
+            if random.random() < dribble_chance:
+                attempt_dribble = True
 
         opponent_team = get_opponent_team(match, possessing_team)
+
+        if attempt_dribble:
+            defender = choose_player(opponent_team, mirrored_zone(target_zone), match=match)
+            success_prob = dribble_success_probability(current_player, defender)
+            dribble_event = {
+                'match': match,
+                'minute': match.current_minute,
+                'event_type': 'dribble',
+                'player': current_player,
+                'related_player': defender,
+                'description': f"Dribble attempt by {current_player.last_name} to {target_zone}",
+            }
+
+            if random.random() < success_prob:
+                match.current_zone = target_zone
+                # ball remains with current_player
+                if defender:
+                    foul_chance = foul_probability(defender, current_player)
+                    if random.random() < foul_chance:
+                        match.st_fouls += 1
+                        foul_event = {
+                            'match': match,
+                            'minute': match.current_minute,
+                            'event_type': 'foul',
+                            'player': defender,
+                            'related_player': current_player,
+                            'description': f"Foul on dribble by {defender.last_name} in {target_zone}",
+                        }
+                        return {
+                            'event': dribble_event,
+                            'additional_event': foul_event,
+                            'action_type': 'dribble',
+                            'continue': True,
+                        }
+
+                return {
+                    'event': dribble_event,
+                    'action_type': 'dribble',
+                    'continue': True,
+                }
+            else:
+                if defender:
+                    interception_event = {
+                        'match': match,
+                        'minute': match.current_minute,
+                        'event_type': 'interception',
+                        'player': defender,
+                        'related_player': current_player,
+                        'description': f"{defender.last_name} dispossesses {current_player.last_name} in {current_zone}",
+                    }
+                    match.current_player_with_ball = defender
+                    match.current_zone = mirrored_zone(target_zone)
+                    return {
+                        'event': dribble_event,
+                        'additional_event': interception_event,
+                        'action_type': 'interception',
+                        'continue': False,
+                    }
+                else:
+                    return {
+                        'event': dribble_event,
+                        'action_type': 'failed_interception',
+                        'continue': False,
+                    }
+
+        recipient = choose_player(possessing_team, target_zone, exclude_ids={current_player.id}, match=match)
+
         opponent = choose_player(opponent_team, target_zone, match=match)
         pass_prob = pass_success_probability(
             current_player,

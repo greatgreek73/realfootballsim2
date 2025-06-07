@@ -116,6 +116,7 @@ class MatchEvent(models.Model):
         choices=[
             ('goal', 'Goal'),
             ('pass', 'Pass'),
+            ('dribble', 'Dribble'),
             ('interception', 'Interception'),
             ('counterattack', 'Counterattack'),
             ('shot_miss', 'Shot Miss'),
