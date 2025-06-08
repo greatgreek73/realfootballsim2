@@ -80,6 +80,15 @@
                                 </a>
                             </div>
                         </div>
+                        <div class="row mt-2">
+                            <div class="col-5 text-start">
+                                <span id="homeMomentumIcon" class="momentum-icon momentum-neutral">😐</span>
+                            </div>
+                            <div class="col-2"></div>
+                            <div class="col-5 text-end">
+                                <span id="awayMomentumIcon" class="momentum-icon momentum-neutral">😐</span>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Кнопка Replay, если матч завершён -->
@@ -367,6 +376,19 @@
     .stat-box .list-group-item:last-child {
          border-bottom: none;
      }
+
+    /* Momentum indicators */
+    .momentum-icon {
+        font-size: 1.4rem;
+        transition: color 0.3s ease;
+    }
+    .momentum-neutral { color: #6c757d; }
+    .momentum-positive { color: #28a745; }
+    .momentum-hot { color: #0d6efd; }
+    .momentum-unstoppable { color: #ffc107; }
+    .momentum-nervous { color: #fd7e14; }
+    .momentum-demoralized { color: #dc3545; }
+    .momentum-panic { color: #721c24; }
 
     /* Форма реакции на травму */
     .matchUserAction {
