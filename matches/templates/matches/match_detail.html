@@ -83,10 +83,12 @@
                         <div class="row mt-2">
                             <div class="col-5 text-start">
                                 <span id="homeMomentumIcon" class="momentum-icon momentum-neutral">😐</span>
+                                <span id="homeMomentumValue" class="momentum-value">{{ match.home_momentum }}</span>
                             </div>
                             <div class="col-2"></div>
                             <div class="col-5 text-end">
                                 <span id="awayMomentumIcon" class="momentum-icon momentum-neutral">😐</span>
+                                <span id="awayMomentumValue" class="momentum-value">{{ match.away_momentum }}</span>
                             </div>
                         </div>
                     </div>
@@ -389,6 +391,10 @@
     .momentum-nervous { color: #fd7e14; }
     .momentum-demoralized { color: #dc3545; }
     .momentum-panic { color: #721c24; }
+    .momentum-value {
+        font-weight: bold;
+        margin-left: 0.25rem;
+    }
 
     /* Форма реакции на травму */
     .matchUserAction {
