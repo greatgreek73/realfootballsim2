@@ -71,6 +71,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const statBox = document.querySelector('.stat-box'); // Блок для статистики
     const homeMomentumIcon = document.getElementById('homeMomentumIcon');
     const awayMomentumIcon = document.getElementById('awayMomentumIcon');
+    const homeMomentumValue = document.getElementById('homeMomentumValue');
+    const awayMomentumValue = document.getElementById('awayMomentumValue');
     const injuryActionForm = document.querySelector('#matchUserAction-inj'); // Форма для травмы
     const nextMinuteBtn = document.getElementById('nextMinuteBtn');
     // Duration of one simulated minute in real seconds
@@ -175,7 +177,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- Функция обновления индикатора моментума ---
-    function setMomentum(el, value) {
+    function setMomentum(el, value, valueEl) {
         if (!el) return;
         el.className = 'momentum-icon';
         let icon = '😐';
@@ -187,11 +189,12 @@ document.addEventListener('DOMContentLoaded', function() {
         else if (value <= -25) { icon = '😰'; el.classList.add('momentum-nervous'); }
         else { el.classList.add('momentum-neutral'); }
         el.textContent = icon;
+        if (valueEl) valueEl.textContent = value;
     }
 
     function updateMomentum(data) {
-        if (data.home_momentum !== undefined) setMomentum(homeMomentumIcon, data.home_momentum);
-        if (data.away_momentum !== undefined) setMomentum(awayMomentumIcon, data.away_momentum);
+        if (data.home_momentum !== undefined) setMomentum(homeMomentumIcon, data.home_momentum, homeMomentumValue);
+        if (data.away_momentum !== undefined) setMomentum(awayMomentumIcon, data.away_momentum, awayMomentumValue);
     }
 
     // --- Функция добавления одного события в лог (теперь добавляет в начало для обратного порядка) ---

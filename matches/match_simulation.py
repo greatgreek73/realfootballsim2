@@ -546,6 +546,10 @@ def simulate_one_action(match: Match) -> dict:
     
     # Обновляем индикатор владения
     match.possession_indicator = 1 if possessing_team.id == match.home_team_id else 2
+
+    opponent_team = get_opponent_team(match, possessing_team)
+    update_momentum(match, possessing_team, 1)
+    update_momentum(match, opponent_team, -1)
     
     
     # Основная логика действия в зависимости от зоны
