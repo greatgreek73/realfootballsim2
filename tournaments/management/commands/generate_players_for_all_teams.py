@@ -70,7 +70,8 @@ class Command(BaseCommand):
                 first_name=first_name,
                 last_name=last_name,
                 nationality=club.country,
-                age=random.randint(17, 35),
+                # Игроки классов 1-4 должны быть 17 лет
+                age=17,
                 position=position,
                 player_class=random.randint(1, 4),
                 strength=stats['strength'],
@@ -91,7 +92,8 @@ class Command(BaseCommand):
                 first_name=first_name,
                 last_name=last_name,
                 nationality=club.country,
-                age=random.randint(17, 35),
+                # Игроки классов 1-4 должны быть 17 лет
+                age=17,
                 position=position,
                 player_class=random.randint(1, 4),
                 strength=stats['strength'],
