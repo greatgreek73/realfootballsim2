@@ -111,6 +111,8 @@ def simulate_active_matches(self):
                                 "st_possessions": match_locked.st_possessions,
                                 "st_fouls": match_locked.st_fouls,
                                 "st_injury": match_locked.st_injury,
+                                "home_momentum": match_locked.home_momentum,
+                                "away_momentum": match_locked.away_momentum,
                                 "events": [event_data],
                                 "partial_update": True,
                                 "action_based": True  # Новый флаг для пошаговой симуляции
@@ -152,6 +154,8 @@ def simulate_active_matches(self):
                                 "st_possessions": match_locked.st_possessions,
                                 "st_fouls": match_locked.st_fouls,
                                 "st_injury": match_locked.st_injury,
+                                "home_momentum": match_locked.home_momentum,
+                                "away_momentum": match_locked.away_momentum,
                                 "events": [add_event_data],
                                 "partial_update": True,
                                 "action_based": True
@@ -188,6 +192,8 @@ def simulate_active_matches(self):
                                 "st_possessions": match_locked.st_possessions,
                                 "st_fouls": match_locked.st_fouls,
                                 "st_injury": match_locked.st_injury,
+                                "home_momentum": match_locked.home_momentum,
+                                "away_momentum": match_locked.away_momentum,
                                 "events": [add_event_data2],
                                 "partial_update": True,
                                 "action_based": True
@@ -590,6 +596,8 @@ def advance_match_minutes():
                         "st_possessions": match.st_possessions,
                         "st_fouls": match.st_fouls,
                         "st_injury": match.st_injury,
+                        "home_momentum": match.home_momentum,
+                        "away_momentum": match.away_momentum,
                         "events": [info_event_data],
                         "partial_update": True,
                         "action_based": True,

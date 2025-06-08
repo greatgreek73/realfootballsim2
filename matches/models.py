@@ -98,6 +98,12 @@ class Match(models.Model):
     # Поле для травм - просто счетчик? Если да, ок. Если нужны детали, лучше JSONField или отдельная модель.
     st_injury = models.PositiveIntegerField(default=0, verbose_name="Injuries Count")
 
+    # Momentum and pass streaks
+    home_momentum = models.IntegerField(default=0)
+    away_momentum = models.IntegerField(default=0)
+    home_pass_streak = models.PositiveIntegerField(default=0)
+    away_pass_streak = models.PositiveIntegerField(default=0)
+
     def __str__(self):
         dt_str = timezone.localtime(self.datetime).strftime('%d.%m.%Y %H:%M') if self.datetime else "N/A" # Локальное время
         return f"{self.home_team.name} vs {self.away_team.name} ({dt_str}) - {self.get_status_display()}" # Используем get_status_display
