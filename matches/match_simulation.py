@@ -55,6 +55,8 @@ def send_update(match, possessing_team):
                 "st_possessions": match.st_possessions, # <--- Используем правильное имя
                 "st_fouls": match.st_fouls,
                 "st_injury": match.st_injury,
+                "home_momentum": match.home_momentum,
+                "away_momentum": match.away_momentum,
                 "status": match.status,
                 "current_player": current_player_data,
                 "current_zone": match.current_zone,
@@ -304,6 +306,25 @@ def clamp(value: float, min_value: float = 0.0, max_value: float = 1.0) -> float
     return max(min_value, min(max_value, value))
 
 
+def clamp_int(value: int, min_value: int = -100, max_value: int = 100) -> int:
+    return max(min_value, min(max_value, value))
+
+
+def update_momentum(match: Match, team: Club, delta: int) -> None:
+    if team.id == match.home_team_id:
+        match.home_momentum = clamp_int(match.home_momentum + delta)
+    elif team.id == match.away_team_id:
+        match.away_momentum = clamp_int(match.away_momentum + delta)
+
+
+def get_team_momentum(match: Match, team: Club) -> int:
+    if team.id == match.home_team_id:
+        return match.home_momentum
+    elif team.id == match.away_team_id:
+        return match.away_momentum
+    return 0
+
+
 # --- Expanded 16 zone grid ---
 ZONE_GRID = [
     "GK",
@@ -397,6 +418,7 @@ def pass_success_probability(
     from_zone: str,
     to_zone: str,
     high: bool = False,
+    momentum: int = 0,
 ) -> float:
     """Return probability that a pass succeeds for a given zone transition."""
     f_prefix = zone_prefix(from_zone)
@@ -438,10 +460,11 @@ def pass_success_probability(
         penalty = (opponent.marking + opponent.tackling) / 400
     stamina_factor = passer.stamina / 100
     morale_factor = 0.5 + passer.morale / 200
-    return clamp((base + bonus + rec_bonus + heading_bonus - penalty) * stamina_factor * morale_factor)
+    momentum_factor = 1 + momentum / 200
+    return clamp((base + bonus + rec_bonus + heading_bonus - penalty) * stamina_factor * morale_factor * momentum_factor)
 
 
-def shot_success_probability(shooter: Player, goalkeeper: Player | None) -> float:
+def shot_success_probability(shooter: Player, goalkeeper: Player | None, *, momentum: int = 0) -> float:
     base = 0.1
     bonus = (shooter.finishing + shooter.long_range + shooter.accuracy) / 300
     penalty = 0
@@ -449,10 +472,11 @@ def shot_success_probability(shooter: Player, goalkeeper: Player | None) -> floa
         penalty = (goalkeeper.reflexes + goalkeeper.handling + goalkeeper.positioning) / 300
     stamina_factor = shooter.stamina / 100
     morale_factor = 0.5 + shooter.morale / 200
-    return clamp((base + bonus - penalty) * stamina_factor * morale_factor)
+    momentum_factor = 1 + momentum / 200
+    return clamp((base + bonus - penalty) * stamina_factor * morale_factor * momentum_factor)
 
 
-def long_shot_success_probability(shooter: Player, goalkeeper: Player | None) -> float:
+def long_shot_success_probability(shooter: Player, goalkeeper: Player | None, *, momentum: int = 0) -> float:
     """Probability of scoring with a long range shot."""
     base = 0.05
     bonus = (shooter.long_range * 2 + shooter.finishing + shooter.accuracy) / 400
@@ -461,7 +485,8 @@ def long_shot_success_probability(shooter: Player, goalkeeper: Player | None) ->
         penalty = (goalkeeper.reflexes + goalkeeper.handling + goalkeeper.positioning) / 300
     stamina_factor = shooter.stamina / 100
     morale_factor = 0.5 + shooter.morale / 200
-    return clamp((base + bonus - penalty) * stamina_factor * morale_factor)
+    momentum_factor = 1 + momentum / 200
+    return clamp((base + bonus - penalty) * stamina_factor * morale_factor * momentum_factor)
 
 
 def foul_probability(tackler: Player, dribbler: Player) -> float:
@@ -470,7 +495,7 @@ def foul_probability(tackler: Player, dribbler: Player) -> float:
     return clamp(base + diff / 200)
 
 
-def dribble_success_probability(dribbler: Player, defender: Player | None) -> float:
+def dribble_success_probability(dribbler: Player, defender: Player | None, *, momentum: int = 0) -> float:
     """Probability that a dribble attempt succeeds."""
     base = 0.55
     bonus = (dribbler.dribbling + dribbler.pace + dribbler.flair) / 300
@@ -479,7 +504,8 @@ def dribble_success_probability(dribbler: Player, defender: Player | None) -> fl
         penalty = (defender.tackling + defender.marking + defender.strength) / 300
     stamina_factor = dribbler.stamina / 100
     morale_factor = 0.5 + dribbler.morale / 200
-    return clamp((base + bonus - penalty) * stamina_factor * morale_factor)
+    momentum_factor = 1 + momentum / 200
+    return clamp((base + bonus - penalty) * stamina_factor * morale_factor * momentum_factor)
 
 def simulate_one_action(match: Match) -> dict:
     """
@@ -529,13 +555,19 @@ def simulate_one_action(match: Match) -> dict:
         shooter = current_player
         opponent_team = get_opponent_team(match, possessing_team)
         goalkeeper = choose_player(opponent_team, "GK", match=match)
-        is_goal = random.random() < shot_success_probability(shooter, goalkeeper)
+        is_goal = random.random() < shot_success_probability(
+            shooter,
+            goalkeeper,
+            momentum=get_team_momentum(match, possessing_team),
+        )
         
         if is_goal:
             if possessing_team.id == match.home_team_id:
                 match.home_score += 1
             else:
                 match.away_score += 1
+            update_momentum(match, possessing_team, 25)
+            update_momentum(match, opponent_team, -25)
             
             event_data = {
                 'match': match,
@@ -591,7 +623,11 @@ def simulate_one_action(match: Match) -> dict:
 
         if attempt_dribble:
             defender = choose_player(opponent_team, mirrored_zone(target_zone), match=match)
-            success_prob = dribble_success_probability(current_player, defender)
+            success_prob = dribble_success_probability(
+                current_player,
+                defender,
+                momentum=get_team_momentum(match, possessing_team),
+            )
             dribble_event = {
                 'match': match,
                 'minute': match.current_minute,
@@ -663,6 +699,7 @@ def simulate_one_action(match: Match) -> dict:
             from_zone=current_zone,
             to_zone=target_zone,
             high=is_long,
+            momentum=get_team_momentum(match, possessing_team),
         ) if recipient else 0
 
         if recipient:
@@ -758,7 +795,11 @@ def simulate_one_action(match: Match) -> dict:
                             if long_shot:
                                 match.st_shoots += 1
                                 goalkeeper = choose_player(possessing_team, "GK", match=match)
-                                is_goal = random.random() < long_shot_success_probability(interceptor, goalkeeper)
+                                is_goal = random.random() < long_shot_success_probability(
+                                    interceptor,
+                                    goalkeeper,
+                                    momentum=get_team_momentum(match, opponent_team),
+                                )
                                 if is_goal:
                                     if opponent_team.id == match.home_team_id:
                                         match.home_score += 1
@@ -812,6 +853,7 @@ def simulate_one_action(match: Match) -> dict:
                                     from_zone=make_zone("DM", zone_side(target_zone)),
                                     to_zone=make_zone("FWD", zone_side(target_zone)),
                                     high=True,
+                                    momentum=get_team_momentum(match, opponent_team),
                                 ) if recipient else 0
 
                                 if recipient and random.random() < pass_prob2:
