@@ -371,6 +371,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (data.home_score !== undefined) homeScoreElement.textContent = data.home_score;
                         if (data.away_score !== undefined) awayScoreElement.textContent = data.away_score;
                     }
+                    // При частичном обновлении тоже обновляем статистику и моментум
+                    updateStatistics(data);
+                    updateMomentum(data);
 
                 }
                  // --- Обработка только обновления состояния (от send_update) ---
