@@ -182,7 +182,8 @@ class Command(BaseCommand):
             'first_name': first_name,
             'last_name': last_name,
             'nationality': club.country,
-            'age': random.randint(17, 35),
+            # Игроки классов 1-4 должны быть 17 лет
+            'age': 17 if player_class in [1, 2, 3, 4] else random.randint(17, 35),
             'position': position,
             'player_class': player_class,
             'strength': stats['strength'],

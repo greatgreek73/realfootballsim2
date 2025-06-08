@@ -155,7 +155,8 @@ class CreateClubView(CreateView):
                 first_name=first_name,
                 last_name=last_name,
                 nationality=club.country,
-                age=random.randint(18, 30),
+                # Новые игроки начального состава всегда 17 лет
+                age=17,
                 position=player_info["position"],
                 player_class=player_info["class"],
                 **stats
@@ -236,12 +237,13 @@ def create_player(request, pk):
     try:
         stats = generate_player_stats(position, player_class)
 
+        player_age = 17 if player_class in [1, 2, 3, 4] else random.randint(17, 35)
         player = Player.objects.create(
             club=club,
             first_name=first_name,
             last_name=last_name,
             nationality=club.country,
-            age=random.randint(17, 35),
+            age=player_age,
             position=position,
             player_class=player_class,
             **stats
