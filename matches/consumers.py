@@ -171,6 +171,8 @@ class MatchConsumer(AsyncWebsocketConsumer):
                 ),
                 "current_zone": match.current_zone,
                 "possessing_team_id": possessing_team_id,
+                "home_momentum": match.home_momentum,
+                "away_momentum": match.away_momentum,
             }
 
         except Match.DoesNotExist:
