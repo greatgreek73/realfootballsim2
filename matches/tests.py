@@ -218,6 +218,7 @@ class LongPassProbabilityTests(TestCase):
             from_zone="DM-C",
             to_zone="FWD-C",
             high=True,
+            momentum=0,
         )
 
         recipient_bad = Player.objects.create(
@@ -235,6 +236,7 @@ class LongPassProbabilityTests(TestCase):
             from_zone="DM-C",
             to_zone="FWD-C",
             high=True,
+            momentum=0,
         )
         self.assertGreater(prob_high, prob_low)
 
@@ -278,6 +280,6 @@ class DribbleProbabilityTests(TestCase):
 
         from matches.match_simulation import dribble_success_probability
 
-        prob_good = dribble_success_probability(dribbler_good, defender)
-        prob_bad = dribble_success_probability(dribbler_bad, defender)
+        prob_good = dribble_success_probability(dribbler_good, defender, momentum=0)
+        prob_bad = dribble_success_probability(dribbler_bad, defender, momentum=0)
         self.assertGreater(prob_good, prob_bad)

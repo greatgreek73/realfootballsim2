@@ -69,6 +69,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const eventsListContainer = document.getElementById('originalEvents'); // Контейнер с прокруткой
     const eventsBox = eventsListContainer ? eventsListContainer.querySelector('.events-box') : null; // Внутренний блок для добавления
     const statBox = document.querySelector('.stat-box'); // Блок для статистики
+    const homeMomentumIcon = document.getElementById('homeMomentumIcon');
+    const awayMomentumIcon = document.getElementById('awayMomentumIcon');
     const injuryActionForm = document.querySelector('#matchUserAction-inj'); // Форма для травмы
     const nextMinuteBtn = document.getElementById('nextMinuteBtn');
     // Duration of one simulated minute in real seconds
@@ -170,6 +172,26 @@ document.addEventListener('DOMContentLoaded', function() {
         // Обновляем и отдельный счетчик, если он есть
         if (injCounterElement && data.st_injury !== undefined) injCounterElement.textContent = data.st_injury;
 
+    }
+
+    // --- Функция обновления индикатора моментума ---
+    function setMomentum(el, value) {
+        if (!el) return;
+        el.className = 'momentum-icon';
+        let icon = '😐';
+        if (value >= 75) { icon = '🌟'; el.classList.add('momentum-unstoppable'); }
+        else if (value >= 50) { icon = '🔥'; el.classList.add('momentum-hot'); }
+        else if (value >= 25) { icon = '💪'; el.classList.add('momentum-positive'); }
+        else if (value <= -75) { icon = '😱'; el.classList.add('momentum-panic'); }
+        else if (value <= -50) { icon = '💔'; el.classList.add('momentum-demoralized'); }
+        else if (value <= -25) { icon = '😰'; el.classList.add('momentum-nervous'); }
+        else { el.classList.add('momentum-neutral'); }
+        el.textContent = icon;
+    }
+
+    function updateMomentum(data) {
+        if (data.home_momentum !== undefined) setMomentum(homeMomentumIcon, data.home_momentum);
+        if (data.away_momentum !== undefined) setMomentum(awayMomentumIcon, data.away_momentum);
     }
 
     // --- Функция добавления одного события в лог (теперь добавляет в начало для обратного порядка) ---
@@ -330,6 +352,7 @@ document.addEventListener('DOMContentLoaded', function() {
                      // Обновляем состояние после загрузки всех исторических событий
                      if (timeElement && data.minute !== undefined) timeElement.textContent = `${data.minute}'`;
                      updateStatistics(data);
+                     updateMomentum(data);
 
                 }
                  // --- Обработка одиночного события (от broadcast_minute_events_in_chunks) ---
@@ -363,6 +386,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
                     updateStatistics(data);
+                    updateMomentum(data);
                 } else {
                      // Неизвестный формат сообщения
                      console.warn("Received message format not recognized. Ignored.", data);
