@@ -676,7 +676,7 @@ def simulate_one_action(match: Match) -> dict:
                         'event_type': 'interception',
                         'player': defender,
                         'related_player': current_player,
-                        'description': f"{defender.last_name} dispossesses {current_player.last_name} in {current_zone}",
+                        'description': f"{defender.last_name} dispossesses {current_player.last_name} in {target_zone}",
                     }
                     match.current_player_with_ball = defender
                     match.current_zone = mirrored_zone(target_zone)
@@ -779,7 +779,7 @@ def simulate_one_action(match: Match) -> dict:
                         'event_type': 'counterattack' if special_counter else 'interception',
                         'player': interceptor,
                         'related_player': current_player,
-                        'description': f"INTERCEPTION! {interceptor.last_name} ({opponent_team.name}) from {current_player.last_name} in {current_zone}.",
+                        'description': f"INTERCEPTION! {interceptor.last_name} ({opponent_team.name}) from {current_player.last_name} in {target_zone}.",
                     }
 
                     if special_counter:
