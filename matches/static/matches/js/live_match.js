@@ -57,10 +57,15 @@ document.addEventListener('DOMContentLoaded', function() {
     matchId = matchInfoArea.dataset.matchId;
     const initialStatus = matchInfoArea.dataset.matchStatus;
     let currentMatchStatus = initialStatus; // Сохраняем текущий статус для проверок
-    let isLive = initialStatus === 'in_progress';
     let matchSocket;
 
-    console.log('Match setup:', { matchId, isLive, status: initialStatus });
+    // Определяем, нужно ли подключаться к WebSocket. Соединение требуется
+    // для всех матчей, которые ещё могут обновляться (scheduled, in_progress
+    // или paused). При завершённых или отменённых матчах подключение
+    // бессмысленно, так как новых событий не будет.
+    const shouldConnectWS = !['finished', 'cancelled', 'error'].includes(initialStatus);
+
+    console.log('Match setup:', { matchId, status: initialStatus, shouldConnectWS });
 
     // --- Получаем ссылки на элементы DOM один раз ---
     const timeElement = document.getElementById('matchTime');
@@ -291,8 +296,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- Логика WebSocket ---
-    if (isLive) {
-        console.log('Match is live, attempting WebSocket connection...');
+    if (shouldConnectWS) {
+        console.log('Attempting WebSocket connection...');
 
         const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const wsUrl = `${wsScheme}://${window.location.host}/ws/match/${matchId}/`;
@@ -429,8 +434,8 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
     } else {
-        console.log('Match is not live (' + initialStatus + '), skipping WebSocket setup.');
-        // Если матч не live (например, finished или scheduled), события уже выведены шаблоном.
-        // Ничего дополнительно делать не нужно, WebSocket не требуется.
+        console.log('WebSocket not started because match status is ' + initialStatus + '.');
+        // Для завершённых или отменённых матчей события уже выведены шаблоном,
+        // так что соединение не требуется.
     }
 }); // End DOMContentLoaded
