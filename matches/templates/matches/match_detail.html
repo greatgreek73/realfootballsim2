@@ -314,8 +314,8 @@
 {% block extra_js %}
 {# Подключаем внешние скрипты #}
 <script src="{% static 'matches/js/match_replay.js' %}"></script> {# Если есть скрипт реплея #}
-{% if match.status == 'in_progress' %}
-    {# Подключаем основной скрипт только если матч идет #}
+{# Подключаем основной скрипт для незавершенных матчей #}
+{% if match.status != 'finished' and match.status != 'cancelled' and match.status != 'error' %}
     <script src="{% static 'matches/js/live_match.js' %}"></script>
 {% endif %}
 {% endblock %}
