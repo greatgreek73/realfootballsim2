@@ -2,12 +2,15 @@
 import logging
 import json
 import traceback
+
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.core.serializers.json import DjangoJSONEncoder
+
 from .models import Match, MatchEvent
 
 logger = logging.getLogger('match_creation')
+
 
 class MatchConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -18,7 +21,10 @@ class MatchConsumer(AsyncWebsocketConsumer):
             await self.channel_layer.group_add(self.group_name, self.channel_name)
             await self.accept()
 
-            logger.info(f'[WebSocket] Подключение установлено: матч ID={self.match_id}, канал {self.channel_name}')
+            logger.info(
+                f'[WebSocket] Подключение установлено: матч ID={self.match_id}, '
+                f'канал {self.channel_name}'
+            )
             print(f"WebSocket accepted for match {self.match_id}")
 
             match_data = await self.get_match_data()
@@ -29,7 +35,10 @@ class MatchConsumer(AsyncWebsocketConsumer):
                 }, cls=DjangoJSONEncoder))
                 print("Initial match data sent")
             else:
-                logger.warning(f'[WebSocket] Матч ID={self.match_id} не найден — отправка ошибки клиенту и закрытие соединения')
+                logger.warning(
+                    f'[WebSocket] Матч ID={self.match_id} не найден — '
+                    f'отправка ошибки клиенту и закрытие соединения'
+                )
                 print(f"No match data found for ID: {self.match_id}")
                 await self.send(text_data=json.dumps({
                     'type': 'error',
@@ -44,7 +53,10 @@ class MatchConsumer(AsyncWebsocketConsumer):
             await self.close(code=1011)
 
     async def disconnect(self, close_code):
-        logger.info(f'[WebSocket] Отключение: матч ID={self.match_id}, код={close_code}, канал={self.channel_name}')
+        logger.info(
+            f'[WebSocket] Отключение: матч ID={self.match_id}, '
+            f'код={close_code}, канал={self.channel_name}'
+        )
         print(f"WebSocket disconnecting from match {self.match_id} (code {close_code})")
         try:
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
@@ -64,22 +76,48 @@ class MatchConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             logger.error(f"Error processing incoming message for match {self.match_id}: {e}")
 
+    # ------------------------------------------------------------------
+    # ДОБАВЛЕНО: вспомогательная функция для быстрого получения momentuma
+    # ------------------------------------------------------------------
+    @database_sync_to_async
+    def _get_current_momentum(self) -> dict:
+        """
+        Возвращает актуальные значения momentuma для обеих команд матча.
+        Гарантирует, что словарь содержит оба ключа.
+        """
+        try:
+            m = Match.objects.only("home_momentum", "away_momentum").get(id=self.match_id)
+            return {
+                "home_momentum": m.home_momentum,
+                "away_momentum": m.away_momentum,
+            }
+        except Match.DoesNotExist:
+            return {"home_momentum": 0, "away_momentum": 0}
 
     async def match_update(self, event):
         try:
             data = event.get('data', {})
-            
-            # ИСПРАВЛЕНИЕ: Проверяем, является ли это частичным обновлением с событием
+
+            # -----------------------------------------------------------
+            # Исправление: обеспечиваем наличие momentuma даже для
+            # "частичных" сообщений с событием
+            # -----------------------------------------------------------
             if data.get('partial_update') and 'events' in data:
-                # Для частичных обновлений с событиями просто отправляем данные как есть
-                # НЕ загружаем все события из БД заново
+                # Подмешиваем momentum, если он отсутствует
+                if 'home_momentum' not in data or 'away_momentum' not in data:
+                    momentum = await self._get_current_momentum()
+                    data.update(momentum)
+
                 await self.send(text_data=json.dumps({
                     'type': 'match_update',
                     'data': data
                 }, cls=DjangoJSONEncoder))
-                print(f"Sent partial update with event to client for match {self.match_id}")
+                print(
+                    f"Sent partial update (events) with momentum "
+                    f"to client for match {self.match_id}"
+                )
             else:
-                # Для обычных обновлений состояния (без событий) или полных обновлений
+                # Для обычных или полных обновлений
                 is_partial = 'minute' not in data or 'status' not in data
 
                 if is_partial:
@@ -88,9 +126,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
                     if not full:
                         print(f"Unable to fetch full match data for {self.match_id}")
                         return
-                    # Обновляем только те поля, которые пришли в data
-                    full.update(data)
-                    # НЕ перезаписываем события, если они не пришли в обновлении
+                    full.update(data)  # обновляем только пришедшие поля
                     if 'events' in data:
                         full['events'] = data['events']
                     payload = full
@@ -108,6 +144,9 @@ class MatchConsumer(AsyncWebsocketConsumer):
             print(f"Error in match_update for match {self.match_id}: {e}")
             traceback.print_exc()
 
+    # ------------------------------------------------------------------
+    # ДАЛЬШЕ КОД БЕЗ ИЗМЕНЕНИЙ
+    # ------------------------------------------------------------------
     @database_sync_to_async
     def get_match_data(self):
         try:
@@ -117,19 +156,16 @@ class MatchConsumer(AsyncWebsocketConsumer):
                 'current_player_with_ball',
             ).get(id=self.match_id)
 
-            # Не загружаем события текущей минуты для live-матча
-            # Они придут через broadcast
+            # Не загружаем события текущей минуты для live‑матча
             if match.status == 'in_progress':
                 all_events = (
                     MatchEvent.objects
                     .filter(match_id=self.match_id)
-                    .exclude(minute=match.current_minute)  # Исключаем текущую минуту
+                    .exclude(minute=match.current_minute)
                     .select_related('player', 'related_player')
                     .order_by('minute', 'timestamp')
                 )
-                logger.info(f'[WebSocket] Загружаем события для матча {self.match_id}, исключая текущую минуту {match.current_minute}')
             else:
-                # Для завершенных матчей загружаем все
                 all_events = (
                     MatchEvent.objects
                     .filter(match_id=self.match_id)
