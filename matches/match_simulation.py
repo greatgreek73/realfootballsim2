@@ -12,6 +12,7 @@ import time
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from matches.utils import extract_player_id
+from matches.commentary import render_comment
 
 logger = logging.getLogger(__name__)
 
@@ -578,7 +579,13 @@ def simulate_one_action(match: Match) -> dict:
                 'minute': match.current_minute,
                 'event_type': 'goal',
                 'player': shooter,
-                'description': f"GOAL!!! {shooter.first_name} {shooter.last_name} ({possessing_team.name})! Score: {match.home_score}-{match.away_score}"
+                'description': render_comment(
+                    'goal',
+                    shooter=f"{shooter.first_name} {shooter.last_name}",
+                    team=possessing_team.name,
+                    home=match.home_score,
+                    away=match.away_score,
+                )
             }
         else:
             event_data = {
@@ -586,7 +593,10 @@ def simulate_one_action(match: Match) -> dict:
                 'minute': match.current_minute,
                 'event_type': 'shot_miss',
                 'player': shooter,
-                'description': f"Missed shot by {shooter.first_name} {shooter.last_name} ({possessing_team.name})."
+                'description': render_comment(
+                    'shot_miss',
+                    shooter=f"{shooter.first_name} {shooter.last_name}",
+                )
             }
         
         # После удара мяч переходит к вратарю соперника
@@ -638,7 +648,11 @@ def simulate_one_action(match: Match) -> dict:
                 'event_type': 'dribble',
                 'player': current_player,
                 'related_player': defender,
-                'description': f"Dribble attempt by {current_player.last_name} to {target_zone}",
+                'description': render_comment(
+                    'dribble',
+                    player=current_player.last_name,
+                    zone=target_zone,
+                ),
             }
 
             if random.random() < success_prob:
@@ -654,7 +668,12 @@ def simulate_one_action(match: Match) -> dict:
                             'event_type': 'foul',
                             'player': defender,
                             'related_player': current_player,
-                            'description': f"Foul on dribble by {defender.last_name} in {target_zone}",
+                            'description': render_comment(
+                                'foul',
+                                player=defender.last_name,
+                                target=current_player.last_name,
+                                zone=target_zone,
+                            ),
                         }
                         return {
                             'event': dribble_event,
@@ -676,7 +695,12 @@ def simulate_one_action(match: Match) -> dict:
                         'event_type': 'interception',
                         'player': defender,
                         'related_player': current_player,
-                        'description': f"{defender.last_name} dispossesses {current_player.last_name} in {target_zone}",
+                        'description': render_comment(
+                            'interception',
+                            interceptor=defender.last_name,
+                            player=current_player.last_name,
+                            zone=target_zone,
+                        ),
                     }
                     match.current_player_with_ball = defender
                     match.current_zone = mirrored_zone(target_zone)
@@ -716,7 +740,13 @@ def simulate_one_action(match: Match) -> dict:
                     'event_type': 'pass',
                     'player': current_player,
                     'related_player': recipient,
-                    'description': f"{'Long pass' if is_long else 'Pass'}: {current_player.last_name} -> {recipient.last_name} ({current_zone}->{target_zone})"
+                    'description': render_comment(
+                        'pass',
+                        player=current_player.last_name,
+                        recipient=recipient.last_name,
+                        from_zone=current_zone,
+                        to_zone=target_zone,
+                    )
                 }
 
                 match.current_player_with_ball = recipient
@@ -734,7 +764,12 @@ def simulate_one_action(match: Match) -> dict:
                             'event_type': 'foul',
                             'player': fouler,
                             'related_player': recipient,
-                            'description': f"Foul! {fouler.last_name} ({opponent_team.name}) on {recipient.last_name} in {target_zone}.",
+                            'description': render_comment(
+                                'foul',
+                                player=fouler.last_name,
+                                target=recipient.last_name,
+                                zone=target_zone,
+                            ),
                         }
                         return {
                             'event': event_data,
@@ -764,7 +799,13 @@ def simulate_one_action(match: Match) -> dict:
                     'event_type': 'pass',
                     'player': current_player,
                     'related_player': recipient,
-                    'description': f"{'Long pass attempt' if is_long else 'Pass attempt'}: {current_player.last_name} -> {recipient.last_name} ({current_zone}->{target_zone})",
+                    'description': render_comment(
+                        'pass',
+                        player=current_player.last_name,
+                        recipient=recipient.last_name,
+                        from_zone=current_zone,
+                        to_zone=target_zone,
+                    ),
                 }
 
                 if interceptor:
@@ -773,13 +814,19 @@ def simulate_one_action(match: Match) -> dict:
                         (zone_prefix(current_zone) == "DEF" and zone_prefix(target_zone) == "DM")
                     )
 
+                    interception_type = 'counterattack' if special_counter else 'interception'
                     interception_event = {
                         'match': match,
                         'minute': match.current_minute,
-                        'event_type': 'counterattack' if special_counter else 'interception',
+                        'event_type': interception_type,
                         'player': interceptor,
                         'related_player': current_player,
-                        'description': f"INTERCEPTION! {interceptor.last_name} ({opponent_team.name}) from {current_player.last_name} in {target_zone}.",
+                        'description': render_comment(
+                            interception_type if special_counter else 'interception',
+                            interceptor=interceptor.last_name,
+                            player=current_player.last_name,
+                            zone=target_zone,
+                        ),
                     }
 
                     if special_counter:
@@ -814,7 +861,13 @@ def simulate_one_action(match: Match) -> dict:
                                         'minute': match.current_minute,
                                         'event_type': 'goal',
                                         'player': interceptor,
-                                        'description': f"Long shot goal by {interceptor.last_name} ({opponent_team.name})!"
+                                        'description': render_comment(
+                                            'goal',
+                                            shooter=interceptor.last_name,
+                                            team=opponent_team.name,
+                                            home=match.home_score,
+                                            away=match.away_score,
+                                        ),
                                     }
                                 else:
                                     shot_event = {
@@ -822,7 +875,10 @@ def simulate_one_action(match: Match) -> dict:
                                         'minute': match.current_minute,
                                         'event_type': 'shot_miss',
                                         'player': interceptor,
-                                        'description': f"Long shot missed by {interceptor.last_name} ({opponent_team.name})."
+                                        'description': render_comment(
+                                            'shot_miss',
+                                            shooter=interceptor.last_name,
+                                        ),
                                     }
 
                                 new_keeper = choose_player(possessing_team, "GK", match=match)
@@ -868,7 +924,13 @@ def simulate_one_action(match: Match) -> dict:
                                         'event_type': 'pass',
                                         'player': interceptor,
                                         'related_player': recipient,
-                                        'description': f"Counter pass: {interceptor.last_name} -> {recipient.last_name} (DM-{zone_side(target_zone)}->FWD-{zone_side(target_zone)})",
+                                        'description': render_comment(
+                                            'pass',
+                                            player=interceptor.last_name,
+                                            recipient=recipient.last_name,
+                                            from_zone=f"DM-{zone_side(target_zone)}",
+                                            to_zone=f"FWD-{zone_side(target_zone)}",
+                                        ),
                                     }
                                     match.current_player_with_ball = recipient
                                     match.current_zone = make_zone("FWD", zone_side(target_zone))
@@ -892,7 +954,12 @@ def simulate_one_action(match: Match) -> dict:
                                             'event_type': 'interception',
                                             'player': fail_interceptor,
                                             'related_player': interceptor,
-                                            'description': f"INTERCEPTION! {fail_interceptor.last_name} ({possessing_team.name}) from {interceptor.last_name} in DM-{zone_side(target_zone)}.",
+                                            'description': render_comment(
+                                                'interception',
+                                                interceptor=fail_interceptor.last_name,
+                                                player=interceptor.last_name,
+                                                zone=f"DM-{zone_side(target_zone)}",
+                                            ),
                                         }
                                         new_keeper2 = choose_player(possessing_team, "GK", match=match)
                                         if new_keeper2:
