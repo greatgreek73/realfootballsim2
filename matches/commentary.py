@@ -2,39 +2,39 @@ import random
 
 TEMPLATES = {
     'goal': [
-        "GOAL!!! {shooter} ({team})! Score: {home}-{away}",
-        "{team}'s {shooter} strikes! {home}-{away} on the scoreboard.",
-        "It's in! {shooter} scores for {team}. Score now {home}-{away}.",
+        "ГОЛ!!! {shooter} ({team})! Счёт: {home}-{away}",
+        "{shooter} из команды {team} наносит удар! На табло {home}-{away}.",
+        "Мяч в сетке! {shooter} забивает за {team}. Счёт теперь {home}-{away}.",
     ],
     'shot_miss': [
-        "{shooter} shoots but misses the target.",
-        "Close attempt from {shooter}, but it goes wide.",
+        "{shooter} бьёт, но мимо ворот.",
+        "Опасный момент у {shooter}, но мяч проходит мимо.",
     ],
     'pass': [
-        "{player} plays a pass to {recipient} ({from_zone}->{to_zone}).",
-        "Pass from {player} to {recipient} moving {from_zone}->{to_zone}.",
+        "{player} делает пас на {recipient} ({from_zone}->{to_zone}).",
+        "Передача от {player} на {recipient}, продвижение {from_zone}->{to_zone}.",
     ],
     'foul': [
-        "Foul by {player} on {target} in {zone}.",
-        "{player} brings down {target} in {zone}.",
+        "Фол со стороны {player} против {target} в зоне {zone}.",
+        "{player} сбивает {target} в зоне {zone}.",
     ],
     'dribble': [
-        "{player} dribbles toward {zone}.",
-        "{player} attempts to beat his man into {zone}.",
+        "{player} ведёт мяч к зоне {zone}.",
+        "{player} пытается обыграть соперника и войти в {zone}.",
     ],
     'interception': [
-        "{interceptor} intercepts {player} in {zone}.",
-        "Great read by {interceptor}! Steals it from {player} in {zone}.",
+        "{interceptor} перехватывает передачу {player} в зоне {zone}.",
+        "Отличное чтение игры от {interceptor}! Он отбирает мяч у {player} в зоне {zone}.",
     ],
     'counterattack': [
-        "Counterattack! {interceptor} takes over.",
-        "Quick break as {interceptor} wins the ball!",
+        "Контратака! {interceptor} начинает атаку.",
+        "Быстрый выпад – {interceptor} завладел мячом!",
     ],
 }
 
 
 def render_comment(event_type: str, **kwargs) -> str:
-    """Return a random commentary line for the given event type."""
+    """Возвращает случайную строку комментария для заданного типа события."""
     variants = TEMPLATES.get(event_type)
     if not variants:
         return ""

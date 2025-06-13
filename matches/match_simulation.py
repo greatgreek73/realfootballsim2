@@ -811,7 +811,8 @@ def simulate_one_action(match: Match) -> dict:
                 if interceptor:
                     special_counter = (
                         (zone_prefix(current_zone) == "GK" and zone_prefix(target_zone) == "DEF") or
-                        (zone_prefix(current_zone) == "DEF" and zone_prefix(target_zone) == "DM")
+                        (zone_prefix(current_zone) == "DEF" and zone_prefix(target_zone) == "DM") or
+                        (zone_prefix(current_zone) == "GK" and zone_prefix(target_zone) == "DM")
                     )
 
                     interception_type = 'counterattack' if special_counter else 'interception'
