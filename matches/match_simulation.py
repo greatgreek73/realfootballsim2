@@ -109,9 +109,6 @@ def zone_conditions(zone: str):
         return lambda p: (
             ("Midfielder" in p.position and "Attacking" in p.position)
             or p.position == "CAM"
-            or "Forward" in p.position
-            or "Striker" in p.position
-            or p.position in ["ST", "CF"]
         )
     elif zone_upper == "WING":
          return lambda p: p.position in ["LW", "RW", "LM", "RM"]
@@ -352,6 +349,31 @@ def make_zone(prefix: str, side: str) -> str:
     if prefix == "GK":
         return "GK"
     return f"{prefix}-{side}"
+
+def random_adjacent_zone(zone: str) -> str:
+    """Return a random neighbouring zone."""
+    prefix = zone_prefix(zone)
+    side = zone_side(zone)
+    row_idx = ROW_INDEX.get(prefix, 0)
+    side_idx = SIDES.index(side) if side in SIDES else 1
+    adjacent: list[str] = []
+    for dr in (-1, 0, 1):
+        for ds in (-1, 0, 1):
+            if dr == 0 and ds == 0:
+                continue
+            r = row_idx + dr
+            if r < 0 or r >= len(ROW_PREFIX):
+                continue
+            if ROW_PREFIX[r] == "GK":
+                candidate = "GK"
+            else:
+                s_idx = side_idx + ds
+                if s_idx < 0 or s_idx >= len(SIDES):
+                    continue
+                candidate = make_zone(ROW_PREFIX[r], SIDES[s_idx])
+            if candidate != zone and candidate in ZONE_GRID:
+                adjacent.append(candidate)
+    return random.choice(adjacent) if adjacent else zone
 
 def next_zone(zone: str) -> str:
     """Return the next zone for a pass.
@@ -636,7 +658,8 @@ def simulate_one_action(match: Match) -> dict:
         opponent_team = get_opponent_team(match, possessing_team)
 
         if attempt_dribble:
-            defender = choose_player(opponent_team, mirrored_zone(target_zone), match=match)
+            target_zone = random_adjacent_zone(current_zone)
+            defender = choose_player(opponent_team, make_zone("DEF", zone_side(target_zone)), match=match)
             success_prob = dribble_success_probability(
                 current_player,
                 defender,
@@ -702,8 +725,12 @@ def simulate_one_action(match: Match) -> dict:
                             zone=target_zone,
                         ),
                     }
-                    match.current_player_with_ball = defender
-                    match.current_zone = mirrored_zone(target_zone)
+                    new_defender = choose_player(opponent_team, make_zone("DEF", zone_side(target_zone)), match=match)
+                    if new_defender:
+                        match.current_player_with_ball = new_defender
+                    else:
+                        match.current_player_with_ball = defender
+                    match.current_zone = make_zone("DEF", zone_side(target_zone))
                     return {
                         'event': dribble_event,
                         'additional_event': interception_event,
