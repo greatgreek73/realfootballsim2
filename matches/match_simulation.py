@@ -962,13 +962,22 @@ def simulate_one_action(match: Match) -> dict:
                                                 zone=f"DM-{zone_side(target_zone)}",
                                             ),
                                         }
-                                        new_keeper2 = choose_player(possessing_team, "GK", match=match)
-                                        if new_keeper2:
-                                            match.current_player_with_ball = new_keeper2
-                                            match.current_zone = "GK"
+                                        new_defender2 = choose_player(
+                                            possessing_team,
+                                            make_zone("DEF", zone_side(target_zone)),
+                                            match=match,
+                                        )
+                                        if new_defender2:
+                                            match.current_player_with_ball = new_defender2
+                                            match.current_zone = make_zone(
+                                                "DEF",
+                                                zone_side(target_zone),
+                                            )
                                         else:
                                             match.current_player_with_ball = fail_interceptor
-                                            match.current_zone = make_zone("DEF", zone_side(target_zone))
+                                            match.current_zone = make_zone(
+                                                "DEF", zone_side(target_zone)
+                                            )
                                         return {
                                             'event': pass_event,
                                             'additional_event': interception_event,
@@ -986,11 +995,17 @@ def simulate_one_action(match: Match) -> dict:
                                             'continue': True
                                         }
 
-                    # Мяч переходит к перехватившему или к вратарю его команды
-                    new_keeper = choose_player(opponent_team, "GK", match=match)
-                    if new_keeper:
-                        match.current_player_with_ball = new_keeper
-                        match.current_zone = "GK"
+                    # Мяч переходит к защитнику перехватившей команды
+                    new_defender = choose_player(
+                        opponent_team,
+                        make_zone("DEF", zone_side(intercept_zone)),
+                        match=match,
+                    )
+                    if new_defender:
+                        match.current_player_with_ball = new_defender
+                        match.current_zone = make_zone(
+                            "DEF", zone_side(intercept_zone)
+                        )
                     else:
                         match.current_player_with_ball = interceptor
                         match.current_zone = make_zone("DEF", zone_side(intercept_zone))
