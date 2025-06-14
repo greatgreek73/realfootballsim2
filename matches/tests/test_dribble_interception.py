@@ -43,7 +43,7 @@ class DribbleInterceptionTests(TestCase):
         return None
 
     def test_failed_dribble_moves_ball_to_defender(self):
-        with patch("matches.match_simulation.random_adjacent_zone", return_value="DM-R"):
+        with patch("matches.match_simulation.forward_dribble_zone", return_value="DM-R"):
             with patch("matches.match_simulation.choose_player", side_effect=self.choose_mock):
                 with patch("matches.match_simulation.random.random", side_effect=[0.0, 0.9]):
                     with patch("matches.match_simulation.dribble_success_probability", return_value=0.0):

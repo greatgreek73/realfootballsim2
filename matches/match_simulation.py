@@ -375,6 +375,29 @@ def random_adjacent_zone(zone: str) -> str:
                 adjacent.append(candidate)
     return random.choice(adjacent) if adjacent else zone
 
+def forward_dribble_zone(zone: str, diag_prob: float = 0.1) -> str:
+    """Return a forward zone for dribbling.
+
+    The dribbler keeps the same side 90% of the time. With ``diag_prob``
+    chance they move diagonally forward one column left or right, staying
+    within bounds.
+    """
+
+    prefix = zone_prefix(zone)
+    side = zone_side(zone)
+    row_idx = ROW_INDEX.get(prefix, 0)
+    next_idx = min(row_idx + 1, len(ROW_PREFIX) - 1)
+    next_prefix = ROW_PREFIX[next_idx]
+
+    target_side = side
+    if random.random() < diag_prob:
+        side_idx = SIDES.index(side) if side in SIDES else 1
+        direction = random.choice([-1, 1])
+        new_idx = min(max(side_idx + direction, 0), len(SIDES) - 1)
+        target_side = SIDES[new_idx]
+
+    return make_zone(next_prefix, target_side)
+
 def next_zone(zone: str) -> str:
     """Return the next zone for a pass.
 
@@ -658,7 +681,9 @@ def simulate_one_action(match: Match) -> dict:
         opponent_team = get_opponent_team(match, possessing_team)
 
         if attempt_dribble:
-            target_zone = random_adjacent_zone(current_zone)
+            # Move forward keeping the same side most of the time,
+            # occasionally shifting diagonally left/right.
+            target_zone = forward_dribble_zone(current_zone)
             defender = choose_player(opponent_team, make_zone("DEF", zone_side(target_zone)), match=match)
             success_prob = dribble_success_probability(
                 current_player,
