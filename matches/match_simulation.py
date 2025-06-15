@@ -92,6 +92,12 @@ def zone_conditions(zone: str):
     zone_upper = zone.upper() # Приводим к верхнему регистру для надежности
     if zone_upper == "GK":
         return lambda p: p.position == "Goalkeeper"
+    elif zone_upper == "DEF-L":
+        return lambda p: p.position == "Left Back"
+    elif zone_upper == "DEF-R":
+        return lambda p: p.position == "Right Back"
+    elif zone_upper == "DEF-C":
+        return lambda p: p.position == "Center Back"
     elif zone_upper.startswith("DEF"):
         return lambda p: "Back" in p.position or "Defender" in p.position or p.position in ["CB", "LB", "RB"]
     elif zone_upper.startswith("DM") or zone_upper == "MID":
@@ -172,6 +178,12 @@ def choose_player(team: Club, zone: str, exclude_ids: set = None, match: Match =
         if zone != "ANY":
             condition = zone_conditions(zone)
             candidates = [p for p in available_players if condition(p)]
+            # If no one fits a specific defensive side/centre zone,
+            # fall back to any defender.
+            if not candidates and zone_upper := zone.upper():
+                if zone_upper in {"DEF-L", "DEF-C", "DEF-R"}:
+                    def_condition = zone_conditions("DEF")
+                    candidates = [p for p in available_players if def_condition(p)]
 
         if candidates:
             # Weighted choice by positioning for most zones. Previously this
