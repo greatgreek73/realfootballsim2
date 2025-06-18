@@ -4,7 +4,7 @@ TEMPLATES = {
     'goal': [
         "ГОЛ!!! {shooter} ({team})! Счёт: {home}-{away}",
         "{shooter} из команды {team} наносит удар! На табло {home}-{away}.",
-        "Мяч в сетке! {shooter} забивает за {team}. Счёт теперь {home}-{away}.",
+        "Мяч в сетке! Гол! {shooter} забивает за {team}. Счёт теперь {home}-{away}.",
     ],
     'shot_miss': [
         "{shooter} бьёт, но мимо ворот.",
