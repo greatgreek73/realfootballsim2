@@ -547,10 +547,24 @@ def long_shot_success_probability(shooter: Player, goalkeeper: Player | None, *,
     return clamp((base + bonus - penalty) * stamina_factor * morale_factor * momentum_factor)
 
 
-def foul_probability(tackler: Player, dribbler: Player) -> float:
+def foul_probability(tackler: Player, dribbler: Player, zone: str | None = None) -> float:
+    """Return probability that ``tackler`` fouls ``dribbler`` in ``zone``."""
     base = 0.05
     diff = tackler.tackling - dribbler.dribbling
-    return clamp(base + diff / 200)
+
+    # Players with a high work rate tend to press harder, committing more fouls
+    work_rate_bonus = tackler.work_rate / 300
+
+    # Tired players are more prone to commit fouls
+    stamina_penalty = (100 - tackler.stamina) / 200
+
+    zone_bonus = 0.0
+    if zone and zone_prefix(zone) in {"DEF", "DM"}:
+        # Defensive areas see slightly rougher challenges
+        zone_bonus = 0.1
+
+    probability = base + diff / 200 + work_rate_bonus + stamina_penalty + zone_bonus
+    return clamp(probability)
 
 
 def dribble_success_probability(dribbler: Player, defender: Player | None, *, momentum: int = 0) -> float:
@@ -719,7 +733,7 @@ def simulate_one_action(match: Match) -> dict:
                 match.current_zone = target_zone
                 # ball remains with current_player
                 if defender:
-                    foul_chance = foul_probability(defender, current_player)
+                    foul_chance = foul_probability(defender, current_player, target_zone)
                     if random.random() < foul_chance:
                         match.st_fouls += 1
                         foul_event = {
@@ -735,6 +749,7 @@ def simulate_one_action(match: Match) -> dict:
                                 zone=target_zone,
                             ),
                         }
+                        process_injury(match)
                         return {
                             'event': dribble_event,
                             'additional_event': foul_event,
@@ -819,7 +834,7 @@ def simulate_one_action(match: Match) -> dict:
                 # После паса возможен фол
                 fouler = choose_player(opponent_team, "ANY", match=match)
                 if fouler:
-                    foul_chance = foul_probability(fouler, recipient)
+                    foul_chance = foul_probability(fouler, recipient, target_zone)
                     if random.random() < foul_chance:
                         match.st_fouls += 1
                         foul_event = {
@@ -835,6 +850,7 @@ def simulate_one_action(match: Match) -> dict:
                                 zone=target_zone,
                             ),
                         }
+                        process_injury(match)
                         return {
                             'event': event_data,
                             'additional_event': foul_event,
