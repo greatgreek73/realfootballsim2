@@ -180,7 +180,7 @@ def choose_player(team: Club, zone: str, exclude_ids: set = None, match: Match =
             candidates = [p for p in available_players if condition(p)]
             # If no one fits a specific defensive side/centre zone,
             # fall back to any defender.
-            if not candidates and zone_upper := zone.upper():
+            if not candidates and (zone_upper := zone.upper()):
                 if zone_upper in {"DEF-L", "DEF-C", "DEF-R"}:
                     def_condition = zone_conditions("DEF")
                     candidates = [p for p in available_players if def_condition(p)]
