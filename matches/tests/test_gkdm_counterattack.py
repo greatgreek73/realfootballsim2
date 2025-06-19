@@ -93,8 +93,10 @@ class GKAllZonesCounterattackTests(TestCase):
 
                 debug_msg = (
                     f"[DEBUG] Пас GK → {tz}. "
-                    f"Контратака: {result.get('additional_event', {}).get('event_type') == 'counterattack'}"
+                    f"Интерцепт: {result.get('additional_event', {}).get('event_type')}"
+                    f", контратака: {result.get('second_additional_event', {}).get('event_type')}"
                 )
                 print(debug_msg)
 
-                self.assertEqual(result["additional_event"]["event_type"], "counterattack")
+                self.assertEqual(result["additional_event"]["event_type"], "interception")
+                self.assertEqual(result["second_additional_event"]["event_type"], "counterattack")
