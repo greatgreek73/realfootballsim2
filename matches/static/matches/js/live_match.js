@@ -239,14 +239,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // если событие есть — выводим
                 if (d.events && Array.isArray(d.events) && d.events.length > 0) {
-                    const ev = d.events[0];
-                    addEventToList(ev);
-
-                    // обновляем счёт только при голе
-                    if (ev.event_type === 'goal') {
-                        if (d.home_score !== undefined) homeScoreElement.textContent = d.home_score;
-                        if (d.away_score !== undefined) awayScoreElement.textContent = d.away_score;
-                    }
+                    d.events.forEach(ev => {
+                        addEventToList(ev);
+                        if (ev.event_type === 'goal') {
+                            if (d.home_score !== undefined) homeScoreElement.textContent = d.home_score;
+                            if (d.away_score !== undefined) awayScoreElement.textContent = d.away_score;
+                        }
+                    });
                 }
 
                 // время

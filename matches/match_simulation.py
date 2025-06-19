@@ -895,18 +895,29 @@ def simulate_one_action(match: Match) -> dict:
                         (zone_prefix(current_zone) == "GK" and zone_prefix(target_zone) == "DM")
                     )
 
-                    interception_type = 'counterattack' if special_counter else 'interception'
                     interception_event = {
                         'match': match,
                         'minute': match.current_minute,
-                        'event_type': interception_type,
+                        'event_type': 'interception',
                         'player': interceptor,
                         'related_player': current_player,
                         'description': render_comment(
-                            interception_type if special_counter else 'interception',
+                            'interception',
                             interceptor=interceptor.last_name,
                             player=current_player.last_name,
                             zone=target_zone,
+                        ),
+                    }
+
+                    counterattack_event = {
+                        'match': match,
+                        'minute': match.current_minute,
+                        'event_type': 'counterattack',
+                        'player': interceptor,
+                        'related_player': current_player,
+                        'description': render_comment(
+                            'counterattack',
+                            interceptor=interceptor.last_name,
                         ),
                     }
 
@@ -918,6 +929,7 @@ def simulate_one_action(match: Match) -> dict:
                             return {
                                 'event': pass_event,
                                 'additional_event': interception_event,
+                                'second_additional_event': counterattack_event,
                                 'action_type': 'counterattack',
                                 'continue': True
                             }
@@ -969,7 +981,8 @@ def simulate_one_action(match: Match) -> dict:
                                 return {
                                     'event': pass_event,
                                     'additional_event': interception_event,
-                                    'second_additional_event': shot_event,
+                                    'second_additional_event': counterattack_event,
+                                    'third_additional_event': shot_event,
                                     'action_type': 'counterattack',
                                     'continue': False
                                 }
@@ -1018,7 +1031,8 @@ def simulate_one_action(match: Match) -> dict:
                                     return {
                                         'event': pass_event,
                                         'additional_event': interception_event,
-                                        'second_additional_event': counter_pass_event,
+                                        'second_additional_event': counterattack_event,
+                                        'third_additional_event': counter_pass_event,
                                         'action_type': 'counterattack',
                                         'continue': True
                                     }
@@ -1061,7 +1075,8 @@ def simulate_one_action(match: Match) -> dict:
                                         return {
                                             'event': pass_event,
                                             'additional_event': interception_event,
-                                            'second_additional_event': interception2_event,
+                                            'second_additional_event': counterattack_event,
+                                            'third_additional_event': interception2_event,
                                             'action_type': 'counterattack',
                                             'continue': False
                                         }
@@ -1071,6 +1086,7 @@ def simulate_one_action(match: Match) -> dict:
                                         return {
                                             'event': pass_event,
                                             'additional_event': interception_event,
+                                            'second_additional_event': counterattack_event,
                                             'action_type': 'counterattack',
                                             'continue': True
                                         }
