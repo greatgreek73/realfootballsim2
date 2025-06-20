@@ -777,6 +777,9 @@ def simulate_one_action(match: Match) -> dict:
                             zone=target_zone,
                         ),
                     }
+                    # Trigger a counterattack if the ball is stolen during a
+                    # dribble in the defending or defensive midfield zone
+                    counterattack_on_dribble = zone_prefix(target_zone) in {"DEF", "DM"}
                     # Counterattack even on failed dribbles in DEF/DM zones
                     special_counter_dribble = zone_prefix(target_zone) in {"DEF", "DM"}
 
@@ -799,6 +802,7 @@ def simulate_one_action(match: Match) -> dict:
                         ),
                     }
 
+                    if counterattack_on_dribble:
                     if special_counter_dribble:
                         return {
                             'event': dribble_event,
