@@ -5,6 +5,7 @@
 
 // --- Переменные верхнего уровня ------------------------------------------------
 let matchId = null;            // устанавливается после DOMContentLoaded
+const EVENT_DELAY_MS = 1000;
 
 // --- Утилита получение CSRF ----------------------------------------------------
 function getCookie(name) {
@@ -147,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Добавление события в лог ---------------------------------------------
-    function addEventToList(evt) {
+function addEventToList(evt) {
         if (!eventsBox) return;
 
         const sig = `${evt.minute}-${evt.event_type}-${evt.description}`;
@@ -190,6 +191,29 @@ document.addEventListener('DOMContentLoaded', () => {
         // анимация
         requestAnimationFrame(() =>
             requestAnimationFrame(() => div.classList.add('new-event-visible')));
+    }
+
+    const eventQueue = [];
+    let processingQueue = false;
+
+    function processQueue() {
+        if (eventQueue.length === 0) {
+            processingQueue = false;
+            return;
+        }
+        processingQueue = true;
+        const item = eventQueue.shift();
+        addEventToList(item.event);
+        if (item.event.event_type === 'goal') {
+            if (item.data.home_score !== undefined) homeScoreElement.textContent = item.data.home_score;
+            if (item.data.away_score !== undefined) awayScoreElement.textContent = item.data.away_score;
+        }
+        setTimeout(processQueue, EVENT_DELAY_MS);
+    }
+
+    function enqueueEvents(events, data) {
+        events.forEach(ev => eventQueue.push({event: ev, data: data}));
+        if (!processingQueue) processQueue();
     }
 
     // --- WebSocket -------------------------------------------------------------
@@ -239,13 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // если событие есть — выводим
                 if (d.events && Array.isArray(d.events) && d.events.length > 0) {
-                    d.events.forEach(ev => {
-                        addEventToList(ev);
-                        if (ev.event_type === 'goal') {
-                            if (d.home_score !== undefined) homeScoreElement.textContent = d.home_score;
-                            if (d.away_score !== undefined) awayScoreElement.textContent = d.away_score;
-                        }
-                    });
+                    enqueueEvents(d.events, d);
                 }
 
                 // время
