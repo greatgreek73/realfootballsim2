@@ -51,3 +51,23 @@ class DribbleInterceptionTests(TestCase):
         self.assertEqual(result["action_type"], "interception")
         self.assertEqual(self.match.current_zone, "DEF-R")
         self.assertEqual(self.match.current_player_with_ball, self.defender)
+
+    def test_failed_dribble_triggers_counterattack_in_dm(self):
+        """Counterattack event is generated when interception happens in DM."""
+        with patch("matches.match_simulation.forward_dribble_zone", return_value="DM-R"):
+            with patch("matches.match_simulation.choose_player", side_effect=self.choose_mock):
+                with patch("matches.match_simulation.random.random", side_effect=[0.0, 0.9]):
+                    with patch("matches.match_simulation.dribble_success_probability", return_value=0.0):
+                        result = simulate_one_action(self.match)
+        self.assertEqual(result["second_additional_event"]["event_type"], "counterattack")
+        self.assertEqual(result["action_type"], "counterattack")
+
+    def test_failed_dribble_triggers_counterattack_in_def(self):
+        """Counterattack when the ball is lost in DEF zone."""
+        with patch("matches.match_simulation.forward_dribble_zone", return_value="DEF-R"):
+            with patch("matches.match_simulation.choose_player", side_effect=self.choose_mock):
+                with patch("matches.match_simulation.random.random", side_effect=[0.0, 0.9]):
+                    with patch("matches.match_simulation.dribble_success_probability", return_value=0.0):
+                        result = simulate_one_action(self.match)
+        self.assertEqual(result["second_additional_event"]["event_type"], "counterattack")
+        self.assertEqual(result["action_type"], "counterattack")

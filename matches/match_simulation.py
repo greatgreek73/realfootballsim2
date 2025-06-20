@@ -777,18 +777,44 @@ def simulate_one_action(match: Match) -> dict:
                             zone=target_zone,
                         ),
                     }
+                    # Trigger a counterattack if the ball is stolen during a
+                    # dribble in the defending or defensive midfield zone
+                    counterattack_on_dribble = zone_prefix(target_zone) in {"DEF", "DM"}
+
                     new_defender = choose_player(opponent_team, make_zone("DEF", zone_side(target_zone)), match=match)
                     if new_defender:
                         match.current_player_with_ball = new_defender
                     else:
                         match.current_player_with_ball = defender
                     match.current_zone = make_zone("DEF", zone_side(target_zone))
-                    return {
-                        'event': dribble_event,
-                        'additional_event': interception_event,
-                        'action_type': 'interception',
-                        'continue': False,
+
+                    counterattack_event = {
+                        'match': match,
+                        'minute': match.current_minute,
+                        'event_type': 'counterattack',
+                        'player': defender,
+                        'related_player': current_player,
+                        'description': render_comment(
+                            'counterattack',
+                            interceptor=defender.last_name,
+                        ),
                     }
+
+                    if counterattack_on_dribble:
+                        return {
+                            'event': dribble_event,
+                            'additional_event': interception_event,
+                            'second_additional_event': counterattack_event,
+                            'action_type': 'counterattack',
+                            'continue': True,
+                        }
+                    else:
+                        return {
+                            'event': dribble_event,
+                            'additional_event': interception_event,
+                            'action_type': 'interception',
+                            'continue': False,
+                        }
                 else:
                     return {
                         'event': dribble_event,
