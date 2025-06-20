@@ -129,7 +129,7 @@ def mirrored_zone(zone: str) -> str:
     side = zone_side(zone)
     mirror_map = {
         "GK": make_zone("FWD", "C"),
-        "DEF": make_zone("AM", side),
+        "DEF": make_zone("FWD", side),
         "DM": make_zone("AM", side),
         "MID": make_zone("MID", side),
         "AM": make_zone("DM", side),
