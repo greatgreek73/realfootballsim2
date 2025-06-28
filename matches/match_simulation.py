@@ -119,7 +119,7 @@ def zone_conditions(zone: str):
     elif zone_upper == "WING":
          return lambda p: p.position in ["LW", "RW", "LM", "RM"]
     elif zone_upper.startswith("FWD"):
-        return lambda p: "Forward" in p.position or "Striker" in p.position or p.position == "ST" or p.position == "CF"
+        return lambda p: p.position == "Center Forward"
     else: # 'ANY' или неизвестная зона
         return lambda p: True
 
@@ -754,7 +754,7 @@ def simulate_one_action(match: Match) -> dict:
                             'event': dribble_event,
                             'additional_event': foul_event,
                             'action_type': 'dribble',
-                            'continue': True,
+                            'continue': False,
                         }
 
                 return {
@@ -803,14 +803,14 @@ def simulate_one_action(match: Match) -> dict:
                     }
 
                     if counterattack_on_dribble:
-                    if special_counter_dribble:
-                        return {
-                            'event': dribble_event,
-                            'additional_event': interception_event,
-                            'second_additional_event': counterattack_event,
-                            'action_type': 'counterattack',
-                            'continue': True,
-                        }
+                        if special_counter_dribble:
+                            return {
+                                'event': dribble_event,
+                                'additional_event': interception_event,
+                                'second_additional_event': counterattack_event,
+                                'action_type': 'counterattack',
+                                'continue': True,
+                            }
                     else:
                         return {
                             'event': dribble_event,
@@ -884,7 +884,7 @@ def simulate_one_action(match: Match) -> dict:
                             'event': event_data,
                             'additional_event': foul_event,
                             'action_type': 'pass',
-                            'continue': True,
+                            'continue': False,
                         }
 
                 return {
