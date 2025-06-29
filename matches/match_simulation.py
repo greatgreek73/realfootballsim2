@@ -123,10 +123,14 @@ def zone_conditions(zone: str):
     else: # 'ANY' или неизвестная зона
         return lambda p: True
 
-def mirrored_zone(zone: str) -> str:
-    """Return the zone on the pitch where an opponent would most likely intercept."""
+def mirrored_zone(zone: str, *, flip_side: bool = False) -> str:
+    """Return the zone on the pitch where an opponent would most likely intercept.
+
+    If ``flip_side`` is True the opposite flank is used when creating the mapped
+    zone.
+    """
     prefix = zone_prefix(zone)
-    side = zone_side(zone)
+    side = mirror_side(zone_side(zone)) if flip_side else zone_side(zone)
     mirror_map = {
         "GK": make_zone("FWD", "C"),
         "DEF": make_zone("FWD", side),
@@ -208,9 +212,9 @@ def choose_players(team: Club, zone: str, exclude_ids: set = None) -> list[Playe
     if not team:
         logger.error("choose_players called with None team")
         return []
-    if exclude_ids is None: 
+    if exclude_ids is None:
         exclude_ids = set()
-        
+
     try:
         players = team.player_set.all()
         condition = zone_conditions(zone)
@@ -219,6 +223,16 @@ def choose_players(team: Club, zone: str, exclude_ids: set = None) -> list[Playe
     except Exception as e:
         logger.error(f"Failed to get players for choose_players (team {team.id}): {e}")
         return []
+
+def choose_player_from_zones(team: Club, zones: list[str], *, exclude_ids: set | None = None, match: Match | None = None) -> tuple[Player | None, str | None]:
+    """Iterate over ``zones`` and return the first available player and the zone used."""
+    if exclude_ids is None:
+        exclude_ids = set()
+    for zone in zones:
+        player = choose_player(team, zone, exclude_ids=exclude_ids, match=match)
+        if player:
+            return player, zone
+    return None, None
 
 def get_opponent_team(match: Match, possessing_team: Club) -> Club:
     """Возвращает команду-соперника."""
@@ -356,6 +370,10 @@ def zone_prefix(zone: str) -> str:
 def zone_side(zone: str) -> str:
     parts = zone.split("-")
     return parts[1] if len(parts) > 1 else "C"
+
+def mirror_side(side: str) -> str:
+    """Return the opposite side (L<->R) leaving centre unchanged."""
+    return {"L": "R", "R": "L", "C": "C"}.get(side, "C")
 
 def make_zone(prefix: str, side: str) -> str:
     if prefix == "GK":
@@ -710,7 +728,14 @@ def simulate_one_action(match: Match) -> dict:
             # Move forward keeping the same side most of the time,
             # occasionally shifting diagonally left/right.
             target_zone = forward_dribble_zone(current_zone)
-            defender = choose_player(opponent_team, make_zone("DEF", zone_side(target_zone)), match=match)
+            intercept_zone = mirrored_zone(target_zone, flip_side=True)
+            zones = [
+                intercept_zone,
+                make_zone("FWD", mirror_side(zone_side(target_zone))),
+                make_zone("MID", mirror_side(zone_side(target_zone))),
+                make_zone("MID", "C"),
+            ]
+            defender, def_zone = choose_player_from_zones(opponent_team, zones, match=match)
             success_prob = dribble_success_probability(
                 current_player,
                 defender,
@@ -783,12 +808,13 @@ def simulate_one_action(match: Match) -> dict:
                     # Counterattack even on failed dribbles in DEF/DM zones
                     special_counter_dribble = zone_prefix(target_zone) in {"DEF", "DM"}
 
-                    new_defender = choose_player(opponent_team, make_zone("DEF", zone_side(target_zone)), match=match)
+                    new_defender, new_zone = choose_player_from_zones(opponent_team, zones, match=match)
                     if new_defender:
                         match.current_player_with_ball = new_defender
+                        match.current_zone = new_zone
                     else:
                         match.current_player_with_ball = defender
-                    match.current_zone = make_zone("DEF", zone_side(target_zone))
+                        match.current_zone = def_zone
 
                     counterattack_event = {
                         'match': match,
@@ -896,10 +922,16 @@ def simulate_one_action(match: Match) -> dict:
                 # Неудачный пас и возможный перехват
                 opponent_team = get_opponent_team(match, possessing_team)
                 # Determine where the ball would likely be intercepted.
-                # Use the zone of the intended target so interceptions from
-                # long passes happen closer to their destination.
-                intercept_zone = mirrored_zone(target_zone)
-                interceptor = choose_player(opponent_team, intercept_zone, match=match)
+                intercept_zone = mirrored_zone(target_zone, flip_side=True)
+                zones = [
+                    intercept_zone,
+                    make_zone("FWD", mirror_side(zone_side(target_zone))),
+                    make_zone("MID", mirror_side(zone_side(target_zone))),
+                    make_zone("MID", "C"),
+                ]
+                interceptor, used_zone = choose_player_from_zones(
+                    opponent_team, zones, match=match
+                )
 
                 # Событие попытки паса
                 pass_event = {
