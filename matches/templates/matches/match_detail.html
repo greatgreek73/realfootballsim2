@@ -93,6 +93,32 @@
                         </div>
                     </div>
 
+                    <div id="pitch" class="my-3">
+                        <div class="zone" data-zone="GK"></div>
+                        <div class="zone" data-zone="GK"></div>
+                        <div class="zone" data-zone="GK"></div>
+
+                        <div class="zone" data-zone="DEF-L">DEF‑L</div>
+                        <div class="zone" data-zone="DEF-C">DEF‑C</div>
+                        <div class="zone" data-zone="DEF-R">DEF‑R</div>
+
+                        <div class="zone" data-zone="DM-L">DM‑L</div>
+                        <div class="zone" data-zone="DM-C">DM‑C</div>
+                        <div class="zone" data-zone="DM-R">DM‑R</div>
+
+                        <div class="zone" data-zone="MID-L">MID‑L</div>
+                        <div class="zone" data-zone="MID-C">MID‑C</div>
+                        <div class="zone" data-zone="MID-R">MID‑R</div>
+
+                        <div class="zone" data-zone="AM-L">AM‑L</div>
+                        <div class="zone" data-zone="AM-C">AM‑C</div>
+                        <div class="zone" data-zone="AM-R">AM‑R</div>
+
+                        <div class="zone" data-zone="FWD-L">FWD‑L</div>
+                        <div class="zone" data-zone="FWD-C">FWD‑C</div>
+                        <div class="zone" data-zone="FWD-R">FWD‑R</div>
+                    </div>
+
                     <!-- Кнопка Replay, если матч завершён -->
                     {% if match.status == 'finished' %}
                     <div class="text-center mb-3"> {# Центрируем кнопку #}
@@ -416,6 +442,39 @@
     .table-sm th, .table-sm td {
         padding: 0.4rem;
         font-size: 0.9em;
+    }
+
+    /* Pitch visualization */
+    #pitch {
+        width: 100%;
+        max-width: 600px;
+        height: 350px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(6, 1fr);
+        background: #228B22;
+        border: 2px solid #fff;
+        position: relative;
+    }
+    #pitch .zone {
+        border: 1px solid #fff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #fff;
+        position: relative;
+        font-size: 12px;
+    }
+    #pitch .zone.active {
+        background: rgba(255,255,0,0.4);
+    }
+    #pitch .event-icon {
+        position: absolute;
+        font-size: 20px;
+        top: 2px;
+        right: 2px;
+        pointer-events: none;
     }
 </style>
 
