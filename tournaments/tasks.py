@@ -113,6 +113,7 @@ def simulate_active_matches(self):
                                 "st_injury": match_locked.st_injury,
                                 "home_momentum": match_locked.home_momentum,
                                 "away_momentum": match_locked.away_momentum,
+                                "current_zone": match_locked.current_zone,
                                 "events": [event_data],
                                 "partial_update": True,
                                 "action_based": True  # Новый флаг для пошаговой симуляции
@@ -156,6 +157,7 @@ def simulate_active_matches(self):
                                 "st_injury": match_locked.st_injury,
                                 "home_momentum": match_locked.home_momentum,
                                 "away_momentum": match_locked.away_momentum,
+                                "current_zone": match_locked.current_zone,
                                 "events": [add_event_data],
                                 "partial_update": True,
                                 "action_based": True
@@ -194,6 +196,7 @@ def simulate_active_matches(self):
                                 "st_injury": match_locked.st_injury,
                                 "home_momentum": match_locked.home_momentum,
                                 "away_momentum": match_locked.away_momentum,
+                                "current_zone": match_locked.current_zone,
                                 "events": [add_event_data2],
                                 "partial_update": True,
                                 "action_based": True
@@ -232,6 +235,7 @@ def simulate_active_matches(self):
                                 "st_injury": match_locked.st_injury,
                                 "home_momentum": match_locked.home_momentum,
                                 "away_momentum": match_locked.away_momentum,
+                                "current_zone": match_locked.current_zone,
                                 "events": [add_event_data3],
                                 "partial_update": True,
                                 "action_based": True
@@ -636,6 +640,7 @@ def advance_match_minutes():
                         "st_injury": match.st_injury,
                         "home_momentum": match.home_momentum,
                         "away_momentum": match.away_momentum,
+                        "current_zone": match.current_zone,
                         "events": [info_event_data],
                         "partial_update": True,
                         "action_based": True,
