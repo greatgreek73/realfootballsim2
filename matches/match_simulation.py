@@ -431,11 +431,8 @@ def forward_dribble_zone(zone: str, diag_prob: float = 0.1) -> str:
 def next_zone(zone: str) -> str:
     """Return the next zone for a pass.
 
-    60% of the time the ball moves forward keeping the same side.
-    Otherwise it can be played into any other zone.  When selecting a
-    non-forward option the function first looks at neighbouring zones
-    (representing a short pass) and falls back to a completely random
-    zone for longer distributions.
+    The ball always moves forward in the same column. There is no
+    sideways or backward option.
     """
 
     prefix = zone_prefix(zone)
@@ -448,42 +445,7 @@ def next_zone(zone: str) -> str:
         "AM": "FWD",
         "FWD": "FWD",
     }
-    forward_zone = make_zone(next_map.get(prefix, prefix), side)
-
-    # 60% chance to move the ball forward as before
-    if random.random() < 0.6:
-        return forward_zone
-
-    # Determine adjacent zones (same or neighbouring row/side)
-    row_idx = ROW_INDEX.get(prefix, 0)
-    side_idx = SIDES.index(side) if side in SIDES else 1
-    adjacent: list[str] = []
-    for dr in (-1, 0, 1):
-        for ds in (-1, 0, 1):
-            if dr == 0 and ds == 0:
-                continue
-            r = row_idx + dr
-            if r < 0 or r >= len(ROW_PREFIX):
-                continue
-            if ROW_PREFIX[r] == "GK":
-                candidate = "GK"
-            else:
-                s_idx = side_idx + ds
-                if s_idx < 0 or s_idx >= len(SIDES):
-                    continue
-                candidate = make_zone(ROW_PREFIX[r], SIDES[s_idx])
-            if candidate != zone and candidate in ZONE_GRID:
-                adjacent.append(candidate)
-
-    random.shuffle(adjacent)
-
-    # 50% chance to attempt a short pass to a neighbouring zone
-    if adjacent and random.random() < 0.5:
-        return adjacent[0]
-
-    # Otherwise pick any other zone (long pass)
-    remaining = [z for z in ZONE_GRID if z != zone]
-    return random.choice(remaining) if remaining else forward_zone
+    return make_zone(next_map.get(prefix, prefix), side)
 
 
 def pass_success_probability(
