@@ -36,7 +36,8 @@ class DribbleInterceptionTests(TestCase):
         self.match.save()
 
     def choose_mock(self, team, zone, exclude_ids=None, match=None):
-        if team == self.away and zone == "DEF-R":
+        intercept_zones = {"AM-L", "FWD-L", "MID-L", "MID-C"}
+        if team == self.away and zone in intercept_zones:
             return self.defender
         if team == self.home and zone == "DM-C":
             return self.dribbler
@@ -49,7 +50,7 @@ class DribbleInterceptionTests(TestCase):
                     with patch("matches.match_simulation.dribble_success_probability", return_value=0.0):
                         result = simulate_one_action(self.match)
         self.assertEqual(result["action_type"], "interception")
-        self.assertEqual(self.match.current_zone, "DEF-R")
+        self.assertEqual(self.match.current_zone, "AM-L")
         self.assertEqual(self.match.current_player_with_ball, self.defender)
 
     def test_failed_dribble_triggers_counterattack_in_dm(self):
