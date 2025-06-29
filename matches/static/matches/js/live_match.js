@@ -77,6 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const awayMomentumValue  = document.getElementById('awayMomentumValue');
     const injuryActionForm   = document.querySelector('#matchUserAction-inj');
     const nextMinuteBtn      = document.getElementById('nextMinuteBtn');
+    const pitchEl            = document.getElementById('pitch');
 
     // --- Защитные проверки на наличие ключевых узлов --------------------------
     if (!timeElement)      console.error('Element #matchTime not found!');
@@ -92,6 +93,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // Показ сообщений пользователю (упрощённое, выводит в консоль)
     function showMessage(text, type = 'info') {
         console.log(`MESSAGE (${type}): ${text}`);
+    }
+
+    function highlight(zoneName) {
+        if (!pitchEl) return;
+        document.querySelectorAll('#pitch .zone').forEach(z => {
+            if (z.dataset.zone === zoneName) z.classList.add('active');
+            else z.classList.remove('active');
+        });
+    }
+
+    function showIcon(zoneName, type) {
+        if (!pitchEl) return;
+        const icons = {
+            goal: '⚽', shot: '⚽', shot_miss: '❌', pass: '➡️',
+            interception: '🔄', foul: '⚠️', counterattack: '⚡', dribble: '↕️'
+        };
+        const cell = document.querySelector(`#pitch .zone[data-zone="${zoneName}"]`);
+        if (!cell) return;
+        let ico = cell.querySelector('.event-icon');
+        if (!ico) {
+            ico = document.createElement('span');
+            ico.className = 'event-icon';
+            cell.appendChild(ico);
+        }
+        ico.textContent = icons[type] || '';
+        clearTimeout(ico._timer);
+        ico._timer = setTimeout(() => ico.remove(), 2000);
     }
 
     // Обновление HTML‑иконки и числа моментума
@@ -204,6 +232,10 @@ function addEventToList(evt) {
         processingQueue = true;
         const item = eventQueue.shift();
         addEventToList(item.event);
+        if (item.data.current_zone) {
+            highlight(item.data.current_zone);
+            showIcon(item.data.current_zone, item.event.event_type);
+        }
         if (item.event.event_type === 'goal') {
             if (item.data.home_score !== undefined) homeScoreElement.textContent = item.data.home_score;
             if (item.data.away_score !== undefined) awayScoreElement.textContent = item.data.away_score;
@@ -246,6 +278,7 @@ function addEventToList(evt) {
             const msg  = JSON.parse(e.data);
             if (msg.type !== 'match_update' || !msg.data) return;
             const d = msg.data;
+            if (d.current_zone) highlight(d.current_zone);
             console.log('WS data:', d);
 
             // 1) Первое сообщение: полный стейт + история
