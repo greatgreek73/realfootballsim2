@@ -64,6 +64,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let   currentStatus   = initialStatus;
     const isLive          = initialStatus === 'in_progress';
 
+    // Добавлено: ID команд для маппинга possessing_team
+    const homeTeamId = parseInt(matchInfoArea.dataset.homeTeamId);
+    const awayTeamId = parseInt(matchInfoArea.dataset.awayTeamId);
+
     // DOM‑элементы, используемые повторно
     const timeElement        = document.getElementById('matchTime');
     const homeScoreElement   = document.querySelector('.home-score');
@@ -95,21 +99,70 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`MESSAGE (${type}): ${text}`);
     }
 
-    function highlight(zoneName) {
-        if (!pitchEl) return;
+    // Маппинг абстрактных зон на физические (с зеркалированием)
+    const homeZoneMap = {
+        'GK': 'goal-left',
+        'DEF-R': 'left-def-top',
+        'DEF-C': 'left-def-middle',
+        'DEF-L': 'left-def-bottom',
+        'DM-R': 'left-dm-top',
+        'DM-C': 'left-dm-middle',
+        'DM-L': 'left-dm-bottom',
+        'MID-R': 'left-mid-top',
+        'MID-C': 'left-mid-middle',
+        'MID-L': 'left-mid-bottom',
+        'AM-R': 'right-am-top',
+        'AM-C': 'right-am-middle',
+        'AM-L': 'right-am-bottom',
+        'FWD-R': 'right-def-top',
+        'FWD-C': 'right-def-middle',
+        'FWD-L': 'right-def-bottom',
+    };
+
+    const awayZoneMap = {
+        'GK': 'goal-right',
+        'DEF-L': 'right-def-top',
+        'DEF-C': 'right-def-middle',
+        'DEF-R': 'right-def-bottom',
+        'DM-L': 'right-am-top',
+        'DM-C': 'right-am-middle',
+        'DM-R': 'right-am-bottom',
+        'MID-L': 'right-mid-top',
+        'MID-C': 'right-mid-middle',
+        'MID-R': 'right-mid-bottom',
+        'AM-L': 'left-mid-top',
+        'AM-C': 'left-mid-middle',
+        'AM-R': 'left-mid-bottom',
+        'FWD-L': 'left-def-top',
+        'FWD-C': 'left-def-middle',
+        'FWD-R': 'left-def-bottom',
+    };
+
+    // Функция для получения физической зоны
+    function getPhysicalZone(abstractZone, possessingTeamId) {
+        if (!abstractZone || possessingTeamId === undefined) return null;
+        const isHome = possessingTeamId === homeTeamId;
+        const map = isHome ? homeZoneMap : awayZoneMap;
+        const key = abstractZone.toUpperCase();
+        return map[key] || null;
+    }
+
+    // Выделение зоны (теперь работает с физической зоной)
+    function highlight(physicalZone) {
+        if (!pitchEl || !physicalZone) return;
         document.querySelectorAll('#pitch .zone').forEach(z => {
-            if (z.dataset.zone === zoneName) z.classList.add('active');
-            else z.classList.remove('active');
+            z.classList.toggle('active', z.dataset.zone === physicalZone);
         });
     }
 
-    function showIcon(zoneName, type) {
-        if (!pitchEl) return;
+    // Показ иконки события в зоне (теперь с физической зоной)
+    function showIcon(physicalZone, type) {
+        if (!pitchEl || !physicalZone) return;
         const icons = {
             goal: '⚽', shot: '⚽', shot_miss: '❌', pass: '➡️',
             interception: '🔄', foul: '⚠️', counterattack: '⚡', dribble: '↕️'
         };
-        const cell = document.querySelector(`#pitch .zone[data-zone="${zoneName}"]`);
+        const cell = document.querySelector(`#pitch .zone[data-zone="${physicalZone}"]`);
         if (!cell) return;
         let ico = cell.querySelector('.event-icon');
         if (!ico) {
@@ -122,22 +175,40 @@ document.addEventListener('DOMContentLoaded', () => {
         ico._timer = setTimeout(() => ico.remove(), 2000);
     }
 
-    // Обновление HTML‑иконки и числа моментума
     function setMomentum(iconEl, value, valueEl) {
-        if (!iconEl) return;
-        iconEl.className = 'momentum-icon';
-
-        let icon = '😐';
-        if      (value >= 75)  { icon = '🌟'; iconEl.classList.add('momentum-unstoppable'); }
-        else if (value >= 50)  { icon = '🔥'; iconEl.classList.add('momentum-hot'); }
-        else if (value >= 25)  { icon = '💪'; iconEl.classList.add('momentum-positive'); }
-        else if (value <= -75) { icon = '😱'; iconEl.classList.add('momentum-panic'); }
-        else if (value <= -50) { icon = '💔'; iconEl.classList.add('momentum-demoralized'); }
-        else if (value <= -25) { icon = '😰'; iconEl.classList.add('momentum-nervous'); }
-        else                   { icon = '😐'; iconEl.classList.add('momentum-neutral'); }
-
-        iconEl.textContent = icon;
+        // Обновляем значение (если элемент есть)
         if (valueEl) valueEl.textContent = value;
+
+        // Обновляем иконку в зависимости от диапазона
+        if (!iconEl) return;
+
+        iconEl.classList.remove(
+            'momentum-neutral', 'momentum-positive', 'momentum-hot',
+            'momentum-unstoppable', 'momentum-nervous', 'momentum-demoralized', 'momentum-panic'
+        );
+
+        if (value >= -10 && value <= 10) {
+            iconEl.classList.add('momentum-neutral');
+            iconEl.textContent = '😐';
+        } else if (value > 10 && value <= 30) {
+            iconEl.classList.add('momentum-positive');
+            iconEl.textContent = '😊';
+        } else if (value > 30 && value <= 60) {
+            iconEl.classList.add('momentum-hot');
+            iconEl.textContent = '🔥';
+        } else if (value > 60) {
+            iconEl.classList.add('momentum-unstoppable');
+            iconEl.textContent = '🚀';
+        } else if (value < -10 && value >= -30) {
+            iconEl.classList.add('momentum-nervous');
+            iconEl.textContent = '😟';
+        } else if (value < -30 && value >= -60) {
+            iconEl.classList.add('momentum-demoralized');
+            iconEl.textContent = '😢';
+        } else if (value < -60) {
+            iconEl.classList.add('momentum-panic');
+            iconEl.textContent = '😱';
+        }
     }
 
     function updateMomentum(data) {
@@ -147,78 +218,75 @@ document.addEventListener('DOMContentLoaded', () => {
             setMomentum(awayMomentumIcon, data.away_momentum, awayMomentumValue);
     }
 
-    // --- Обновление статистики -------------------------------------------------
     function updateStatistics(data) {
         if (!statBox) return;
 
-        const passesSpan      = statBox.querySelector('.stat-passes');
-        const shootsSpan      = statBox.querySelector('.stat-shoots');
-        const possessionsSpan = statBox.querySelector('.stat-possessions');
-        const foulsSpan       = statBox.querySelector('.stat-fouls');
-        const injuriesSpan    = statBox.querySelector('.stat-injuries');
-        const injCounterEl    = document.getElementById('inj');
+        // Обновляем статистику по классам
+        const statMap = {
+            'st_passes': 'stat-passes',
+            'st_shoots': 'stat-shoots',
+            'st_possessions': 'stat-possessions',
+            'st_fouls': 'stat-fouls',
+            'st_injury': 'stat-injuries'
+        };
 
-        if (passesSpan      && data.st_passes      !== undefined) passesSpan.textContent      = data.st_passes;
-        if (shootsSpan      && data.st_shoots      !== undefined) shootsSpan.textContent      = data.st_shoots;
-        if (possessionsSpan && data.st_possessions !== undefined) possessionsSpan.textContent = data.st_possessions;
-        if (foulsSpan       && data.st_fouls       !== undefined) foulsSpan.textContent       = data.st_fouls;
-        if (injuriesSpan    && data.st_injury      !== undefined) injuriesSpan.textContent    = data.st_injury;
-        if (injCounterEl    && data.st_injury      !== undefined) injCounterEl.textContent    = data.st_injury;
+        for (const [dataKey, className] of Object.entries(statMap)) {
+            if (data[dataKey] !== undefined) {
+                const element = statBox.querySelector(`.${className}`);
+                if (element) {
+                    element.textContent = data[dataKey];
+                }
+            }
+        }
 
-        // всплывающая форма реагирования на травму
-        if (injCounterEl && injuryActionForm && data.st_injury !== undefined) {
-            const oldVal = parseInt(injCounterEl.innerText) || 0;
-            if (oldVal !== data.st_injury) {
+        // Специальная обработка для травм
+        if (data.st_injury !== undefined && injuryActionForm) {
+            const injuryBadge = document.getElementById('inj');
+            if (injuryBadge) injuryBadge.textContent = data.st_injury;
+            
+            // Показываем форму замены только для команды пользователя
+            const userClubId = parseInt(document.querySelector('[data-user-club-id]')?.dataset.userClubId || '0');
+            if (data.st_injury > 0 && (userClubId === homeTeamId || userClubId === awayTeamId)) {
                 injuryActionForm.style.display = 'block';
-                injuryActionForm.classList.add('display-action');
             }
         }
     }
 
-    // --- Добавление события в лог ---------------------------------------------
-function addEventToList(evt) {
+    function addEventToList(evt) {
         if (!eventsBox) return;
 
-        const sig = `${evt.minute}-${evt.event_type}-${evt.description}`;
-        window.processedEvents = window.processedEvents || new Set();
-        if (window.processedEvents.has(sig)) return;
-        window.processedEvents.add(sig);
+        const item = document.createElement('div');
+        item.className = 'list-group-item new-event';
 
-        const div = document.createElement('div');
-        div.className = 'list-group-item new-event';
-
-        const icons = {
-            goal: ' ⚽ ', counterattack: ' ⚡ ', interception: ' 🔄 ',
-            shot_miss: ' ❌ ', pass: ' ➡ ', foul: ' ⚠ ',
-            injury_concern: ' ✚ ', yellow_card: ' 🟨 ', red_card: ' 🟥 ',
-            substitution: ' ⇆ ', match_start: ' ▶ ', match_end: ' ⏹ ',
-            match_paused: ' ⏸ ', info: ' ⓘ '
+        // Иконка события
+        const iconMap = {
+            goal: '⚽', counterattack: '⚡', interception: '🔄',
+            shot_miss: '❌', pass: '➡️', foul: '⚠️', injury_concern: '✚'
         };
-        const icon = icons[evt.event_type] || ' M ';
+        const icon = iconMap[evt.event_type] || 'M';
 
-        let playerInfo = evt.player_name ? ` (${evt.player_name})` : '';
-        if (evt.related_player_name)
-            playerInfo += ` -> ${evt.related_player_name}`;
+        // Формируем HTML события
+        let html = `<strong>${evt.minute}'</strong> <span class="event-icon">${icon}</span> ${evt.description}`;
+        
+        // Добавляем информацию об игроках
+        if (evt.player_name) {
+            html += ` <small class="text-muted">(${evt.player_name}`;
+            if (evt.related_player_name) {
+                html += ` → ${evt.related_player_name}`;
+            }
+            html += `)</small>`;
+        }
 
-        div.innerHTML = `
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>${evt.minute}'</strong>
-                    <span class="event-icon">${icon}</span>
-                    ${evt.description}
-                    <small class="text-muted">${playerInfo}</small>
-                </div>
-            </div>`;
+        item.innerHTML = html;
 
-        eventsBox.prepend(div);
+        // Добавляем в начало списка и анимируем
+        eventsBox.insertBefore(item, eventsBox.firstChild);
+        requestAnimationFrame(() => {
+            item.classList.add('new-event-visible');
+        });
 
-        // ограничиваем лог 100 строками
-        while (eventsBox.children.length > 100)
-            eventsBox.removeChild(eventsBox.lastChild);
-
-        // анимация
-        requestAnimationFrame(() =>
-            requestAnimationFrame(() => div.classList.add('new-event-visible')));
+        // Прокручиваем к новому событию
+        eventsContainer.scrollTop = 0;
     }
 
     const eventQueue = [];
@@ -232,9 +300,13 @@ function addEventToList(evt) {
         processingQueue = true;
         const item = eventQueue.shift();
         addEventToList(item.event);
-        if (item.data.current_zone) {
-            highlight(item.data.current_zone);
-            showIcon(item.data.current_zone, item.event.event_type);
+        // Добавлено: маппинг и выделение/иконка с учетом possessing_team
+        if (item.data.current_zone && item.data.possessing_team_id !== undefined) {
+            const physical = getPhysicalZone(item.data.current_zone, item.data.possessing_team_id);
+            if (physical) {
+                highlight(physical);
+                showIcon(physical, item.event.event_type);
+            }
         }
         if (item.event.event_type === 'goal') {
             if (item.data.home_score !== undefined) homeScoreElement.textContent = item.data.home_score;
@@ -272,14 +344,18 @@ function addEventToList(evt) {
             showMessage('Connection lost. Match updates stopped.', 'warning');
     };
 
-    // ----------------------- ИСХОДНОЕ ИСПРАВЛЕННОЕ МЕСТО -----------------------
     socket.onmessage = e => {
         try {
             const msg  = JSON.parse(e.data);
             if (msg.type !== 'match_update' || !msg.data) return;
             const d = msg.data;
-            if (d.current_zone) highlight(d.current_zone);
             console.log('WS data:', d);
+
+            // Добавлено: выделение зоны при любом обновлении (если есть current_zone и possessing_team_id)
+            if (d.current_zone && d.possessing_team_id !== undefined) {
+                const physical = getPhysicalZone(d.current_zone, d.possessing_team_id);
+                if (physical) highlight(physical);
+            }
 
             // 1) Первое сообщение: полный стейт + история
             if (d.partial_update === undefined && Array.isArray(d.events)) {

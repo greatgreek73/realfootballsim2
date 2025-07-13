@@ -1,0 +1,277 @@
+/* matches/static/matches/css/match_detail.css */
+
+/* Общие стили для pitch */
+.pitch {
+    display: grid !important;
+    grid-template-columns: repeat(8, minmax(50px, 1fr)) !important;
+    grid-template-rows: repeat(3, 60px) !important;
+    gap: 2px !important;
+    background-color: #28a745 !important; /* Зеленый фон поля */
+    padding: 10px !important;
+    border: 2px solid #fff !important;
+    width: 100% !important;
+    max-width: 800px !important;
+    margin: 0 auto !important;
+    height: 200px !important; /* Фиксированная высота для лучшей видимости */
+    position: relative !important;
+    border-radius: 10px !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+}
+
+.zone {
+    background-color: #218838; /* Темно-зеленый для зон */
+    border: 1px solid #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.zone.active {
+    background-color: yellow;
+    color: #000;
+    box-shadow: 0 0 10px yellow;
+}
+
+.zone.goal {
+    font-size: 1rem;
+    background-color: #155724;
+}
+
+/* Иконки событий на поле */
+.zone .event-icon {
+    position: absolute;
+    font-size: 1.5rem;
+    z-index: 10;
+    animation: fadeOut 2s ease-in-out;
+}
+
+@keyframes fadeOut {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* Позиционирование зон через классы */
+.goal-left {
+    grid-column: 1;
+    grid-row: 1 / 4;
+}
+
+.left-def-top {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.left-def-middle {
+    grid-column: 2;
+    grid-row: 2;
+}
+
+.left-def-bottom {
+    grid-column: 2;
+    grid-row: 3;
+}
+
+.left-dm-top {
+    grid-column: 3;
+    grid-row: 1;
+}
+
+.left-dm-middle {
+    grid-column: 3;
+    grid-row: 2;
+}
+
+.left-dm-bottom {
+    grid-column: 3;
+    grid-row: 3;
+}
+
+.left-mid-top {
+    grid-column: 4;
+    grid-row: 1;
+}
+
+.left-mid-middle {
+    grid-column: 4;
+    grid-row: 2;
+}
+
+.left-mid-bottom {
+    grid-column: 4;
+    grid-row: 3;
+}
+
+.right-mid-top {
+    grid-column: 5;
+    grid-row: 1;
+}
+
+.right-mid-middle {
+    grid-column: 5;
+    grid-row: 2;
+}
+
+.right-mid-bottom {
+    grid-column: 5;
+    grid-row: 3;
+}
+
+.right-am-top {
+    grid-column: 6;
+    grid-row: 1;
+}
+
+.right-am-middle {
+    grid-column: 6;
+    grid-row: 2;
+}
+
+.right-am-bottom {
+    grid-column: 6;
+    grid-row: 3;
+}
+
+.right-def-top {
+    grid-column: 7;
+    grid-row: 1;
+}
+
+.right-def-middle {
+    grid-column: 7;
+    grid-row: 2;
+}
+
+.right-def-bottom {
+    grid-column: 7;
+    grid-row: 3;
+}
+
+.goal-right {
+    grid-column: 8;
+    grid-row: 1 / 4;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .pitch {
+        grid-template-columns: repeat(8, minmax(40px, 1fr));
+        grid-template-rows: repeat(3, 50px);
+        height: 160px;
+        overflow-x: auto;
+    }
+}
+
+/* Стили для счета */
+.score-box {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    background-color: #343a40;
+    color: white;
+    font-weight: bold;
+    border-radius: 0.25rem;
+    min-width: 40px;
+    text-align: center;
+}
+
+.score-separator {
+    margin: 0 0.5rem;
+    font-weight: bold;
+}
+
+.match-time {
+    font-size: 0.9em;
+}
+
+/* Стили для лога событий */
+.event-log {
+    height: 300px;
+    overflow-y: auto;
+    border: 1px solid #eee;
+    border-radius: 0.25rem;
+    padding: 0;
+}
+
+.events-box .list-group-item {
+    border: none;
+    border-bottom: 1px dashed #eee;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+}
+
+.events-box .list-group-item:last-child {
+    border-bottom: none;
+}
+
+/* Исправление для иконок в логе событий */
+.events-box .event-icon {
+    margin-right: 10px; /* Отступ между иконкой и текстом */
+    font-size: 1.2rem;
+    position: static; /* Убираем absolute, чтобы не наплывало */
+    z-index: auto;
+    animation: none; /* Убираем анимацию для иконок в логе */
+}
+
+/* Анимация появления нового события */
+.new-event {
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+}
+
+.new-event-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Статистика */
+.stat-box .list-group-item {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9em;
+    border: none;
+    border-bottom: 1px solid #eee;
+}
+
+.stat-box .list-group-item:last-child {
+    border-bottom: none;
+}
+
+/* Momentum indicators */
+.momentum-icon {
+    font-size: 1.4rem;
+    transition: color 0.3s ease;
+}
+
+.momentum-neutral { color: #6c757d; }
+.momentum-positive { color: #28a745; }
+.momentum-hot { color: #0d6efd; }
+.momentum-unstoppable { color: #ffc107; }
+.momentum-nervous { color: #fd7e14; }
+.momentum-demoralized { color: #dc3545; }
+.momentum-panic { color: #721c24; }
+
+.momentum-value {
+    font-weight: bold;
+    margin-left: 0.25rem;
+}
+
+/* Форма реакции на травму */
+.matchUserAction {
+    border: 1px solid #dc3545;
+    border-radius: 0.25rem;
+}
+
+.display-action {
+    display: block !important;
+}
+
+/* Стили для таблицы составов */
+.table-sm th, .table-sm td {
+    padding: 0.4rem;
+    font-size: 0.9em;
+}

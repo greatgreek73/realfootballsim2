@@ -11,6 +11,8 @@
                  id="matchInfoArea"
                  data-match-id="{{ match.id }}"
                  data-match-status="{{ match.status }}"
+                 data-home-team-id="{{ match.home_team.id }}"
+                 data-away-team-id="{{ match.away_team.id }}"
                  data-minute-seconds="{{ match_minute_seconds }}">
                 <div class="card-header bg-light"> {# Светлый фон заголовка #}
                     <div class="d-flex justify-content-between align-items-center flex-wrap"> {# flex-wrap для мобильных #}
@@ -93,30 +95,42 @@
                         </div>
                     </div>
 
-                    <div id="pitch" class="my-3">
-                        <div class="zone" data-zone="GK"></div>
-                        <div class="zone" data-zone="GK"></div>
-                        <div class="zone" data-zone="GK"></div>
+                    <div id="pitch" class="pitch" style="display: grid !important; grid-template-columns: repeat(8, 1fr) !important; grid-template-rows: repeat(3, 60px) !important; background-color: #28a745 !important; min-height: 200px !important; border: 2px solid #fff !important; padding: 10px !important;">
+                        <!-- Левая цель (Home GK / Away FWD area) -->
+                        <div class="zone goal goal-left" data-zone="goal-left"></div>
 
-                        <div class="zone" data-zone="DEF-L">DEF‑L</div>
-                        <div class="zone" data-zone="DEF-C">DEF‑C</div>
-                        <div class="zone" data-zone="DEF-R">DEF‑R</div>
+                        <!-- Left def (home DEF / away FWD) -->
+                        <div class="zone left-def-top" data-zone="left-def-top"></div>
+                        <div class="zone left-def-middle" data-zone="left-def-middle"></div>
+                        <div class="zone left-def-bottom" data-zone="left-def-bottom"></div>
 
-                        <div class="zone" data-zone="DM-L">DM‑L</div>
-                        <div class="zone" data-zone="DM-C">DM‑C</div>
-                        <div class="zone" data-zone="DM-R">DM‑R</div>
+                        <!-- Left dm (home DM / away AM) -->
+                        <div class="zone left-dm-top" data-zone="left-dm-top"></div>
+                        <div class="zone left-dm-middle" data-zone="left-dm-middle"></div>
+                        <div class="zone left-dm-bottom" data-zone="left-dm-bottom"></div>
 
-                        <div class="zone" data-zone="MID-L">MID‑L</div>
-                        <div class="zone" data-zone="MID-C">MID‑C</div>
-                        <div class="zone" data-zone="MID-R">MID‑R</div>
+                        <!-- Left mid (home MID / away AM or MID) -->
+                        <div class="zone left-mid-top" data-zone="left-mid-top"></div>
+                        <div class="zone left-mid-middle" data-zone="left-mid-middle"></div>
+                        <div class="zone left-mid-bottom" data-zone="left-mid-bottom"></div>
 
-                        <div class="zone" data-zone="AM-L">AM‑L</div>
-                        <div class="zone" data-zone="AM-C">AM‑C</div>
-                        <div class="zone" data-zone="AM-R">AM‑R</div>
+                        <!-- Right mid (away MID / home AM or MID) -->
+                        <div class="zone right-mid-top" data-zone="right-mid-top"></div>
+                        <div class="zone right-mid-middle" data-zone="right-mid-middle"></div>
+                        <div class="zone right-mid-bottom" data-zone="right-mid-bottom"></div>
 
-                        <div class="zone" data-zone="FWD-L">FWD‑L</div>
-                        <div class="zone" data-zone="FWD-C">FWD‑C</div>
-                        <div class="zone" data-zone="FWD-R">FWD‑R</div>
+                        <!-- Right am (home AM / away DM) -->
+                        <div class="zone right-am-top" data-zone="right-am-top"></div>
+                        <div class="zone right-am-middle" data-zone="right-am-middle"></div>
+                        <div class="zone right-am-bottom" data-zone="right-am-bottom"></div>
+
+                        <!-- Right def (home FWD / away DEF) -->
+                        <div class="zone right-def-top" data-zone="right-def-top"></div>
+                        <div class="zone right-def-middle" data-zone="right-def-middle"></div>
+                        <div class="zone right-def-bottom" data-zone="right-def-bottom"></div>
+
+                        <!-- Правая цель (Away GK / Home FWD area) -->
+                        <div class="zone goal goal-right" data-zone="goal-right"></div>
                     </div>
 
                     <!-- Кнопка Replay, если матч завершён -->
@@ -347,138 +361,6 @@
 {% endblock %}
 
 
-{% block extra_css %} {# Используем отдельный блок для стилей #}
-<style>
-    .score-box {
-        display: inline-block;
-        padding: 0.3rem 0.8rem;
-        background-color: #343a40; /* Темный фон */
-        color: white;
-        font-weight: bold;
-        border-radius: 0.25rem;
-        min-width: 40px; /* Минимальная ширина для выравнивания */
-        text-align: center;
-    }
-    .score-separator {
-        margin: 0 0.5rem;
-        font-weight: bold;
-    }
-    .match-time {
-        font-size: 0.9em;
-    }
-    .event-log {
-        height: 300px; /* Задаем высоту для скролла */
-        overflow-y: auto; /* Включаем вертикальный скролл */
-        border: 1px solid #eee;
-        border-radius: 0.25rem;
-        padding: 0; /* Убираем padding у контейнера */
-    }
-    .events-box .list-group-item {
-        border: none; /* Убираем границы у элементов */
-        border-bottom: 1px dashed #eee; /* Добавляем пунктир */
-        padding: 0.5rem 0.75rem; /* Уменьшаем padding */
-        font-size: 0.9em;
-    }
-     .events-box .list-group-item:last-child {
-         border-bottom: none; /* Убираем границу у последнего */
-     }
-
-    /* Стили для анимации появления нового события */
-    .new-event {
-        opacity: 0;
-        transform: translateY(-10px); /* Начинаем чуть выше */
-        transition: opacity 0.4s ease-out, transform 0.4s ease-out;
-    }
-    .new-event-visible {
-        opacity: 1;
-        transform: translateY(0);
-    }
-
-    /* Статистика */
-    .stat-box .list-group-item {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.9em;
-         border: none;
-         border-bottom: 1px solid #eee;
-    }
-    .stat-box .list-group-item:last-child {
-         border-bottom: none;
-     }
-
-    /* Momentum indicators */
-    .momentum-icon {
-        font-size: 1.4rem;
-        transition: color 0.3s ease;
-    }
-    .momentum-neutral { color: #6c757d; }
-    .momentum-positive { color: #28a745; }
-    .momentum-hot { color: #0d6efd; }
-    .momentum-unstoppable { color: #ffc107; }
-    .momentum-nervous { color: #fd7e14; }
-    .momentum-demoralized { color: #dc3545; }
-    .momentum-panic { color: #721c24; }
-    .momentum-value {
-        font-weight: bold;
-        margin-left: 0.25rem;
-    }
-
-    /* Форма реакции на травму */
-    .matchUserAction {
-        /* display: none; */ /* Скрыто по умолчанию, JS будет показывать */
-        /* position: fixed; */ /* Убрали fixed, будет в потоке */
-        /* width:50%; */ /* Убрали фикс. ширину */
-        /* height: 300px; */ /* Убрали фикс. высоту */
-        /* background-color: silver; */ /* Используем стили card */
-        /* z-index:9; */
-        /* padding:12px; */
-        border: 1px solid #dc3545; /* Красная рамка */
-        border-radius: 0.25rem;
-    }
-    .display-action { /* Класс для показа формы */
-        display: block !important; /* Важно, чтобы перекрыть style="display: none;" */
-    }
-
-    /* Стили для таблицы составов */
-    .table-sm th, .table-sm td {
-        padding: 0.4rem;
-        font-size: 0.9em;
-    }
-
-    /* Pitch visualization */
-    #pitch {
-        width: 100%;
-        max-width: 600px;
-        height: 350px;
-        margin: 0 auto;
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        grid-template-rows: repeat(6, 1fr);
-        background: #228B22;
-        border: 2px solid #fff;
-        position: relative;
-    }
-    #pitch .zone {
-        border: 1px solid #fff;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        color: #fff;
-        position: relative;
-        font-size: 12px;
-    }
-    #pitch .zone.active {
-        background: rgba(255,255,0,0.4);
-    }
-    #pitch .event-icon {
-        position: absolute;
-        font-size: 20px;
-        top: 2px;
-        right: 2px;
-        pointer-events: none;
-    }
-</style>
-
-{# Подключение Font Awesome (если нужно для иконок) - добавьте в base.html #}
-{# <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"> #}
-
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'matches/css/match_detail.css' %}?v=2">
 {% endblock %}
