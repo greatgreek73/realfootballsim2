@@ -75,6 +75,12 @@ def simulate_active_matches(self):
                 
                 result = simulate_one_action(match_locked)
 
+                possessing_team_id = None
+                if match_locked.possession_indicator == 1:
+                    possessing_team_id = str(match_locked.home_team_id)
+                elif match_locked.possession_indicator == 2:
+                    possessing_team_id = str(match_locked.away_team_id)
+
                 # Если действие завершает атаку, ждём следующей минуты
                 if result.get('continue', True) is False:
                     match_locked.waiting_for_next_minute = True
@@ -97,6 +103,7 @@ def simulate_active_matches(self):
                             "player_name": f"{event.player.first_name} {event.player.last_name}" if event.player else "",
                             "related_player_name": f"{event.related_player.first_name} {event.related_player.last_name}" if event.related_player else ""
                         }
+
                         
                         message_payload = {
                             "type": "match_update",
@@ -114,6 +121,7 @@ def simulate_active_matches(self):
                                 "home_momentum": match_locked.home_momentum,
                                 "away_momentum": match_locked.away_momentum,
                                 "current_zone": match_locked.current_zone,
+                                "possessing_team_id": possessing_team_id,
                                 "events": [event_data],
                                 "partial_update": True,
                                 "action_based": True  # Новый флаг для пошаговой симуляции
@@ -158,6 +166,7 @@ def simulate_active_matches(self):
                                 "home_momentum": match_locked.home_momentum,
                                 "away_momentum": match_locked.away_momentum,
                                 "current_zone": match_locked.current_zone,
+                                "possessing_team_id": possessing_team_id,
                                 "events": [add_event_data],
                                 "partial_update": True,
                                 "action_based": True
@@ -197,6 +206,7 @@ def simulate_active_matches(self):
                                 "home_momentum": match_locked.home_momentum,
                                 "away_momentum": match_locked.away_momentum,
                                 "current_zone": match_locked.current_zone,
+                                "possessing_team_id": possessing_team_id,
                                 "events": [add_event_data2],
                                 "partial_update": True,
                                 "action_based": True
@@ -236,6 +246,7 @@ def simulate_active_matches(self):
                                 "home_momentum": match_locked.home_momentum,
                                 "away_momentum": match_locked.away_momentum,
                                 "current_zone": match_locked.current_zone,
+                                "possessing_team_id": possessing_team_id,
                                 "events": [add_event_data3],
                                 "partial_update": True,
                                 "action_based": True
@@ -625,6 +636,12 @@ def advance_match_minutes():
                     "related_player_name": "",
                 }
 
+                possessing_team_id = None
+                if match.possession_indicator == 1:
+                    possessing_team_id = str(match.home_team_id)
+                elif match.possession_indicator == 2:
+                    possessing_team_id = str(match.away_team_id)
+
                 payload = {
                     "type": "match_update",
                     "data": {
@@ -641,6 +658,7 @@ def advance_match_minutes():
                         "home_momentum": match.home_momentum,
                         "away_momentum": match.away_momentum,
                         "current_zone": match.current_zone,
+                        "possessing_team_id": possessing_team_id,
                         "events": [info_event_data],
                         "partial_update": True,
                         "action_based": True,
