@@ -90,44 +90,26 @@
     grid-row: 3;
 }
 
-.left-mid-top {
+
+/* Central midfield zone */
+.central-left {
     grid-column: 4;
-    grid-row: 1;
-}
-
-
-/* Central midfield zone (used by both teams) */
-.mid-center,
-.left-mid-middle,
-.right-mid-middle {
-    grid-column: 4 / span 2;
     grid-row: 2;
 }
 
-.left-mid-bottom {
-    grid-column: 4;
-    grid-row: 3;
+.central-center {
+    grid-column: 5;
+    grid-row: 2;
 }
 
-.right-mid-top {
-    grid-column: 5;
-    grid-row: 1;
-}
-
-
-.right-mid-bottom {
-    grid-column: 5;
-    grid-row: 3;
+.central-right {
+    grid-column: 6;
+    grid-row: 2;
 }
 
 .right-am-top {
     grid-column: 6;
     grid-row: 1;
-}
-
-.right-am-middle {
-    grid-column: 6;
-    grid-row: 2;
 }
 
 .right-am-bottom {
