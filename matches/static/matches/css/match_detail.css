@@ -3,7 +3,7 @@
 /* Общие стили для pitch */
 .pitch {
     display: grid !important;
-    grid-template-columns: repeat(8, minmax(50px, 1fr)) !important;
+    grid-template-columns: repeat(7, minmax(50px, 1fr)) !important;
     grid-template-rows: repeat(3, 60px) !important;
     gap: 2px !important;
     background-color: #28a745 !important; /* Зеленый фон поля */
@@ -90,75 +90,62 @@
     grid-row: 3;
 }
 
-.left-mid-top {
+
+/* Center mid zones shared by both teams */
+.center-mid-top {
     grid-column: 4;
     grid-row: 1;
 }
 
-.left-mid-middle {
+.center-mid-middle {
     grid-column: 4;
     grid-row: 2;
 }
 
-.left-mid-bottom {
+.center-mid-bottom {
     grid-column: 4;
-    grid-row: 3;
-}
-
-.right-mid-top {
-    grid-column: 5;
-    grid-row: 1;
-}
-
-.right-mid-middle {
-    grid-column: 5;
-    grid-row: 2;
-}
-
-.right-mid-bottom {
-    grid-column: 5;
     grid-row: 3;
 }
 
 .right-am-top {
-    grid-column: 6;
+    grid-column: 5;
     grid-row: 1;
 }
 
 .right-am-middle {
-    grid-column: 6;
+    grid-column: 5;
     grid-row: 2;
 }
 
 .right-am-bottom {
-    grid-column: 6;
+    grid-column: 5;
     grid-row: 3;
 }
 
 .right-def-top {
-    grid-column: 7;
+    grid-column: 6;
     grid-row: 1;
 }
 
 .right-def-middle {
-    grid-column: 7;
+    grid-column: 6;
     grid-row: 2;
 }
 
 .right-def-bottom {
-    grid-column: 7;
+    grid-column: 6;
     grid-row: 3;
 }
 
 .goal-right {
-    grid-column: 8;
+    grid-column: 7;
     grid-row: 1 / 4;
 }
 
 /* Адаптивность */
 @media (max-width: 768px) {
     .pitch {
-        grid-template-columns: repeat(8, minmax(40px, 1fr));
+        grid-template-columns: repeat(7, minmax(40px, 1fr));
         grid-template-rows: repeat(3, 50px);
         height: 160px;
         overflow-x: auto;
