@@ -141,7 +141,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Функция для получения физической зоны
     function getPhysicalZone(abstractZone, possessingTeamId) {
         if (!abstractZone || possessingTeamId === undefined) return null;
-        const isHome = possessingTeamId === homeTeamId;
+        const teamId = parseInt(possessingTeamId);
+        const isHome = !isNaN(teamId) && teamId === homeTeamId;
         const map = isHome ? homeZoneMap : awayZoneMap;
         const key = abstractZone.toUpperCase();
         return map[key] || null;
