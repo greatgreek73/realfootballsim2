@@ -349,6 +349,26 @@ def get_team_momentum(match: Match, team: Club) -> int:
     return 0
 
 
+def update_possession(match: Match, player: Player | None, zone: str | None = None) -> None:
+    """Update match possession details.
+
+    Sets the current player with the ball and zone (if provided) and updates
+    ``match.possession_indicator`` based on the player's club.
+    """
+    match.current_player_with_ball = player
+    if zone is not None:
+        match.current_zone = zone
+
+    if not player:
+        match.possession_indicator = 0
+    elif player.club_id == match.home_team_id:
+        match.possession_indicator = 1
+    elif player.club_id == match.away_team_id:
+        match.possession_indicator = 2
+    else:
+        match.possession_indicator = 0
+
+
 # --- Expanded 16 zone grid ---
 ZONE_GRID = [
     "GK",
@@ -593,11 +613,9 @@ def simulate_one_action(match: Match) -> dict:
                 'action_type': 'error',
                 'continue': False
             }
-        match.current_player_with_ball = current_player
-        match.current_zone = "GK"
-    
-    # Обновляем индикатор владения
-    match.possession_indicator = 1 if possessing_team.id == match.home_team_id else 2
+        update_possession(match, current_player, "GK")
+
+    # Индикатор владения обновляется через update_possession
 
     opponent_team = get_opponent_team(match, possessing_team)
     update_momentum(match, possessing_team, 1)
@@ -654,8 +672,7 @@ def simulate_one_action(match: Match) -> dict:
         opponent_team = get_opponent_team(match, possessing_team)
         new_keeper = choose_player(opponent_team, "GK", match=match)
         if new_keeper:
-            match.current_player_with_ball = new_keeper
-            match.current_zone = "GK"
+            update_possession(match, new_keeper, "GK")
         
         return {
             'event': event_data,
@@ -717,7 +734,7 @@ def simulate_one_action(match: Match) -> dict:
             }
 
             if random.random() < success_prob:
-                match.current_zone = target_zone
+                update_possession(match, current_player, target_zone)
                 # ball remains with current_player
                 if defender:
                     foul_chance = foul_probability(defender, current_player, target_zone)
@@ -772,11 +789,9 @@ def simulate_one_action(match: Match) -> dict:
 
                     new_defender, new_zone = choose_player_from_zones(opponent_team, zones, match=match)
                     if new_defender:
-                        match.current_player_with_ball = new_defender
-                        match.current_zone = new_zone
+                        update_possession(match, new_defender, new_zone)
                     else:
-                        match.current_player_with_ball = defender
-                        match.current_zone = def_zone
+                        update_possession(match, defender, def_zone)
 
                     counterattack_event = {
                         'match': match,
@@ -845,8 +860,7 @@ def simulate_one_action(match: Match) -> dict:
                     )
                 }
 
-                match.current_player_with_ball = recipient
-                match.current_zone = target_zone
+                update_possession(match, recipient, target_zone)
 
                 # После паса возможен фол
                 fouler = choose_player(opponent_team, "ANY", match=match)
@@ -945,10 +959,10 @@ def simulate_one_action(match: Match) -> dict:
                     }
 
                     if special_counter:
-                        match.current_player_with_ball = interceptor
+                        update_possession(match, interceptor)
                         if zone_prefix(current_zone) == "GK" and zone_prefix(target_zone) == "DEF":
                             # Перехват в зоне защиты соперника – мгновенный пас вперёд
-                            match.current_zone = make_zone("FWD", zone_side(target_zone))
+                            update_possession(match, interceptor, make_zone("FWD", zone_side(target_zone)))
                             return {
                                 'event': pass_event,
                                 'additional_event': interception_event,
@@ -999,8 +1013,7 @@ def simulate_one_action(match: Match) -> dict:
 
                                 new_keeper = choose_player(possessing_team, "GK", match=match)
                                 if new_keeper:
-                                    match.current_player_with_ball = new_keeper
-                                    match.current_zone = "GK"
+                                    update_possession(match, new_keeper, "GK")
                                 return {
                                     'event': pass_event,
                                     'additional_event': interception_event,
@@ -1049,8 +1062,7 @@ def simulate_one_action(match: Match) -> dict:
                                             to_zone=f"FWD-{zone_side(target_zone)}",
                                         ),
                                     }
-                                    match.current_player_with_ball = recipient
-                                    match.current_zone = make_zone("FWD", zone_side(target_zone))
+                                    update_possession(match, recipient, make_zone("FWD", zone_side(target_zone)))
                                     return {
                                         'event': pass_event,
                                         'additional_event': interception_event,
@@ -1085,15 +1097,16 @@ def simulate_one_action(match: Match) -> dict:
                                             match=match,
                                         )
                                         if new_defender2:
-                                            match.current_player_with_ball = new_defender2
-                                            match.current_zone = make_zone(
-                                                "DEF",
-                                                zone_side(target_zone),
+                                            update_possession(
+                                                match,
+                                                new_defender2,
+                                                make_zone("DEF", zone_side(target_zone)),
                                             )
                                         else:
-                                            match.current_player_with_ball = fail_interceptor
-                                            match.current_zone = make_zone(
-                                                "DEF", zone_side(target_zone)
+                                            update_possession(
+                                                match,
+                                                fail_interceptor,
+                                                make_zone("DEF", zone_side(target_zone)),
                                             )
                                         return {
                                             'event': pass_event,
@@ -1104,8 +1117,11 @@ def simulate_one_action(match: Match) -> dict:
                                             'continue': False
                                         }
                                     else:
-                                        match.current_player_with_ball = interceptor
-                                        match.current_zone = make_zone("DM", zone_side(target_zone))
+                                        update_possession(
+                                            match,
+                                            interceptor,
+                                            make_zone("DM", zone_side(target_zone)),
+                                        )
                                         return {
                                             'event': pass_event,
                                             'additional_event': interception_event,
@@ -1121,13 +1137,17 @@ def simulate_one_action(match: Match) -> dict:
                         match=match,
                     )
                     if new_defender:
-                        match.current_player_with_ball = new_defender
-                        match.current_zone = make_zone(
-                            "DEF", zone_side(intercept_zone)
+                        update_possession(
+                            match,
+                            new_defender,
+                            make_zone("DEF", zone_side(intercept_zone)),
                         )
                     else:
-                        match.current_player_with_ball = interceptor
-                        match.current_zone = make_zone("DEF", zone_side(intercept_zone))
+                        update_possession(
+                            match,
+                            interceptor,
+                            make_zone("DEF", zone_side(intercept_zone)),
+                        )
 
                     return {
                         'event': pass_event,
