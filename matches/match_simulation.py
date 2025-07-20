@@ -462,16 +462,17 @@ def pass_success_probability(
     f_prefix = zone_prefix(from_zone)
     t_prefix = zone_prefix(to_zone)
     def_base = 0.6
+    # Реалистичные базовые вероятности с высокой точностью для безопасных зон
     if f_prefix == "GK" and t_prefix == "DEF":
-        def_base = 0.9
+        def_base = 0.998  # 99.8% - первый пас почти всегда успешен
     elif f_prefix == "DEF" and t_prefix == "DM":
-        def_base = 0.8
+        def_base = 0.92   # 92% - высокая надежность в своей зоне
     elif f_prefix == "DM" and t_prefix == "MID":
-        def_base = 0.75
+        def_base = 0.85   # 85% - средняя зона поля
     elif f_prefix == "MID" and t_prefix == "AM":
-        def_base = 0.7
+        def_base = 0.75   # 75% - приближение к опасной зоне
     elif f_prefix == "AM" and t_prefix == "FWD":
-        def_base = 0.65
+        def_base = 0.65   # 65% - финальная передача под давлением
     base = def_base
 
     if high:
@@ -484,7 +485,16 @@ def pass_success_probability(
 
     # Passing and vision continue to provide the main boost.  Values are in the
     # range 0-100 so the maximum bonus is around +1.0 when both stats are high.
-    bonus = (passer.passing + passer.vision) / 200
+    # Special handling for goalkeepers: use distribution and command instead
+    if passer.position == "Goalkeeper":
+        bonus = (passer.distribution + passer.command) / 200
+    else:
+        # Увеличиваем влияние навыков в атакующих зонах
+        if f_prefix in ["AM", "FWD"]:
+            # В атакующих зонах навыки имеют большее значение
+            bonus = (passer.passing + passer.vision) / 150  # Увеличено с /200
+        else:
+            bonus = (passer.passing + passer.vision) / 200
 
     # Receiver positioning also helps.  Unpositioned passes still have a chance
     # but we favour well‑positioned targets.
@@ -493,11 +503,29 @@ def pass_success_probability(
 
     penalty = 0
     if opponent:
-        # Reduce the weight of defensive skills so a single opponent does not
-        # negate a reasonable passing attempt quite as often.
-        penalty = (opponent.marking + opponent.tackling) / 400
+        # Специальное условие для первого паса вратарь→защитник
+        if f_prefix == "GK" and t_prefix == "DEF":
+            # Минимальный штраф для первого паса - перехваты очень редки
+            penalty = (opponent.marking + opponent.tackling) / 1200
+        # Градация штрафов по зонам: меньше давления в безопасных зонах
+        elif f_prefix in ["GK", "DEF"]:
+            # Минимальное давление в своей половине поля
+            penalty = (opponent.marking + opponent.tackling) / 800
+        elif f_prefix in ["DM", "MID"]:
+            # Среднее давление в центре поля
+            penalty = (opponent.marking + opponent.tackling) / 500
+        elif f_prefix in ["AM", "FWD"]:
+            # Максимальное давление в атакующей зоне
+            penalty = (opponent.marking + opponent.tackling) / 300
+        else:
+            # Базовое значение для других случаев
+            penalty = (opponent.marking + opponent.tackling) / 400
     stamina_factor = passer.stamina / 100
-    morale_factor = 0.5 + passer.morale / 200
+    # Специальная обработка морали для первого паса вратаря
+    if f_prefix == "GK" and t_prefix == "DEF" and passer.position == "Goalkeeper":
+        morale_factor = 0.95  # Высокая уверенность для первого паса
+    else:
+        morale_factor = 0.5 + passer.morale / 200
     momentum_factor = 1 + momentum / 200
     return clamp((base + bonus + rec_bonus + heading_bonus - penalty) * stamina_factor * morale_factor * momentum_factor)
 
