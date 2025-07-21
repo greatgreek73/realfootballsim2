@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python test:*)"
+      "Bash(python test:*)",
+      "Bash(./venv310/Scripts/python.exe:*)",
+      "Bash(source:*)",
+      "Bash(python manage.py:*)",
+      "Bash(venv310/Scripts/python.exe manage.py shell:*)"
     ],
     "deny": []
   }

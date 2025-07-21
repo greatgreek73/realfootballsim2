@@ -310,6 +310,282 @@ def ensure_match_lineup_set(match: Match, for_home: bool) -> bool:
              logger.exception(f"Error during lineup completion for {team.name}: {e}")
              return False
 
+# === СИСТЕМА МОРАЛИ ===
+
+# Базовые изменения морали от событий
+BASE_MORALE_EVENTS = {
+    'goal_scored': +12,        # Забил гол
+    'goal_conceded': -6,       # Пропустил гол (вся команда)
+    'goal_conceded_gk': -10,   # Пропустил гол (вратарь)
+    'assist': +8,              # Голевая передача
+    'successful_pass': +1,     # Успешный пас (при цепочке 3+)
+    'pass_intercepted': -3,    # Пас перехвачен
+    'dribble_success': +3,     # Удачный дриблинг
+    'dribble_failed': -2,      # Неудачный дриблинг
+    'foul_committed': -2,      # Совершил фол
+    'foul_suffered': +1,       # Пострадал от фола
+    'shot_saved_gk': +5,       # Вратарь отразил удар
+    'shot_miss': -4,           # Промах по воротам
+    'clean_sheet': +8,         # Чистый лист (защитники + вратарь)
+}
+
+# Контекстные множители по времени матча
+TIME_MULTIPLIERS = {
+    (1, 30): 1.0,     # 1-30 минута: обычное влияние
+    (31, 60): 1.1,    # 31-60 минута: чуть больше
+    (61, 75): 1.3,    # 61-75 минута: важное время
+    (76, 90): 1.6,    # 76-90 минута: решающие моменты
+}
+
+# Множители в зависимости от разности счета
+SCORE_DIFFERENCE_MULTIPLIERS = {
+    'equal': 1.2,           # Равный счет
+    'leading_1': 0.9,       # Ведем на 1
+    'leading_2+': 0.8,      # Ведем на 2+
+    'trailing_1': 1.3,      # Отстаем на 1
+    'trailing_2+': 1.5,     # Отстаем на 2+
+}
+
+# Множители по зонам поля
+ZONE_MULTIPLIERS = {
+    'GK': 0.8,          # Вратарская зона
+    'DEF': 0.9,         # Защитная зона
+    'DM': 1.0,          # Оборонительная средняя зона
+    'MID': 1.0,         # Центр поля
+    'AM': 1.1,          # Атакующая средняя зона
+    'FWD': 1.2,         # Атакующая зона
+}
+
+# Позиционные модификаторы реакций на события
+POSITION_MODIFIERS = {
+    'Goalkeeper': {
+        'goal_conceded': 2.0,        # Вратари сильнее страдают от голов
+        'goal_conceded_gk': 1.0,     # Базовый множитель для своих голов
+        'shot_saved_gk': 1.5,        # Больше радуются сейвам
+        'clean_sheet': 2.0,          # Очень ценят чистые листы
+        'default': 0.5,              # Слабо реагируют на общие события
+    },
+    'Center Back': {
+        'goal_conceded': 1.5,        # Защитники тоже страдают от голов
+        'successful_pass': 0.8,      # Меньше радуются пасам
+        'clean_sheet': 1.8,          # Ценят чистые листы
+        'default': 1.0,
+    },
+    'Right Back': {
+        'goal_conceded': 1.3,
+        'successful_pass': 0.9,
+        'clean_sheet': 1.5,
+        'default': 1.0,
+    },
+    'Left Back': {
+        'goal_conceded': 1.3,
+        'successful_pass': 0.9,
+        'clean_sheet': 1.5,
+        'default': 1.0,
+    },
+    'Defensive Midfielder': {
+        'successful_pass': 1.2,      # Полузащитники любят пасы
+        'pass_intercepted': 1.2,     # И расстраиваются от потерь
+        'assist': 1.1,
+        'default': 1.0,
+    },
+    'Central Midfielder': {
+        'successful_pass': 1.3,      # Полузащитники любят пасы
+        'pass_intercepted': 1.2,     # И расстраиваются от потерь
+        'assist': 1.2,               # Ценят голевые передачи
+        'default': 1.0,
+    },
+    'Right Midfielder': {
+        'successful_pass': 1.2,
+        'assist': 1.3,
+        'default': 1.0,
+    },
+    'Left Midfielder': {
+        'successful_pass': 1.2,
+        'assist': 1.3,
+        'default': 1.0,
+    },
+    'Attacking Midfielder': {
+        'goal_scored': 1.3,
+        'assist': 1.4,
+        'successful_pass': 1.2,
+        'default': 1.0,
+    },
+    'Center Forward': {
+        'goal_scored': 1.5,          # Нападающие живут голами
+        'assist': 1.3,               # И передачами
+        'shot_miss': 1.3,            # Сильно расстраиваются от промахов
+        'default': 1.0,
+    },
+}
+
+# Настройки восстановления морали
+RECOVERY_SETTINGS = {
+    'recovery_rate': 0.8,             # Восстановление за минуту
+    'max_deviation': 25,              # Максимальное отклонение от базы
+    'critical_threshold': 20,         # Порог для критически низкой морали
+    'excellent_threshold': 80,        # Порог для отличной морали
+}
+
+def get_time_multiplier(minute: int) -> float:
+    """Возвращает множитель в зависимости от времени матча."""
+    for (start, end), multiplier in TIME_MULTIPLIERS.items():
+        if start <= minute <= end:
+            return multiplier
+    return 1.0
+
+def get_score_multiplier(match: Match, team: Club) -> float:
+    """Возвращает множитель в зависимости от разности счета."""
+    home_score = match.home_score
+    away_score = match.away_score
+    
+    if team.id == match.home_team_id:
+        score_diff = home_score - away_score
+    else:
+        score_diff = away_score - home_score
+    
+    if score_diff == 0:
+        return SCORE_DIFFERENCE_MULTIPLIERS['equal']
+    elif score_diff == 1:
+        return SCORE_DIFFERENCE_MULTIPLIERS['leading_1']
+    elif score_diff >= 2:
+        return SCORE_DIFFERENCE_MULTIPLIERS['leading_2+']
+    elif score_diff == -1:
+        return SCORE_DIFFERENCE_MULTIPLIERS['trailing_1']
+    else:  # score_diff <= -2
+        return SCORE_DIFFERENCE_MULTIPLIERS['trailing_2+']
+
+def get_zone_multiplier(zone: str) -> float:
+    """Возвращает множитель в зависимости от зоны поля."""
+    zone_prefix_str = zone_prefix(zone)
+    return ZONE_MULTIPLIERS.get(zone_prefix_str, 1.0)
+
+def get_position_modifier(position: str, event_type: str) -> float:
+    """Возвращает позиционный модификатор для события."""
+    position_mods = POSITION_MODIFIERS.get(position, {})
+    return position_mods.get(event_type, position_mods.get('default', 1.0))
+
+def calculate_morale_change(player: Player, event_type: str, match: Match, zone: str = None) -> int:
+    """Рассчитывает изменение морали игрока от события."""
+    # Базовое изменение
+    base_change = BASE_MORALE_EVENTS.get(event_type, 0)
+    if base_change == 0:
+        return 0
+    
+    # Определяем команду игрока
+    if player.club_id == match.home_team_id:
+        team = match.home_team
+    elif player.club_id == match.away_team_id:
+        team = match.away_team
+    else:
+        return 0
+    
+    # Контекстные множители
+    time_mult = get_time_multiplier(match.current_minute)
+    score_mult = get_score_multiplier(match, team)
+    zone_mult = get_zone_multiplier(zone or match.current_zone)
+    
+    # Позиционный модификатор
+    position_mult = get_position_modifier(player.position, event_type)
+    
+    # Итоговое изменение
+    total_change = base_change * time_mult * score_mult * zone_mult * position_mult
+    
+    # Ограничение максимального изменения за событие
+    return clamp_int(int(total_change), -15, +15)
+
+def apply_morale_change(player: Player, change: int) -> None:
+    """Применяет изменение морали к игроку с ограничениями."""
+    if change == 0:
+        return
+    
+    new_morale = clamp_int(player.morale + change, 0, 100)
+    
+    # Логирование значительных изменений
+    if abs(change) >= 5:
+        logger.info(f"Morale change for {player.first_name} {player.last_name}: {player.morale} -> {new_morale} ({change:+d})")
+    
+    player.morale = new_morale
+    player.save(update_fields=['morale'])
+
+def process_morale_event(player: Player, event_type: str, match: Match, zone: str = None) -> None:
+    """Обрабатывает событие морали для игрока."""
+    change = calculate_morale_change(player, event_type, match, zone)
+    if change != 0:
+        apply_morale_change(player, change)
+
+def apply_team_morale_effect(team: Club, event_type: str, match: Match, exclude_player: Player = None) -> None:
+    """Применяет эффект морали ко всей команде (например, при голе)."""
+    try:
+        # Получаем состав команды
+        if team.id == match.home_team_id:
+            lineup = match.home_lineup
+        else:
+            lineup = match.away_lineup
+        
+        if not lineup:
+            return
+        
+        # Извлекаем ID игроков из состава
+        player_ids = []
+        for slot, player_val in lineup.items():
+            player_id = extract_player_id(player_val)
+            if player_id:
+                try:
+                    player_ids.append(int(player_id))
+                except Exception:
+                    continue
+        
+        # Применяем эффект ко всем игрокам команды
+        team_players = team.player_set.filter(id__in=player_ids)
+        for player in team_players:
+            if exclude_player and player.id == exclude_player.id:
+                continue
+            process_morale_event(player, event_type, match)
+            
+    except Exception as e:
+        logger.error(f"Error applying team morale effect for team {team.id}: {e}")
+
+def recover_morale_gradually(player: Player) -> None:
+    """Постепенно восстанавливает мораль игрока к базовому уровню."""
+    base_morale = player.base_morale
+    current_morale = player.morale
+    
+    if current_morale == base_morale:
+        return
+    
+    # Направление восстановления
+    if current_morale > base_morale:
+        recovery = -RECOVERY_SETTINGS['recovery_rate']
+    else:
+        recovery = RECOVERY_SETTINGS['recovery_rate']
+    
+    # Применяем восстановление
+    new_morale = current_morale + recovery
+    
+    # Не позволяем "перескочить" базовое значение
+    if (recovery > 0 and new_morale > base_morale) or (recovery < 0 and new_morale < base_morale):
+        new_morale = base_morale
+    
+    new_morale = clamp_int(int(new_morale), 0, 100)
+    
+    if new_morale != current_morale:
+        player.morale = new_morale
+        player.save(update_fields=['morale'])
+
+# Обновленные функции морали
+def decrease_morale(team: Club, player: Player, val: int, match: Match = None):
+    """Уменьшает мораль игрока (используется для совместимости)."""
+    if match:
+        change = -abs(val)
+        apply_morale_change(player, change)
+
+def increase_morale(team: Club, player: Player, val: int, match: Match = None):
+    """Увеличивает мораль игрока (используется для совместимости)."""
+    if match:
+        change = abs(val)
+        apply_morale_change(player, change)
+
 # Функции-заглушки
 def process_injury(match): logger.warning(f"Injury processing not implemented for match {match.id}")
 
@@ -317,12 +593,6 @@ def decrease_stamina(team, player, val):
     pass
 
 def increase_stamina(team, player, val):
-    pass
-
-def decrease_morale(team, player, val):
-    pass
-
-def increase_morale(team, player, val):
     pass
 
 # --- Probability helper functions ---
@@ -520,12 +790,15 @@ def pass_success_probability(
         else:
             # Базовое значение для других случаев
             penalty = (opponent.marking + opponent.tackling) / 400
-    stamina_factor = passer.stamina / 100
+    # Более сбалансированное влияние выносливости и морали
+    stamina_factor = 0.7 + (passer.stamina / 100) * 0.3  # от 0.7 до 1.0
+    
     # Специальная обработка морали для первого паса вратаря
     if f_prefix == "GK" and t_prefix == "DEF" and passer.position == "Goalkeeper":
         morale_factor = 0.95  # Высокая уверенность для первого паса
     else:
-        morale_factor = 0.5 + passer.morale / 200
+        morale_factor = 0.7 + passer.morale / 200  # от 0.7 до 1.2
+    
     momentum_factor = 1 + momentum / 200
     return clamp((base + bonus + rec_bonus + heading_bonus - penalty) * stamina_factor * morale_factor * momentum_factor)
 
@@ -536,8 +809,8 @@ def shot_success_probability(shooter: Player, goalkeeper: Player | None, *, mome
     penalty = 0
     if goalkeeper:
         penalty = (goalkeeper.reflexes + goalkeeper.handling + goalkeeper.positioning) / 300
-    stamina_factor = shooter.stamina / 100
-    morale_factor = 0.5 + shooter.morale / 200
+    stamina_factor = 0.7 + (shooter.stamina / 100) * 0.3
+    morale_factor = 0.7 + shooter.morale / 200
     momentum_factor = 1 + momentum / 200
     return clamp((base + bonus - penalty) * stamina_factor * morale_factor * momentum_factor)
 
@@ -549,8 +822,8 @@ def long_shot_success_probability(shooter: Player, goalkeeper: Player | None, *,
     penalty = 0
     if goalkeeper:
         penalty = (goalkeeper.reflexes + goalkeeper.handling + goalkeeper.positioning) / 300
-    stamina_factor = shooter.stamina / 100
-    morale_factor = 0.5 + shooter.morale / 200
+    stamina_factor = 0.7 + (shooter.stamina / 100) * 0.3
+    morale_factor = 0.7 + shooter.morale / 200
     momentum_factor = 1 + momentum / 200
     return clamp((base + bonus - penalty) * stamina_factor * morale_factor * momentum_factor)
 
@@ -582,8 +855,8 @@ def dribble_success_probability(dribbler: Player, defender: Player | None, *, mo
     penalty = 0
     if defender:
         penalty = (defender.tackling + defender.marking + defender.strength) / 300
-    stamina_factor = dribbler.stamina / 100
-    morale_factor = 0.5 + dribbler.morale / 200
+    stamina_factor = 0.8 + (dribbler.stamina / 100) * 0.2
+    morale_factor = 0.85 + dribbler.morale / 200
     momentum_factor = 1 + momentum / 200
     return clamp((base + bonus - penalty) * stamina_factor * morale_factor * momentum_factor)
 
@@ -653,6 +926,15 @@ def simulate_one_action(match: Match) -> dict:
             update_momentum(match, possessing_team, 25)
             update_momentum(match, opponent_team, -25)
             
+            # === СИСТЕМА МОРАЛИ: ГОЛ ===
+            # Бонус стрелку
+            process_morale_event(shooter, 'goal_scored', match, current_zone)
+            # Штраф команде соперника
+            apply_team_morale_effect(opponent_team, 'goal_conceded', match)
+            # Особый штраф вратарю соперника
+            if goalkeeper:
+                process_morale_event(goalkeeper, 'goal_conceded_gk', match, current_zone)
+            
             event_data = {
                 'match': match,
                 'minute': match.current_minute,
@@ -667,6 +949,12 @@ def simulate_one_action(match: Match) -> dict:
                 )
             }
         else:
+            # === СИСТЕМА МОРАЛИ: ПРОМАХ ===
+            process_morale_event(shooter, 'shot_miss', match, current_zone)
+            # Бонус вратарю за отражение (если есть)
+            if goalkeeper:
+                process_morale_event(goalkeeper, 'shot_saved_gk', match, current_zone)
+            
             event_data = {
                 'match': match,
                 'minute': match.current_minute,
@@ -747,10 +1035,19 @@ def simulate_one_action(match: Match) -> dict:
             if random.random() < success_prob:
                 match.current_zone = target_zone
                 # ball remains with current_player
+                
+                # === СИСТЕМА МОРАЛИ: УДАЧНЫЙ ДРИБЛИНГ ===
+                process_morale_event(current_player, 'dribble_success', match, target_zone)
+                
                 if defender:
                     foul_chance = foul_probability(defender, current_player, target_zone)
                     if random.random() < foul_chance:
                         match.st_fouls += 1
+                        
+                        # === СИСТЕМА МОРАЛИ: ФОЛ ===
+                        process_morale_event(defender, 'foul_committed', match, target_zone)
+                        process_morale_event(current_player, 'foul_suffered', match, target_zone)
+                        
                         foul_event = {
                             'match': match,
                             'minute': match.current_minute,
@@ -778,6 +1075,9 @@ def simulate_one_action(match: Match) -> dict:
                     'continue': True,
                 }
             else:
+                # === СИСТЕМА МОРАЛИ: НЕУДАЧНЫЙ ДРИБЛИНГ ===
+                process_morale_event(current_player, 'dribble_failed', match, target_zone)
+                
                 if defender:
                     interception_event = {
                         'match': match,
@@ -876,12 +1176,20 @@ def simulate_one_action(match: Match) -> dict:
                 match.current_player_with_ball = recipient
                 match.current_zone = target_zone
 
+                # === СИСТЕМА МОРАЛИ: УСПЕШНЫЙ ПАС ===
+                process_morale_event(current_player, 'successful_pass', match, target_zone)
+
                 # После паса возможен фол
                 fouler = choose_player(opponent_team, "ANY", match=match)
                 if fouler:
                     foul_chance = foul_probability(fouler, recipient, target_zone)
                     if random.random() < foul_chance:
                         match.st_fouls += 1
+                        
+                        # === СИСТЕМА МОРАЛИ: ФОЛ ===
+                        process_morale_event(fouler, 'foul_committed', match, target_zone)
+                        process_morale_event(recipient, 'foul_suffered', match, target_zone)
+                        
                         foul_event = {
                             'match': match,
                             'minute': match.current_minute,
@@ -940,6 +1248,9 @@ def simulate_one_action(match: Match) -> dict:
                 }
 
                 if interceptor:
+                    # === СИСТЕМА МОРАЛИ: ПЕРЕХВАТ ПАСА ===
+                    process_morale_event(current_player, 'pass_intercepted', match, target_zone)
+                    
                     special_counter = (
                         (zone_prefix(current_zone) == "GK" and zone_prefix(target_zone) == "DEF") or
                         (zone_prefix(current_zone) == "DEF" and zone_prefix(target_zone) == "DM") or

@@ -12,10 +12,12 @@ def generate_stat(weight=1):
 def generate_player_stats(position, player_class):
     """Генерирует характеристики игрока в зависимости от позиции"""
     # Базовые характеристики
+    morale_value = generate_stat()
     base_stats = {
         'strength': generate_stat(),
         'stamina': generate_stat(),
-        'morale': generate_stat(),
+        'morale': morale_value,
+        'base_morale': morale_value,  # Базовая мораль равна начальной
         'pace': generate_stat(),
         'positioning': generate_stat(),
     }

@@ -67,6 +67,8 @@ class Player(models.Model):
     strength = models.IntegerField(default=0, verbose_name="Strength")
     stamina = models.IntegerField(default=0, verbose_name="Stamina")
     morale = models.IntegerField(default=0, verbose_name="Morale")
+    base_morale = models.IntegerField(default=50, verbose_name="Base Morale", 
+                                     help_text="Базовый уровень морали, к которому стремится текущая мораль")
     pace = models.IntegerField(default=0, verbose_name="Pace")
     positioning = models.IntegerField(default=0, verbose_name="Positioning")
 
