@@ -1,0 +1,385 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Настройки тренировок - {{ player.full_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .training-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .player-info {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+    }
+
+    .bloom-info {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.9em;
+        margin-left: 10px;
+    }
+
+    .bloom-early { background-color: #d4edda; color: #155724; }
+    .bloom-middle { background-color: #fff3cd; color: #856404; }
+    .bloom-late { background-color: #f8d7da; color: #721c24; }
+
+    .training-group {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .slider-container {
+        margin: 15px 0;
+    }
+
+    .slider-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+
+    .slider-value {
+        background: #007bff;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.9em;
+        min-width: 50px;
+        text-align: center;
+    }
+
+    .slider {
+        width: 100%;
+        height: 6px;
+        border-radius: 3px;
+        background: #ddd;
+        outline: none;
+        transition: background 0.3s;
+    }
+
+    .slider::-webkit-slider-thumb {
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #007bff;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #007bff;
+        cursor: pointer;
+        border: none;
+    }
+
+    .total-display {
+        background: #e9ecef;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        font-size: 1.2em;
+        font-weight: bold;
+        margin: 20px 0;
+    }
+
+    .total-valid { background: #d4edda; color: #155724; }
+    .total-invalid { background: #f8d7da; color: #721c24; }
+
+    .attributes-list {
+        font-size: 0.9em;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+
+    .btn-save {
+        width: 100%;
+        padding: 12px;
+        font-size: 1.1em;
+        font-weight: bold;
+    }
+
+    .alert {
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="training-container">
+    <div class="player-info">
+        <h2>{{ player.full_name }}
+            <span class="bloom-info bloom-{{ player.bloom_type }}">
+                {{ player.get_bloom_type_display }}
+                {% if player.is_in_bloom %}(Активен - {{ player.bloom_seasons_left }} сезон{{ player.bloom_seasons_left|pluralize:"а,ов" }}){% endif %}
+            </span>
+        </h2>
+        <p><strong>Позиция:</strong> {{ player.get_position_display }} | 
+           <strong>Возраст:</strong> {{ player.age }} лет | 
+           <strong>Клуб:</strong> {{ player.club.name }}</p>
+        
+        {% if player.is_in_bloom %}
+            <div class="alert alert-success">
+                🌟 Игрок находится в периоде расцвета! Бонус к тренировкам: +{{ player.get_bloom_bonus|floatformat:0 }}%
+            </div>
+        {% endif %}
+    </div>
+
+    <h3>Настройки тренировок</h3>
+    <p class="text-muted">Настройте, на какие группы характеристик будет направлено внимание во время тренировок. Сумма всех процентов должна равняться 100%.</p>
+
+    <form id="trainingForm">
+        {% csrf_token %}
+        
+        {% if is_goalkeeper %}
+            <!-- Настройки для вратаря -->
+            <div class="training-group">
+                <h4>Настройки тренировок для вратаря</h4>
+                
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Физические характеристики
+                            <div class="attributes-list">(strength, stamina, pace)</div>
+                        </span>
+                        <span class="slider-value" id="physical-value">{{ settings.gk_physical_weight }}%</span>
+                    </div>
+                    <input type="range" min="0" max="100" step="0.1" 
+                           value="{{ settings.gk_physical_weight }}" 
+                           class="slider" id="physical-slider" data-target="physical">
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Основные навыки вратаря
+                            <div class="attributes-list">(reflexes, handling, positioning, aerial)</div>
+                        </span>
+                        <span class="slider-value" id="core_gk_skills-value">{{ settings.gk_core_skills_weight }}%</span>
+                    </div>
+                    <input type="range" min="0" max="100" step="0.1" 
+                           value="{{ settings.gk_core_skills_weight }}" 
+                           class="slider" id="core_gk_skills-slider" data-target="core_gk_skills">
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Дополнительные навыки
+                            <div class="attributes-list">(command, distribution, one_on_one, shot_reading, rebound_control)</div>
+                        </span>
+                        <span class="slider-value" id="additional_gk_skills-value">{{ settings.gk_additional_skills_weight }}%</span>
+                    </div>
+                    <input type="range" min="0" max="100" step="0.1" 
+                           value="{{ settings.gk_additional_skills_weight }}" 
+                           class="slider" id="additional_gk_skills-slider" data-target="additional_gk_skills">
+                </div>
+            </div>
+        {% else %}
+            <!-- Настройки для полевого игрока -->
+            <div class="training-group">
+                <h4>Настройки тренировок для полевого игрока</h4>
+                
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Физические характеристики
+                            <div class="attributes-list">(strength, stamina, pace)</div>
+                        </span>
+                        <span class="slider-value" id="physical-value">{{ settings.physical_weight }}%</span>
+                    </div>
+                    <input type="range" min="0" max="100" step="0.1" 
+                           value="{{ settings.physical_weight }}" 
+                           class="slider" id="physical-slider" data-target="physical">
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Защитные характеристики
+                            <div class="attributes-list">(marking, tackling, heading)</div>
+                        </span>
+                        <span class="slider-value" id="defensive-value">{{ settings.defensive_weight }}%</span>
+                    </div>
+                    <input type="range" min="0" max="100" step="0.1" 
+                           value="{{ settings.defensive_weight }}" 
+                           class="slider" id="defensive-slider" data-target="defensive">
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Атакующие характеристики
+                            <div class="attributes-list">(finishing, heading, long_range)</div>
+                        </span>
+                        <span class="slider-value" id="attacking-value">{{ settings.attacking_weight }}%</span>
+                    </div>
+                    <input type="range" min="0" max="100" step="0.1" 
+                           value="{{ settings.attacking_weight }}" 
+                           class="slider" id="attacking-slider" data-target="attacking">
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Ментальные характеристики
+                            <div class="attributes-list">(vision, flair)</div>
+                        </span>
+                        <span class="slider-value" id="mental-value">{{ settings.mental_weight }}%</span>
+                    </div>
+                    <input type="range" min="0" max="100" step="0.1" 
+                           value="{{ settings.mental_weight }}" 
+                           class="slider" id="mental-slider" data-target="mental">
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Технические характеристики
+                            <div class="attributes-list">(dribbling, crossing, passing)</div>
+                        </span>
+                        <span class="slider-value" id="technical-value">{{ settings.technical_weight }}%</span>
+                    </div>
+                    <input type="range" min="0" max="100" step="0.1" 
+                           value="{{ settings.technical_weight }}" 
+                           class="slider" id="technical-slider" data-target="technical">
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Тактические характеристики
+                            <div class="attributes-list">(work_rate, positioning, accuracy)</div>
+                        </span>
+                        <span class="slider-value" id="tactical-value">{{ settings.tactical_weight }}%</span>
+                    </div>
+                    <input type="range" min="0" max="100" step="0.1" 
+                           value="{{ settings.tactical_weight }}" 
+                           class="slider" id="tactical-slider" data-target="tactical">
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="total-display" id="total-display">
+            Общая сумма: <span id="total-value">100.0</span>%
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-save" id="save-btn">
+            Сохранить настройки
+        </button>
+    </form>
+
+    <!-- Alert container -->
+    <div id="alert-container"></div>
+
+    <div class="mt-4">
+        <a href="{% url 'players:player_detail' player.id %}" class="btn btn-secondary">
+            ← Вернуться к игроку
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sliders = document.querySelectorAll('.slider');
+    const totalDisplay = document.getElementById('total-display');
+    const totalValue = document.getElementById('total-value');
+    const saveBtn = document.getElementById('save-btn');
+    const form = document.getElementById('trainingForm');
+    const alertContainer = document.getElementById('alert-container');
+    
+    function updateTotal() {
+        let total = 0;
+        sliders.forEach(slider => {
+            total += parseFloat(slider.value);
+        });
+        
+        totalValue.textContent = total.toFixed(1);
+        
+        // Обновляем стиль в зависимости от суммы
+        totalDisplay.classList.remove('total-valid', 'total-invalid');
+        if (Math.abs(total - 100) < 0.1) {
+            totalDisplay.classList.add('total-valid');
+            saveBtn.disabled = false;
+        } else {
+            totalDisplay.classList.add('total-invalid');
+            saveBtn.disabled = true;
+        }
+    }
+    
+    function showAlert(message, type = 'success') {
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        alertContainer.innerHTML = alertHtml;
+        
+        // Автоматически скрыть через 5 секунд
+        setTimeout(() => {
+            const alert = alertContainer.querySelector('.alert');
+            if (alert) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+    
+    // Обработчики изменения ползунков
+    sliders.forEach(slider => {
+        const target = slider.getAttribute('data-target');
+        const valueSpan = document.getElementById(target + '-value');
+        
+        slider.addEventListener('input', function() {
+            valueSpan.textContent = parseFloat(this.value).toFixed(1) + '%';
+            updateTotal();
+        });
+    });
+    
+    // Обработчик отправки формы
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Собираем данные
+        const data = {};
+        sliders.forEach(slider => {
+            const target = slider.getAttribute('data-target');
+            data[target] = parseFloat(slider.value);
+        });
+        
+        // Отправляем AJAX запрос
+        fetch('{% url "players:update_training_settings" player.id %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+            } else {
+                showAlert(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            showAlert('Произошла ошибка при сохранении настроек', 'danger');
+            console.error('Error:', error);
+        });
+    });
+    
+    // Инициализация
+    updateTotal();
+});
+</script>
+{% endblock %}

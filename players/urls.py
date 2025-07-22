@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import PlayerDetailView, boost_player, delete_player
+from .views import PlayerDetailView, boost_player, delete_player, training_settings, update_training_settings
 from . import views
 
 urlpatterns = [
@@ -13,4 +13,8 @@ urlpatterns = [
     
     # Маршрут для удаления игрока
     path('delete/<int:player_id>/', delete_player, name='player_delete'),
+    
+    # Настройки тренировок
+    path('training/<int:player_id>/', training_settings, name='training_settings'),
+    path('training/<int:player_id>/update/', update_training_settings, name='update_training_settings'),
 ]

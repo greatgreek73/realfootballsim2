@@ -101,7 +101,31 @@ def generate_player_stats(position, player_class):
     for key in stats:
         stats[key] = min(99, int(stats[key] * (1 + class_modifier)))
 
+    # Добавляем данные о расцвете
+    bloom_data = generate_bloom_data()
+    stats.update(bloom_data)
+
     return stats
+
+def generate_bloom_data():
+    """Генерирует данные о расцвете для нового игрока."""
+    # Случайно выбираем тип расцвета
+    bloom_types = ['early', 'middle', 'late']
+    bloom_type = random.choice(bloom_types)
+    
+    # Определяем возраст начала расцвета в зависимости от типа
+    if bloom_type == 'early':
+        bloom_start_age = 17
+    elif bloom_type == 'middle':
+        bloom_start_age = random.randint(18, 19)
+    else:  # late
+        bloom_start_age = random.randint(20, 21)
+    
+    return {
+        'bloom_type': bloom_type,
+        'bloom_start_age': bloom_start_age,
+        'bloom_seasons_left': 0  # Изначально расцвет не активен
+    }
 
 def print_player_stats(stats):
     """Вспомогательная функция для вывода характеристик"""

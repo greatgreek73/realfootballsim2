@@ -42,6 +42,15 @@
                                     <span class="badge bg-success">{{ player.overall_rating }}</span>
                                 </li>
                             </ul>
+                            
+                            <!-- Training Settings Button -->
+                            {% if player.club.owner == request.user %}
+                                <div class="mt-3">
+                                    <a href="{% url 'players:training_settings' player.id %}" class="btn btn-primary">
+                                        Training Settings
+                                    </a>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
 

@@ -186,6 +186,14 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'tournaments.start_scheduled_matches',
         'schedule': 60.0,  # Каждую минуту
     },
+    'check-training-schedule': {
+        'task': 'players.check_training_schedule',
+        'schedule': crontab(hour=11, minute=0, day_of_week='1,3,5'),  # Пн, Ср, Пт в 12:00 CET (11:00 UTC)
+    },
+    'advance-player-seasons': {
+        'task': 'players.advance_player_seasons',
+        'schedule': crontab(hour=0, minute=0, day_of_month=1),  # 1-е число каждого месяца в полночь
+    },
 }
 
 LOGGING = {

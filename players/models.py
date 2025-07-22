@@ -137,6 +137,33 @@ class Player(models.Model):
         help_text="How many times this player was boosted via tokens."
     )
 
+    # === Поля системы расцвета ===
+    BLOOM_TYPES = [
+        ('early', 'Early Bloom'),    # Ранний расцвет (17 лет)
+        ('middle', 'Middle Bloom'),  # Средний расцвет (18-19 лет) 
+        ('late', 'Late Bloom'),      # Поздний расцвет (20-21 год)
+    ]
+    
+    bloom_type = models.CharField(
+        max_length=10,
+        choices=BLOOM_TYPES,
+        default='middle',
+        verbose_name="Bloom Type",
+        help_text="Тип расцвета игрока, определяющий возраст и силу бонуса"
+    )
+    
+    bloom_start_age = models.PositiveIntegerField(
+        default=18,
+        verbose_name="Bloom Start Age",
+        help_text="Возраст начала расцвета игрока"
+    )
+    
+    bloom_seasons_left = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Bloom Seasons Left",
+        help_text="Количество оставшихся сезонов расцвета (0 = расцвет не активен)"
+    )
+
     class Meta:
         unique_together = ('first_name', 'last_name')
         verbose_name = 'Player'
@@ -276,3 +303,57 @@ class Player(models.Model):
             self.accuracy
         ]
         return sum(attrs)
+    
+    # === Методы для системы расцвета ===
+    @property
+    def is_in_bloom(self):
+        """Проверяет, находится ли игрок в периоде расцвета."""
+        return self.bloom_seasons_left > 0
+    
+    def get_bloom_bonus(self):
+        """Возвращает множитель бонуса за тренировки во время расцвета."""
+        if not self.is_in_bloom:
+            return 0
+        
+        bloom_bonuses = {
+            'early': 1.50,   # +150% очков
+            'middle': 1.00,  # +100% очков
+            'late': 0.75,    # +75% очков
+        }
+        return bloom_bonuses.get(self.bloom_type, 0)
+    
+    def get_age_training_modifier(self):
+        """Возвращает множитель эффективности тренировок в зависимости от возраста."""
+        if self.age <= 22:
+            return 1.20  # +20% (пик молодости)
+        elif self.age <= 26:
+            return 1.00  # +0% (базовый уровень)
+        elif self.age <= 29:
+            return 0.85  # -15% (начало спада)
+        elif self.age <= 32:
+            return 0.75  # -25% (заметный спад)
+        elif self.age <= 35:
+            return 0.60  # -40% (сильный спад)
+        else:
+            return 0.40  # -60% (критический спад)
+    
+    def should_start_bloom(self):
+        """Проверяет, должен ли игрок войти в период расцвета."""
+        return (self.age >= self.bloom_start_age and 
+                self.bloom_seasons_left == 0)
+    
+    def start_bloom(self):
+        """Запускает период расцвета игрока."""
+        if self.should_start_bloom():
+            self.bloom_seasons_left = 3
+            self.save()
+    
+    def advance_bloom_season(self):
+        """Уменьшает количество сезонов расцвета на 1."""
+        if self.bloom_seasons_left > 0:
+            self.bloom_seasons_left -= 1
+            self.save()
+
+
+# Импорт модели настроек тренировок
+from .training import TrainingSettings

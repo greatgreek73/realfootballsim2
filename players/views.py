@@ -6,8 +6,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from decimal import Decimal
 
-from .models import Player
+from .models import Player, TrainingSettings
 
 
 class PlayerDetailView(DetailView):
@@ -209,3 +210,108 @@ def delete_player(request, player_id):
 
     # Если GET – показываем страницу подтверждения
     return render(request, 'players/player_confirm_delete.html', {'player': player})
+
+
+@login_required
+def training_settings(request, player_id):
+    """
+    Страница настройки тренировок для игрока.
+    """
+    player = get_object_or_404(Player, pk=player_id)
+    
+    # Проверяем, является ли пользователь владельцем клуба
+    if player.club and player.club.owner != request.user:
+        messages.error(request, "У вас нет прав на настройку тренировок этого игрока.")
+        return redirect('players:player_detail', pk=player_id)
+    
+    # Получаем или создаем настройки тренировок
+    settings, created = TrainingSettings.objects.get_or_create(
+        player=player
+    )
+    
+    context = {
+        'player': player,
+        'settings': settings,
+        'is_goalkeeper': player.is_goalkeeper,
+    }
+    
+    return render(request, 'players/training_settings.html', context)
+
+
+@login_required
+def update_training_settings(request, player_id):
+    """
+    AJAX обновление настроек тренировок игрока.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Method not allowed'}, status=405)
+
+    player = get_object_or_404(Player, pk=player_id)
+    
+    # Проверяем права доступа
+    if player.club and player.club.owner != request.user:
+        return JsonResponse({
+            'success': False,
+            'message': "У вас нет прав на настройку тренировок этого игрока."
+        }, status=403)
+
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
+
+    # Получаем или создаем настройки
+    settings, created = TrainingSettings.objects.get_or_create(
+        player=player
+    )
+
+    try:
+        if player.is_goalkeeper:
+            # Обновляем настройки для вратаря
+            settings.gk_physical_weight = Decimal(str(data.get('physical', 33.33)))
+            settings.gk_core_skills_weight = Decimal(str(data.get('core_gk_skills', 33.33)))
+            settings.gk_additional_skills_weight = Decimal(str(data.get('additional_gk_skills', 33.34)))
+            
+            # Проверяем сумму
+            total = (settings.gk_physical_weight + 
+                    settings.gk_core_skills_weight + 
+                    settings.gk_additional_skills_weight)
+        else:
+            # Обновляем настройки для полевого игрока
+            settings.physical_weight = Decimal(str(data.get('physical', 16.67)))
+            settings.defensive_weight = Decimal(str(data.get('defensive', 16.67)))
+            settings.attacking_weight = Decimal(str(data.get('attacking', 16.67)))
+            settings.mental_weight = Decimal(str(data.get('mental', 16.67)))
+            settings.technical_weight = Decimal(str(data.get('technical', 16.67)))
+            settings.tactical_weight = Decimal(str(data.get('tactical', 16.67)))
+            
+            # Проверяем сумму
+            total = (settings.physical_weight + settings.defensive_weight + 
+                    settings.attacking_weight + settings.mental_weight + 
+                    settings.technical_weight + settings.tactical_weight)
+
+        # Проверяем, что сумма близка к 100%
+        if abs(float(total) - 100.0) > 0.1:
+            return JsonResponse({
+                'success': False,
+                'message': f'Сумма процентов должна равняться 100%. Текущая сумма: {total}%'
+            }, status=400)
+
+        settings.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Настройки тренировок успешно обновлены!',
+            'total': float(total)
+        })
+
+    except (ValueError, TypeError) as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Неверные данные: {str(e)}'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Ошибка при сохранении: {str(e)}'
+        }, status=500)
