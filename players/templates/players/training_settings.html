@@ -141,7 +141,7 @@
     </div>
 
     <h3>Настройки тренировок</h3>
-    <p class="text-muted">Настройте, на какие группы характеристик будет направлено внимание во время тренировок. Сумма всех процентов должна равняться 100%.</p>
+    <p class="text-muted">Настройте, на какие группы характеристик будет направлено внимание во время тренировок. Сумма всех процентов всегда равна 100%. При увеличении одного ползунка остальные автоматически уменьшаются.</p>
 
     <form id="trainingForm">
         {% csrf_token %}
@@ -304,15 +304,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         totalValue.textContent = total.toFixed(1);
         
-        // Обновляем стиль в зависимости от суммы
+        // Обновляем стиль - теперь всегда должно быть 100%
         totalDisplay.classList.remove('total-valid', 'total-invalid');
-        if (Math.abs(total - 100) < 0.1) {
-            totalDisplay.classList.add('total-valid');
-            saveBtn.disabled = false;
-        } else {
-            totalDisplay.classList.add('total-invalid');
-            saveBtn.disabled = true;
-        }
+        totalDisplay.classList.add('total-valid');
+        saveBtn.disabled = false;
     }
     
     function showAlert(message, type = 'success') {
@@ -339,10 +334,63 @@ document.addEventListener('DOMContentLoaded', function() {
         const valueSpan = document.getElementById(target + '-value');
         
         slider.addEventListener('input', function() {
+            // Запоминаем старое значение
+            const oldValue = parseFloat(this.dataset.oldValue || this.value);
+            const newValue = parseFloat(this.value);
+            const difference = newValue - oldValue;
+            
+            // Проверяем, не превысит ли новое значение 100%
+            let currentTotal = 0;
+            sliders.forEach(s => {
+                currentTotal += parseFloat(s.value);
+            });
+            
+            if (currentTotal > 100) {
+                // Если сумма превышает 100%, корректируем другие ползунки
+                const otherSliders = Array.from(sliders).filter(s => s !== this);
+                const excessAmount = currentTotal - 100;
+                
+                // Распределяем избыток между другими ползунками
+                redistributeExcess(otherSliders, excessAmount);
+            }
+            
+            // Обновляем отображение
             valueSpan.textContent = parseFloat(this.value).toFixed(1) + '%';
+            
+            // Сохраняем текущее значение как старое для следующего изменения
+            this.dataset.oldValue = this.value;
+            
             updateTotal();
         });
+        
+        // Инициализируем старое значение
+        slider.dataset.oldValue = slider.value;
     });
+    
+    function redistributeExcess(otherSliders, excessAmount) {
+        // Сортируем ползунки по убыванию значения (начинаем с самых больших)
+        otherSliders.sort((a, b) => parseFloat(b.value) - parseFloat(a.value));
+        
+        let remainingExcess = excessAmount;
+        
+        for (let slider of otherSliders) {
+            if (remainingExcess <= 0) break;
+            
+            const currentValue = parseFloat(slider.value);
+            const reduction = Math.min(remainingExcess, currentValue);
+            const newValue = Math.max(0, currentValue - reduction);
+            
+            slider.value = newValue.toFixed(1);
+            slider.dataset.oldValue = slider.value;
+            
+            // Обновляем отображение значения
+            const target = slider.getAttribute('data-target');
+            const valueSpan = document.getElementById(target + '-value');
+            valueSpan.textContent = newValue.toFixed(1) + '%';
+            
+            remainingExcess -= reduction;
+        }
+    }
     
     // Обработчик отправки формы
     form.addEventListener('submit', function(e) {
