@@ -60,6 +60,27 @@
         text-align: center;
     }
 
+    .slider-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 5px;
+    }
+
+    .percentage-input {
+        width: 80px;
+        font-size: 0.9em;
+        text-align: center;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        padding: 4px 8px;
+    }
+
+    .percentage-input:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
     .slider {
         width: 100%;
         height: 6px;
@@ -141,7 +162,7 @@
     </div>
 
     <h3>Настройки тренировок</h3>
-    <p class="text-muted">Настройте, на какие группы характеристик будет направлено внимание во время тренировок. Сумма всех процентов всегда равна 100%. При увеличении одного ползунка остальные автоматически уменьшаются.</p>
+    <p class="text-muted">Настройте, на какие группы характеристик будет направлено внимание во время тренировок. Сумма всех процентов всегда равна 100%. Вы можете использовать ползунки или вводить точные значения в числовые поля. При изменении одного значения остальные автоматически корректируются.</p>
 
     <form id="trainingForm">
         {% csrf_token %}
@@ -158,9 +179,15 @@
                         </span>
                         <span class="slider-value" id="physical-value">{{ settings.gk_physical_weight }}%</span>
                     </div>
-                    <input type="range" min="0" max="100" step="0.1" 
-                           value="{{ settings.gk_physical_weight }}" 
-                           class="slider" id="physical-slider" data-target="physical">
+                    <div class="slider-controls">
+                        <input type="range" min="0" max="100" step="0.1" 
+                               value="{{ settings.gk_physical_weight }}" 
+                               class="slider" id="physical-slider" data-target="physical">
+                        <input type="number" min="0" max="100" step="0.1" 
+                               value="{{ settings.gk_physical_weight }}" 
+                               class="percentage-input" id="physical-input" data-target="physical">
+                        <span>%</span>
+                    </div>
                 </div>
 
                 <div class="slider-container">
@@ -170,9 +197,15 @@
                         </span>
                         <span class="slider-value" id="core_gk_skills-value">{{ settings.gk_core_skills_weight }}%</span>
                     </div>
-                    <input type="range" min="0" max="100" step="0.1" 
-                           value="{{ settings.gk_core_skills_weight }}" 
-                           class="slider" id="core_gk_skills-slider" data-target="core_gk_skills">
+                    <div class="slider-controls">
+                        <input type="range" min="0" max="100" step="0.1" 
+                               value="{{ settings.gk_core_skills_weight }}" 
+                               class="slider" id="core_gk_skills-slider" data-target="core_gk_skills">
+                        <input type="number" min="0" max="100" step="0.1" 
+                               value="{{ settings.gk_core_skills_weight }}" 
+                               class="percentage-input" id="core_gk_skills-input" data-target="core_gk_skills">
+                        <span>%</span>
+                    </div>
                 </div>
 
                 <div class="slider-container">
@@ -182,9 +215,15 @@
                         </span>
                         <span class="slider-value" id="additional_gk_skills-value">{{ settings.gk_additional_skills_weight }}%</span>
                     </div>
-                    <input type="range" min="0" max="100" step="0.1" 
-                           value="{{ settings.gk_additional_skills_weight }}" 
-                           class="slider" id="additional_gk_skills-slider" data-target="additional_gk_skills">
+                    <div class="slider-controls">
+                        <input type="range" min="0" max="100" step="0.1" 
+                               value="{{ settings.gk_additional_skills_weight }}" 
+                               class="slider" id="additional_gk_skills-slider" data-target="additional_gk_skills">
+                        <input type="number" min="0" max="100" step="0.1" 
+                               value="{{ settings.gk_additional_skills_weight }}" 
+                               class="percentage-input" id="additional_gk_skills-input" data-target="additional_gk_skills">
+                        <span>%</span>
+                    </div>
                 </div>
             </div>
         {% else %}
@@ -199,9 +238,15 @@
                         </span>
                         <span class="slider-value" id="physical-value">{{ settings.physical_weight }}%</span>
                     </div>
-                    <input type="range" min="0" max="100" step="0.1" 
-                           value="{{ settings.physical_weight }}" 
-                           class="slider" id="physical-slider" data-target="physical">
+                    <div class="slider-controls">
+                        <input type="range" min="0" max="100" step="0.1" 
+                               value="{{ settings.physical_weight }}" 
+                               class="slider" id="physical-slider" data-target="physical">
+                        <input type="number" min="0" max="100" step="0.1" 
+                               value="{{ settings.physical_weight }}" 
+                               class="percentage-input" id="physical-input" data-target="physical">
+                        <span>%</span>
+                    </div>
                 </div>
 
                 <div class="slider-container">
@@ -211,9 +256,15 @@
                         </span>
                         <span class="slider-value" id="defensive-value">{{ settings.defensive_weight }}%</span>
                     </div>
-                    <input type="range" min="0" max="100" step="0.1" 
-                           value="{{ settings.defensive_weight }}" 
-                           class="slider" id="defensive-slider" data-target="defensive">
+                    <div class="slider-controls">
+                        <input type="range" min="0" max="100" step="0.1" 
+                               value="{{ settings.defensive_weight }}" 
+                               class="slider" id="defensive-slider" data-target="defensive">
+                        <input type="number" min="0" max="100" step="0.1" 
+                               value="{{ settings.defensive_weight }}" 
+                               class="percentage-input" id="defensive-input" data-target="defensive">
+                        <span>%</span>
+                    </div>
                 </div>
 
                 <div class="slider-container">
@@ -223,9 +274,15 @@
                         </span>
                         <span class="slider-value" id="attacking-value">{{ settings.attacking_weight }}%</span>
                     </div>
-                    <input type="range" min="0" max="100" step="0.1" 
-                           value="{{ settings.attacking_weight }}" 
-                           class="slider" id="attacking-slider" data-target="attacking">
+                    <div class="slider-controls">
+                        <input type="range" min="0" max="100" step="0.1" 
+                               value="{{ settings.attacking_weight }}" 
+                               class="slider" id="attacking-slider" data-target="attacking">
+                        <input type="number" min="0" max="100" step="0.1" 
+                               value="{{ settings.attacking_weight }}" 
+                               class="percentage-input" id="attacking-input" data-target="attacking">
+                        <span>%</span>
+                    </div>
                 </div>
 
                 <div class="slider-container">
@@ -235,9 +292,15 @@
                         </span>
                         <span class="slider-value" id="mental-value">{{ settings.mental_weight }}%</span>
                     </div>
-                    <input type="range" min="0" max="100" step="0.1" 
-                           value="{{ settings.mental_weight }}" 
-                           class="slider" id="mental-slider" data-target="mental">
+                    <div class="slider-controls">
+                        <input type="range" min="0" max="100" step="0.1" 
+                               value="{{ settings.mental_weight }}" 
+                               class="slider" id="mental-slider" data-target="mental">
+                        <input type="number" min="0" max="100" step="0.1" 
+                               value="{{ settings.mental_weight }}" 
+                               class="percentage-input" id="mental-input" data-target="mental">
+                        <span>%</span>
+                    </div>
                 </div>
 
                 <div class="slider-container">
@@ -247,9 +310,15 @@
                         </span>
                         <span class="slider-value" id="technical-value">{{ settings.technical_weight }}%</span>
                     </div>
-                    <input type="range" min="0" max="100" step="0.1" 
-                           value="{{ settings.technical_weight }}" 
-                           class="slider" id="technical-slider" data-target="technical">
+                    <div class="slider-controls">
+                        <input type="range" min="0" max="100" step="0.1" 
+                               value="{{ settings.technical_weight }}" 
+                               class="slider" id="technical-slider" data-target="technical">
+                        <input type="number" min="0" max="100" step="0.1" 
+                               value="{{ settings.technical_weight }}" 
+                               class="percentage-input" id="technical-input" data-target="technical">
+                        <span>%</span>
+                    </div>
                 </div>
 
                 <div class="slider-container">
@@ -259,9 +328,15 @@
                         </span>
                         <span class="slider-value" id="tactical-value">{{ settings.tactical_weight }}%</span>
                     </div>
-                    <input type="range" min="0" max="100" step="0.1" 
-                           value="{{ settings.tactical_weight }}" 
-                           class="slider" id="tactical-slider" data-target="tactical">
+                    <div class="slider-controls">
+                        <input type="range" min="0" max="100" step="0.1" 
+                               value="{{ settings.tactical_weight }}" 
+                               class="slider" id="tactical-slider" data-target="tactical">
+                        <input type="number" min="0" max="100" step="0.1" 
+                               value="{{ settings.tactical_weight }}" 
+                               class="percentage-input" id="tactical-input" data-target="tactical">
+                        <span>%</span>
+                    </div>
                 </div>
             </div>
         {% endif %}
@@ -290,6 +365,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const sliders = document.querySelectorAll('.slider');
+    const inputs = document.querySelectorAll('.percentage-input');
     const totalDisplay = document.getElementById('total-display');
     const totalValue = document.getElementById('total-value');
     const saveBtn = document.getElementById('save-btn');
@@ -367,6 +443,26 @@ document.addEventListener('DOMContentLoaded', function() {
         slider.dataset.oldValue = slider.value;
     });
     
+    function updateElementsForTarget(target, newValue) {
+        // Обновляем все связанные элементы (ползунок, поле ввода, отображение)
+        const slider = document.getElementById(target + '-slider');
+        const input = document.getElementById(target + '-input');
+        const valueSpan = document.getElementById(target + '-value');
+        
+        const formattedValue = parseFloat(newValue).toFixed(1);
+        
+        if (slider) {
+            slider.value = formattedValue;
+            slider.dataset.oldValue = formattedValue;
+        }
+        if (input) {
+            input.value = formattedValue;
+        }
+        if (valueSpan) {
+            valueSpan.textContent = formattedValue + '%';
+        }
+    }
+
     function redistributeExcess(otherSliders, excessAmount) {
         // Сортируем ползунки по убыванию значения (начинаем с самых больших)
         otherSliders.sort((a, b) => parseFloat(b.value) - parseFloat(a.value));
@@ -380,17 +476,60 @@ document.addEventListener('DOMContentLoaded', function() {
             const reduction = Math.min(remainingExcess, currentValue);
             const newValue = Math.max(0, currentValue - reduction);
             
-            slider.value = newValue.toFixed(1);
-            slider.dataset.oldValue = slider.value;
-            
-            // Обновляем отображение значения
+            // Используем новую функцию для обновления всех элементов
             const target = slider.getAttribute('data-target');
-            const valueSpan = document.getElementById(target + '-value');
-            valueSpan.textContent = newValue.toFixed(1) + '%';
+            updateElementsForTarget(target, newValue);
             
             remainingExcess -= reduction;
         }
     }
+    
+    // Обработчики для полей ввода
+    inputs.forEach(input => {
+        const target = input.getAttribute('data-target');
+        
+        input.addEventListener('input', function() {
+            let newValue = parseFloat(this.value) || 0;
+            
+            // Ограничиваем значение от 0 до 100
+            newValue = Math.max(0, Math.min(100, newValue));
+            this.value = newValue;
+            
+            // Обновляем соответствующий ползунок
+            const slider = document.getElementById(target + '-slider');
+            if (slider) {
+                const oldValue = parseFloat(slider.dataset.oldValue || slider.value);
+                slider.value = newValue;
+                
+                // Проверяем и корректируем общую сумму
+                let currentTotal = 0;
+                sliders.forEach(s => {
+                    currentTotal += parseFloat(s.value);
+                });
+                
+                if (currentTotal > 100) {
+                    const otherSliders = Array.from(sliders).filter(s => s !== slider);
+                    const excessAmount = currentTotal - 100;
+                    redistributeExcess(otherSliders, excessAmount);
+                }
+                
+                // Обновляем отображение
+                const valueSpan = document.getElementById(target + '-value');
+                if (valueSpan) {
+                    valueSpan.textContent = parseFloat(slider.value).toFixed(1) + '%';
+                }
+                
+                slider.dataset.oldValue = slider.value;
+                updateTotal();
+            }
+        });
+        
+        // Обработчик для корректировки при потере фокуса
+        input.addEventListener('blur', function() {
+            const value = parseFloat(this.value) || 0;
+            this.value = value.toFixed(1);
+        });
+    });
     
     // Обработчик отправки формы
     form.addEventListener('submit', function(e) {
