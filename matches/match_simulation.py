@@ -4,6 +4,7 @@ import random
 import logging
 from django.db import transaction # Убедитесь, что импорт есть, если будете использовать транзакции внутри
 from django.utils import timezone
+from django.conf import settings
 from matches.models import Match, MatchEvent
 from clubs.models import Club
 from players.models import Player
@@ -13,6 +14,8 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from matches.utils import extract_player_id
 from matches.commentary import render_comment
+from matches.personality_engine import PersonalityModifier, PersonalityDecisionEngine
+from matches.narrative_system import NarrativeAIEngine
 
 logger = logging.getLogger(__name__)
 
@@ -161,15 +164,31 @@ def choose_player(team: Club, zone: str, exclude_ids: set = None, match: Match =
         logger.error(f"No lineup found for team {team.name} in match {match.id}")
         return None
 
-    # Получаем id игроков из состава (корректно извлекаем id даже если это dict)
+    # Получаем id игроков из состава (поддерживаем и строковый, и словарный формат)
     lineup_player_ids = []
-    for slot, player_val in lineup.items():
-        player_id = extract_player_id(player_val)
-        if player_id:
-            try:
-                lineup_player_ids.append(int(player_id))
-            except Exception:
-                continue
+    
+    # Проверяем формат lineup и обрабатываем соответственно
+    if isinstance(lineup, str):
+        # Строковый формат: "15,23,7,2,19,14,25,1,13,21,22"
+        try:
+            for player_id_str in lineup.split(','):
+                player_id_str = player_id_str.strip()
+                if player_id_str and player_id_str.isdigit():
+                    lineup_player_ids.append(int(player_id_str))
+        except Exception as e:
+            logger.error(f"Error parsing string lineup for team {team.name}: {e}")
+    elif isinstance(lineup, dict):
+        # Словарный формат: {"0": "15", "1": "23", ...}
+        for slot, player_val in lineup.items():
+            player_id = extract_player_id(player_val)
+            if player_id:
+                try:
+                    lineup_player_ids.append(int(player_id))
+                except Exception:
+                    continue
+    else:
+        logger.error(f"Unsupported lineup format for team {team.name}: {type(lineup)}")
+        return None
     try:
         all_players = team.player_set.all()
         lineup_players = [p for p in all_players if p.id in lineup_player_ids]
@@ -526,15 +545,30 @@ def apply_team_morale_effect(team: Club, event_type: str, match: Match, exclude_
         if not lineup:
             return
         
-        # Извлекаем ID игроков из состава
+        # Извлекаем ID игроков из состава (поддерживаем и строковый, и словарный формат)
         player_ids = []
-        for slot, player_val in lineup.items():
-            player_id = extract_player_id(player_val)
-            if player_id:
-                try:
-                    player_ids.append(int(player_id))
-                except Exception:
-                    continue
+        
+        if isinstance(lineup, str):
+            # Строковый формат: "15,23,7,2,19,14,25,1,13,21,22"
+            try:
+                for player_id_str in lineup.split(','):
+                    player_id_str = player_id_str.strip()
+                    if player_id_str and player_id_str.isdigit():
+                        player_ids.append(int(player_id_str))
+            except Exception as e:
+                logger.error(f"Error parsing string lineup in apply_team_morale_effect: {e}")
+        elif isinstance(lineup, dict):
+            # Словарный формат: {"0": "15", "1": "23", ...}
+            for slot, player_val in lineup.items():
+                player_id = extract_player_id(player_val)
+                if player_id:
+                    try:
+                        player_ids.append(int(player_id))
+                    except Exception:
+                        continue
+        else:
+            logger.error(f"Unsupported lineup format in apply_team_morale_effect: {type(lineup)}")
+            return
         
         # Применяем эффект ко всем игрокам команды
         team_players = team.player_set.filter(id__in=player_ids)
@@ -800,32 +834,99 @@ def pass_success_probability(
         morale_factor = 0.7 + passer.morale / 200  # от 0.7 до 1.2
     
     momentum_factor = 1 + momentum / 200
-    return clamp((base + bonus + rec_bonus + heading_bonus - penalty) * stamina_factor * morale_factor * momentum_factor)
+    
+    # Personality modifier integration
+    # Определяем тип паса для контекста
+    pass_type = 'short'  # по умолчанию
+    if high:
+        pass_type = 'long'
+    elif f_prefix in ["AM", "FWD"] and t_prefix == "FWD":
+        pass_type = 'through'  # прострел в штрафную
+    
+    # Определяем уровень давления для контекста
+    pressure_level = 0.0
+    if opponent:
+        if f_prefix in ["AM", "FWD"]:
+            pressure_level = 0.8  # высокое давление в атаке
+        elif f_prefix in ["DM", "MID"]:
+            pressure_level = 0.5  # среднее давление в центре
+        else:
+            pressure_level = 0.2  # низкое давление в обороне
+    
+    # Получаем personality модификатор
+    personality_context = {
+        'pass_type': pass_type,
+        'pressure': pressure_level,
+        'zone': f_prefix
+    }
+    
+    personality_bonus = PersonalityModifier.get_pass_modifier(passer, personality_context)
+    personality_accuracy_bonus = personality_bonus.get('accuracy', 0.0)
+    
+    # Применяем personality модификатор к базовой вероятности
+    base_probability = (base + bonus + rec_bonus + heading_bonus - penalty) * stamina_factor * morale_factor * momentum_factor
+    final_probability = base_probability + personality_accuracy_bonus
+    
+    return clamp(final_probability)
 
 
-def shot_success_probability(shooter: Player, goalkeeper: Player | None, *, momentum: int = 0) -> float:
+def shot_success_probability(shooter: Player, goalkeeper: Player | None, *, momentum: int = 0, match_minute: int = 45, pressure: float = 0.0) -> float:
     base = 0.1
     bonus = (shooter.finishing + shooter.long_range + shooter.accuracy) / 300
     penalty = 0
     if goalkeeper:
         penalty = (goalkeeper.reflexes + goalkeeper.handling + goalkeeper.positioning) / 300
+    
+    # Создаем контекст для personality модификатора
+    shot_context = {
+        'shot_type': 'close',
+        'pressure': pressure,
+        'match_minute': match_minute
+    }
+    
+    # Получаем personality модификатор
+    personality_bonus = PersonalityModifier.get_shot_modifier(shooter, shot_context)
+    personality_accuracy_bonus = personality_bonus.get('accuracy', 0.0)
+    
     stamina_factor = 0.7 + (shooter.stamina / 100) * 0.3
     morale_factor = 0.7 + shooter.morale / 200
     momentum_factor = 1 + momentum / 200
-    return clamp((base + bonus - penalty) * stamina_factor * morale_factor * momentum_factor)
+    
+    # Применяем personality модификатор к финальной вероятности
+    base_probability = (base + bonus - penalty) * stamina_factor * morale_factor * momentum_factor
+    final_probability = base_probability + personality_accuracy_bonus
+    
+    return clamp(final_probability)
 
 
-def long_shot_success_probability(shooter: Player, goalkeeper: Player | None, *, momentum: int = 0) -> float:
+def long_shot_success_probability(shooter: Player, goalkeeper: Player | None, *, momentum: int = 0, match_minute: int = 45, pressure: float = 0.0) -> float:
     """Probability of scoring with a long range shot."""
     base = 0.05
     bonus = (shooter.long_range * 2 + shooter.finishing + shooter.accuracy) / 400
     penalty = 0
     if goalkeeper:
         penalty = (goalkeeper.reflexes + goalkeeper.handling + goalkeeper.positioning) / 300
+    
+    # Создаем контекст для personality модификатора
+    shot_context = {
+        'shot_type': 'long',
+        'pressure': pressure,
+        'match_minute': match_minute
+    }
+    
+    # Получаем personality модификатор
+    personality_bonus = PersonalityModifier.get_shot_modifier(shooter, shot_context)
+    personality_accuracy_bonus = personality_bonus.get('accuracy', 0.0)
+    
     stamina_factor = 0.7 + (shooter.stamina / 100) * 0.3
     morale_factor = 0.7 + shooter.morale / 200
     momentum_factor = 1 + momentum / 200
-    return clamp((base + bonus - penalty) * stamina_factor * morale_factor * momentum_factor)
+    
+    # Применяем personality модификатор к финальной вероятности
+    base_probability = (base + bonus - penalty) * stamina_factor * morale_factor * momentum_factor
+    final_probability = base_probability + personality_accuracy_bonus
+    
+    return clamp(final_probability)
 
 
 def foul_probability(tackler: Player, dribbler: Player, zone: str | None = None) -> float:
@@ -844,8 +945,15 @@ def foul_probability(tackler: Player, dribbler: Player, zone: str | None = None)
         # Defensive areas see slightly rougher challenges
         zone_bonus = 0.1
 
-    probability = base + diff / 200 + work_rate_bonus + stamina_penalty + zone_bonus
-    return clamp(probability)
+    # Существующий расчет базовой вероятности
+    base_probability = base + diff / 200 + work_rate_bonus + stamina_penalty + zone_bonus
+    
+    # Добавляем personality модификатор
+    personality_bonus = PersonalityModifier.get_foul_modifier(tackler)
+    
+    # Применяем к базовой вероятности
+    final_probability = base_probability + personality_bonus
+    return clamp(final_probability)
 
 
 def dribble_success_probability(dribbler: Player, defender: Player | None, *, momentum: int = 0) -> float:
@@ -860,6 +968,23 @@ def dribble_success_probability(dribbler: Player, defender: Player | None, *, mo
     momentum_factor = 1 + momentum / 200
     return clamp((base + bonus - penalty) * stamina_factor * morale_factor * momentum_factor)
 
+def process_narrative_event(match, minute, event_type, player, related_player=None):
+    """
+    Обрабатывает нарративные события в матче
+    """
+    USE_PERSONALITY_ENGINE = getattr(settings, 'USE_PERSONALITY_ENGINE', False)
+    if not USE_PERSONALITY_ENGINE:
+        return None
+        
+    try:
+        return NarrativeAIEngine.process_match_event(
+            match, minute, event_type, player, related_player
+        )
+    except Exception as e:
+        logger.error(f"Error processing narrative event: {e}")
+        return None
+
+
 def simulate_one_action(match: Match) -> dict:
     """
     Симулирует ОДНО действие в матче (пас, перехват, удар и т.д.)
@@ -871,6 +996,9 @@ def simulate_one_action(match: Match) -> dict:
     FOUL_PROB = 0.12 
     INJURY_PROB = 0.05 
     GK_PASS_SUCCESS_PROB = 0.90
+    
+    # Проверяем включен ли PersonalityDecisionEngine
+    USE_PERSONALITY_ENGINE = getattr(settings, 'USE_PERSONALITY_ENGINE', False)
     
     # Определяем текущее состояние
     current_player = match.current_player_with_ball
@@ -904,99 +1032,259 @@ def simulate_one_action(match: Match) -> dict:
     update_momentum(match, possessing_team, 1)
     update_momentum(match, opponent_team, -1)
     
+    # === ИНТЕГРАЦИЯ PersonalityDecisionEngine ===
+    
+    # Подсчитываем контекстную информацию для personality engine
+    def count_nearby_players(team, zone):
+        """Подсчитывает количество игроков команды рядом с зоной"""
+        adjacent_zones = []
+        prefix = zone_prefix(zone)
+        side = zone_side(zone)
+        
+        # Добавляем соседние зоны
+        for direction in ['L', 'C', 'R']:
+            if direction != side:
+                adjacent_zones.append(make_zone(prefix, direction))
+        
+        # Добавляем зоны спереди и сзади
+        row_idx = ROW_INDEX.get(prefix, 0)
+        if row_idx > 0:
+            adjacent_zones.append(make_zone(ROW_PREFIX[row_idx - 1], side))
+        if row_idx < len(ROW_PREFIX) - 1:
+            adjacent_zones.append(make_zone(ROW_PREFIX[row_idx + 1], side))
+        
+        return min(len(adjacent_zones), 3)  # Ограничиваем для реалистичности
+    
+    def estimate_distance_to_goal(zone):
+        """Оценивает расстояние до ворот на основе зоны"""
+        prefix = zone_prefix(zone)
+        distances = {
+            'FWD': 10,
+            'AM': 25,
+            'MID': 45,
+            'DM': 65,
+            'DEF': 85,
+            'GK': 100
+        }
+        return distances.get(prefix, 50)
+    
+    def calculate_pressure_level(opponents_nearby, zone):
+        """Рассчитывает уровень давления"""
+        base_pressure = 0.3
+        zone_pressure = {
+            'FWD': 0.4,
+            'AM': 0.3,
+            'MID': 0.2,
+            'DM': 0.15,
+            'DEF': 0.1,
+            'GK': 0.05
+        }
+        
+        prefix = zone_prefix(zone)
+        pressure = base_pressure + zone_pressure.get(prefix, 0.2)
+        pressure += opponents_nearby * 0.15
+        return min(pressure, 1.0)
+    
+    # Создаем контекст для PersonalityDecisionEngine
+    teammates_nearby = count_nearby_players(possessing_team, current_zone)
+    opponents_nearby = count_nearby_players(opponent_team, current_zone)
+    goal_distance = estimate_distance_to_goal(current_zone)
+    pressure_level = calculate_pressure_level(opponents_nearby, current_zone)
+    
+    # Определяем тип владения мячом
+    possession_type = 'defense'
+    prefix = zone_prefix(current_zone)
+    if prefix in ['AM', 'FWD']:
+        possession_type = 'attack'
+    elif prefix in ['MID', 'DM']:
+        possession_type = 'midfield'
+    
+    personality_context = {
+        'possession_type': possession_type,
+        'goal_distance': goal_distance,
+        'teammates_nearby': teammates_nearby,
+        'opponents_nearby': opponents_nearby,
+        'match_minute': match.current_minute,
+        'pressure_level': pressure_level,
+        'score_difference': (match.home_score - match.away_score) if possessing_team.id == match.home_team_id else (match.away_score - match.home_score),
+        'team_situation': 'drawing'  # По умолчанию
+    }
+    
+    # Обновляем team_situation на основе счета
+    score_diff = personality_context['score_difference']
+    if score_diff > 0:
+        personality_context['team_situation'] = 'winning'
+    elif score_diff < 0:
+        personality_context['team_situation'] = 'losing'
     
     # Основная логика действия в зависимости от зоны
     if zone_prefix(current_zone) == "FWD":
-        # Зона атаки - удар по воротам
-        match.st_shoots += 1
-        shooter = current_player
-        opponent_team = get_opponent_team(match, possessing_team)
-        goalkeeper = choose_player(opponent_team, "GK", match=match)
-        is_goal = random.random() < shot_success_probability(
-            shooter,
-            goalkeeper,
-            momentum=get_team_momentum(match, possessing_team),
-        )
+        # === ЗОНА АТАКИ - РЕШЕНИЕ О УДАРЕ ===
         
-        if is_goal:
-            if possessing_team.id == match.home_team_id:
-                match.home_score += 1
+        # Используем PersonalityDecisionEngine для принятия решения
+        should_shoot = True  # По умолчанию стреляем в зоне атаки
+        
+        if USE_PERSONALITY_ENGINE:
+            # Получаем решение от personality engine
+            action_type = PersonalityDecisionEngine.choose_action_type(current_player, personality_context)
+            
+            # Проверяем склонность к рискованным действиям
+            risk_level = 0.6  # Удар по воротам - средний риск
+            should_attempt_risky = PersonalityDecisionEngine.should_attempt_risky_action(
+                current_player, risk_level, personality_context
+            )
+            
+            # Модифицируем решение на основе personality
+            if action_type == 'pass' and not should_attempt_risky:
+                # Игрок предпочитает передачу, пробуем найти получателя
+                target_zone = next_zone(current_zone)  # Обычно будет FWD, но может быть полезно для кроссов
+                potential_recipient = choose_player(possessing_team, target_zone, exclude_ids={current_player.id}, match=match)
+                
+                if potential_recipient and random.random() < 0.7:  # 70% шанс на пас вместо удара
+                    should_shoot = False
+        
+        if should_shoot:
+            # Зона атаки - удар по воротам
+            match.st_shoots += 1
+            shooter = current_player
+            opponent_team = get_opponent_team(match, possessing_team)
+            goalkeeper = choose_player(opponent_team, "GK", match=match)
+            is_goal = random.random() < shot_success_probability(
+                shooter,
+                goalkeeper,
+                momentum=get_team_momentum(match, possessing_team),
+                match_minute=match.current_minute,
+                pressure=0.3,  # Средний уровень давления в зоне атаки
+            )
+            
+            if is_goal:
+                if possessing_team.id == match.home_team_id:
+                    match.home_score += 1
+                else:
+                    match.away_score += 1
+                update_momentum(match, possessing_team, 25)
+                update_momentum(match, opponent_team, -25)
+                
+                # === СИСТЕМА МОРАЛИ: ГОЛ ===
+                # Бонус стрелку
+                process_morale_event(shooter, 'goal_scored', match, current_zone)
+                # Штраф команде соперника
+                apply_team_morale_effect(opponent_team, 'goal_conceded', match)
+                # Особый штраф вратарю соперника
+                if goalkeeper:
+                    process_morale_event(goalkeeper, 'goal_conceded_gk', match, current_zone)
+                
+                # === НАРРАТИВНАЯ СИСТЕМА: ГОЛ ===
+                process_narrative_event(match, match.current_minute, 'goal_scored', shooter, goalkeeper)
+                
+                event_data = {
+                    'match': match,
+                    'minute': match.current_minute,
+                    'event_type': 'goal',
+                    'player': shooter,
+                    'description': render_comment(
+                        'goal',
+                        shooter=f"{shooter.first_name} {shooter.last_name}",
+                        team=possessing_team.name,
+                        home=match.home_score,
+                        away=match.away_score,
+                    )
+                }
             else:
-                match.away_score += 1
-            update_momentum(match, possessing_team, 25)
-            update_momentum(match, opponent_team, -25)
+                # === СИСТЕМА МОРАЛИ: ПРОМАХ ===
+                process_morale_event(shooter, 'shot_miss', match, current_zone)
+                # Бонус вратарю за отражение (если есть)
+                if goalkeeper:
+                    process_morale_event(goalkeeper, 'shot_saved_gk', match, current_zone)
+                
+                event_data = {
+                    'match': match,
+                    'minute': match.current_minute,
+                    'event_type': 'shot_miss',
+                    'player': shooter,
+                    'description': render_comment(
+                        'shot_miss',
+                        shooter=f"{shooter.first_name} {shooter.last_name}",
+                    )
+                }
             
-            # === СИСТЕМА МОРАЛИ: ГОЛ ===
-            # Бонус стрелку
-            process_morale_event(shooter, 'goal_scored', match, current_zone)
-            # Штраф команде соперника
-            apply_team_morale_effect(opponent_team, 'goal_conceded', match)
-            # Особый штраф вратарю соперника
-            if goalkeeper:
-                process_morale_event(goalkeeper, 'goal_conceded_gk', match, current_zone)
+            # После удара мяч переходит к вратарю соперника
+            opponent_team = get_opponent_team(match, possessing_team)
+            new_keeper = choose_player(opponent_team, "GK", match=match)
+            if new_keeper:
+                match.current_player_with_ball = new_keeper
+                match.current_zone = "GK"
             
-            event_data = {
-                'match': match,
-                'minute': match.current_minute,
-                'event_type': 'goal',
-                'player': shooter,
-                'description': render_comment(
-                    'goal',
-                    shooter=f"{shooter.first_name} {shooter.last_name}",
-                    team=possessing_team.name,
-                    home=match.home_score,
-                    away=match.away_score,
-                )
+            return {
+                'event': event_data,
+                'action_type': 'shot',
+                'continue': False  # Конец атаки
             }
-        else:
-            # === СИСТЕМА МОРАЛИ: ПРОМАХ ===
-            process_morale_event(shooter, 'shot_miss', match, current_zone)
-            # Бонус вратарю за отражение (если есть)
-            if goalkeeper:
-                process_morale_event(goalkeeper, 'shot_saved_gk', match, current_zone)
-            
-            event_data = {
-                'match': match,
-                'minute': match.current_minute,
-                'event_type': 'shot_miss',
-                'player': shooter,
-                'description': render_comment(
-                    'shot_miss',
-                    shooter=f"{shooter.first_name} {shooter.last_name}",
-                )
-            }
-        
-        # После удара мяч переходит к вратарю соперника
-        opponent_team = get_opponent_team(match, possessing_team)
-        new_keeper = choose_player(opponent_team, "GK", match=match)
-        if new_keeper:
-            match.current_player_with_ball = new_keeper
-            match.current_zone = "GK"
-        
-        return {
-            'event': event_data,
-            'action_type': 'shot',
-            'continue': False  # Конец атаки
-        }
+        # Если should_shoot == False, переходим к логике паса
     
-    else:
+    # === ЛОГИКА ПЕРЕДАЧ И ДРИБЛИНГА ===
+    
+    # Если мы не в зоне атаки ИЛИ в зоне атаки, но не стреляем, то делаем пас
+    should_pass = True
+    if zone_prefix(current_zone) == "FWD" and 'should_shoot' in locals() and should_shoot:
+        should_pass = False
+    
+    if should_pass:
         # Attempt a pass to the next zone keeping the same side
         target_zone = next_zone(current_zone)
         is_long = False
         current_row = ROW_INDEX.get(zone_prefix(current_zone), 0)
         available_rows = len(ROW_PREFIX) - 1 - current_row
-        if available_rows > 1 and random.random() < 0.2:
-            steps = random.randint(2, min(3, available_rows))
-            next_row = current_row + steps
-            target_zone = make_zone(ROW_PREFIX[next_row], zone_side(current_zone))
-            is_long = True
+        
+        # Apply personality influence to long pass decision
+        long_pass_chance = 0.2  # Базовый шанс длинного паса
+        if available_rows > 1:
+            if USE_PERSONALITY_ENGINE:
+                # Длинный пас - рискованное действие
+                risk_level = 0.8
+                should_attempt_risky = PersonalityDecisionEngine.should_attempt_risky_action(
+                    current_player, risk_level, personality_context
+                )
+                
+                action_type = PersonalityDecisionEngine.choose_action_type(current_player, personality_context)
+                
+                # Модифицируем шанс длинного паса
+                if action_type == 'long_pass' and should_attempt_risky:
+                    long_pass_chance *= 2.5  # Увеличиваем для игроков, склонных к длинным пасам
+                elif not should_attempt_risky:
+                    long_pass_chance *= 0.3  # Снижаем для осторожных игроков
+                
+                long_pass_chance = clamp(long_pass_chance, 0.05, 0.6)
+            
+            if random.random() < long_pass_chance:
+                steps = random.randint(2, min(3, available_rows))
+                next_row = current_row + steps
+                target_zone = make_zone(ROW_PREFIX[next_row], zone_side(current_zone))
+                is_long = True
 
         match.st_possessions += 1
 
-        # --- New dribbling logic ---
+        # --- New dribbling logic with personality integration ---
         attempt_dribble = False
         if current_player.position != "Goalkeeper" and current_player.dribbling > 50:
             dribble_chance = clamp((current_player.dribbling + current_player.pace) / 200, 0, 0.8)
+            
+            # Apply personality influence to dribbling decision
+            if USE_PERSONALITY_ENGINE:
+                action_type = PersonalityDecisionEngine.choose_action_type(current_player, personality_context)
+                risk_level = 0.7  # Дриблинг - довольно рискованное действие
+                should_attempt_risky = PersonalityDecisionEngine.should_attempt_risky_action(
+                    current_player, risk_level, personality_context
+                )
+                
+                # Модифицируем шанс дриблинга на основе personality
+                if action_type == 'dribble' and should_attempt_risky:
+                    dribble_chance *= 1.5  # Увеличиваем шанс для игроков склонных к дриблингу
+                elif action_type == 'pass' or not should_attempt_risky:
+                    dribble_chance *= 0.4  # Снижаем шанс для осторожных игроков
+                
+                dribble_chance = clamp(dribble_chance, 0, 0.9)
+            
             if random.random() < dribble_chance:
                 attempt_dribble = True
 
@@ -1078,6 +1366,10 @@ def simulate_one_action(match: Match) -> dict:
                 # === СИСТЕМА МОРАЛИ: НЕУДАЧНЫЙ ДРИБЛИНГ ===
                 process_morale_event(current_player, 'dribble_failed', match, target_zone)
                 
+                # === НАРРАТИВНАЯ СИСТЕМА: ПЕРЕХВАТ ===
+                if defender:
+                    process_narrative_event(match, match.current_minute, 'interception', defender, current_player)
+                
                 if defender:
                     interception_event = {
                         'match': match,
@@ -1097,6 +1389,43 @@ def simulate_one_action(match: Match) -> dict:
                     counterattack_on_dribble = zone_prefix(target_zone) in {"DEF", "DM"}
                     # Counterattack even on failed dribbles in DEF/DM zones
                     special_counter_dribble = zone_prefix(target_zone) in {"DEF", "DM"}
+                    
+                    # Apply personality influence to counterattack decision
+                    if USE_PERSONALITY_ENGINE and defender and counterattack_on_dribble:
+                        # Создаем контекст для защитника, который перехватил мяч
+                        defender_context = {
+                            'possession_type': 'transition',  # Переходная фаза
+                            'goal_distance': 100 - goal_distance,  # Расстояние до ворот соперника
+                            'teammates_nearby': count_nearby_players(opponent_team, target_zone),
+                            'opponents_nearby': count_nearby_players(possessing_team, target_zone),
+                            'match_minute': match.current_minute,
+                            'pressure_level': 0.2,  # Низкое давление после перехвата
+                            'score_difference': -personality_context['score_difference'],  # Инвертируем для другой команды
+                            'team_situation': personality_context['team_situation']
+                        }
+                        
+                        # Обновляем team_situation для защитника
+                        if defender_context['score_difference'] > 0:
+                            defender_context['team_situation'] = 'winning'
+                        elif defender_context['score_difference'] < 0:
+                            defender_context['team_situation'] = 'losing'
+                        else:
+                            defender_context['team_situation'] = 'drawing'
+                        
+                        # Решение о контратаке
+                        action_type = PersonalityDecisionEngine.choose_action_type(defender, defender_context)
+                        risk_level = 0.6  # Контратака - средний риск
+                        should_attempt_risky = PersonalityDecisionEngine.should_attempt_risky_action(
+                            defender, risk_level, defender_context
+                        )
+                        
+                        # Модифицируем вероятность контратаки
+                        if action_type == 'attack' and should_attempt_risky:
+                            special_counter_dribble = True  # Принудительная контратака
+                        elif not should_attempt_risky:
+                            # Осторожные игроки могут выбрать более безопасный вариант
+                            if random.random() < 0.3:
+                                special_counter_dribble = False
 
                     new_defender, new_zone = choose_player_from_zones(opponent_team, zones, match=match)
                     if new_defender:
@@ -1178,6 +1507,9 @@ def simulate_one_action(match: Match) -> dict:
 
                 # === СИСТЕМА МОРАЛИ: УСПЕШНЫЙ ПАС ===
                 process_morale_event(current_player, 'successful_pass', match, target_zone)
+                
+                # === НАРРАТИВНАЯ СИСТЕМА: УСПЕШНЫЙ ПАС ===
+                process_narrative_event(match, match.current_minute, 'pass', current_player, recipient)
 
                 # После паса возможен фол
                 fouler = choose_player(opponent_team, "ANY", match=match)
@@ -1189,6 +1521,9 @@ def simulate_one_action(match: Match) -> dict:
                         # === СИСТЕМА МОРАЛИ: ФОЛ ===
                         process_morale_event(fouler, 'foul_committed', match, target_zone)
                         process_morale_event(recipient, 'foul_suffered', match, target_zone)
+                        
+                        # === НАРРАТИВНАЯ СИСТЕМА: ФОЛ ===
+                        process_narrative_event(match, match.current_minute, 'foul', fouler, recipient)
                         
                         foul_event = {
                             'match': match,
@@ -1305,6 +1640,8 @@ def simulate_one_action(match: Match) -> dict:
                                     interceptor,
                                     goalkeeper,
                                     momentum=get_team_momentum(match, opponent_team),
+                                    match_minute=match.current_minute,
+                                    pressure=0.5,  # Повышенное давление при дальнем ударе после перехвата
                                 )
                                 if is_goal:
                                     if opponent_team.id == match.home_team_id:

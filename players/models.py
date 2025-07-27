@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models import JSONField
+from django.conf import settings
 from django_countries.fields import CountryField
 
 # === Добавленная функция вне класса Player ===
@@ -164,6 +166,13 @@ class Player(models.Model):
         help_text="Количество оставшихся сезонов расцвета (0 = расцвет не активен)"
     )
 
+    # === Поля для Narrative AI Engine ===
+    personality_traits = JSONField(
+        default=dict,
+        blank=True,
+        help_text="Player personality traits for the Narrative AI Engine"
+    )
+
     class Meta:
         unique_together = ('first_name', 'last_name')
         verbose_name = 'Player'
@@ -204,8 +213,18 @@ class Player(models.Model):
         return f"{self.first_name} {self.last_name} ({club_name}) - {self.position}"
 
     def save(self, *args, **kwargs):
+        # Set nationality based on club if not already set
         if not self.nationality and self.club:
             self.nationality = self.club.country
+        
+        # Auto-generate personality traits for new players
+        if (not self.pk and  # только для новых игроков
+            not self.personality_traits and  # только если personality_traits пустой  
+            getattr(settings, 'USE_PERSONALITY_ENGINE', False)):  # проверка флага
+            
+            from .personality import PersonalityGenerator
+            self.personality_traits = PersonalityGenerator.generate()
+        
         super().save(*args, **kwargs)
 
     @property

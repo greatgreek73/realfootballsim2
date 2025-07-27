@@ -1,0 +1,143 @@
+{
+  "timestamp": "2025-07-27T08:36:47.112764",
+  "performance": {
+    "iterations": 3,
+    "avg_time_without_personality": 1.253,
+    "avg_time_with_personality": 1.754,
+    "performance_impact_percent": 40.0,
+    "all_times_without": [
+      1.134,
+      1.037,
+      1.588
+    ],
+    "all_times_with": [
+      1.795,
+      1.697,
+      1.771
+    ]
+  },
+  "gameplay": {
+    "iterations": 5,
+    "averages_without_personality": {
+      "goals_home": 1.8,
+      "goals_away": 0.6,
+      "total_goals": 2.4,
+      "shots": 12,
+      "passes": 51,
+      "possessions": 77.6,
+      "fouls": 59.6
+    },
+    "averages_with_personality": {
+      "goals_home": 1.6,
+      "goals_away": 0.6,
+      "total_goals": 2.2,
+      "shots": 11.8,
+      "passes": 67,
+      "possessions": 77.8,
+      "fouls": 68.8
+    },
+    "percentage_differences": {
+      "goals_home": -11.11,
+      "goals_away": 0.0,
+      "total_goals": -8.33,
+      "shots": -1.67,
+      "passes": 31.37,
+      "possessions": 0.26,
+      "fouls": 15.44
+    },
+    "raw_data_without": [
+      {
+        "goals_home": 2,
+        "goals_away": 0,
+        "total_goals": 2,
+        "shots": 10,
+        "passes": 48,
+        "possessions": 79,
+        "fouls": 57
+      },
+      {
+        "goals_home": 0,
+        "goals_away": 2,
+        "total_goals": 2,
+        "shots": 13,
+        "passes": 59,
+        "possessions": 76,
+        "fouls": 65
+      },
+      {
+        "goals_home": 3,
+        "goals_away": 0,
+        "total_goals": 3,
+        "shots": 10,
+        "passes": 49,
+        "possessions": 79,
+        "fouls": 57
+      },
+      {
+        "goals_home": 0,
+        "goals_away": 1,
+        "total_goals": 1,
+        "shots": 11,
+        "passes": 52,
+        "possessions": 78,
+        "fouls": 62
+      },
+      {
+        "goals_home": 4,
+        "goals_away": 0,
+        "total_goals": 4,
+        "shots": 16,
+        "passes": 47,
+        "possessions": 76,
+        "fouls": 57
+      }
+    ],
+    "raw_data_with": [
+      {
+        "goals_home": 3,
+        "goals_away": 0,
+        "total_goals": 3,
+        "shots": 11,
+        "passes": 65,
+        "possessions": 79,
+        "fouls": 68
+      },
+      {
+        "goals_home": 1,
+        "goals_away": 0,
+        "total_goals": 1,
+        "shots": 12,
+        "passes": 68,
+        "possessions": 78,
+        "fouls": 69
+      },
+      {
+        "goals_home": 0,
+        "goals_away": 0,
+        "total_goals": 0,
+        "shots": 11,
+        "passes": 67,
+        "possessions": 78,
+        "fouls": 69
+      },
+      {
+        "goals_home": 2,
+        "goals_away": 2,
+        "total_goals": 4,
+        "shots": 12,
+        "passes": 66,
+        "possessions": 78,
+        "fouls": 68
+      },
+      {
+        "goals_home": 2,
+        "goals_away": 1,
+        "total_goals": 3,
+        "shots": 13,
+        "passes": 69,
+        "possessions": 76,
+        "fouls": 70
+      }
+    ]
+  }
+}

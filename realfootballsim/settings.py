@@ -13,6 +13,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Can be overridden via the MATCH_MINUTE_REAL_SECONDS environment variable.
 MATCH_MINUTE_REAL_SECONDS = int(os.environ.get('MATCH_MINUTE_REAL_SECONDS', 20))
 
+# Player Personality & Narrative AI Engine
+USE_PERSONALITY_ENGINE = os.environ.get('USE_PERSONALITY_ENGINE', 'True').lower() == 'true'
+
 # Default dev settings
 SECRET_KEY = 'django-insecure-0p3aqax2r2xolyvtfda6q_aa@q1l6n!w4$8sjo1ed&*)h*2l37'
 DEBUG = True
