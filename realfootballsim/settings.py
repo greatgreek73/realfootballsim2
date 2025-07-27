@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'channels',  # Добавляем channels
     'transfers',  # Явное указание конфига приложения
+    'narrative',  # Story Center Dashboard
 ]
 
 MIDDLEWARE = [

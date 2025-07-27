@@ -157,20 +157,57 @@
                             <div id="originalEvents" class="event-log"> {# Контейнер для лога #}
                                 <div class="list-group events-box"> {# Сюда JS будет добавлять события #}
                                     {% if match.status != 'in_progress' %}
-                                        {# Выводим события только для завершенных матчей #}
-                                        {% for event in match_events %}
-                                        <div class="list-group-item">
-                                            {# Отображение начальных событий (можно улучшить формат) #}
-                                            <strong>{{ event.minute }}'</strong>
-                                            {% if event.event_type == 'goal' %}⚽{% elif event.event_type == 'counterattack' %}⚡{% elif event.event_type == 'interception' %}🔄{% elif event.event_type == 'shot_miss' %}❌{% elif event.event_type == 'pass' %}➡️{% elif event.event_type == 'foul' %}⚠️{% elif event.event_type == 'injury_concern' %}✚{% else %} M {% endif %}
-                                            {{ event.description }}
-                                            {# Отображение игроков #}
-                                            {% if event.player %}
-                                            <small class="text-muted">({{ event.player.last_name }}{% if event.related_player %} -> {{ event.related_player.last_name }}{% endif %})</small>
-                                            {% endif %}
+                                        {# Выводим события только для завершенных матчей с нарративным контекстом #}
+                                        {% for enriched_event in enriched_match_events %}
+                                        <div class="list-group-item narrative-event-item 
+                                             {% if enriched_event.narrative_context.overall_importance == 'legendary' %}narrative-legendary
+                                             {% elif enriched_event.narrative_context.overall_importance == 'major' %}narrative-major
+                                             {% elif enriched_event.narrative_context.overall_importance == 'significant' %}narrative-significant
+                                             {% elif enriched_event.narrative_context.overall_importance == 'minor' %}narrative-minor
+                                             {% endif %}"
+                                             {% if enriched_event.narrative_context.has_narrative %}
+                                             data-bs-toggle="tooltip" 
+                                             data-bs-placement="top" 
+                                             title="{{ enriched_event.narrative_context.narrative_event.title }}: {{ enriched_event.narrative_context.narrative_event.description }}"
+                                             {% endif %}>
+                                            
+                                            {# Нарративные иконки #}
+                                            <div class="narrative-indicators">
+                                                {% if enriched_event.narrative_context.has_rivalry %}
+                                                    <span class="narrative-icon rivalry-icon" title="Rivalry: {{ enriched_event.narrative_context.rivalry.get_rivalry_type_display }} ({{ enriched_event.narrative_context.rivalry_intensity }})">⚔️</span>
+                                                {% endif %}
+                                                {% if enriched_event.narrative_context.has_chemistry %}
+                                                    <span class="narrative-icon chemistry-icon" title="Team Chemistry: {{ enriched_event.narrative_context.chemistry.get_chemistry_type_display }} ({{ enriched_event.narrative_context.chemistry_strength|floatformat:1 }})">🤝</span>
+                                                {% endif %}
+                                                {% if enriched_event.narrative_context.has_character_growth %}
+                                                    <span class="narrative-icon growth-icon" title="Character Development">📈</span>
+                                                {% endif %}
+                                                {% if enriched_event.narrative_context.has_narrative %}
+                                                    <span class="narrative-icon story-icon" title="Story Moment">📖</span>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            {# Основное содержимое события #}
+                                            <div class="event-content">
+                                                <strong>{{ enriched_event.minute }}'</strong>
+                                                {% if enriched_event.event_type == 'goal' %}⚽{% elif enriched_event.event_type == 'counterattack' %}⚡{% elif enriched_event.event_type == 'interception' %}🔄{% elif enriched_event.event_type == 'shot_miss' %}❌{% elif enriched_event.event_type == 'pass' %}➡️{% elif enriched_event.event_type == 'foul' %}⚠️{% elif enriched_event.event_type == 'injury_concern' %}✚{% else %} M {% endif %}
+                                                {{ enriched_event.description }}
+                                                
+                                                {# Отображение игроков #}
+                                                {% if enriched_event.player %}
+                                                <small class="text-muted">({{ enriched_event.player.last_name }}{% if enriched_event.related_player %} -> {{ enriched_event.related_player.last_name }}{% endif %})</small>
+                                                {% endif %}
+                                                
+                                                {# Нарративное описание события если есть #}
+                                                {% if enriched_event.narrative_context.has_narrative %}
+                                                <div class="narrative-description mt-2">
+                                                    <small class="text-primary"><em>{{ enriched_event.narrative_context.narrative_event.description }}</em></small>
+                                                </div>
+                                                {% endif %}
+                                            </div>
                                         </div>
                                         {% empty %}
-                                         <div class="list-group-item text-muted">No events found for this match yet.</div> {# Изменен текст #}
+                                         <div class="list-group-item text-muted">No events found for this match yet.</div>
                                         {% endfor %}
                                     {% else %}
                                         {# Для live-матчей события придут через WebSocket #}
@@ -182,7 +219,46 @@
 
                         <!-- Статистика (Правая колонка) -->
                         <div class="col-md-5">
-                             <h4 class="h6 mb-3">Statistics</h4>
+                            <!-- Narrative Summary Section -->
+                            {% if narrative_summary.total_events > 0 %}
+                            <div class="narrative-summary mb-4">
+                                <h4 class="h6 mb-3">Match Stories</h4>
+                                <div class="card border-primary">
+                                    <div class="card-body p-3">
+                                        <div class="row text-center">
+                                            <div class="col-6">
+                                                <div class="stat-number text-primary">{{ narrative_summary.total_events }}</div>
+                                                <small class="text-muted">Story Events</small>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="stat-number text-warning">{{ narrative_summary.major_events }}</div>
+                                                <small class="text-muted">Major Moments</small>
+                                            </div>
+                                        </div>
+                                        
+                                        {% if narrative_summary.narrative_events %}
+                                        <hr class="my-2">
+                                        <div class="narrative-highlights">
+                                            <small class="text-muted d-block mb-2">Highlights:</small>
+                                            {% for narrative_event in narrative_summary.narrative_events|slice:":3" %}
+                                            <div class="narrative-highlight mb-2">
+                                                <div class="d-flex align-items-center">
+                                                    <span class="badge bg-secondary me-2">{{ narrative_event.minute }}'</span>
+                                                    <small class="text-primary">
+                                                        {% if narrative_event.event_type == 'rivalry_clash' %}⚔️{% elif narrative_event.event_type == 'chemistry_moment' %}🤝{% elif narrative_event.event_type == 'character_growth' %}📈{% else %}📖{% endif %}
+                                                        {{ narrative_event.title|truncatechars:25 }}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <h4 class="h6 mb-3">Statistics</h4>
                             <div id="matchStatistics" class="mb-4">
                                 <div class="list-group stat-box">
                                     {# Начальные значения статистики из контекста #}
@@ -358,9 +434,32 @@
 {% if match.status != 'finished' and match.status != 'cancelled' and match.status != 'error' %}
     <script src="{% static 'matches/js/live_match.js' %}"></script>
 {% endif %}
+
+{# Инициализация нарративных элементов #}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация Bootstrap tooltips для нарративных иконок
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"], .narrative-icon[title]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Добавляем hover эффекты для нарративных событий
+    document.querySelectorAll('.narrative-event-item').forEach(function(element) {
+        element.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateX(2px)';
+            this.style.transition = 'transform 0.2s ease';
+        });
+        
+        element.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateX(0)';
+        });
+    });
+});
+</script>
 {% endblock %}
 
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'matches/css/match_detail.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'matches/css/match_detail.css' %}?v=3">
 {% endblock %}

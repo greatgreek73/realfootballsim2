@@ -275,3 +275,182 @@
     padding: 0.4rem;
     font-size: 0.9em;
 }
+
+/* ===== NARRATIVE SYSTEM STYLES ===== */
+
+/* Narrative Event Items - Color coding by importance */
+.narrative-event-item {
+    position: relative;
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.narrative-event-item:hover {
+    background-color: #f8f9fa;
+    transform: translateX(2px);
+}
+
+/* Importance levels with color coding */
+.narrative-legendary {
+    border-left-color: #ffd700 !important; /* Gold */
+    background: linear-gradient(90deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+.narrative-major {
+    border-left-color: #ff6b6b !important; /* Red */
+    background: linear-gradient(90deg, rgba(255, 107, 107, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+.narrative-significant {
+    border-left-color: #4ecdc4 !important; /* Teal */
+    background: linear-gradient(90deg, rgba(78, 205, 196, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+.narrative-minor {
+    border-left-color: #95a5a6 !important; /* Gray */
+    background: linear-gradient(90deg, rgba(149, 165, 166, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+/* Narrative Indicators Container */
+.narrative-indicators {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-bottom: 0.25rem;
+    flex-wrap: wrap;
+}
+
+/* Narrative Icons */
+.narrative-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    font-size: 0.9rem;
+    cursor: help;
+    transition: transform 0.2s ease;
+}
+
+.narrative-icon:hover {
+    transform: scale(1.2);
+}
+
+/* Specific narrative icon types */
+.rivalry-icon {
+    filter: drop-shadow(0 0 2px rgba(255, 69, 0, 0.6));
+}
+
+.chemistry-icon {
+    filter: drop-shadow(0 0 2px rgba(0, 123, 255, 0.6));
+}
+
+.growth-icon {
+    filter: drop-shadow(0 0 2px rgba(40, 167, 69, 0.6));
+}
+
+.story-icon {
+    filter: drop-shadow(0 0 2px rgba(108, 117, 125, 0.6));
+}
+
+/* Event Content Layout */
+.event-content {
+    flex: 1;
+    line-height: 1.4;
+}
+
+.narrative-description {
+    margin-top: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    background-color: rgba(0, 123, 255, 0.05);
+    border-radius: 0.25rem;
+    border-left: 3px solid #007bff;
+}
+
+/* Narrative Summary Section */
+.narrative-summary {
+    position: relative;
+}
+
+.narrative-summary .card {
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+    transition: box-shadow 0.3s ease;
+}
+
+.narrative-summary .card:hover {
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.25);
+}
+
+.stat-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    line-height: 1;
+}
+
+/* Narrative Highlights */
+.narrative-highlights {
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.narrative-highlight {
+    padding: 0.25rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.narrative-highlight:last-child {
+    border-bottom: none;
+}
+
+.narrative-highlight .badge {
+    font-size: 0.7rem;
+    min-width: 28px;
+}
+
+/* Animation for narrative elements */
+@keyframes narrativeGlow {
+    0% { box-shadow: 0 0 5px rgba(0, 123, 255, 0.3); }
+    50% { box-shadow: 0 0 15px rgba(0, 123, 255, 0.6); }
+    100% { box-shadow: 0 0 5px rgba(0, 123, 255, 0.3); }
+}
+
+.narrative-legendary .narrative-icon {
+    animation: narrativeGlow 2s ease-in-out infinite;
+}
+
+/* Responsive adjustments for narrative elements */
+@media (max-width: 768px) {
+    .narrative-indicators {
+        gap: 0.15rem;
+    }
+    
+    .narrative-icon {
+        width: 18px;
+        height: 18px;
+        font-size: 0.8rem;
+    }
+    
+    .stat-number {
+        font-size: 1.2rem;
+    }
+    
+    .narrative-highlights {
+        max-height: 100px;
+    }
+}
+
+/* Dark mode support for narrative elements */
+@media (prefers-color-scheme: dark) {
+    .narrative-event-item:hover {
+        background-color: #2d3748;
+    }
+    
+    .narrative-description {
+        background-color: rgba(0, 123, 255, 0.15);
+    }
+    
+    .narrative-summary .card {
+        background-color: #2d3748;
+        border-color: #4a5568;
+    }
+}

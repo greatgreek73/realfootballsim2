@@ -1,5 +1,10 @@
 {% extends 'core/base.html' %}
 {% load static %}
+{% load player_tags %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'players/css/player_detail.css' %}">
+{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -491,6 +496,294 @@
                         {% endif %}
                     </div>
 
+                    <!-- Personality Traits Section -->
+                    {% if personality_engine_enabled and player.personality_traits %}
+                    <div id="personalitySection" class="personality-traits-section mt-4">
+                        <div class="personality-section-header">
+                            <h3><i class="fas fa-brain"></i> Personality Traits</h3>
+                            <span class="badge bg-primary">Narrative AI Engine</span>
+                        </div>
+                        
+                        <!-- Radar Chart -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="radar-chart-container">
+                                    <canvas id="personalityRadarChart" 
+                                            data-personality="{{ player.personality_traits|json_script:'personality-data' }}"
+                                            style="max-height: 400px;"></canvas>
+                                    {{ player.personality_traits|json_script:"personality-data-json" }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>Trait Values</h5>
+                                <div class="row g-2">
+                                    {% for trait, value in player.personality_traits.items %}
+                                    <div class="col-6">
+                                        <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                                            <span>{{ trait|format_trait_name }}</span>
+                                            <span class="trait-value-badge">{{ value }}/20</span>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Character Evolution Timeline -->
+                        {% if character_evolutions %}
+                        <div class="mt-5">
+                            <div class="personality-section-header">
+                                <h3><i class="fas fa-history"></i> Character Evolution</h3>
+                                <span class="badge bg-secondary">{{ character_evolutions|length }} events</span>
+                            </div>
+                            <div class="character-evolution-timeline">
+                                {% for evolution in character_evolutions %}
+                                <div class="evolution-event">
+                                    <div class="evolution-event-content">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <strong>{{ evolution.get_trigger_event_display }}</strong>
+                                            <small class="text-muted">{{ evolution.timestamp|date:"M d, Y" }}</small>
+                                        </div>
+                                        {% if evolution.trait_changes %}
+                                        <div class="trait-changes">
+                                            {% for trait, changes in evolution.trait_changes.items %}
+                                            <span class="trait-change">
+                                                <span>{{ trait|format_trait_name }}:</span>
+                                                <span class="old-value">{{ changes.old }}</span>
+                                                →
+                                                <span class="new-value">{{ changes.new }}</span>
+                                            </span>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        {% if evolution.match %}
+                                        <div class="mt-2 text-muted small">
+                                            <i class="fas fa-futbol"></i> {{ evolution.match.home_team }} vs {{ evolution.match.away_team }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Rivalries Section -->
+                        {% if rivalries %}
+                        <div class="mt-5">
+                            <div class="personality-section-header">
+                                <h3><i class="fas fa-fire"></i> Active Rivalries</h3>
+                                <span class="badge bg-danger">{{ rivalries|length }} rivals</span>
+                            </div>
+                            <div class="row">
+                                {% for rivalry in rivalries %}
+                                {% if rivalry.player1 == player %}
+                                    {% with opponent=rivalry.player2 %}
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card rivalry-card">
+                                            <div class="card-body">
+                                                <h6 class="card-title">
+                                                    <a href="{% url 'players:player_detail' opponent.pk %}" class="text-decoration-none">
+                                                        {{ opponent.full_name }}
+                                                    </a>
+                                                </h6>
+                                                <p class="card-text small text-muted mb-2">{{ opponent.club.name }}</p>
+                                                <div class="rivalry-intensity mb-2">
+                                                    <span class="small">Intensity:</span>
+                                                    <div class="intensity-bar">
+                                                        <div class="intensity-fill" style="width: {% widthratio rivalry.intensity 1 100 %}%"></div>
+                                                    </div>
+                                                    <span class="badge bg-danger">{{ rivalry.intensity|multiply_by_100|floatformat:0 }}%</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between small">
+                                                    <span><i class="fas fa-handshake-slash"></i> {{ rivalry.interaction_count }} clashes</span>
+                                                    <span class="badge bg-secondary">{{ rivalry.get_rivalry_type_display }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endwith %}
+                                {% else %}
+                                    {% with opponent=rivalry.player1 %}
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card rivalry-card">
+                                            <div class="card-body">
+                                                <h6 class="card-title">
+                                                    <a href="{% url 'players:player_detail' opponent.pk %}" class="text-decoration-none">
+                                                        {{ opponent.full_name }}
+                                                    </a>
+                                                </h6>
+                                                <p class="card-text small text-muted mb-2">{{ opponent.club.name }}</p>
+                                                <div class="rivalry-intensity mb-2">
+                                                    <span class="small">Intensity:</span>
+                                                    <div class="intensity-bar">
+                                                        <div class="intensity-fill" style="width: {% widthratio rivalry.intensity 1 100 %}%"></div>
+                                                    </div>
+                                                    <span class="badge bg-danger">{{ rivalry.intensity|multiply_by_100|floatformat:0 }}%</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between small">
+                                                    <span><i class="fas fa-handshake-slash"></i> {{ rivalry.interaction_count }} clashes</span>
+                                                    <span class="badge bg-secondary">{{ rivalry.get_rivalry_type_display }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endwith %}
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Chemistry Connections -->
+                        {% if chemistry_connections %}
+                        <div class="mt-5">
+                            <div class="personality-section-header">
+                                <h3><i class="fas fa-handshake"></i> Chemistry Connections</h3>
+                                <span class="badge bg-success">{{ chemistry_connections|length }} connections</span>
+                            </div>
+                            <div class="row">
+                                {% for chemistry in chemistry_connections %}
+                                {% if chemistry.player1 == player %}
+                                    {% with teammate=chemistry.player2 %}
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card chemistry-card">
+                                            <div class="card-body">
+                                                <h6 class="card-title">
+                                                    <a href="{% url 'players:player_detail' teammate.pk %}" class="text-decoration-none">
+                                                        {{ teammate.full_name }}
+                                                    </a>
+                                                </h6>
+                                                <p class="card-text small text-muted mb-2">{{ teammate.position }}</p>
+                                                <div class="chemistry-strength mb-2">
+                                                    <span class="small">Strength:</span>
+                                                    <div class="chemistry-bar">
+                                                        <div class="chemistry-fill" style="width: {% widthratio chemistry.strength 1 100 %}%"></div>
+                                                    </div>
+                                                    <span class="badge bg-success">{{ chemistry.strength|multiply_by_100|floatformat:0 }}%</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between small">
+                                                    <span><i class="fas fa-link"></i> {{ chemistry.positive_interactions }} positive</span>
+                                                    <span class="badge bg-info">{{ chemistry.get_chemistry_type_display }}</span>
+                                                </div>
+                                                {% if chemistry.passing_bonus or chemistry.teamwork_bonus %}
+                                                <div class="mt-2 small">
+                                                    <strong>Bonuses:</strong>
+                                                    {% if chemistry.passing_bonus %}
+                                                    <span class="badge bg-light text-dark">Passing: +{{ chemistry.passing_bonus|floatformat:1 }}</span>
+                                                    {% endif %}
+                                                    {% if chemistry.teamwork_bonus %}
+                                                    <span class="badge bg-light text-dark">Teamwork: +{{ chemistry.teamwork_bonus|floatformat:1 }}</span>
+                                                    {% endif %}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endwith %}
+                                {% else %}
+                                    {% with teammate=chemistry.player1 %}
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card chemistry-card">
+                                            <div class="card-body">
+                                                <h6 class="card-title">
+                                                    <a href="{% url 'players:player_detail' teammate.pk %}" class="text-decoration-none">
+                                                        {{ teammate.full_name }}
+                                                    </a>
+                                                </h6>
+                                                <p class="card-text small text-muted mb-2">{{ teammate.position }}</p>
+                                                <div class="chemistry-strength mb-2">
+                                                    <span class="small">Strength:</span>
+                                                    <div class="chemistry-bar">
+                                                        <div class="chemistry-fill" style="width: {% widthratio chemistry.strength 1 100 %}%"></div>
+                                                    </div>
+                                                    <span class="badge bg-success">{{ chemistry.strength|multiply_by_100|floatformat:0 }}%</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between small">
+                                                    <span><i class="fas fa-link"></i> {{ chemistry.positive_interactions }} positive</span>
+                                                    <span class="badge bg-info">{{ chemistry.get_chemistry_type_display }}</span>
+                                                </div>
+                                                {% if chemistry.passing_bonus or chemistry.teamwork_bonus %}
+                                                <div class="mt-2 small">
+                                                    <strong>Bonuses:</strong>
+                                                    {% if chemistry.passing_bonus %}
+                                                    <span class="badge bg-light text-dark">Passing: +{{ chemistry.passing_bonus|floatformat:1 }}</span>
+                                                    {% endif %}
+                                                    {% if chemistry.teamwork_bonus %}
+                                                    <span class="badge bg-light text-dark">Teamwork: +{{ chemistry.teamwork_bonus|floatformat:1 }}</span>
+                                                    {% endif %}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endwith %}
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Narrative Events History -->
+                        {% if narrative_events %}
+                        <div class="mt-5">
+                            <div class="personality-section-header">
+                                <h3><i class="fas fa-book-open"></i> Narrative History</h3>
+                                <span class="badge bg-primary">{{ narrative_events|length }} events</span>
+                            </div>
+                            <div class="narrative-events-list">
+                                {% for event in narrative_events %}
+                                <div class="narrative-event {{ event.importance }}-importance">
+                                    <div class="d-flex align-items-start">
+                                        {% if event.event_type == 'rivalry_clash' %}
+                                            <i class="event-icon fas fa-fire"></i>
+                                        {% elif event.event_type == 'chemistry_moment' %}
+                                            <i class="event-icon fas fa-handshake"></i>
+                                        {% elif event.event_type == 'character_growth' %}
+                                            <i class="event-icon fas fa-seedling"></i>
+                                        {% elif event.event_type == 'leadership_moment' %}
+                                            <i class="event-icon fas fa-crown"></i>
+                                        {% elif event.event_type == 'underdog_story' %}
+                                            <i class="event-icon fas fa-fist-raised"></i>
+                                        {% elif event.event_type == 'veteran_wisdom' %}
+                                            <i class="event-icon fas fa-user-clock"></i>
+                                        {% else %}
+                                            <i class="event-icon fas fa-circle"></i>
+                                        {% endif %}
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between">
+                                                <h6 class="mb-1">{{ event.get_event_type_display|default:event.event_type }}</h6>
+                                                <small class="text-muted">{{ event.timestamp|date:"M d, Y" }}</small>
+                                            </div>
+                                            <p class="mb-2 text-muted">{{ event.description }}</p>
+                                            <div class="small">
+                                                <span class="badge bg-{{ event.importance|default:'secondary' }}">
+                                                    {{ event.get_importance_display }}
+                                                </span>
+                                            </div>
+                                            {% if event.match %}
+                                            <div class="mt-1 small text-muted">
+                                                <i class="fas fa-futbol"></i> {{ event.match.home_team }} vs {{ event.match.away_team }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% elif personality_engine_enabled %}
+                    <div class="personality-traits-section mt-4">
+                        <div class="empty-state">
+                            <i class="fas fa-brain"></i>
+                            <p>No personality data available for this player yet.</p>
+                            <small class="text-muted">Personality traits will be generated when the player participates in matches.</small>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     <!-- Кнопка "Improve Stats" только для владельца команды -->
                     {% if user.is_authenticated and player.club.owner == user %}
                     <div class="mt-4 text-center">
@@ -582,6 +875,8 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<script src="{% static 'players/js/player_detail.js' %}"></script>
 <script>
 /**
  * Функция для получения csrftoken из cookie.

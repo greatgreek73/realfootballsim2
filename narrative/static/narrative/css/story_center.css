@@ -1,0 +1,346 @@
+/* Story Center Styles */
+
+/* Filter Section */
+.filter-section {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.filter-section select {
+    background-color: var(--bs-dark);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--bs-white);
+}
+
+.filter-section select:focus {
+    background-color: var(--bs-dark);
+    border-color: var(--bs-primary);
+    color: var(--bs-white);
+    box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
+}
+
+/* Story Cards */
+.narrative-card {
+    background-color: var(--bs-dark);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.narrative-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--bs-primary) 0%, var(--bs-info) 100%);
+    transform: translateY(-100%);
+    transition: transform 0.3s ease;
+}
+
+.narrative-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.narrative-card:hover::before {
+    transform: translateY(0);
+}
+
+/* Event Type Icons */
+.event-type-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    margin-right: 1rem;
+}
+
+.event-type-icon.rivalry {
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+}
+
+.event-type-icon.chemistry {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.event-type-icon.growth {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.event-type-icon.leadership {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.event-type-icon.underdog {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.event-type-icon.veteran {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+}
+
+/* Importance Badges */
+.importance-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 2rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.importance-badge.minor {
+    background-color: rgba(107, 114, 128, 0.2);
+    color: #9ca3af;
+    border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+.importance-badge.significant {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.importance-badge.major {
+    background-color: rgba(168, 85, 247, 0.2);
+    color: #a78bfa;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.importance-badge.legendary {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(220, 38, 38, 0.2) 100%);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    animation: pulse-legendary 2s infinite;
+}
+
+@keyframes pulse-legendary {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(245, 158, 11, 0);
+    }
+}
+
+/* Story Content */
+.story-header {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.story-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--bs-white);
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+}
+
+.story-description {
+    color: var(--bs-gray-400);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.story-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: var(--bs-gray-500);
+}
+
+.story-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.story-meta-item i {
+    color: var(--bs-primary);
+}
+
+/* Player Names */
+.player-link {
+    color: var(--bs-info);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.player-link:hover {
+    color: var(--bs-primary);
+    text-decoration: underline;
+}
+
+/* Load More Button */
+.load-more-btn {
+    background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-info) 100%);
+    border: none;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.load-more-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.load-more-btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.load-more-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+/* Loading State */
+.loading-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: var(--bs-white);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--bs-gray-500);
+}
+
+.empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .filter-section {
+        padding: 1rem;
+    }
+    
+    .narrative-card {
+        padding: 1rem;
+    }
+    
+    .story-header {
+        flex-direction: column;
+    }
+    
+    .event-type-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .story-title {
+        font-size: 1.1rem;
+    }
+    
+    .story-meta {
+        font-size: 0.8rem;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: light) {
+    .filter-section {
+        background-color: rgba(0, 0, 0, 0.02);
+        border-color: rgba(0, 0, 0, 0.1);
+    }
+    
+    .filter-section select {
+        background-color: var(--bs-white);
+        border-color: rgba(0, 0, 0, 0.2);
+        color: var(--bs-dark);
+    }
+    
+    .narrative-card {
+        background-color: var(--bs-white);
+        border-color: rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .narrative-card:hover {
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .story-title {
+        color: var(--bs-dark);
+    }
+    
+    .story-description {
+        color: var(--bs-gray-700);
+    }
+    
+    .story-meta {
+        color: var(--bs-gray-600);
+    }
+}
+
+/* Animation for new stories */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.narrative-card.new-story {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+/* Featured story highlight */
+.narrative-card.featured {
+    border-color: var(--bs-warning);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, transparent 100%);
+}
+
+.narrative-card.featured::before {
+    background: linear-gradient(90deg, var(--bs-warning) 0%, var(--bs-danger) 100%);
+}

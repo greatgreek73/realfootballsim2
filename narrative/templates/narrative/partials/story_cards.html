@@ -1,0 +1,58 @@
+{% for story in stories %}
+<div class="narrative-card">
+    <div class="story-header">
+        <div class="event-type-icon 
+            {% if story.event_type == 'rivalry_clash' %}rivalry
+            {% elif story.event_type == 'chemistry_moment' %}chemistry
+            {% elif story.event_type == 'character_growth' %}growth
+            {% elif story.event_type == 'leadership_moment' %}leadership
+            {% elif story.event_type == 'underdog_story' %}underdog
+            {% elif story.event_type == 'veteran_wisdom' %}veteran
+            {% endif %}">
+            {% if story.event_type == 'rivalry_clash' %}
+                <i class="fas fa-fire text-white"></i>
+            {% elif story.event_type == 'chemistry_moment' %}
+                <i class="fas fa-handshake text-white"></i>
+            {% elif story.event_type == 'character_growth' %}
+                <i class="fas fa-chart-line text-white"></i>
+            {% elif story.event_type == 'leadership_moment' %}
+                <i class="fas fa-crown text-white"></i>
+            {% elif story.event_type == 'underdog_story' %}
+                <i class="fas fa-fist-raised text-white"></i>
+            {% elif story.event_type == 'veteran_wisdom' %}
+                <i class="fas fa-chess-king text-white"></i>
+            {% endif %}
+        </div>
+        <div class="flex-grow-1">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <h3 class="story-title">{{ story.title }}</h3>
+                <span class="importance-badge {{ story.importance }}">
+                    {{ story.get_importance_display }}
+                </span>
+            </div>
+            <p class="story-description">
+                {{ story.description|truncatewords:20 }}
+            </p>
+            <div class="story-meta">
+                <div class="story-meta-item">
+                    <i class="fas fa-user"></i>
+                    <a href="#" class="player-link">{{ story.primary_player.name }}</a>
+                    {% if story.secondary_player %}
+                    & <a href="#" class="player-link">{{ story.secondary_player.name }}</a>
+                    {% endif %}
+                </div>
+                {% if story.match %}
+                <div class="story-meta-item">
+                    <i class="fas fa-futbol"></i>
+                    <span>{{ story.match.home_club.name }} vs {{ story.match.away_club.name }}</span>
+                </div>
+                {% endif %}
+                <div class="story-meta-item">
+                    <i class="fas fa-calendar"></i>
+                    <span>{{ story.timestamp|date:"M d, Y" }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}

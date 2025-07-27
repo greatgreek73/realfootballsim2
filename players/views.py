@@ -6,9 +6,11 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from django.db import models
 from decimal import Decimal
 
 from .models import Player, TrainingSettings
+from matches.models import CharacterEvolution, PlayerRivalry, TeamChemistry, NarrativeEvent
 
 
 class PlayerDetailView(DetailView):
@@ -18,6 +20,37 @@ class PlayerDetailView(DetailView):
     """
     model = Player
     template_name = 'players/player_detail.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        player = self.object
+        
+        # Check if personality engine is enabled
+        from django.conf import settings
+        context['personality_engine_enabled'] = getattr(settings, 'USE_PERSONALITY_ENGINE', False)
+        
+        if context['personality_engine_enabled'] and player.personality_traits:
+            # Character Evolution History
+            context['character_evolutions'] = CharacterEvolution.objects.filter(
+                player=player
+            ).select_related('match').order_by('-timestamp')[:10]
+            
+            # Active Rivalries
+            context['rivalries'] = PlayerRivalry.objects.filter(
+                models.Q(player1=player) | models.Q(player2=player)
+            ).select_related('player1', 'player2')
+            
+            # Team Chemistry Connections
+            context['chemistry_connections'] = TeamChemistry.objects.filter(
+                models.Q(player1=player) | models.Q(player2=player)
+            ).select_related('player1', 'player2')
+            
+            # Recent Narrative Events
+            context['narrative_events'] = NarrativeEvent.objects.filter(
+                models.Q(primary_player=player) | models.Q(secondary_player=player)
+            ).select_related('match').order_by('-timestamp')[:10]
+        
+        return context
 
 
 @login_required

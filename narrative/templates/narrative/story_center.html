@@ -1,0 +1,535 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Story Center - RealFootballSim{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'narrative/css/story_center.css' %}">
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        padding: 4rem 0;
+        margin-bottom: 3rem;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .story-card {
+        background-color: var(--bs-dark);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .story-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .feature-icon {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+        border-radius: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+    
+    .section-header {
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    @media (max-width: 768px) {
+        .hero-section {
+            padding: 2rem 0;
+        }
+        
+        .story-card {
+            padding: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Hero Section -->
+    <div class="hero-section text-center text-white">
+        <div class="container">
+            <h1 class="display-4 fw-bold mb-3">
+                <i class="fas fa-book-open me-3"></i>Story Center
+            </h1>
+            <p class="lead mb-4">
+                Discover the narratives that shape your football world. 
+                Track player journeys, team sagas, and memorable moments.
+            </p>
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="alert alert-info bg-info bg-opacity-10 border-info text-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Coming Soon:</strong> The Story Center will capture and showcase 
+                        the most compelling narratives from your matches and seasons.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="container">
+        {% if use_personality_engine %}
+        <!-- Filter Section -->
+        <section class="filter-section mb-4">
+            <form method="get" id="filterForm">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="clubFilter" class="form-label text-white">Club</label>
+                        <select class="form-select" id="clubFilter" name="club">
+                            <option value="">All Clubs</option>
+                            {% for club in clubs %}
+                            <option value="{{ club.id }}" {% if current_filters.club == club.id|stringformat:"s" %}selected{% endif %}>
+                                {{ club.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="eventTypeFilter" class="form-label text-white">Event Type</label>
+                        <select class="form-select" id="eventTypeFilter" name="event_type">
+                            <option value="">All Types</option>
+                            {% for type_code, type_name in event_types %}
+                            <option value="{{ type_code }}" {% if current_filters.event_type == type_code %}selected{% endif %}>
+                                {{ type_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="importanceFilter" class="form-label text-white">Importance</label>
+                        <select class="form-select" id="importanceFilter" name="importance">
+                            <option value="">All Levels</option>
+                            {% for level_code, level_name in importance_levels %}
+                            <option value="{{ level_code }}" {% if current_filters.importance == level_code %}selected{% endif %}>
+                                {{ level_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="timePeriodFilter" class="form-label text-white">Time Period</label>
+                        <select class="form-select" id="timePeriodFilter" name="time_period">
+                            <option value="all" {% if current_filters.time_period == 'all' %}selected{% endif %}>All Time</option>
+                            <option value="7days" {% if current_filters.time_period == '7days' %}selected{% endif %}>Last 7 Days</option>
+                            <option value="30days" {% if current_filters.time_period == '30days' %}selected{% endif %}>Last 30 Days</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12 d-flex justify-content-between align-items-center">
+                        <span class="text-muted">{{ total_stories }} stories found</span>
+                        <div>
+                            <button type="submit" class="btn btn-primary btn-sm me-2">
+                                <i class="fas fa-filter me-1"></i>Apply Filters
+                            </button>
+                            <a href="{% url 'narrative:story_center' %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-times me-1"></i>Clear
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <!-- Featured Stories Section -->
+        <section class="mb-5">
+            <div class="section-header">
+                <h2 class="h3 text-white mb-0">
+                    <i class="fas fa-star me-2"></i>Featured Stories
+                </h2>
+            </div>
+            <div id="featuredStories">
+                {% if important_stories %}
+                    {% for story in important_stories %}
+                    <div class="narrative-card {% if story.importance == 'legendary' %}featured{% endif %}">
+                        <div class="story-header">
+                            <div class="event-type-icon 
+                                {% if story.event_type == 'rivalry_clash' %}rivalry
+                                {% elif story.event_type == 'chemistry_moment' %}chemistry
+                                {% elif story.event_type == 'character_growth' %}growth
+                                {% elif story.event_type == 'leadership_moment' %}leadership
+                                {% elif story.event_type == 'underdog_story' %}underdog
+                                {% elif story.event_type == 'veteran_wisdom' %}veteran
+                                {% endif %}">
+                                {% if story.event_type == 'rivalry_clash' %}
+                                    <i class="fas fa-fire text-white"></i>
+                                {% elif story.event_type == 'chemistry_moment' %}
+                                    <i class="fas fa-handshake text-white"></i>
+                                {% elif story.event_type == 'character_growth' %}
+                                    <i class="fas fa-chart-line text-white"></i>
+                                {% elif story.event_type == 'leadership_moment' %}
+                                    <i class="fas fa-crown text-white"></i>
+                                {% elif story.event_type == 'underdog_story' %}
+                                    <i class="fas fa-fist-raised text-white"></i>
+                                {% elif story.event_type == 'veteran_wisdom' %}
+                                    <i class="fas fa-chess-king text-white"></i>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h3 class="story-title">{{ story.title }}</h3>
+                                    <span class="importance-badge {{ story.importance }}">
+                                        {{ story.get_importance_display }}
+                                    </span>
+                                </div>
+                                <p class="story-description">
+                                    {{ story.description|truncatewords:30 }}
+                                </p>
+                                <div class="story-meta">
+                                    <div class="story-meta-item">
+                                        <i class="fas fa-user"></i>
+                                        <a href="#" class="player-link">{{ story.primary_player.name }}</a>
+                                        {% if story.secondary_player %}
+                                        & <a href="#" class="player-link">{{ story.secondary_player.name }}</a>
+                                        {% endif %}
+                                    </div>
+                                    {% if story.match %}
+                                    <div class="story-meta-item">
+                                        <i class="fas fa-futbol"></i>
+                                        <span>{{ story.match.home_club.name }} vs {{ story.match.away_club.name }}</span>
+                                    </div>
+                                    <div class="story-meta-item">
+                                        <i class="fas fa-clock"></i>
+                                        <span>{{ story.minute }}'</span>
+                                    </div>
+                                    {% endif %}
+                                    <div class="story-meta-item">
+                                        <i class="fas fa-calendar"></i>
+                                        <span>{{ story.timestamp|date:"M d, Y" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-book-open empty-state-icon"></i>
+                        <h4 class="text-white mb-3">No Featured Stories Yet</h4>
+                        <p class="text-muted">
+                            Featured stories will appear here as significant narrative events unfold in your matches.
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- All Stories Section -->
+        <section class="mb-5">
+            <div class="section-header">
+                <h2 class="h3 text-white mb-0">
+                    <i class="fas fa-clock me-2"></i>Recent Stories
+                </h2>
+            </div>
+            <div id="allStories">
+                {% if all_stories %}
+                    {% for story in all_stories %}
+                    <div class="narrative-card">
+                        <div class="story-header">
+                            <div class="event-type-icon 
+                                {% if story.event_type == 'rivalry_clash' %}rivalry
+                                {% elif story.event_type == 'chemistry_moment' %}chemistry
+                                {% elif story.event_type == 'character_growth' %}growth
+                                {% elif story.event_type == 'leadership_moment' %}leadership
+                                {% elif story.event_type == 'underdog_story' %}underdog
+                                {% elif story.event_type == 'veteran_wisdom' %}veteran
+                                {% endif %}">
+                                {% if story.event_type == 'rivalry_clash' %}
+                                    <i class="fas fa-fire text-white"></i>
+                                {% elif story.event_type == 'chemistry_moment' %}
+                                    <i class="fas fa-handshake text-white"></i>
+                                {% elif story.event_type == 'character_growth' %}
+                                    <i class="fas fa-chart-line text-white"></i>
+                                {% elif story.event_type == 'leadership_moment' %}
+                                    <i class="fas fa-crown text-white"></i>
+                                {% elif story.event_type == 'underdog_story' %}
+                                    <i class="fas fa-fist-raised text-white"></i>
+                                {% elif story.event_type == 'veteran_wisdom' %}
+                                    <i class="fas fa-chess-king text-white"></i>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h3 class="story-title">{{ story.title }}</h3>
+                                    <span class="importance-badge {{ story.importance }}">
+                                        {{ story.get_importance_display }}
+                                    </span>
+                                </div>
+                                <p class="story-description">
+                                    {{ story.description|truncatewords:20 }}
+                                </p>
+                                <div class="story-meta">
+                                    <div class="story-meta-item">
+                                        <i class="fas fa-user"></i>
+                                        <a href="#" class="player-link">{{ story.primary_player.name }}</a>
+                                        {% if story.secondary_player %}
+                                        & <a href="#" class="player-link">{{ story.secondary_player.name }}</a>
+                                        {% endif %}
+                                    </div>
+                                    {% if story.match %}
+                                    <div class="story-meta-item">
+                                        <i class="fas fa-futbol"></i>
+                                        <span>{{ story.match.home_club.name }} vs {{ story.match.away_club.name }}</span>
+                                    </div>
+                                    {% endif %}
+                                    <div class="story-meta-item">
+                                        <i class="fas fa-calendar"></i>
+                                        <span>{{ story.timestamp|date:"M d, Y" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    {% if total_stories > 50 %}
+                    <div class="text-center mt-4">
+                        <button class="btn btn-primary load-more-btn" id="loadMoreBtn" data-offset="50">
+                            <i class="fas fa-plus-circle me-2"></i>Load More Stories
+                        </button>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-newspaper empty-state-icon"></i>
+                        <h4 class="text-white mb-3">No Stories Yet</h4>
+                        <p class="text-muted">
+                            Stories will appear here as memorable moments unfold in your matches.
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+        {% else %}
+        <!-- Personality Engine Disabled -->
+        <section class="mb-5">
+            <div class="section-header">
+                <h2 class="h3 text-white mb-0">
+                    <i class="fas fa-power-off me-2"></i>Personality Engine Disabled
+                </h2>
+            </div>
+            <div class="col-12">
+                <div class="story-card text-center">
+                    <div class="feature-icon mx-auto">
+                        <i class="fas fa-cog fa-2x text-white"></i>
+                    </div>
+                    <h4 class="text-white mb-3">Story Center Requires Personality Engine</h4>
+                    <p class="text-muted mb-0">
+                        The Story Center feature requires the Personality Engine to be enabled to capture and display narrative events from matches.
+                    </p>
+                </div>
+            </div>
+        </section>
+        {% endif %}
+        
+        <!-- Features Grid -->
+        <section class="mb-5">
+            <div class="section-header">
+                <h2 class="h3 text-white mb-0">
+                    <i class="fas fa-star me-2"></i>Upcoming Features
+                </h2>
+            </div>
+            <div class="row">
+                <!-- Player Journeys -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="story-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-user-tie fa-2x text-white"></i>
+                        </div>
+                        <h4 class="text-white mb-3">Player Journeys</h4>
+                        <p class="text-muted mb-0">
+                            Follow individual player narratives, from breakthrough performances 
+                            to career-defining moments.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Team Sagas -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="story-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-users fa-2x text-white"></i>
+                        </div>
+                        <h4 class="text-white mb-3">Team Sagas</h4>
+                        <p class="text-muted mb-0">
+                            Track your team's epic journeys through seasons, rivalries, 
+                            and championship campaigns.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Match Moments -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="story-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-trophy fa-2x text-white"></i>
+                        </div>
+                        <h4 class="text-white mb-3">Match Moments</h4>
+                        <p class="text-muted mb-0">
+                            Relive the most dramatic moments from your matches with 
+                            enhanced storytelling.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Rivalries -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="story-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-fire fa-2x text-white"></i>
+                        </div>
+                        <h4 class="text-white mb-3">Rivalries</h4>
+                        <p class="text-muted mb-0">
+                            Witness the development of intense rivalries between players 
+                            and teams over time.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Milestones -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="story-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-medal fa-2x text-white"></i>
+                        </div>
+                        <h4 class="text-white mb-3">Milestones</h4>
+                        <p class="text-muted mb-0">
+                            Celebrate career milestones, record-breaking performances, 
+                            and historic achievements.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Season Chronicles -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="story-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-calendar-alt fa-2x text-white"></i>
+                        </div>
+                        <h4 class="text-white mb-3">Season Chronicles</h4>
+                        <p class="text-muted mb-0">
+                            Get comprehensive season reviews with narrative highlights 
+                            and turning points.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Call to Action -->
+        <section class="text-center mb-5">
+            <div class="story-card">
+                <h3 class="text-white mb-3">Stay Tuned!</h3>
+                <p class="text-muted mb-4">
+                    The Story Center is being developed to bring your football world to life 
+                    with rich, dynamic narratives that emerge from your gameplay.
+                </p>
+                <a href="{% url 'matches:match_list' %}" class="btn btn-primary">
+                    <i class="fas fa-futbol me-2"></i>Play Matches to Create Stories
+                </a>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle Load More button
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        const allStoriesContainer = document.getElementById('allStories');
+        
+        if (loadMoreBtn) {
+            loadMoreBtn.addEventListener('click', function() {
+                const btn = this;
+                const offset = parseInt(btn.dataset.offset);
+                const originalText = btn.innerHTML;
+                
+                // Show loading state
+                btn.disabled = true;
+                btn.innerHTML = '<span class="loading-spinner"></span> Loading...';
+                
+                // Get current filter parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('offset', offset);
+                
+                // Fetch more stories
+                fetch(`{% url 'narrative:story_center' %}?${urlParams.toString()}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Append new stories
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = data.html;
+                    
+                    // Remove the load more button from the response
+                    const newLoadMoreBtn = tempDiv.querySelector('#loadMoreBtn');
+                    if (newLoadMoreBtn) {
+                        newLoadMoreBtn.remove();
+                    }
+                    
+                    // Append stories with animation
+                    const stories = tempDiv.querySelectorAll('.narrative-card');
+                    stories.forEach((story, index) => {
+                        story.classList.add('new-story');
+                        story.style.animationDelay = `${index * 0.1}s`;
+                        allStoriesContainer.insertBefore(story, btn.parentElement.parentElement);
+                    });
+                    
+                    // Update button
+                    if (data.has_more) {
+                        btn.dataset.offset = offset + 50;
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    } else {
+                        btn.parentElement.remove();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading more stories:', error);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                });
+            });
+        }
+        
+        // Auto-submit form on filter change
+        const filterForm = document.getElementById('filterForm');
+        if (filterForm) {
+            const selects = filterForm.querySelectorAll('select');
+            selects.forEach(select => {
+                select.addEventListener('change', function() {
+                    // Show loading indicator
+                    const submitBtn = filterForm.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="loading-spinner"></span> Applying...';
+                    
+                    // Submit form
+                    filterForm.submit();
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

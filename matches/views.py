@@ -9,7 +9,7 @@ from django.utils.decorators import method_decorator
 from django.utils import timezone
 from django.db.models import Q
 import logging
-from .models import Match, MatchEvent
+from .models import Match, MatchEvent, NarrativeEvent, PlayerRivalry, TeamChemistry, CharacterEvolution
 from clubs.models import Club
 from players.models import Player
 # Импорт Celery-задач
@@ -19,10 +19,13 @@ from tournaments.models import Championship, League
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .match_preparation import PreMatchPreparation
 from django.views.decorators.http import require_http_methods
+from .narrative_system import NarrativeAIEngine, RivalryManager, ChemistryCalculator
 
 
 
 logger = logging.getLogger('match_creation')
+
+
 
 def get_lineups_from_json(lineup_json):
     """
@@ -61,6 +64,92 @@ def get_lineups_from_json(lineup_json):
         lineup_list.append((slot_key, player_obj))
 
     return lineup_list
+
+
+def enrich_events_with_narrative_context(match_events, match):
+    """
+    Обогащает события матча нарративным контекстом:
+    - Добавляет информацию о соперничестве игроков
+    - Определяет химию между игроками
+    - Отмечает моменты эволюции характера
+    - Добавляет нарративные события
+    """
+    enriched_events = []
+    
+    # Получаем нарративные события для этого матча
+    narrative_events = NarrativeEvent.objects.filter(match=match).select_related(
+        'primary_player', 'secondary_player'
+    )
+    narrative_by_minute = {ne.minute: ne for ne in narrative_events}
+    
+    # Получаем эволюции характера для этого матча
+    character_evolutions = CharacterEvolution.objects.filter(match=match).select_related('player')
+    evolutions_by_minute = {}
+    for evo in character_evolutions:
+        # Для простоты, связываем эволюции с последней минутой матча
+        # В реальной реализации можно добавить поле minute в CharacterEvolution
+        minute = getattr(evo, 'minute', 90)  # По умолчанию 90-я минута
+        if minute not in evolutions_by_minute:
+            evolutions_by_minute[minute] = []
+        evolutions_by_minute[minute].append(evo)
+    
+    for event in match_events:
+        # Создаем обогащенное событие
+        enriched_event = {
+            'original_event': event,
+            'minute': event.minute,
+            'event_type': event.event_type,
+            'description': event.description,
+            'player': event.player,
+            'related_player': event.related_player,
+            'narrative_context': {},
+        }
+        
+        # Проверяем наличие нарративного события
+        if event.minute in narrative_by_minute:
+            narrative_event = narrative_by_minute[event.minute]
+            enriched_event['narrative_context']['narrative_event'] = narrative_event
+            enriched_event['narrative_context']['has_narrative'] = True
+            enriched_event['narrative_context']['narrative_importance'] = narrative_event.importance
+            enriched_event['narrative_context']['narrative_type'] = narrative_event.event_type
+        
+        # Проверяем эволюцию характера
+        if event.minute in evolutions_by_minute:
+            enriched_event['narrative_context']['character_evolutions'] = evolutions_by_minute[event.minute]
+            enriched_event['narrative_context']['has_character_growth'] = True
+        
+        # Проверяем соперничество между игроками
+        if event.player and event.related_player:
+            rivalry = RivalryManager.get_rivalry_between(event.player, event.related_player)
+            if rivalry:
+                enriched_event['narrative_context']['rivalry'] = rivalry
+                enriched_event['narrative_context']['has_rivalry'] = True
+                enriched_event['narrative_context']['rivalry_intensity'] = rivalry.intensity
+        
+        # Проверяем химию между игроками (только для игроков одной команды)
+        if (event.player and event.related_player and 
+            event.player.club == event.related_player.club):
+            chemistry = ChemistryCalculator.get_chemistry_between(event.player, event.related_player)
+            if chemistry:
+                enriched_event['narrative_context']['chemistry'] = chemistry
+                enriched_event['narrative_context']['has_chemistry'] = True
+                enriched_event['narrative_context']['chemistry_strength'] = chemistry.strength
+        
+        # Определяем общую важность события для нарратива
+        narrative_importance = 'normal'
+        if enriched_event['narrative_context'].get('has_narrative'):
+            narrative_importance = enriched_event['narrative_context']['narrative_importance']
+        elif enriched_event['narrative_context'].get('has_rivalry') and enriched_event['narrative_context']['rivalry_intensity'] in ['strong', 'intense']:
+            narrative_importance = 'significant'
+        elif enriched_event['narrative_context'].get('has_chemistry') and enriched_event['narrative_context']['chemistry_strength'] > 0.7:
+            narrative_importance = 'minor'
+        elif enriched_event['narrative_context'].get('has_character_growth'):
+            narrative_importance = 'minor'
+        
+        enriched_event['narrative_context']['overall_importance'] = narrative_importance
+        enriched_events.append(enriched_event)
+    
+    return enriched_events
 
 
 def get_match_lineups(match):
@@ -108,6 +197,25 @@ def match_detail(request, pk):
 
     match_events = match.events.order_by('minute')
     logger.info(f'[match_detail] Загружено событий: {match_events.count()}')
+    
+    # Обогащаем события нарративным контекстом
+    try:
+        enriched_match_events = enrich_events_with_narrative_context(match_events, match)
+        logger.info(f'[match_detail] События обогащены нарративным контекстом')
+    except Exception as e:
+        logger.warning(f'[match_detail] Ошибка обогащения событий: {e}')
+        # Fallback: создаем простую версию без нарративного контекста
+        enriched_match_events = []
+        for event in match_events:
+            enriched_match_events.append({
+                'original_event': event,
+                'minute': event.minute,
+                'event_type': event.event_type,
+                'description': event.description,
+                'player': event.player,
+                'related_player': event.related_player,
+                'narrative_context': {'overall_importance': 'normal'},
+            })
 
     home_lineup_list, away_lineup_list = get_match_lineups(match)
     logger.info(f'[match_detail] Составы получены: домашняя = {len(home_lineup_list)}, гостевая = {len(away_lineup_list)}')
@@ -163,9 +271,24 @@ def match_detail(request, pk):
         else:
             logger.warning(f'[match_detail] Предыдущий матч для гостевой команды не найден')
 
+    # Получаем нарративную сводку матча
+    try:
+        narrative_summary = NarrativeAIEngine.get_match_narrative_summary(match)
+        logger.info(f'[match_detail] Получена нарративная сводка: {narrative_summary["total_events"]} событий')
+    except Exception as e:
+        logger.warning(f'[match_detail] Ошибка получения нарративной сводки: {e}')
+        narrative_summary = {
+            'narrative_events': [],
+            'character_evolutions': [],
+            'total_events': 0,
+            'major_events': 0
+        }
+
     context = {
         'match': match,
         'match_events': match_events,
+        'enriched_match_events': enriched_match_events,
+        'narrative_summary': narrative_summary,
         'home_lineup_list': home_lineup_list,
         'away_lineup_list': away_lineup_list,
         'home_best': home_best,

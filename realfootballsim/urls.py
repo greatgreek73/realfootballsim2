@@ -14,4 +14,5 @@ urlpatterns = [
     path('matches/', include(('matches.urls', 'matches'), namespace='matches')),
     path('tournaments/', include(('tournaments.urls', 'tournaments'), namespace='tournaments')),
     path('transfers/', include(('transfers.urls', 'transfers'), namespace='transfers')),
+    path('stories/', include(('narrative.urls', 'narrative'), namespace='narrative')),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
