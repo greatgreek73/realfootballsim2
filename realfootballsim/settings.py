@@ -13,6 +13,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Can be overridden via the MATCH_MINUTE_REAL_SECONDS environment variable.
 MATCH_MINUTE_REAL_SECONDS = int(os.environ.get('MATCH_MINUTE_REAL_SECONDS', 20))
 
+# If a match minute has not advanced after this many real seconds, force the
+# next minute even if waiting_for_next_minute is False. Defaults to twice the
+# normal minute duration.
+MATCH_MINUTE_FORCE_ADVANCE_SECONDS = int(
+    os.environ.get('MATCH_MINUTE_FORCE_ADVANCE_SECONDS', MATCH_MINUTE_REAL_SECONDS * 2)
+)
+
 # Player Personality & Narrative AI Engine
 USE_PERSONALITY_ENGINE = os.environ.get('USE_PERSONALITY_ENGINE', 'True').lower() == 'true'
 

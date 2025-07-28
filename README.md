@@ -14,6 +14,9 @@ This is a Django based football simulator featuring live match updates, player m
 3. **Environment variables**
    - `IS_PRODUCTION` – set to `1` to enable production settings.
    - `MATCH_MINUTE_REAL_SECONDS` – real seconds that represent one simulated minute (default: `60`).
+   - `MATCH_MINUTE_FORCE_ADVANCE_SECONDS` – maximum real seconds before forcing a
+     minute advance even if the simulation isn't waiting (default: twice
+     `MATCH_MINUTE_REAL_SECONDS`).
 
 4. **Running the project**
    ```bash

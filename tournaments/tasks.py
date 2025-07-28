@@ -595,6 +595,7 @@ def start_scheduled_matches():
 def advance_match_minutes():
     """Advance match minutes based on real elapsed time."""
     now = timezone.now()
+    logger.info(f"\u23f1 Running advance_match_minutes at {now}")
     matches = Match.objects.filter(status='in_progress')
     if not matches:
         return 'No matches to update'
@@ -611,11 +612,16 @@ def advance_match_minutes():
             match.save(update_fields=["last_minute_update"])
             continue
 
-        if not match.waiting_for_next_minute:
+        elapsed = (now - match.last_minute_update).total_seconds()
+
+        force_advance = False
+        if elapsed >= settings.MATCH_MINUTE_FORCE_ADVANCE_SECONDS:
+            force_advance = True
+
+        if not match.waiting_for_next_minute and not force_advance:
             continue
 
-        elapsed = (now - match.last_minute_update).total_seconds()
-        if elapsed < settings.MATCH_MINUTE_REAL_SECONDS:
+        if elapsed < settings.MATCH_MINUTE_REAL_SECONDS and not force_advance:
             continue
 
         if match.current_minute < 90:
