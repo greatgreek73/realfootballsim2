@@ -102,6 +102,7 @@ def enrich_events_with_narrative_context(match_events, match):
             'description': event.description,
             'player': event.player,
             'related_player': event.related_player,
+            'personality_reason': getattr(event, 'personality_reason', None),
             'narrative_context': {},
         }
         

@@ -111,6 +111,7 @@ def simulate_active_matches(self):
                             "minute": event.minute,
                             "event_type": event.event_type,
                             "description": event.description,
+                            "personality_reason": event.personality_reason,
                             "player_name": f"{event.player.first_name} {event.player.last_name}" if event.player else "",
                             "related_player_name": f"{event.related_player.first_name} {event.related_player.last_name}" if event.related_player else ""
                         }
@@ -157,6 +158,7 @@ def simulate_active_matches(self):
                             "minute": add_event.minute,
                             "event_type": add_event.event_type,
                             "description": add_event.description,
+                            "personality_reason": add_event.personality_reason,
                             "player_name": f"{add_event.player.first_name} {add_event.player.last_name}" if add_event.player else "",
                             "related_player_name": ""
                         }
@@ -197,6 +199,7 @@ def simulate_active_matches(self):
                             "minute": add_event2.minute,
                             "event_type": add_event2.event_type,
                             "description": add_event2.description,
+                            "personality_reason": add_event2.personality_reason,
                             "player_name": f"{add_event2.player.first_name} {add_event2.player.last_name}" if add_event2.player else "",
                             "related_player_name": ""
                         }
@@ -237,6 +240,7 @@ def simulate_active_matches(self):
                             "minute": add_event3.minute,
                             "event_type": add_event3.event_type,
                             "description": add_event3.description,
+                            "personality_reason": add_event3.personality_reason,
                             "player_name": f"{add_event3.player.first_name} {add_event3.player.last_name}" if add_event3.player else "",
                             "related_player_name": ""
                         }

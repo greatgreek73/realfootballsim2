@@ -179,6 +179,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
                     'minute': evt.minute,
                     'event_type': evt.event_type,
                     'description': evt.description,
+                    'personality_reason': evt.personality_reason,
                     'player_name': evt.player.last_name if evt.player else None,
                     'related_player_name': evt.related_player.last_name if evt.related_player else None,
                 })

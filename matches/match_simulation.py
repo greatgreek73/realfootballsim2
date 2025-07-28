@@ -1157,6 +1157,15 @@ def simulate_one_action(match: Match) -> dict:
                 pressure=0.3,  # Средний уровень давления в зоне атаки
             )
             
+            # Получаем информацию о влияющей черте характера
+            personality_reason = None
+            if USE_PERSONALITY_ENGINE:
+                trait_name, trait_description = PersonalityDecisionEngine.get_influencing_trait(
+                    shooter, 'shoot', personality_context
+                )
+                if trait_description:
+                    personality_reason = f"Повлияла черта: {trait_description}"
+            
             if is_goal:
                 if possessing_team.id == match.home_team_id:
                     match.home_score += 1
@@ -1188,7 +1197,8 @@ def simulate_one_action(match: Match) -> dict:
                         team=possessing_team.name,
                         home=match.home_score,
                         away=match.away_score,
-                    )
+                    ),
+                    'personality_reason': personality_reason
                 }
             else:
                 # === СИСТЕМА МОРАЛИ: ПРОМАХ ===
@@ -1205,7 +1215,8 @@ def simulate_one_action(match: Match) -> dict:
                     'description': render_comment(
                         'shot_miss',
                         shooter=f"{shooter.first_name} {shooter.last_name}",
-                    )
+                    ),
+                    'personality_reason': personality_reason
                 }
             
             # После удара мяч переходит к вратарю соперника
@@ -1307,6 +1318,16 @@ def simulate_one_action(match: Match) -> dict:
                 defender,
                 momentum=get_team_momentum(match, possessing_team),
             )
+            
+            # Получаем информацию о влияющей черте характера для дриблинга
+            dribble_personality_reason = None
+            if USE_PERSONALITY_ENGINE:
+                trait_name, trait_description = PersonalityDecisionEngine.get_influencing_trait(
+                    current_player, 'dribble', personality_context
+                )
+                if trait_description:
+                    dribble_personality_reason = f"Повлияла черта: {trait_description}"
+            
             dribble_event = {
                 'match': match,
                 'minute': match.current_minute,
@@ -1318,6 +1339,7 @@ def simulate_one_action(match: Match) -> dict:
                     player=current_player.last_name,
                     zone=target_zone,
                 ),
+                'personality_reason': dribble_personality_reason
             }
 
             if random.random() < success_prob:
@@ -1482,6 +1504,16 @@ def simulate_one_action(match: Match) -> dict:
             high=is_long,
             momentum=get_team_momentum(match, possessing_team),
         ) if recipient else 0
+        
+        # Получаем информацию о влияющей черте характера для паса
+        pass_personality_reason = None
+        if USE_PERSONALITY_ENGINE:
+            pass_type = 'long_pass' if is_long else 'pass'
+            trait_name, trait_description = PersonalityDecisionEngine.get_influencing_trait(
+                current_player, pass_type, personality_context
+            )
+            if trait_description:
+                pass_personality_reason = f"Повлияла черта: {trait_description}"
 
         if recipient:
             if random.random() < pass_prob:
@@ -1499,7 +1531,8 @@ def simulate_one_action(match: Match) -> dict:
                         recipient=recipient.last_name,
                         from_zone=current_zone,
                         to_zone=target_zone,
-                    )
+                    ),
+                    'personality_reason': pass_personality_reason
                 }
 
                 match.current_player_with_ball = recipient
@@ -1580,6 +1613,7 @@ def simulate_one_action(match: Match) -> dict:
                         from_zone=current_zone,
                         to_zone=target_zone,
                     ),
+                    'personality_reason': pass_personality_reason
                 }
 
                 if interceptor:

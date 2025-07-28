@@ -1105,3 +1105,69 @@ class PersonalityDecisionEngine:
         # Выбираем лучший вариант
         scored_options.sort(key=lambda x: x[1], reverse=True)
         return scored_options[0][0] if scored_options else None
+    
+    @staticmethod
+    def get_influencing_trait(player, action_type, context=None):
+        """
+        Определяет основную черту характера, влияющую на принятое решение.
+        
+        Args:
+            player: Объект игрока
+            action_type (str): Тип действия ('pass', 'shoot', 'dribble', 'tackle', 'long_pass', 'attack')
+            context (dict, optional): Контекст игровой ситуации
+            
+        Returns:
+            tuple: (trait_name, trait_description) или (None, None) если нет влияния
+        """
+        if not getattr(settings, 'USE_PERSONALITY_ENGINE', False):
+            return (None, None)
+        
+        try:
+            # Словарь с описаниями черт характера на русском
+            TRAIT_DESCRIPTIONS = {
+                'aggression': 'Агрессивность',
+                'confidence': 'Уверенность',
+                'risk_taking': 'Склонность к риску',
+                'patience': 'Терпеливость',
+                'teamwork': 'Командная игра',
+                'leadership': 'Лидерство',
+                'ambition': 'Амбициозность',
+                'charisma': 'Харизма',
+                'endurance': 'Выносливость',
+                'adaptability': 'Адаптивность'
+            }
+            
+            # Определяем основную черту для каждого типа действия
+            trait_mapping = {
+                'shoot': ['ambition', 'confidence', 'risk_taking'],
+                'pass': ['teamwork', 'patience'],
+                'long_pass': ['risk_taking', 'ambition'],
+                'dribble': ['confidence', 'risk_taking'],
+                'tackle': ['aggression'],
+                'attack': ['ambition', 'risk_taking']
+            }
+            
+            # Получаем черты для данного действия
+            relevant_traits = trait_mapping.get(action_type, [])
+            if not relevant_traits:
+                return (None, None)
+            
+            # Находим черту с наибольшим значением у игрока
+            max_trait = None
+            max_value = 0
+            
+            for trait in relevant_traits:
+                trait_value = PersonalityModifier._get_trait_value(player, trait)
+                if trait_value and trait_value > max_value:
+                    max_value = trait_value
+                    max_trait = trait
+            
+            # Возвращаем черту только если её значение достаточно высокое (>12)
+            if max_trait and max_value > 12:
+                return (max_trait, TRAIT_DESCRIPTIONS.get(max_trait, max_trait))
+            
+            return (None, None)
+            
+        except Exception as e:
+            logger.warning(f"Error getting influencing trait for player {player.id}: {e}")
+            return (None, None)

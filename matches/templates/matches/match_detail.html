@@ -198,6 +198,13 @@
                                                 <small class="text-muted">({{ enriched_event.player.last_name }}{% if enriched_event.related_player %} -> {{ enriched_event.related_player.last_name }}{% endif %})</small>
                                                 {% endif %}
                                                 
+                                                {# Отображение влияния черты характера #}
+                                                {% if enriched_event.personality_reason %}
+                                                <div class="personality-reason mt-1">
+                                                    <small class="text-secondary fst-italic">({{ enriched_event.personality_reason }})</small>
+                                                </div>
+                                                {% endif %}
+                                                
                                                 {# Нарративное описание события если есть #}
                                                 {% if enriched_event.narrative_context.has_narrative %}
                                                 <div class="narrative-description mt-2">

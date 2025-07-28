@@ -156,6 +156,7 @@ class MatchEvent(models.Model):
         related_name='related_match_events'
     )
     description = models.TextField(blank=True)
+    personality_reason = models.CharField(max_length=200, blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
 
     def __str__(self):

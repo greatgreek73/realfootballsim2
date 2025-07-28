@@ -454,3 +454,45 @@
         border-color: #4a5568;
     }
 }
+
+/* Personality reason styles */
+.personality-reason {
+    margin-top: 0.25rem;
+    padding-left: 1rem;
+}
+
+.personality-reason small {
+    color: #6c757d;
+    font-style: italic;
+    font-size: 0.85em;
+}
+
+/* В списке событий */
+.list-group-item .personality-reason {
+    display: block;
+    margin-left: 2rem;
+}
+
+/* Для live событий */
+.event-item .personality-reason {
+    display: block;
+    margin-left: 1.5rem;
+    opacity: 0.8;
+}
+
+/* Hover эффект */
+.list-group-item:hover .personality-reason {
+    opacity: 1;
+    color: #495057;
+}
+
+/* Dark mode support for personality reason */
+@media (prefers-color-scheme: dark) {
+    .personality-reason small {
+        color: #adb5bd;
+    }
+    
+    .list-group-item:hover .personality-reason {
+        color: #e9ecef;
+    }
+}

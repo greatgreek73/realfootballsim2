@@ -276,6 +276,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             html += `)</small>`;
         }
+        
+        // Добавляем информацию о влиянии черты характера
+        if (evt.personality_reason) {
+            html += `<div class="personality-reason mt-1"><small class="text-secondary fst-italic">(${evt.personality_reason})</small></div>`;
+        }
 
         item.innerHTML = html;
 
