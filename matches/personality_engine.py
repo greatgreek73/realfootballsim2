@@ -1163,7 +1163,7 @@ class PersonalityDecisionEngine:
                     max_trait = trait
             
             # Возвращаем черту только если её значение достаточно высокое (>12)
-            if max_trait and max_value > 12:
+            if max_trait and max_value > 3:
                 return (max_trait, TRAIT_DESCRIPTIONS.get(max_trait, max_trait))
             
             return (None, None)

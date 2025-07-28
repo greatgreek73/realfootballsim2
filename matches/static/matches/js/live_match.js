@@ -255,6 +255,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function addEventToList(evt) {
         if (!eventsBox) return;
 
+        // DEBUG: Логируем полученное событие
+        console.log('=== DEBUG: addEventToList ===');
+        console.log('Event received:', evt);
+        console.log('Event type:', evt.event_type);
+        console.log('Personality reason:', evt.personality_reason);
+        console.log('===========================');
+
         const item = document.createElement('div');
         item.className = 'list-group-item new-event';
 
@@ -279,7 +286,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Добавляем информацию о влиянии черты характера
         if (evt.personality_reason) {
+            console.log('DEBUG: Adding personality_reason to HTML:', evt.personality_reason);
             html += `<div class="personality-reason mt-1"><small class="text-secondary fst-italic">(${evt.personality_reason})</small></div>`;
+        } else {
+            console.log('DEBUG: No personality_reason found in event');
         }
 
         item.innerHTML = html;
@@ -355,6 +365,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (msg.type !== 'match_update' || !msg.data) return;
             const d = msg.data;
             console.log('WS data:', d);
+            
+            // DEBUG: Детальная проверка событий
+            if (d.events && Array.isArray(d.events)) {
+                console.log('=== DEBUG: WebSocket Events ===');
+                console.log('Number of events:', d.events.length);
+                d.events.forEach((evt, idx) => {
+                    console.log(`Event ${idx}:`, evt);
+                    if (evt.personality_reason) {
+                        console.log(`Event ${idx} has personality_reason:`, evt.personality_reason);
+                    }
+                });
+                console.log('==============================');
+            }
 
             // Добавлено: выделение зоны при любом обновлении (если есть current_zone и possessing_team_id)
             if (d.current_zone && d.possessing_team_id !== undefined) {

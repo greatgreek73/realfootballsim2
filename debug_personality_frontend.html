@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Personality Reason Frontend</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .event { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .personality-reason { color: #666; font-style: italic; margin-top: 5px; }
+        .has-reason { background-color: #f0f8ff; }
+        .no-reason { background-color: #fff0f0; }
+    </style>
+</head>
+<body>
+    <h1>Debug: Personality Reason Display</h1>
+    
+    <h2>Test Cases</h2>
+    
+    <div class="event has-reason">
+        <strong>5'</strong> ⚽ Гол! Игрок забивает великолепный гол
+        <div class="personality-reason">
+            <small class="text-secondary fst-italic">(Повлияла черта: Clutch - надежность в критические моменты)</small>
+        </div>
+    </div>
+    
+    <div class="event no-reason">
+        <strong>10'</strong> ➡️ Пас от игрока А к игроку Б
+        <!-- Без personality_reason -->
+    </div>
+    
+    <div class="event has-reason">
+        <strong>15'</strong> ⚡ Контратака начата игроком
+        <div class="personality-reason">
+            <small class="text-secondary fst-italic">(Повлияла черта: Aggressive - агрессивная игра)</small>
+        </div>
+    </div>
+    
+    <h2>JavaScript Test</h2>
+    <button onclick="testPersonalityDisplay()">Test JavaScript Creation</button>
+    <div id="test-container"></div>
+    
+    <script>
+    function testPersonalityDisplay() {
+        const container = document.getElementById('test-container');
+        
+        // Тест 1: Событие с personality_reason
+        const event1 = {
+            minute: 20,
+            event_type: 'goal',
+            description: 'Тестовый гол',
+            personality_reason: 'Повлияла черта: Leadership - лидерские качества'
+        };
+        
+        // Тест 2: Событие без personality_reason
+        const event2 = {
+            minute: 25,
+            event_type: 'pass',
+            description: 'Тестовый пас',
+            personality_reason: null
+        };
+        
+        // Создаем HTML как в live_match.js
+        [event1, event2].forEach(evt => {
+            const item = document.createElement('div');
+            item.className = 'event';
+            
+            let html = `<strong>${evt.minute}'</strong> ${evt.description}`;
+            
+            if (evt.personality_reason) {
+                html += `<div class="personality-reason mt-1"><small class="text-secondary fst-italic">(${evt.personality_reason})</small></div>`;
+                item.classList.add('has-reason');
+            } else {
+                item.classList.add('no-reason');
+            }
+            
+            item.innerHTML = html;
+            container.appendChild(item);
+        });
+        
+        console.log('Test events created. Check if personality_reason is displayed correctly.');
+    }
+    </script>
+</body>
+</html>
