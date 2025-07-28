@@ -11,7 +11,10 @@
       "Bash(venv310/Scripts/python.exe manage.py update_player_bloom_data --dry-run)",
       "Bash(venv310/Scripts/python.exe manage.py:*)",
       "Bash(python3:*)",
-      "Bash(venv310/Scripts/python test_narrative_integration.py:*)"
+      "Bash(venv310/Scripts/python test_narrative_integration.py:*)",
+      "Bash(python:*)",
+      "Bash(ls:*)",
+      "Bash(. venv310/Scripts/activate)"
     ],
     "deny": []
   }

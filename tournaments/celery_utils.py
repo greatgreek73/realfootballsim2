@@ -34,6 +34,7 @@ def ensure_simulation_schedule():
         defaults={
             'task': 'tournaments.advance_match_minutes',
             'interval': real_interval,
+            'enabled': True,
         },
     )
     if not created and rt_task.interval_id != real_interval.id:

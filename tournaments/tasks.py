@@ -48,6 +48,17 @@ def simulate_active_matches(self):
             with transaction.atomic():
                 match_locked = Match.objects.select_for_update().get(id=match.id)
 
+                # Инициализируем время начала и последнего обновления, если не установлены
+                if match_locked.started_at is None:
+                    match_locked.started_at = timezone.now()
+                    match_locked.save(update_fields=['started_at'])
+                    logger.info(f"✅ Установлено время начала для матча ID={match_locked.id}")
+
+                if match_locked.last_minute_update is None:
+                    match_locked.last_minute_update = timezone.now()
+                    match_locked.save(update_fields=['last_minute_update'])
+                    logger.info(f"✅ Установлено время последнего обновления для матча ID={match_locked.id}")
+
                 # Если ожидаем начала следующей минуты, пропускаем обработку
                 if match_locked.waiting_for_next_minute:
                     logger.info(
