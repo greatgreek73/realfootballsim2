@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real Football Sim - Design System</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Design Tokens */
+        :root {
+            /* Colors */
+            --color-primary: #2D7A7B;        /* Teal/Petrol - основной акцент */
+            --color-primary-light: #3A9899;  /* Светлый вариант */
+            --color-primary-dark: #1F5657;   /* Темный вариант */
+            --color-primary-subtle: #E8F3F3; /* Очень светлый фон */
+            
+            --color-background: #FFFFFF;     /* Основной белый фон */
+            --color-surface: #FAFBFC;        /* Слегка серый фон для карточек */
+            --color-border: #E8ECEF;         /* Светлые границы */
+            
+            --color-text-primary: #1A202C;   /* Глубокий текст */
+            --color-text-secondary: #64748B; /* Вторичный текст */
+            --color-text-muted: #94A3B8;     /* Приглушенный текст */
+            
+            --color-success: #10B981;        /* Зеленый для успеха */
+            --color-warning: #F59E0B;        /* Оранжевый для предупреждений */
+            --color-error: #EF4444;          /* Красный для ошибок */
+            
+            /* Typography */
+            --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --font-display: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            
+            /* Font Sizes */
+            --text-xs: 0.75rem;    /* 12px */
+            --text-sm: 0.875rem;   /* 14px */
+            --text-base: 1rem;     /* 16px */
+            --text-lg: 1.125rem;   /* 18px */
+            --text-xl: 1.25rem;    /* 20px */
+            --text-2xl: 1.5rem;    /* 24px */
+            --text-3xl: 1.875rem;  /* 30px */
+            --text-4xl: 2.25rem;   /* 36px */
+            --text-5xl: 3rem;      /* 48px */
+            
+            /* Spacing */
+            --space-1: 0.25rem;    /* 4px */
+            --space-2: 0.5rem;     /* 8px */
+            --space-3: 0.75rem;    /* 12px */
+            --space-4: 1rem;       /* 16px */
+            --space-5: 1.25rem;    /* 20px */
+            --space-6: 1.5rem;     /* 24px */
+            --space-8: 2rem;       /* 32px */
+            --space-10: 2.5rem;    /* 40px */
+            --space-12: 3rem;      /* 48px */
+            --space-16: 4rem;      /* 64px */
+            
+            /* Border Radius */
+            --radius-sm: 0.375rem;  /* 6px */
+            --radius-md: 0.5rem;    /* 8px */
+            --radius-lg: 0.75rem;   /* 12px */
+            --radius-xl: 1rem;      /* 16px */
+            --radius-full: 9999px;  /* Полное скругление */
+            
+            /* Shadows */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            
+            /* Transitions */
+            --transition-fast: 150ms ease;
+            --transition-base: 200ms ease;
+            --transition-slow: 300ms ease;
+        }
+        
+        /* Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: var(--font-primary);
+            font-size: var(--text-base);
+            line-height: 1.5;
+            color: var(--color-text-primary);
+            background-color: var(--color-background);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--space-8) var(--space-6);
+        }
+        
+        .section {
+            margin-bottom: var(--space-16);
+        }
+        
+        .section-title {
+            font-family: var(--font-display);
+            font-size: var(--text-3xl);
+            font-weight: 700;
+            margin-bottom: var(--space-8);
+            color: var(--color-text-primary);
+        }
+        
+        .subsection {
+            margin-bottom: var(--space-10);
+        }
+        
+        .subsection-title {
+            font-size: var(--text-xl);
+            font-weight: 600;
+            margin-bottom: var(--space-4);
+            color: var(--color-text-primary);
+        }
+        
+        /* Typography Classes */
+        .h1 {
+            font-family: var(--font-display);
+            font-size: var(--text-5xl);
+            font-weight: 800;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+        }
+        
+        .h2 {
+            font-family: var(--font-display);
+            font-size: var(--text-4xl);
+            font-weight: 700;
+            line-height: 1.25;
+            letter-spacing: -0.01em;
+        }
+        
+        .h3 {
+            font-family: var(--font-primary);
+            font-size: var(--text-3xl);
+            font-weight: 600;
+            line-height: 1.3;
+        }
+        
+        .h4 {
+            font-family: var(--font-primary);
+            font-size: var(--text-2xl);
+            font-weight: 600;
+            line-height: 1.4;
+        }
+        
+        .h5 {
+            font-family: var(--font-primary);
+            font-size: var(--text-xl);
+            font-weight: 600;
+            line-height: 1.4;
+        }
+        
+        .body-lg {
+            font-size: var(--text-lg);
+            line-height: 1.6;
+        }
+        
+        .body {
+            font-size: var(--text-base);
+            line-height: 1.5;
+        }
+        
+        .body-sm {
+            font-size: var(--text-sm);
+            line-height: 1.5;
+        }
+        
+        .caption {
+            font-size: var(--text-xs);
+            line-height: 1.4;
+            color: var(--color-text-secondary);
+        }
+        
+        /* Button Styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-3) var(--space-6);
+            font-family: var(--font-primary);
+            font-size: var(--text-base);
+            font-weight: 500;
+            line-height: 1;
+            border-radius: var(--radius-full);
+            border: none;
+            cursor: pointer;
+            transition: all var(--transition-base);
+            text-decoration: none;
+            white-space: nowrap;
+            user-select: none;
+        }
+        
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--color-primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--color-primary);
+            border: 2px solid var(--color-primary);
+        }
+        
+        .btn-secondary:hover {
+            background-color: var(--color-primary);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-ghost {
+            background-color: transparent;
+            color: var(--color-text-primary);
+        }
+        
+        .btn-ghost:hover {
+            background-color: var(--color-primary-subtle);
+            color: var(--color-primary);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        
+        .btn-sm {
+            padding: var(--space-2) var(--space-4);
+            font-size: var(--text-sm);
+        }
+        
+        .btn-lg {
+            padding: var(--space-4) var(--space-8);
+            font-size: var(--text-lg);
+        }
+        
+        /* Card Styles */
+        .card {
+            background-color: var(--color-surface);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            box-shadow: var(--shadow-sm);
+            transition: all var(--transition-base);
+        }
+        
+        .card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+        
+        .card-title {
+            font-size: var(--text-xl);
+            font-weight: 600;
+            margin-bottom: var(--space-3);
+        }
+        
+        .card-body {
+            color: var(--color-text-secondary);
+            line-height: 1.6;
+        }
+        
+        /* Input Styles */
+        .input-group {
+            margin-bottom: var(--space-4);
+        }
+        
+        .input-label {
+            display: block;
+            font-size: var(--text-sm);
+            font-weight: 500;
+            color: var(--color-text-primary);
+            margin-bottom: var(--space-2);
+        }
+        
+        .input {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-primary);
+            font-size: var(--text-base);
+            line-height: 1.5;
+            color: var(--color-text-primary);
+            background-color: var(--color-background);
+            border: 2px solid var(--color-border);
+            border-radius: var(--radius-md);
+            transition: all var(--transition-base);
+        }
+        
+        .input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(45, 122, 123, 0.1);
+        }
+        
+        .input::placeholder {
+            color: var(--color-text-muted);
+        }
+        
+        /* Color Palette Display */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-4);
+            margin-bottom: var(--space-8);
+        }
+        
+        .color-card {
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .color-swatch {
+            height: 100px;
+            display: flex;
+            align-items: flex-end;
+            padding: var(--space-4);
+        }
+        
+        .color-info {
+            background-color: white;
+            padding: var(--space-4);
+        }
+        
+        .color-name {
+            font-weight: 600;
+            margin-bottom: var(--space-1);
+        }
+        
+        .color-value {
+            font-family: monospace;
+            font-size: var(--text-sm);
+            color: var(--color-text-secondary);
+        }
+        
+        /* Component Grid */
+        .component-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-6);
+        }
+        
+        /* Demo Sections */
+        .demo-row {
+            display: flex;
+            gap: var(--space-4);
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: var(--space-4);
+        }
+        
+        /* Football Sim Specific Components */
+        .player-card {
+            background-color: var(--color-surface);
+            border-radius: var(--radius-lg);
+            padding: var(--space-5);
+            box-shadow: var(--shadow-sm);
+            transition: all var(--transition-base);
+        }
+        
+        .player-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+        
+        .player-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+            margin-bottom: var(--space-4);
+        }
+        
+        .player-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: var(--radius-full);
+            background-color: var(--color-primary-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--color-primary);
+        }
+        
+        .player-info h3 {
+            font-size: var(--text-lg);
+            font-weight: 600;
+            margin-bottom: var(--space-1);
+        }
+        
+        .player-position {
+            font-size: var(--text-sm);
+            color: var(--color-text-secondary);
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-2) 0;
+        }
+        
+        .stat-label {
+            font-size: var(--text-sm);
+            color: var(--color-text-secondary);
+        }
+        
+        .stat-value {
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+        
+        .stat-bar {
+            flex: 1;
+            height: 6px;
+            background-color: var(--color-border);
+            border-radius: var(--radius-full);
+            margin: 0 var(--space-3);
+            overflow: hidden;
+        }
+        
+        .stat-fill {
+            height: 100%;
+            background-color: var(--color-primary);
+            border-radius: var(--radius-full);
+            transition: width var(--transition-slow);
+        }
+        
+        /* Match Score Component */
+        .match-score {
+            background-color: var(--color-surface);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .match-teams {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-bottom: var(--space-4);
+        }
+        
+        .team-name {
+            font-size: var(--text-xl);
+            font-weight: 600;
+        }
+        
+        .score {
+            font-family: var(--font-display);
+            font-size: var(--text-5xl);
+            font-weight: 800;
+            color: var(--color-primary);
+            margin: var(--space-4) 0;
+        }
+        
+        .match-time {
+            font-size: var(--text-sm);
+            color: var(--color-text-secondary);
+        }
+        
+        /* Navigation Demo */
+        .nav-demo {
+            background-color: var(--color-surface);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4);
+            display: flex;
+            gap: var(--space-2);
+        }
+        
+        .nav-item {
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-md);
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            transition: all var(--transition-base);
+        }
+        
+        .nav-item:hover {
+            background-color: var(--color-primary-subtle);
+            color: var(--color-primary);
+        }
+        
+        .nav-item.active {
+            background-color: var(--color-primary);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="section">
+            <h1 class="h1">Real Football Sim Design System</h1>
+            <p class="body-lg" style="color: var(--color-text-secondary); margin-top: var(--space-4);">
+                Элегантная дизайн-система для премиального футбольного симулятора
+            </p>
+        </header>
+        
+        <!-- Color Palette -->
+        <section class="section">
+            <h2 class="section-title">Цветовая палитра</h2>
+            
+            <div class="subsection">
+                <h3 class="subsection-title">Основные цвета</h3>
+                <div class="color-grid">
+                    <div class="color-card">
+                        <div class="color-swatch" style="background-color: var(--color-primary);">
+                            <span style="color: white; font-weight: 600;">Primary</span>
+                        </div>
+                        <div class="color-info">
+                            <div class="color-name">Teal/Petrol</div>
+                            <div class="color-value">#2D7A7B</div>
+                        </div>
+                    </div>
+                    
+                    <div class="color-card">
+                        <div class="color-swatch" style="background-color: var(--color-primary-light);">
+                            <span style="color: white; font-weight: 600;">Primary Light</span>
+                        </div>
+                        <div class="color-info">
+                            <div class="color-name">Light Teal</div>
+                            <div class="color-value">#3A9899</div>
+                        </div>
+                    </div>
+                    
+                    <div class="color-card">
+                        <div class="color-swatch" style="background-color: var(--color-primary-dark);">
+                            <span style="color: white; font-weight: 600;">Primary Dark</span>
+                        </div>
+                        <div class="color-info">
+                            <div class="color-name">Dark Teal</div>
+                            <div class="color-value">#1F5657</div>
+                        </div>
+                    </div>
+                    
+                    <div class="color-card">
+                        <div class="color-swatch" style="background-color: var(--color-primary-subtle);">
+                            <span style="color: var(--color-primary); font-weight: 600;">Primary Subtle</span>
+                        </div>
+                        <div class="color-info">
+                            <div class="color-name">Teal Tint</div>
+                            <div class="color-value">#E8F3F3</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="subsection">
+                <h3 class="subsection-title">Нейтральные цвета</h3>
+                <div class="color-grid">
+                    <div class="color-card">
+                        <div class="color-swatch" style="background-color: var(--color-background);">
+                            <span style="color: var(--color-text-primary); font-weight: 600;">Background</span>
+                        </div>
+                        <div class="color-info">
+                            <div class="color-name">Pure White</div>
+                            <div class="color-value">#FFFFFF</div>
+                        </div>
+                    </div>
+                    
+                    <div class="color-card">
+                        <div class="color-swatch" style="background-color: var(--color-surface);">
+                            <span style="color: var(--color-text-primary); font-weight: 600;">Surface</span>
+                        </div>
+                        <div class="color-info">
+                            <div class="color-name">Light Gray</div>
+                            <div class="color-value">#FAFBFC</div>
+                        </div>
+                    </div>
+                    
+                    <div class="color-card">
+                        <div class="color-swatch" style="background-color: var(--color-text-primary);">
+                            <span style="color: white; font-weight: 600;">Text Primary</span>
+                        </div>
+                        <div class="color-info">
+                            <div class="color-name">Deep Black</div>
+                            <div class="color-value">#1A202C</div>
+                        </div>
+                    </div>
+                    
+                    <div class="color-card">
+                        <div class="color-swatch" style="background-color: var(--color-text-secondary);">
+                            <span style="color: white; font-weight: 600;">Text Secondary</span>
+                        </div>
+                        <div class="color-info">
+                            <div class="color-name">Gray</div>
+                            <div class="color-value">#64748B</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="subsection">
+                <h3 class="subsection-title">Семантические цвета</h3>
+                <div class="color-grid">
+                    <div class="color-card">
+                        <div class="color-swatch" style="background-color: var(--color-success);">
+                            <span style="color: white; font-weight: 600;">Success</span>
+                        </div>
+                        <div class="color-info">
+                            <div class="color-name">Green</div>
+                            <div class="color-value">#10B981</div>
+                        </div>
+                    </div>
+                    
+                    <div class="color-card">
+                        <div class="color-swatch" style="background-color: var(--color-warning);">
+                            <span style="color: white; font-weight: 600;">Warning</span>
+                        </div>
+                        <div class="color-info">
+                            <div class="color-name">Orange</div>
+                            <div class="color-value">#F59E0B</div>
+                        </div>
+                    </div>
+                    
+                    <div class="color-card">
+                        <div class="color-swatch" style="background-color: var(--color-error);">
+                            <span style="color: white; font-weight: 600;">Error</span>
+                        </div>
+                        <div class="color-info">
+                            <div class="color-name">Red</div>
+                            <div class="color-value">#EF4444</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Typography -->
+        <section class="section">
+            <h2 class="section-title">Типографика</h2>
+            
+            <div class="subsection">
+                <h3 class="subsection-title">Шрифты</h3>
+                <div class="card">
+                    <p class="body-lg">
+                        <strong>Основной шрифт:</strong> Inter (400, 500, 600, 700)<br>
+                        <strong>Дисплейный шрифт:</strong> Manrope (700, 800)
+                    </p>
+                </div>
+            </div>
+            
+            <div class="subsection">
+                <h3 class="subsection-title">Заголовки</h3>
+                <div style="margin-bottom: var(--space-8);">
+                    <h1 class="h1" style="margin-bottom: var(--space-4);">Heading 1 - 48px</h1>
+                    <h2 class="h2" style="margin-bottom: var(--space-4);">Heading 2 - 36px</h2>
+                    <h3 class="h3" style="margin-bottom: var(--space-4);">Heading 3 - 30px</h3>
+                    <h4 class="h4" style="margin-bottom: var(--space-4);">Heading 4 - 24px</h4>
+                    <h5 class="h5" style="margin-bottom: var(--space-4);">Heading 5 - 20px</h5>
+                </div>
+            </div>
+            
+            <div class="subsection">
+                <h3 class="subsection-title">Текст</h3>
+                <div style="margin-bottom: var(--space-8);">
+                    <p class="body-lg" style="margin-bottom: var(--space-3);">
+                        Body Large - 18px. Используется для вводных текстов и важных описаний.
+                    </p>
+                    <p class="body" style="margin-bottom: var(--space-3);">
+                        Body Regular - 16px. Основной размер текста для контента и описаний.
+                    </p>
+                    <p class="body-sm" style="margin-bottom: var(--space-3);">
+                        Body Small - 14px. Используется для вторичной информации.
+                    </p>
+                    <p class="caption">
+                        Caption - 12px. Для подписей и мелкого текста.
+                    </p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Buttons -->
+        <section class="section">
+            <h2 class="section-title">Кнопки</h2>
+            
+            <div class="subsection">
+                <h3 class="subsection-title">Основные варианты</h3>
+                <div class="demo-row">
+                    <button class="btn btn-primary">Primary Button</button>
+                    <button class="btn btn-secondary">Secondary Button</button>
+                    <button class="btn btn-ghost">Ghost Button</button>
+                    <button class="btn btn-primary" disabled>Disabled</button>
+                </div>
+            </div>
+            
+            <div class="subsection">
+                <h3 class="subsection-title">Размеры</h3>
+                <div class="demo-row">
+                    <button class="btn btn-primary btn-sm">Small</button>
+                    <button class="btn btn-primary">Regular</button>
+                    <button class="btn btn-primary btn-lg">Large</button>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Cards -->
+        <section class="section">
+            <h2 class="section-title">Карточки</h2>
+            
+            <div class="component-grid">
+                <div class="card">
+                    <h3 class="card-title">Базовая карточка</h3>
+                    <p class="card-body">
+                        Карточки используются для группировки связанной информации. 
+                        Они имеют легкую тень и скругленные углы для создания ощущения глубины.
+                    </p>
+                </div>
+                
+                <div class="card">
+                    <h3 class="card-title">Интерактивная карточка</h3>
+                    <p class="card-body">
+                        При наведении карточка поднимается и усиливается тень, 
+                        создавая эффект взаимодействия.
+                    </p>
+                    <button class="btn btn-primary" style="margin-top: var(--space-4);">Действие</button>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Form Elements -->
+        <section class="section">
+            <h2 class="section-title">Элементы форм</h2>
+            
+            <div class="component-grid">
+                <div>
+                    <div class="input-group">
+                        <label class="input-label" for="input-text">Текстовое поле</label>
+                        <input type="text" id="input-text" class="input" placeholder="Введите текст...">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label class="input-label" for="input-email">Email</label>
+                        <input type="email" id="input-email" class="input" placeholder="example@email.com">
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="input-group">
+                        <label class="input-label" for="input-search">Поиск</label>
+                        <input type="search" id="input-search" class="input" placeholder="Поиск игроков...">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label class="input-label" for="input-number">Число</label>
+                        <input type="number" id="input-number" class="input" placeholder="0" min="0" max="100">
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Football Sim Components -->
+        <section class="section">
+            <h2 class="section-title">Компоненты футбольного симулятора</h2>
+            
+            <div class="subsection">
+                <h3 class="subsection-title">Карточка игрока</h3>
+                <div class="component-grid">
+                    <div class="player-card">
+                        <div class="player-header">
+                            <div class="player-avatar">КМ</div>
+                            <div class="player-info">
+                                <h3>Килиан Мбаппе</h3>
+                                <p class="player-position">Нападающий</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-row">
+                            <span class="stat-label">Скорость</span>
+                            <div class="stat-bar">
+                                <div class="stat-fill" style="width: 95%;"></div>
+                            </div>
+                            <span class="stat-value">95</span>
+                        </div>
+                        
+                        <div class="stat-row">
+                            <span class="stat-label">Дриблинг</span>
+                            <div class="stat-bar">
+                                <div class="stat-fill" style="width: 92%;"></div>
+                            </div>
+                            <span class="stat-value">92</span>
+                        </div>
+                        
+                        <div class="stat-row">
+                            <span class="stat-label">Удар</span>
+                            <div class="stat-bar">
+                                <div class="stat-fill" style="width: 88%;"></div>
+                            </div>
+                            <span class="stat-value">88</span>
+                        </div>
+                    </div>
+                    
+                    <div class="player-card">
+                        <div class="player-header">
+                            <div class="player-avatar">ЛМ</div>
+                            <div class="player-info">
+                                <h3>Лионель Месси</h3>
+                                <p class="player-position">Атакующий полузащитник</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-row">
+                            <span class="stat-label">Техника</span>
+                            <div class="stat-bar">
+                                <div class="stat-fill" style="width: 99%;"></div>
+                            </div>
+                            <span class="stat-value">99</span>
+                        </div>
+                        
+                        <div class="stat-row">
+                            <span class="stat-label">Видение</span>
+                            <div class="stat-bar">
+                                <div class="stat-fill" style="width: 95%;"></div>
+                            </div>
+                            <span class="stat-value">95</span>
+                        </div>
+                        
+                        <div class="stat-row">
+                            <span class="stat-label">Пас</span>
+                            <div class="stat-bar">
+                                <div class="stat-fill" style="width: 91%;"></div>
+                            </div>
+                            <span class="stat-value">91</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="subsection">
+                <h3 class="subsection-title">Табло матча</h3>
+                <div class="match-score">
+                    <div class="match-teams">
+                        <div class="team-name">Реал Мадрид</div>
+                        <div class="team-name">Барселона</div>
+                    </div>
+                    <div class="score">2 : 1</div>
+                    <div class="match-time">67' - Идет второй тайм</div>
+                    <button class="btn btn-primary" style="margin-top: var(--space-4);">Смотреть трансляцию</button>
+                </div>
+            </div>
+            
+            <div class="subsection">
+                <h3 class="subsection-title">Навигация</h3>
+                <nav class="nav-demo">
+                    <a href="#" class="nav-item">Обзор</a>
+                    <a href="#" class="nav-item active">Матчи</a>
+                    <a href="#" class="nav-item">Команда</a>
+                    <a href="#" class="nav-item">Трансферы</a>
+                    <a href="#" class="nav-item">Статистика</a>
+                </nav>
+            </div>
+        </section>
+        
+        <!-- Usage Examples -->
+        <section class="section">
+            <h2 class="section-title">Примеры использования</h2>
+            
+            <div class="subsection">
+                <h3 class="subsection-title">Комбинация компонентов</h3>
+                <div class="card">
+                    <h3 class="card-title">Предстоящий матч</h3>
+                    <p class="card-body" style="margin-bottom: var(--space-4);">
+                        Важный матч чемпионата против сильного соперника. 
+                        Убедитесь, что ваша команда готова к испытанию.
+                    </p>
+                    <div class="demo-row">
+                        <button class="btn btn-primary">Выбрать состав</button>
+                        <button class="btn btn-secondary">Тактика</button>
+                        <button class="btn btn-ghost">Статистика встреч</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</body>
+</html>

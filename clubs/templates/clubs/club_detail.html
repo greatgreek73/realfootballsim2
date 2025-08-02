@@ -42,6 +42,9 @@
                 </div>
                 {% if user == club.owner %}
                 <div>
+                    <a href="{% url 'clubs:club_dashboard' club.id %}" class="btn btn-primary">
+                        Dashboard
+                    </a>
                     <a href="{% url 'clubs:team_selection' club.id %}" class="btn btn-primary">
                         Select Team Lineup
                     </a>

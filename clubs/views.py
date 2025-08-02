@@ -10,7 +10,7 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import ensure_csrf_cookie
-from django.db import transaction
+from django.db import transaction, models
 from faker import Faker
 
 from .models import Club
@@ -439,4 +439,97 @@ def get_team_lineup(request, pk):
             }
 
     return JsonResponse(response)
+
+
+class ClubDashboardView(DetailView):
+    """
+    Современный дашборд клуба с виджетами и ключевой информацией.
+    """
+    model = Club
+    template_name = 'clubs/club_dashboard.html'
+    context_object_name = 'club'
+    
+    def get(self, request, *args, **kwargs):
+        """Проверяем, что пользователь является владельцем клуба"""
+        self.object = self.get_object()
+        if self.object.owner != request.user:
+            messages.error(request, "You don't have permission to view this dashboard.")
+            return redirect('clubs:club_detail', pk=self.object.pk)
+        context = self.get_context_data(object=self.object)
+        return self.render_to_response(context)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        club = self.object
+        
+        # Количество игроков и средний возраст
+        players = Player.objects.filter(club=club)
+        context['players_count'] = players.count()
+        
+        if players.exists():
+            from django.db.models import Avg
+            context['average_age'] = players.aggregate(Avg('age'))['age__avg']
+        else:
+            context['average_age'] = 0
+        
+        # Топ игроки (первые 5 по классу)
+        context['top_players'] = players.order_by('player_class', '-id')[:5]
+        
+        # Следующий матч
+        from matches.models import Match
+        from django.utils import timezone
+        
+        # Ищем неотыгранные матчи
+        context['next_match'] = Match.objects.filter(
+            models.Q(home_team=club) | models.Q(away_team=club),
+            processed=False
+        ).order_by('datetime').first()
+        
+        # Последняя форма (последние 5 матчей)
+        recent_matches = Match.objects.filter(
+            models.Q(home_team=club) | models.Q(away_team=club),
+            processed=True
+        ).order_by('-datetime')[:5]
+        
+        recent_form = []
+        for match in recent_matches:
+            if match.home_team == club:
+                if match.home_score > match.away_score:
+                    recent_form.append('W')
+                elif match.home_score < match.away_score:
+                    recent_form.append('L')
+                else:
+                    recent_form.append('D')
+            else:  # away team
+                if match.away_score > match.home_score:
+                    recent_form.append('W')
+                elif match.away_score < match.home_score:
+                    recent_form.append('L')
+                else:
+                    recent_form.append('D')
+        
+        context['recent_form'] = recent_form
+        
+        # Позиция в лиге
+        championship = Championship.objects.filter(
+            teams=club,
+            season__is_active=True
+        ).first()
+        
+        if championship:
+            # Здесь можно добавить расчет позиции в таблице
+            context['league_position'] = None  # TODO: implement league table position
+        else:
+            context['league_position'] = None
+        
+        # Недавние события (заглушка - можно связать с системой событий)
+        context['recent_events'] = []
+        
+        # Добавляем данные пользователя для финансов
+        context['user'] = self.request.user
+        
+        # Добавляем временную метку для cache busting
+        context['current_timestamp'] = int(timezone.now().timestamp())
+        
+        return context
 

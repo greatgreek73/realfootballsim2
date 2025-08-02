@@ -1,0 +1,8 @@
+.cache
+package-lock.json
+public
+node_modules
+vercel.json
+vite.config.ts
+yarn.lock/
+.wrangler/

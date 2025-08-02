@@ -1,0 +1,223 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ club.name }} - Dashboard{% endblock %}
+
+{% block extra_css %}
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+<!-- Dashboard CSS -->
+<link rel="stylesheet" href="{% static 'clubs/css/dashboard.css' %}?v={{ current_timestamp }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Header Section -->
+    <header class="dashboard-header">
+        <div class="header-content">
+            <div class="club-identity">
+                <h1 class="h2">{{ club.name }}</h1>
+                <p class="body-sm">{{ club.league.name }} • Division {{ club.league.level }}</p>
+            </div>
+            <div class="header-actions">
+                <a href="{% url 'clubs:team_selection' club.id %}" class="btn btn-primary">
+                    Team Selection
+                </a>
+                <a href="{% url 'clubs:club_detail' club.id %}" class="btn btn-ghost">
+                    Full Details
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Dashboard Grid -->
+    <div class="dashboard-grid">
+        <!-- Next Match Widget -->
+        <div class="widget widget-next-match">
+            <div class="widget-header">
+                <h3 class="widget-title">Next Match</h3>
+                {% if next_match %}
+                <span class="widget-badge">
+                    {% if next_match.datetime %}
+                        {{ next_match.datetime|date:"M d, H:i" }}
+                    {% else %}
+                        Scheduled
+                    {% endif %}
+                </span>
+                {% endif %}
+            </div>
+            <div class="widget-body">
+                {% if next_match %}
+                    <div class="match-preview">
+                        <div class="team-preview">
+                            <span class="team-name">{{ next_match.home_team.name }}</span>
+                            {% if next_match.home_team == club %}
+                                <span class="team-badge home">HOME</span>
+                            {% endif %}
+                        </div>
+                        <div class="vs-separator">VS</div>
+                        <div class="team-preview">
+                            <span class="team-name">{{ next_match.away_team.name }}</span>
+                            {% if next_match.away_team == club %}
+                                <span class="team-badge away">AWAY</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="match-actions">
+                        <a href="{% url 'matches:match_detail' next_match.id %}" class="btn btn-primary btn-sm">
+                            View Match
+                        </a>
+                        <a href="{% url 'clubs:team_selection' club.id %}" class="btn btn-secondary btn-sm">
+                            Prepare Squad
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <p class="body-sm">No upcoming matches scheduled</p>
+                        <a href="{% url 'matches:simulate_match' 0 %}" class="btn btn-ghost btn-sm">
+                            Schedule Friendly
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Team Status Widget -->
+        <div class="widget widget-team-status">
+            <div class="widget-header">
+                <h3 class="widget-title">Team Status</h3>
+            </div>
+            <div class="widget-body">
+                <div class="status-grid">
+                    <div class="status-item">
+                        <span class="status-label">Total Players</span>
+                        <span class="status-value">{{ players_count }}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Average Age</span>
+                        <span class="status-value">{{ average_age|floatformat:1 }}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Recent Form</span>
+                        <div class="form-indicators">
+                            {% for result in recent_form %}
+                                <span class="form-indicator form-{{ result|lower }}">{{ result }}</span>
+                            {% empty %}
+                                <span class="status-value">-</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">League Position</span>
+                        <span class="status-value">{{ league_position|default:"-" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent News Widget -->
+        <div class="widget widget-recent-news">
+            <div class="widget-header">
+                <h3 class="widget-title">Recent Activity</h3>
+                <a href="#" class="widget-link">View All</a>
+            </div>
+            <div class="widget-body">
+                <div class="news-list">
+                    {% for event in recent_events %}
+                        <div class="news-item">
+                            <div class="news-time">{{ event.created_at|date:"M d" }}</div>
+                            <div class="news-content">
+                                <p class="news-title">{{ event.title }}</p>
+                                <p class="news-description body-sm">{{ event.description }}</p>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="empty-state">
+                            <p class="body-sm">No recent activity</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions Widget -->
+        <div class="widget widget-quick-actions">
+            <div class="widget-header">
+                <h3 class="widget-title">Quick Actions</h3>
+            </div>
+            <div class="widget-body">
+                <div class="actions-grid">
+                    <a href="{% url 'clubs:team_selection' club.id %}" class="action-card">
+                        <div class="action-icon">📋</div>
+                        <span class="action-label">Team Selection</span>
+                    </a>
+                    <a href="{% url 'transfers:transfer_market' %}" class="action-card">
+                        <div class="action-icon">🔄</div>
+                        <span class="action-label">Transfer Market</span>
+                    </a>
+                    <a href="{% url 'clubs:club_detail' club.id %}" class="action-card">
+                        <div class="action-icon">👥</div>
+                        <span class="action-label">Squad</span>
+                    </a>
+                    <a href="#" class="action-card">
+                        <div class="action-icon">📊</div>
+                        <span class="action-label">Statistics</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Finance Summary Widget -->
+        <div class="widget widget-finance">
+            <div class="widget-header">
+                <h3 class="widget-title">Finances</h3>
+            </div>
+            <div class="widget-body">
+                <div class="finance-grid">
+                    <div class="finance-item">
+                        <span class="finance-label">Tokens</span>
+                        <span class="finance-value">{{ user.tokens }}</span>
+                    </div>
+                    <div class="finance-item">
+                        <span class="finance-label">Coins</span>
+                        <span class="finance-value">{{ user.money }}</span>
+                    </div>
+                </div>
+                <div class="finance-actions">
+                    <a href="#" class="btn btn-ghost btn-sm">View Financial Report</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Players Widget -->
+        <div class="widget widget-top-players">
+            <div class="widget-header">
+                <h3 class="widget-title">Top Performers</h3>
+                <a href="{% url 'clubs:club_detail' club.id %}" class="widget-link">All Players</a>
+            </div>
+            <div class="widget-body">
+                <div class="players-list">
+                    {% for player in top_players %}
+                        <div class="player-item">
+                            <div class="player-avatar">{{ player.first_name|slice:":1" }}{{ player.last_name|slice:":1" }}</div>
+                            <div class="player-info">
+                                <a href="{% url 'players:player_detail' player.pk %}" class="player-name">
+                                    {{ player.first_name }} {{ player.last_name }}
+                                </a>
+                                <span class="player-position body-sm">{{ player.position }}</span>
+                            </div>
+                            <div class="player-stats">
+                                <span class="player-class">Class {{ player.player_class }}</span>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="empty-state">
+                            <p class="body-sm">No players yet</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
