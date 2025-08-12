@@ -8,7 +8,7 @@ from django.views.generic import CreateView
 class SignUpView(CreateView):
     form_class = UserCreationForm
     template_name = 'auth/sign-up.html'
-    success_url = reverse_lazy('home')
+    success_url = reverse_lazy('core:home')
     
     def form_valid(self, form):
         user = form.save()
@@ -17,5 +17,5 @@ class SignUpView(CreateView):
     
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated:
-            return redirect('home')
+            return redirect('core:home')
         return super().get(request, *args, **kwargs)

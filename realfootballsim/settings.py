@@ -153,9 +153,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
-LOGIN_REDIRECT_URL = 'home'
+LOGIN_REDIRECT_URL = 'core:home'
 LOGIN_URL = 'login'
-LOGOUT_REDIRECT_URL = 'home'
+LOGOUT_REDIRECT_URL = 'core:home'
 
 # Настройки Celery
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
