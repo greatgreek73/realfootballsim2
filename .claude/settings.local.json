@@ -14,7 +14,11 @@
       "Bash(venv310/Scripts/python test_narrative_integration.py:*)",
       "Bash(python:*)",
       "Bash(ls:*)",
-      "Bash(. venv310/Scripts/activate)"
+      "Bash(. venv310/Scripts/activate)",
+      "Bash(git checkout:*)",
+      "Bash(find:*)",
+      "Bash(mkdir:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }

@@ -1,9 +1,20 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from tournaments.models import Championship
 
 def home(request):
-    if request.user.is_authenticated:
-        if hasattr(request.user, 'club'):
-            return redirect('clubs:club_detail', pk=request.user.club.id)
-        return redirect('clubs:create_club')
-    return redirect('accounts:login')  # Исправлено: добавлен namespace
+    """Home page view - shows welcome content for non-authenticated users,
+    dashboard for authenticated users"""
+    championships = Championship.objects.filter(active=True).select_related('league__country')[:6]
+    return render(request, 'core/home.html', {'championships': championships})
+
+@login_required
+def home_authenticated(request):
+    """Protected home page - requires authentication"""
+    championships = Championship.objects.filter(active=True).select_related('league__country')[:6]
+    return render(request, 'core/home.html', {'championships': championships})
+
+@login_required  
+def home_sub(request):
+    """Protected sub-page - requires authentication"""
+    return render(request, 'core/home_sub.html', {})

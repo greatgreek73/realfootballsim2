@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign In - Real Football Sim{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="text-center mb-4">
+            <h1 class="h3 mb-3">Sign In</h1>
+            <p class="text-muted">Access your account quickly and securely to get started.</p>
+        </div>
+        
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+            
+            <div class="mb-3">
+                <label for="id_username" class="form-label">Username</label>
+                <input type="text" 
+                       name="username" 
+                       id="id_username" 
+                       class="form-control{% if form.username.errors %} is-invalid{% endif %}"
+                       value="{{ form.username.value|default_if_none:'' }}"
+                       required
+                       autofocus>
+                {% if form.username.errors %}
+                    <div class="invalid-feedback">
+                        {{ form.username.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                <label for="id_password" class="form-label">Password</label>
+                <input type="password" 
+                       name="password" 
+                       id="id_password" 
+                       class="form-control{% if form.password.errors %} is-invalid{% endif %}"
+                       required>
+                {% if form.password.errors %}
+                    <div class="invalid-feedback">
+                        {{ form.password.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Hidden field for next parameter -->
+            {% if next %}
+                <input type="hidden" name="next" value="{{ next }}">
+            {% endif %}
+            
+            <div class="mb-3 text-end">
+                <a href="{% url 'password_reset' %}" class="link-primary">Reset Password</a>
+            </div>
+            
+            <div class="d-grid mb-3">
+                <button type="submit" class="btn btn-primary">Continue</button>
+            </div>
+            
+            <!-- Disabled social login buttons -->
+            <div class="d-grid gap-2 mb-3">
+                <button type="button" class="btn btn-outline-secondary" disabled>
+                    Sign in with Google (Coming Soon)
+                </button>
+                <button type="button" class="btn btn-outline-secondary" disabled>
+                    Sign in with GitHub (Coming Soon)
+                </button>
+            </div>
+        </form>
+        
+        <hr class="my-4">
+        
+        <div class="text-center">
+            <p class="text-muted mb-2">Don't have an account?</p>
+            <a href="{% url 'signup' %}" class="link-primary fw-bold">Sign Up</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

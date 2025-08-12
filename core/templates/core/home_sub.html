@@ -1,0 +1,63 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="text-center mb-5">
+                <h1 class="display-4">Dashboard</h1>
+                <p class="lead">Welcome back, {{ user.username }}!</p>
+            </div>
+
+            {% if user.club %}
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Club Stats</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6>{{ user.club.name }}</h6>
+                            <p class="mb-1"><strong>Budget:</strong> ${{ user.club.budget|floatformat:0 }}</p>
+                            <p class="mb-1"><strong>League:</strong> {{ user.club.league.name }}</p>
+                            <p class="mb-0"><strong>Players:</strong> {{ user.club.player_set.count }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Recent Matches</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">No recent matches</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Quick Links</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <a href="{% url 'clubs:club_detail' user.club.id %}" class="btn btn-sm btn-outline-primary">View Club</a>
+                                <a href="{% url 'clubs:team_selection' user.club.id %}" class="btn btn-sm btn-outline-primary">Team Selection</a>
+                                <a href="{% url 'transfers:transfer_market' %}" class="btn btn-sm btn-outline-primary">Transfer Market</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-info text-center">
+                <p class="mb-2">You don't have a club yet.</p>
+                <a href="{% url 'clubs:create_club' %}" class="btn btn-primary">Create Your Club</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
