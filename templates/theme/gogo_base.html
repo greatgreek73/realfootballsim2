@@ -7,15 +7,12 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>{% block title %}Real Football Sim{% endblock %}</title>
     
-    <!-- Gogo Theme CSS -->
-    <link rel="stylesheet" href="{% static 'css/vendor/bootstrap.min.css' %}">
-    <link rel="stylesheet" href="{% static 'css/vendor/bootstrap-float-label.min.css' %}">
-    <link rel="stylesheet" href="{% static 'css/main.css' %}">
-    <link rel="stylesheet" href="{% static 'css/dore.light.purple.min.css' %}">
-    
-    <!-- Legacy compatibility CSS -->
+    <link rel="icon" type="image/png" href="{% static 'gogo/favicon/purple-dark.png' %}" media="(prefers-color-scheme: dark)">
+    <link rel="icon" type="image/png" href="{% static 'gogo/favicon/purple-light.png' %}" media="(prefers-color-scheme: light)">
+    <!-- Основной CSS темы (существует в репо): -->
+    <link rel="stylesheet" href="{% static 'gogo/assets/index-CE21cFbw.css' %}">
+    <!-- Наши доп. стили поверх темы: -->
     <link rel="stylesheet" href="{% static 'css/legacy.css' %}">
-    
     {% block extra_css %}{% endblock %}
 </head>
 
