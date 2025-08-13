@@ -5,13 +5,13 @@ from tournaments.models import Championship
 def home(request):
     """Home page view - shows welcome content for non-authenticated users,
     dashboard for authenticated users"""
-    championships = Championship.objects.filter(active=True).select_related('league__country')[:6]
+    championships = Championship.objects.filter(status='in_progress').select_related('league')[:6]
     return render(request, 'core/home.html', {'championships': championships})
 
 @login_required
 def home_authenticated(request):
     """Protected home page - requires authentication"""
-    championships = Championship.objects.filter(active=True).select_related('league__country')[:6]
+    championships = Championship.objects.filter(status='in_progress').select_related('league')[:6]
     return render(request, 'core/home.html', {'championships': championships})
 
 @login_required  

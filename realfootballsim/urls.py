@@ -9,7 +9,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     
     # Core app URLs (includes home pages)
-    path('', include('core.urls')),
+    path('', include(('core.urls', 'core'), namespace='core')),
     
     # Authentication URLs with Gogo template style paths
     path('auth/sign-in/', auth_views.LoginView.as_view(
@@ -44,11 +44,12 @@ urlpatterns = [
     
     # Other app URLs
     path('accounts/', include('accounts.urls', namespace='accounts')),
-    path('clubs/', include('clubs.urls')),
-    path('matches/', include('matches.urls')),
-    path('tournaments/', include('tournaments.urls')),
-    path('transfers/', include('transfers.urls')),
-    path('narrative/', include('narrative.urls')),
+    path('clubs/', include(('clubs.urls', 'clubs'), namespace='clubs')),
+    path('players/', include(('players.urls', 'players'), namespace='players')),
+    path('matches/', include(('matches.urls', 'matches'), namespace='matches')),
+    path('tournaments/', include(('tournaments.urls', 'tournaments'), namespace='tournaments')),
+    path('transfers/', include(('transfers.urls', 'transfers'), namespace='transfers')),
+    path('narrative/', include(('narrative.urls', 'narrative'), namespace='narrative')),
 ]
 
 # API URLs
