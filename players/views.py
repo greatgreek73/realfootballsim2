@@ -239,7 +239,7 @@ def delete_player(request, player_id):
             return redirect('clubs:club_detail', pk=club_id)
         else:
             # Если вдруг нет клуба, возвращаем на главную
-            return redirect('home')
+            return redirect('core:home')
 
     # Если GET – показываем страницу подтверждения
     return render(request, 'players/player_confirm_delete.html', {'player': player})

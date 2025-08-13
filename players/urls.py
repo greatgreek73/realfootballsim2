@@ -2,6 +2,8 @@ from django.urls import path
 from .views import PlayerDetailView, boost_player, delete_player, training_settings, update_training_settings
 from . import views
 
+app_name = 'players'
+
 urlpatterns = [
     path('detail/<int:pk>/', PlayerDetailView.as_view(), name='player_detail'),
     

@@ -1,0 +1,159 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>{% block title %}Real Football Sim{% endblock %}</title>
+    
+    <!-- Gogo Theme CSS -->
+    <link rel="stylesheet" href="{% static 'css/vendor/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/vendor/bootstrap-float-label.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="{% static 'css/dore.light.purple.min.css' %}">
+    
+    <!-- Legacy compatibility CSS -->
+    <link rel="stylesheet" href="{% static 'css/legacy.css' %}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body id="app-container" class="menu-default show-spinner">
+    <!-- Navbar -->
+    <nav class="navbar fixed-top">
+        <div class="d-flex align-items-center navbar-left">
+            <a href="#" class="menu-button d-none d-md-block">
+                <svg class="main" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 17">
+                    <rect x="0.48" y="0.5" width="7" height="1" />
+                    <rect x="0.48" y="7.5" width="7" height="1" />
+                    <rect x="0.48" y="15.5" width="7" height="1" />
+                </svg>
+                <svg class="sub" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 17">
+                    <rect x="1.56" y="0.5" width="16" height="1" />
+                    <rect x="1.56" y="7.5" width="16" height="1" />
+                    <rect x="1.56" y="15.5" width="16" height="1" />
+                </svg>
+            </a>
+            <a href="#" class="menu-button-mobile d-xs-block d-sm-block d-md-none">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 17">
+                    <rect x="0.5" y="0.5" width="25" height="1" />
+                    <rect x="0.5" y="7.5" width="25" height="1" />
+                    <rect x="0.5" y="15.5" width="25" height="1" />
+                </svg>
+            </a>
+        </div>
+
+        <a class="navbar-logo" href="{% url 'core:home' %}">
+            <span class="logo-single"></span>
+            <span class="logo-text">Real Football Sim</span>
+        </a>
+
+        <div class="navbar-right">
+            <div class="header-icons d-inline-block align-middle">
+                <div class="user d-inline-block">
+                    {% if user.is_authenticated %}
+                        <button class="btn btn-empty p-0" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <span class="name">{{ user.username }}</span>
+                            <span>
+                                <img alt="Profile" src="{% static 'img/profile-pic-l.jpg' %}" />
+                            </span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-right mt-3">
+                            {% if user.club %}
+                                <a class="dropdown-item" href="{% url 'clubs:club_detail' user.club.id %}">My Club</a>
+                            {% else %}
+                                <a class="dropdown-item" href="{% url 'clubs:create_club' %}">Create Club</a>
+                            {% endif %}
+                            <a class="dropdown-item" href="{% url 'logout' %}">Sign Out</a>
+                        </div>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-outline-primary btn-sm mr-2">Sign In</a>
+                        <a href="{% url 'signup' %}" class="btn btn-primary btn-sm">Sign Up</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <div class="menu">
+        <div class="main-menu">
+            <div class="scroll">
+                <ul class="list-unstyled">
+                    <li class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+                        <a href="{% url 'core:home' %}">
+                            <i class="iconsminds-home"></i>
+                            <span>Home</span>
+                        </a>
+                    </li>
+                    {% if user.is_authenticated %}
+                        {% if user.club %}
+                            <li class="{% if 'clubs' in request.resolver_match.namespace %}active{% endif %}">
+                                <a href="{% url 'clubs:club_detail' user.club.id %}">
+                                    <i class="iconsminds-medal"></i> My Club
+                                </a>
+                            </li>
+                            <li class="{% if 'tournaments' in request.resolver_match.namespace %}active{% endif %}">
+                                <a href="{% url 'tournaments:my_championship' %}">
+                                    <i class="iconsminds-trophy"></i> Tournaments
+                                </a>
+                            </li>
+                            <li class="{% if 'transfers' in request.resolver_match.namespace %}active{% endif %}">
+                                <a href="{% url 'transfers:transfer_market' %}">
+                                    <i class="iconsminds-handshake"></i> Transfers
+                                </a>
+                            </li>
+                        {% else %}
+                            <li>
+                                <a href="{% url 'clubs:create_club' %}">
+                                    <i class="iconsminds-add"></i> Create Club
+                                </a>
+                            </li>
+                        {% endif %}
+                        <li class="{% if 'tournaments' in request.resolver_match.namespace and not user.club %}active{% endif %}">
+                            <a href="{% url 'tournaments:championship_list' %}">
+                                <i class="iconsminds-trophy"></i> Championships
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main id="app">
+        <div class="container-fluid">
+            <!-- Messages -->
+            {% if messages %}
+                <div class="row">
+                    <div class="col-12">
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded mb-3" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Page Content -->
+            <div class="content-wrap">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer scripts -->
+    <script src="{% static 'js/vendor/jquery-3.3.1.min.js' %}"></script>
+    <script src="{% static 'js/vendor/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'js/dore.script.js' %}"></script>
+    <script src="{% static 'js/scripts.js' %}"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
