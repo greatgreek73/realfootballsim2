@@ -9,7 +9,18 @@ export default defineConfig({
   // Базовый префикс для ассетов в прод-сборке, чтобы они запрашивались как /static/front/...
   base: '/static/front/',
   plugins: [react(), tsconfigPaths(), tailwindcss()],
+  // ДОБАВЛЕНО: dev-сервер Vite с прокси на Django (API, admin, WebSocket)
   server: {
-    port: 3001,
+    port: 5173,
+    strictPort: true,
+    proxy: {
+      '/api': 'http://127.0.0.1:8000',
+      '/admin': 'http://127.0.0.1:8000',
+      '/ws': {
+        target: 'ws://127.0.0.1:8000',
+        ws: true,
+        changeOrigin: true,
+      },
+    },
   },
 });
