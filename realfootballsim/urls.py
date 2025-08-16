@@ -50,6 +50,7 @@ urlpatterns = [
     path('tournaments/', include(('tournaments.urls', 'tournaments'), namespace='tournaments')),
     path('transfers/', include(('transfers.urls', 'transfers'), namespace='transfers')),
     path('narrative/', include(('narrative.urls', 'narrative'), namespace='narrative')),
+    path("api/auth/", include(("accounts.api_urls", "api-auth"), namespace="api-auth")),
 ]
 
 # API URLs

@@ -1,10 +1,17 @@
 // src/lib/apiClient.ts
+
+// Берём CSRF-токен из JSON-ответа /api/auth/csrf/.
+// Если JSON не пришёл (редкий случай) — пробуем из cookie как запасной вариант.
 export async function getCsrfToken(): Promise<string> {
-  // 1) Получаем/обновляем CSRF-cookie
-  await fetch('/api/auth/csrf/', { credentials: 'include' });
-  // 2) Читаем csrftoken из document.cookie
-  const match = document.cookie.match(/(^|;\s*)csrftoken=([^;]+)/);
-  return match ? decodeURIComponent(match[2]) : '';
+  const res = await fetch('/api/auth/csrf/', { credentials: 'include' });
+  try {
+    const data = await res.json();
+    if (data && data.csrfToken) return String(data.csrfToken);
+  } catch {
+    // ignore
+  }
+  const m = document.cookie.match(/(^|;\s*)csrftoken=([^;]+)/);
+  return m ? decodeURIComponent(m[2]) : '';
 }
 
 export async function postJSON<T = any>(url: string, data: any): Promise<T> {
@@ -19,7 +26,8 @@ export async function postJSON<T = any>(url: string, data: any): Promise<T> {
     body: JSON.stringify(data),
   });
   if (!res.ok) {
-    let detail = 'Request failed';
+    // Пытаемся вытащить деталь из JSON; если пришла HTML-страница (403 CSRF) — дадим общий текст
+    let detail = 'Login failed';
     try {
       const j = await res.json();
       detail = j.detail ?? JSON.stringify(j);

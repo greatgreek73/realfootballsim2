@@ -11,7 +11,7 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     proxy: {
-      '/api':   { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/api':   { target: 'http://127.0.0.1:8000', changeOrigin: true }, // ← ТАК
       '/admin': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       '/static':{ target: 'http://127.0.0.1:8000', changeOrigin: true }, // <— добавили
       '/media': { target: 'http://127.0.0.1:8000', changeOrigin: true }, // <— добавили

@@ -21,6 +21,17 @@ SECRET_KEY = 'django-insecure-0p3aqax2r2xolyvtfda6q_aa@q1l6n!w4$8sjo1ed&*)h*2l37
 DEBUG = True
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
+CSRF_TRUSTED_ORIGINS = [
+    'http://127.0.0.1:5173',
+    'http://localhost:5173',
+]
+
+CSRF_COOKIE_HTTPONLY = False           # нужно, чтобы JS мог прочитать csrftoken
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+
 # If production environment variable is set, override specific settings
 if IS_PRODUCTION == '1':
     DEBUG = False

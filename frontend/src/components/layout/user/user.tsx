@@ -3,7 +3,7 @@ import UserModeSwitch from "./user-mode-switch";
 import UserThemeSwitch from "./user-theme-switch";
 import { SyntheticEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import {
   Accordion,
@@ -34,11 +34,15 @@ import NiSettings from "@/icons/nexture/ni-settings";
 import NiUser from "@/icons/nexture/ni-user";
 import NiUsers from "@/icons/nexture/ni-users";
 import { cn } from "@/lib/utils";
+import { postJSON } from "@/lib/apiClient"; // <-- добавлено: настоящий logout через API
 
 export default function User() {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement>(null);
   const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  const [loggingOut, setLoggingOut] = useState(false); // <-- состояние для Sign out
 
   const handleToggle = () => {
     setOpen((prevOpen) => !prevOpen);
@@ -51,7 +55,21 @@ export default function User() {
     setOpen(false);
   };
 
-  const navigate = useNavigate();
+  // <-- добавлено: реальный Logout
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    try {
+      setLoggingOut(true);
+      // Сессионный logout на Django; CSRF уже обрабатывается в postJSON
+      await postJSON("/api/auth/logout/", {});
+    } catch {
+      // в dev игнорируем ошибки logout (например, если сессии нет)
+    } finally {
+      setLoggingOut(false);
+      setOpen(false);
+      navigate("/auth/sign-in", { replace: true });
+    }
+  };
 
   return (
     <>
@@ -286,16 +304,19 @@ export default function User() {
                           {t("user-help")}
                         </MenuItem>
                       </MenuList>
+
                       <Box className="my-8"></Box>
+
+                      {/* Кнопка реального выхода из системы */}
                       <Button
-                        component={Link}
-                        to="/auth/sign-in"
+                        onClick={handleLogout}
                         variant="outlined"
                         size="tiny"
                         color="grey"
                         className="w-full"
+                        disabled={loggingOut}
                       >
-                        {t("user-sign-out")}
+                        {loggingOut ? "Signing out…" : t("user-sign-out")}
                       </Button>
                     </Box>
                   </CardContent>
