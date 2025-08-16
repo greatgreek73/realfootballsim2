@@ -1,7 +1,7 @@
 import UserLanguageSwitch from "./user-language-switch";
 import UserModeSwitch from "./user-mode-switch";
 import UserThemeSwitch from "./user-theme-switch";
-import { SyntheticEvent, useRef, useState } from "react";
+import { SyntheticEvent, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
@@ -34,7 +34,19 @@ import NiSettings from "@/icons/nexture/ni-settings";
 import NiUser from "@/icons/nexture/ni-user";
 import NiUsers from "@/icons/nexture/ni-users";
 import { cn } from "@/lib/utils";
-import { postJSON } from "@/lib/apiClient"; // <-- добавлено: настоящий logout через API
+import { getJSON, postJSON } from "@/lib/apiClient"; // ← используем наш клиент
+
+type Me =
+  | {
+      authenticated?: boolean;
+      username?: string;
+      email?: string;
+      first_name?: string;
+      last_name?: string;
+      full_name?: string;
+      avatar_url?: string;
+    }
+  | null;
 
 export default function User() {
   const [open, setOpen] = useState(false);
@@ -42,28 +54,49 @@ export default function User() {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  const [loggingOut, setLoggingOut] = useState(false); // <-- состояние для Sign out
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [me, setMe] = useState<Me>(null);
 
-  const handleToggle = () => {
-    setOpen((prevOpen) => !prevOpen);
-  };
+  // Подтягиваем текущего пользователя
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await getJSON("/api/auth/me/");
+        if (!cancelled) setMe(data as Me);
+      } catch {
+        if (!cancelled) setMe(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const displayName =
+    me?.full_name ||
+    [me?.first_name, me?.last_name].filter(Boolean).join(" ").trim() ||
+    me?.username ||
+    "User";
+
+  const displayEmail = me?.email || "";
+  const avatarSrc = me?.avatar_url || "/images/avatars/avatar-1.jpg";
+
+  const handleToggle = () => setOpen((prevOpen) => !prevOpen);
 
   const handleClose = (event: Event | SyntheticEvent) => {
-    if (anchorRef.current && anchorRef.current.contains(event.target as HTMLElement)) {
-      return;
-    }
+    if (anchorRef.current && anchorRef.current.contains(event.target as HTMLElement)) return;
     setOpen(false);
   };
 
-  // <-- добавлено: реальный Logout
+  // Реальный logout через Django
   const handleLogout = async () => {
     if (loggingOut) return;
     try {
       setLoggingOut(true);
-      // Сессионный logout на Django; CSRF уже обрабатывается в postJSON
-      await postJSON("/api/auth/logout/", {});
+      await postJSON("/api/auth/logout/", {}); // сессия завершена на бэке
     } catch {
-      // в dev игнорируем ошибки logout (например, если сессии нет)
+      // в dev можно игнорировать
     } finally {
       setLoggingOut(false);
       setOpen(false);
@@ -84,10 +117,10 @@ export default function User() {
           )}
           onClick={handleToggle}
         >
-          <Box>Laura Ellis</Box>
+          <Box>{displayName}</Box>
           <Avatar
             alt="avatar"
-            src="/images/avatars/avatar-1.jpg"
+            src={avatarSrc}
             className={cn(
               "large transition-all group-hover:ml-0.5 group-hover:h-8 group-hover:w-8",
               open && "ml-0.5 h-8! w-8!",
@@ -109,7 +142,7 @@ export default function User() {
           startIcon={
             <Avatar
               alt="avatar"
-              src="/images/avatars/avatar-1.jpg"
+              src={avatarSrc}
               className={cn("large transition-all group-hover:h-7 group-hover:w-7", open && "h-7! w-7!")}
             />
           }
@@ -133,13 +166,15 @@ export default function User() {
                   <CardContent>
                     <Box className="max-w-64 sm:w-72 sm:max-w-none">
                       <Box className="mb-4 flex flex-col items-center">
-                        <Avatar alt="avatar" src="/images/avatars/avatar-1.jpg" className="large mb-2" />
+                        <Avatar alt="avatar" src={avatarSrc} className="large mb-2" />
                         <Typography variant="subtitle1" component="p">
-                          Laura Ellis
+                          {displayName}
                         </Typography>
-                        <Typography variant="body2" component="p" className="text-text-secondary -mt-2">
-                          laura.ellis@gogo.dev
-                        </Typography>
+                        {displayEmail && (
+                          <Typography variant="body2" component="p" className="text-text-secondary -mt-2">
+                            {displayEmail}
+                          </Typography>
+                        )}
                       </Box>
 
                       <Box>
@@ -159,10 +194,10 @@ export default function User() {
                                   {t("user-accounts")}
                                 </Typography>
                                 <AvatarGroup max={3} className="tiny transition-opacity group-aria-expanded:opacity-0">
-                                  <Avatar className="tiny" alt="Laura Ellis" src="/images/avatars/avatar-1.jpg" />
-                                  <Avatar className="tiny" alt="Travis Howard" src="/images/avatars/avatar-2.jpg" />
-                                  <Avatar className="tiny" alt="Cindy Baker" src="/images/avatars/avatar-3.jpg" />
-                                  <Avatar className="tiny" alt="Agnes Walker" src="/images/avatars/avatar-4.jpg" />
+                                  <Avatar className="tiny" alt="A1" src="/images/avatars/avatar-1.jpg" />
+                                  <Avatar className="tiny" alt="A2" src="/images/avatars/avatar-2.jpg" />
+                                  <Avatar className="tiny" alt="A3" src="/images/avatars/avatar-3.jpg" />
+                                  <Avatar className="tiny" alt="A4" src="/images/avatars/avatar-4.jpg" />
                                 </AvatarGroup>
                               </Box>
                             </Button>
@@ -171,56 +206,20 @@ export default function User() {
                             <MenuList className="mb-4 p-0">
                               <MenuItem onClick={handleClose}>
                                 <ListItemIcon className="mr-2">
-                                  <Avatar className="tiny" alt="Laura Ellis" src="/images/avatars/avatar-1.jpg" />
+                                  <Avatar className="tiny" alt="Me" src={avatarSrc} />
                                 </ListItemIcon>
                                 <Box>
                                   <Typography variant="body1" component="div">
-                                    Laura Ellis
+                                    {displayName}
                                   </Typography>
-                                  <Typography variant="body2" component="div" className="text-text-secondary -mt-1">
-                                    laura@gogo.dev
-                                  </Typography>
+                                  {displayEmail && (
+                                    <Typography variant="body2" component="div" className="text-text-secondary -mt-1">
+                                      {displayEmail}
+                                    </Typography>
+                                  )}
                                 </Box>
                               </MenuItem>
-                              <MenuItem onClick={handleClose}>
-                                <ListItemIcon className="mr-2">
-                                  <Avatar className="tiny" alt="Travis Howard" src="/images/avatars/avatar-2.jpg" />
-                                </ListItemIcon>
-                                <Box>
-                                  <Typography variant="body1" component="div">
-                                    Travis Howard
-                                  </Typography>
-                                  <Typography variant="body2" component="div" className="text-text-secondary -mt-1">
-                                    travis@gogo.dev
-                                  </Typography>
-                                </Box>
-                              </MenuItem>
-                              <MenuItem onClick={handleClose}>
-                                <ListItemIcon className="mr-2">
-                                  <Avatar className="tiny" alt="Cindy Baker" src="/images/avatars/avatar-3.jpg" />
-                                </ListItemIcon>
-                                <Box>
-                                  <Typography variant="body1" component="div">
-                                    Cindy Baker
-                                  </Typography>
-                                  <Typography variant="body2" component="div" className="text-text-secondary -mt-1">
-                                    cindy@gogo.dev
-                                  </Typography>
-                                </Box>
-                              </MenuItem>
-                              <MenuItem onClick={handleClose}>
-                                <ListItemIcon className="mr-2">
-                                  <Avatar className="tiny" alt="Agnes Walker" src="/images/avatars/avatar-4.jpg" />
-                                </ListItemIcon>
-                                <Box>
-                                  <Typography variant="body1" component="div">
-                                    Agnes Walker
-                                  </Typography>
-                                  <Typography variant="body2" component="div" className="text-text-secondary -mt-1">
-                                    agnes@gogo.dev
-                                  </Typography>
-                                </Box>
-                              </MenuItem>
+                              {/* Остальные примеры аккаунтов оставляем как есть */}
                             </MenuList>
                             <Button variant="outlined" size="tiny" color="grey" className="w-full">
                               {t("user-add-account")}
@@ -228,86 +227,45 @@ export default function User() {
                           </AccordionDetails>
                         </Accordion>
                       </Box>
+
                       <Divider className="large" />
+
                       <MenuList className="p-0">
-                        <MenuItem
-                          onClick={(event) => {
-                            handleClose(event);
-                            navigate("#");
-                          }}
-                        >
-                          <ListItemIcon>
-                            <NiUser size={20} />
-                          </ListItemIcon>
+                        <MenuItem onClick={(event) => { handleClose(event); navigate("#"); }}>
+                          <ListItemIcon><NiUser size={20} /></ListItemIcon>
                           {t("user-overview")}
                         </MenuItem>
-                        <MenuItem
-                          onClick={(event) => {
-                            handleClose(event);
-                            navigate("#");
-                          }}
-                        >
-                          <ListItemIcon>
-                            <NiSettings size={20} />
-                          </ListItemIcon>
+                        <MenuItem onClick={(event) => { handleClose(event); navigate("#"); }}>
+                          <ListItemIcon><NiSettings size={20} /></ListItemIcon>
                           {t("user-profile")}
                         </MenuItem>
-                        <MenuItem
-                          onClick={(event) => {
-                            handleClose(event);
-                            navigate("#");
-                          }}
-                        >
-                          <ListItemIcon>
-                            <NiBuilding size={20} />
-                          </ListItemIcon>
+                        <MenuItem onClick={(event) => { handleClose(event); navigate("#"); }}>
+                          <ListItemIcon><NiBuilding size={20} /></ListItemIcon>
                           {t("user-issues")}
                         </MenuItem>
-                        <MenuItem
-                          onClick={(event) => {
-                            handleClose(event);
-                            navigate("#");
-                          }}
-                        >
-                          <ListItemIcon>
-                            <NiFolder size={20} />
-                          </ListItemIcon>
+                        <MenuItem onClick={(event) => { handleClose(event); navigate("#"); }}>
+                          <ListItemIcon><NiFolder size={20} /></ListItemIcon>
                           {t("user-projects")}
                         </MenuItem>
-                        <Divider className="large" />
 
+                        <Divider className="large" />
                         <UserModeSwitch />
                         <UserThemeSwitch />
                         <UserLanguageSwitch />
-
                         <Divider className="large" />
-                        <MenuItem
-                          onClick={(event) => {
-                            handleClose(event);
-                            navigate("#");
-                          }}
-                        >
-                          <ListItemIcon>
-                            <NiDocumentFull size={20} />
-                          </ListItemIcon>
+
+                        <MenuItem onClick={(event) => { handleClose(event); navigate("#"); }}>
+                          <ListItemIcon><NiDocumentFull size={20} /></ListItemIcon>
                           {t("user-documentation")}
                         </MenuItem>
-                        <MenuItem
-                          onClick={(event) => {
-                            handleClose(event);
-                            navigate("#");
-                          }}
-                        >
-                          <ListItemIcon>
-                            <NiQuestionHexagon size={20} />
-                          </ListItemIcon>
+                        <MenuItem onClick={(event) => { handleClose(event); navigate("#"); }}>
+                          <ListItemIcon><NiQuestionHexagon size={20} /></ListItemIcon>
                           {t("user-help")}
                         </MenuItem>
                       </MenuList>
 
                       <Box className="my-8"></Box>
 
-                      {/* Кнопка реального выхода из системы */}
                       <Button
                         onClick={handleLogout}
                         variant="outlined"
