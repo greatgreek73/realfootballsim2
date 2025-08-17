@@ -69,6 +69,7 @@ const generateAuthRoutes = (): React.ReactElement[] => {
     <Route key="password-new" path="password-new" element={lazyLoad("/auth/password-new")} />,
     <Route key="get-verification" path="get-verification" element={lazyLoad("/auth/get-verification")} />,
     <Route key="set-verification" path="set-verification" element={lazyLoad("/auth/set-verification")} />,
+    // 🔴 /my-club здесь быть не должно — это не auth-страница!
   ];
 };
 
@@ -82,11 +83,12 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* Landing page route */}
-
       <Route path="/" element={lazyLoad("/")} />
 
       {/* App routes with AppLayout */}
       <Route element={<AppLayout />}>
+        {/* Явно добавляем /my-club в секцию приложения */}
+        <Route key="my-club" path="/my-club" element={lazyLoad("/my-club")} />
         {/* Routes generated from menu items */}
         {mainRoutes}
         {bottomRoutes}
