@@ -4,7 +4,6 @@ from django.views.generic import TemplateView
 from django.contrib.auth import views as auth_views
 from django.views.generic import RedirectView
 from accounts.views import SignUpView
-from clubs.api_views import my_club, club_summary
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -52,8 +51,7 @@ urlpatterns = [
     path('transfers/', include(('transfers.urls', 'transfers'), namespace='transfers')),
     path('narrative/', include(('narrative.urls', 'narrative'), namespace='narrative')),
     path("api/auth/", include(("accounts.api_urls", "api-auth"), namespace="api-auth")),
-    path("api/my/club/", my_club, name="api-my-club"),
-    path("api/clubs/<int:club_id>/summary/", club_summary, name="api-club-summary"),
+    path("api/", include("clubs.api_urls")),  # API клуба
 ]
 
 # API URLs
