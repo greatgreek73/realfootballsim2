@@ -1,4 +1,4 @@
 {
-  "typescript.tsdk": ".yarn/sdks/typescript/lib",
-  "eslint.nodePath": ".yarn/sdks"
+    "claudeCodeChat.permissions.yoloMode": false,
+    "claudeCodeChat.wsl.claudePath": "/usr/bin/claude"
 }
