@@ -2,12 +2,12 @@ import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from "axios";
 import { clearTokens, getAccessToken, getRefreshToken, setTokens } from "../utils/tokens";
 
 // Базовая конфигурация API
-const apiBaseURL = "http://localhost:8000";
+const apiBaseURL = "";
 
 // Создаем инстанс axios
 const http: AxiosInstance = axios.create({
   baseURL: apiBaseURL,
-  withCredentials: false, // JWT в заголовках, куки не используем
+  withCredentials: true, // Включаем для CSRF если потребуется
   headers: {
     "Content-Type": "application/json",
   },
@@ -84,7 +84,7 @@ http.interceptors.response.use(
     isRefreshing = true;
     try {
       const resp = await axios.post(
-        `${apiBaseURL}/api/auth/refresh/`,
+        `/api/auth/refresh/`,
         { refresh },
         { headers: { "Content-Type": "application/json" } }
       );

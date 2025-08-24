@@ -14,7 +14,7 @@ const App = () => {
   const { i18n } = useTranslation();
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL || "/static/front"}>
       <StyledEngineProvider enableCssLayer>
         <Box lang={i18n.language} className="font-mulish font-urbanist relative overflow-hidden antialiased">
           {/* Initial loader */}

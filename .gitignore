@@ -50,3 +50,7 @@ htmlcov/
 repopack-output.txt
 
 realfootballsim/production.py
+
+*.zip
+frontend/.yarn/sdks/
+
