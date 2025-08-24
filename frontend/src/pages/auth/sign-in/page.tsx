@@ -157,7 +157,7 @@ export default function Page() {
                     <Box className="mr-2">{googleSVG()}</Box>Sign in with Google
                   </Button>
                 <Button variant="outlined" color="grey" className="flex-none md:w-1/2">
-                    <Box className="mr-2">{githubSVG()}</Box>Sign in with Google
+                    <Box className="mr-2">{githubSVG()}</Box>Sign in with GitHub
                   </Button>
                 </Box>
 
