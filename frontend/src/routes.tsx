@@ -63,6 +63,7 @@ const AppRoutes = () => (
     {/* Зона приложения */}
     <Route element={<AppLayout />}>
       <Route key="my-club" path="/my-club" element={lazyLoad("/my-club")} />
+      <Route key="my-club-players" path="/my-club/players" element={lazyLoad("/my-club/players")} />
       {mainRoutes}
       {bottomRoutes}
     </Route>
