@@ -49,16 +49,28 @@ def _as_number(v):
             return 0
 
 
-@login_required
+def _auth_required_json(request):
+    """Return 401 JSON instead of HTML redirect for unauthenticated API calls."""
+    if not getattr(request, "user", None) or not request.user.is_authenticated:
+        return JsonResponse({"detail": "Authentication required"}, status=401)
+    return None
+
+
 def my_club(request):
+    # Enforce auth with JSON 401 for API consumers
+    unauth = _auth_required_json(request)
+    if unauth:
+        return unauth
     club = _get_user_club(request.user)
     if not club:
         return JsonResponse({"detail": "no_club"}, status=404)
     return JsonResponse({"id": club.id})
 
 
-@login_required
 def club_summary(request, club_id: int):
+    unauth = _auth_required_json(request)
+    if unauth:
+        return unauth
     try:
         club = Club.objects.get(id=club_id)
     except Club.DoesNotExist:
@@ -82,8 +94,10 @@ def club_summary(request, club_id: int):
     })
 
 
-@login_required
 def club_players(request, club_id: int):
+    unauth = _auth_required_json(request)
+    if unauth:
+        return unauth
     try:
         club = Club.objects.get(id=club_id)
     except Club.DoesNotExist:
