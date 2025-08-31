@@ -6,6 +6,22 @@
     { "path": "./tsconfig.worker.json" }
   ],
   "compilerOptions": {
-    "types": ["./worker-configuration.d.ts"]
-  }
+    "moduleResolution": "bundler",
+    "types": [
+      "node",
+      "@playwright/test",
+      "./worker-configuration.d.ts"
+    ]
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "tests/**/*.ts",
+    "tests/**/*.tsx",
+    "playwright.config.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "prepare": "husky",
     "pre-commit": "lint-staged",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -66,7 +67,9 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.7.4",
     "@eslint/js": "^9.29.0",
+    "@playwright/test": "^1.55.0",
     "@types/js-cookie": "^3.0.6",
+    "@types/node": "^24.3.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.5.2",

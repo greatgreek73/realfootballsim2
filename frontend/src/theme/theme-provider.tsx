@@ -179,6 +179,100 @@ export const muiTheme = createTheme({
     },
     // ---------- Feedback Colors ---------- //
   },
+
+  // ---------- TYPOGRAPHY (как в демо) ---------- //
+  typography: {
+    // База: тело = Mulish, заголовки = Urbanist
+    fontFamily: 'MulishLocal, ui-sans-serif, system-ui, sans-serif',
+    fontSize: 14,
+
+    // Заголовки
+    h1: {
+      fontFamily: 'UrbanistLocal, ui-sans-serif, system-ui, sans-serif',
+      fontWeight: 700,
+      fontSize: '32px',
+      lineHeight: 1.25,
+      letterSpacing: '-0.02em',
+    },
+    h2: {
+      fontFamily: 'UrbanistLocal, ui-sans-serif, system-ui, sans-serif',
+      fontWeight: 700,
+      fontSize: '28px',
+      lineHeight: 1.30,
+      letterSpacing: '-0.02em',
+    },
+    h3: {
+      fontFamily: 'UrbanistLocal, ui-sans-serif, system-ui, sans-serif',
+      fontWeight: 600,
+      fontSize: '24px',
+      lineHeight: 1.30,
+      letterSpacing: '-0.01em',
+    },
+    h4: {
+      fontFamily: 'UrbanistLocal, ui-sans-serif, system-ui, sans-serif',
+      fontWeight: 600,
+      fontSize: '20px',
+      lineHeight: 1.30,
+      letterSpacing: '-0.01em',
+    },
+    h5: {
+      fontFamily: 'UrbanistLocal, ui-sans-serif, system-ui, sans-serif',
+      fontWeight: 600,
+      fontSize: '18px',
+      lineHeight: 1.30,
+      letterSpacing: '-0.005em',
+    },
+    h6: {
+      fontFamily: 'UrbanistLocal, ui-sans-serif, system-ui, sans-serif',
+      fontWeight: 500,
+      fontSize: '16px',
+      lineHeight: 1.30,
+      letterSpacing: '-0.003em',
+    },
+
+    // Текст
+    body1: {
+      fontFamily: 'MulishLocal, ui-sans-serif, system-ui, sans-serif',
+      fontWeight: 400,
+      fontSize: '14px',
+      lineHeight: 1.60, // ≈ 22.4px
+      letterSpacing: '0em',
+    },
+    body2: {
+      fontFamily: 'MulishLocal, ui-sans-serif, system-ui, sans-serif',
+      fontWeight: 400,
+      fontSize: '13px',
+      lineHeight: 1.60, // ≈ 20.8px
+      letterSpacing: '0.005em',
+    },
+
+    // Кнопки/подписи/оверлайн
+    button: {
+      fontFamily: 'MulishLocal, ui-sans-serif, system-ui, sans-serif',
+      fontWeight: 600,
+      fontSize: '14px',
+      lineHeight: 1.10,
+      letterSpacing: '0.01em',
+      textTransform: 'none',
+    },
+    caption: {
+      fontFamily: 'MulishLocal, ui-sans-serif, system-ui, sans-serif',
+      fontWeight: 500,
+      fontSize: '12px',
+      lineHeight: 1.40,
+      letterSpacing: '0.02em',
+    },
+    overline: {
+      fontFamily: 'MulishLocal, ui-sans-serif, system-ui, sans-serif',
+      fontWeight: 600,
+      fontSize: '11px',
+      lineHeight: 1.10,
+      letterSpacing: '0.12em',
+      textTransform: 'uppercase',
+    },
+  },
+  // ---------- /TYPOGRAPHY ---------- //
+
   components: {
     MuiCircularProgress: {
       defaultProps: {
@@ -215,6 +309,16 @@ export const muiTheme = createTheme({
         disableElevation: true,
         disableRipple: true,
       },
+      // добавлено: визуал как в демо
+      styleOverrides: {
+        root: {
+          fontFamily: 'MulishLocal, ui-sans-serif, system-ui, sans-serif',
+          fontWeight: 600,
+          letterSpacing: '0.01em',
+          textTransform: 'none',
+          lineHeight: 1.10,
+        },
+      },
     },
     MuiButtonGroup: {
       defaultProps: {
@@ -237,6 +341,53 @@ export const muiTheme = createTheme({
         elevation: 2,
       },
     },
+
+    // ---- добавлено: заголовки карточек, таблица, чипы — ближе к демо ----
+    MuiCardHeader: {
+      styleOverrides: {
+        title: {
+          fontFamily: 'UrbanistLocal, ui-sans-serif, system-ui, sans-serif',
+          fontWeight: 600,
+          fontSize: '20px',
+          lineHeight: 1.30,
+          letterSpacing: '-0.01em',
+        },
+        subheader: {
+          fontFamily: 'MulishLocal, ui-sans-serif, system-ui, sans-serif',
+          fontWeight: 400,
+          fontSize: '12px',
+          lineHeight: 1.40,
+          letterSpacing: '0.02em',
+          color: 'hsl(var(--text-secondary))',
+        },
+      },
+    },
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          fontFamily: 'MulishLocal, ui-sans-serif, system-ui, sans-serif',
+          fontSize: '14px',
+          lineHeight: 1.60,
+          letterSpacing: '0.005em',
+        },
+        head: {
+          fontFamily: 'UrbanistLocal, ui-sans-serif, system-ui, sans-serif',
+          fontWeight: 600,
+          letterSpacing: '0.01em',
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        label: {
+          fontFamily: 'MulishLocal, ui-sans-serif, system-ui, sans-serif',
+          fontWeight: 500,
+          fontSize: '12px',
+          letterSpacing: '0.02em',
+        },
+      },
+    },
+    // ---------------------------------------------------------------------
   },
 });
 

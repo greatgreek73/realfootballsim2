@@ -1,11 +1,19 @@
+/* Fonts are loaded via <link rel="stylesheet" href="/static/css/fonts.css" />
+   in frontend/index.html. That file defines @font-face for:
+   - MulishLocal (400/500/600/700)
+   - UrbanistLocal (400/500/600/700)
+*/
+
 /* --------------------------- */
 /* Global */
 /* --------------------------- */
 
 :root {
-  --font-body: "Mulish", ui-sans-serif;
-  --font-heading: "Urbanist", ui-sans-serif;
+  /* use local font families (no CDN/@fontsource conflicts) */
+  --font-body: "MulishLocal", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "UrbanistLocal", ui-sans-serif, system-ui, sans-serif;
 }
+
 /* 
   Define the CSS layer order. 
   Note: MUI overrides this when loaded with enableCssLayer: true.
@@ -112,25 +120,22 @@
 
 @layer utilities {
   body {
+    /* keep tailwind resets + force local body font */
     @apply bg-background text-text-primary m-0 p-0 font-sans text-base;
+    font-family: var(--font-body) !important;
+    font-weight: 400;
+    font-synthesis-weight: none;
   }
 }
 
-* {
-  @apply box-border;
-}
+/* global box sizing */
+* { @apply box-border; }
 
-.MuiPopper-root {
-  @apply z-[100];
-}
+.MuiPopper-root { @apply z-[100]; }
 
 .bg-foreground,
-.shadow-inside {
-  transition: background-color 0.2s ease-in-out;
-}
-.shadow-inside {
-  transition: box-shadow 0.2s ease-in-out;
-}
+.shadow-inside { transition: background-color 0.2s ease-in-out; }
+.shadow-inside { transition: box-shadow 0.2s ease-in-out; }
 
 @theme {
   --shadow-inside: var(--shadow-inside);
@@ -155,29 +160,42 @@
   --shadow-darker-2xl: var(--shadow-darker-2xl);
 
   --animate-float: float 2s ease-in-out infinite;
-
   @keyframes float {
-    0% {
-      transform: translateY(0);
-    }
-
-    50% {
-      transform: translateY(-10px);
-    }
-
-    100% {
-      transform: translateY(0);
-    }
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0); }
   }
 
   --animate-wiggle: wiggle 1s ease-in-out infinite;
   @keyframes wiggle {
-    0%,
-    100% {
-      transform: rotate(-3deg);
-    }
-    50% {
-      transform: rotate(3deg);
-    }
+    0%, 100% { transform: rotate(-3deg); }
+    50% { transform: rotate(3deg); }
   }
+}
+
+/* ---------- FONT OVERRIDES FOR SPA ---------- */
+
+/* Make sure the whole React app and all MUI text use our local body font */
+html,
+body,
+#root,
+.MuiTypography-root {
+  font-family: var(--font-body) !important;
+  font-weight: 400;
+  font-synthesis-weight: none;
+}
+
+/* Template utility classes (if present) → map to local families */
+.font-mulish   { font-family: var(--font-body) !important; }
+.font-urbanist { font-family: var(--font-heading) !important; }
+
+/* Ensure MUI headings use heading font in SPA */
+.MuiTypography-h1,
+.MuiTypography-h2,
+.MuiTypography-h3,
+.MuiTypography-h4,
+.MuiTypography-h5,
+.MuiTypography-h6,
+.MuiCardHeader-title {
+  font-family: var(--font-heading), system-ui, sans-serif !important;
 }
