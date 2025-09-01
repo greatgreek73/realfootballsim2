@@ -53,11 +53,3 @@
        url('/static/fonts/urbanist/urbanist-700.woff')  format('woff');
   font-weight: 700; font-style: normal; font-display: swap;
 }
-
-/* ---- Mapping ---- */
-:root{
-  --font-body: 'MulishLocal', ui-sans-serif, system-ui, sans-serif;
-  --font-heading: 'UrbanistLocal', ui-sans-serif, system-ui, sans-serif;
-}
-html{ font-family: var(--font-body); font-weight: 400; font-synthesis-weight: none; }
-h1,h2,h3,h4,h5,h6{ font-family: var(--font-heading), system-ui, sans-serif; }

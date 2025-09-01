@@ -381,7 +381,7 @@ export const muiTheme = createTheme({
       styleOverrides: {
         label: {
           fontFamily: 'MulishLocal, ui-sans-serif, system-ui, sans-serif',
-          fontWeight: 500,
+          fontWeight: 600,
           fontSize: '12px',
           letterSpacing: '0.02em',
         },

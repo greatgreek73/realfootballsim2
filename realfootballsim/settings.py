@@ -151,6 +151,9 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
+# WhiteNoise: add long cache headers for font files under /static/fonts/*
+WHITENOISE_ADD_HEADERS_FUNCTION = 'realfootballsim.whitenoise_headers.add_headers'
+
 # Media files (uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

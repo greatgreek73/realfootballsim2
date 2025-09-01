@@ -16,7 +16,7 @@ const App = () => {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL || "/static/front"}>
       <StyledEngineProvider enableCssLayer>
-        <Box lang={i18n.language} className="font-mulish font-urbanist relative overflow-hidden antialiased">
+        <Box lang={i18n.language} className="relative overflow-hidden antialiased">
           {/* Initial loader */}
           <div id="initial-loader">
             <div className="spinner"></div>

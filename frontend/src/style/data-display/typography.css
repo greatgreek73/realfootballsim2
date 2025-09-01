@@ -15,19 +15,19 @@
   }
 
   .MuiTypography-h3 {
-    @apply font-heading text-3xl font-bold;
+    @apply font-heading text-3xl font-semibold;
   }
 
   .MuiTypography-h4 {
-    @apply font-heading text-2xl font-bold;
+    @apply font-heading text-2xl font-semibold;
   }
 
   .MuiTypography-h5 {
-    @apply font-heading text-xl font-bold;
+    @apply font-heading text-xl font-semibold;
   }
 
   .MuiTypography-h6 {
-    @apply font-heading text-lg font-bold;
+    @apply font-heading text-lg font-medium;
   }
 
   .MuiTypography-subtitle1 {
