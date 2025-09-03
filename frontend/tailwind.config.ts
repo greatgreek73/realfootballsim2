@@ -34,9 +34,9 @@ const config: Config = {
         "4xl": "var(--border-radius-4xl)",
       },
       fontSize: {
-        xs: "0.6875rem",
-        sm: "0.75rem",
-        base: "0.875rem",
+        xs: "0.75rem",
+        sm: "0.875rem",
+        base: "1rem",
         lg: "1rem",
         xl: "1.125rem",
         "2xl": "1.25rem",

@@ -241,7 +241,7 @@ export const muiTheme = createTheme({
     body2: {
       fontFamily: 'MulishLocal, ui-sans-serif, system-ui, sans-serif',
       fontWeight: 400,
-      fontSize: '13px',
+      fontSize: '14px',
       lineHeight: 1.60, // ≈ 20.8px
       letterSpacing: '0.005em',
     },
@@ -258,7 +258,7 @@ export const muiTheme = createTheme({
     caption: {
       fontFamily: 'MulishLocal, ui-sans-serif, system-ui, sans-serif',
       fontWeight: 500,
-      fontSize: '12px',
+      fontSize: '14px',
       lineHeight: 1.40,
       letterSpacing: '0.02em',
     },
@@ -355,7 +355,7 @@ export const muiTheme = createTheme({
         subheader: {
           fontFamily: 'MulishLocal, ui-sans-serif, system-ui, sans-serif',
           fontWeight: 400,
-          fontSize: '12px',
+          fontSize: '14px',
           lineHeight: 1.40,
           letterSpacing: '0.02em',
           color: 'hsl(var(--text-secondary))',
@@ -382,7 +382,7 @@ export const muiTheme = createTheme({
         label: {
           fontFamily: 'MulishLocal, ui-sans-serif, system-ui, sans-serif',
           fontWeight: 600,
-          fontSize: '12px',
+          fontSize: '14px',
           letterSpacing: '0.02em',
         },
       },

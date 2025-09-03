@@ -52,11 +52,11 @@
   }
 
   .MuiTypography-overline {
-    @apply font-body text-xs font-normal;
+    @apply font-body text-sm font-normal;
   }
 
   .MuiTypography-caption {
-    @apply font-body text-xs font-normal;
+    @apply font-body text-sm font-normal;
   }
 
   * {
