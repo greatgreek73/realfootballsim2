@@ -30,7 +30,7 @@ export default function Header() {
         style={{ padding: `0 var(--main-padding)` }}
       >
         <Box className="flex h-full flex-row items-center">
-          <Link to="/home/sub">
+          <Link to="/my-club">
             <Logo classNameFull="ml-2 hidden md:block" classNameMobile="ml-2 md:hidden" />
           </Link>
         </Box>
@@ -69,7 +69,7 @@ export default function Header() {
             }),
           }}
         >
-          <Link to="/home/sub">
+          <Link to="/my-club">
             <Logo classNameFull="ml-2 hidden md:block" classNameMobile="ml-2 md:hidden" />
           </Link>
         </Box>

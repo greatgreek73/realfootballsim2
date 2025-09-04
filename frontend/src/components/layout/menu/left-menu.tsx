@@ -82,12 +82,13 @@ export default function LeftMenu() {
     } else {
       // close all opened accordions
       // if the item is the same as the current path, hide the secondary menu and reset the left menu
-      if (isPathMatch(pathname, item.href || "")) {
+      const isSameExactPath = !!item.href && pathname.replace(/\/$/, "") === item.href.replace(/\/$/, "");
+      if (isSameExactPath) {
         hideLeftSecondary();
         resetLeftMenu();
       } else {
         setOpenedAccordions([]);
-        navigate(item.href ?? "");
+        if (item.href) navigate(item.href);
       }
     }
   };

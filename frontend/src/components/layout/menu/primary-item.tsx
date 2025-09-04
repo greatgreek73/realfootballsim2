@@ -22,6 +22,16 @@ export const PrimaryItem = memo(function PrimaryItem({ item, onSelect, isActive,
   const { pathname } = useLocation();
   const selected = useMemo(() => {
     if (!item) return false;
+    const cleanPath = pathname.replace(/\/$/, "");
+    const hasVisibleChildren = !!item.children && item.children.filter((x) => !x.hideInMenu).length > 0;
+
+    // Leaf items: highlight only on exact path match
+    if (item.href && !hasVisibleChildren) {
+      const cleanHref = item.href.replace(/\/$/, "");
+      return cleanPath === cleanHref;
+    }
+
+    // Items with children: highlight if parent or any child matches
     if (item.href && isPathMatch(pathname, item.href)) return true;
     if (item.children) return item.children.some((child) => child.href && isPathMatch(pathname, child.href));
 

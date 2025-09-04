@@ -12,18 +12,8 @@ export const leftMenuItems: MenuItem[] = [
     id: "home",
     icon: "NiHome",
     label: "menu-home",
-    description: "menu-home-description",
     color: "text-primary",
-    href: "/home",
-    children: [
-      {
-        id: "home-sub",
-        icon: "NiChartPie",
-        label: "menu-home-sub",
-        href: "/home/sub",
-        description: "menu-home-sub-description",
-      },
-    ],
+    href: "/my-club",
   },
   {
     id: "single-menu",
