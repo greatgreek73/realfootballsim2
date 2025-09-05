@@ -1,0 +1,8 @@
+/* --------------------------- */
+/* Badge */
+/* --------------------------- */
+@layer utilities {
+  .MuiBadge-badge {
+    @apply font-body text-sm tracking-normal normal-case;
+  }
+}
