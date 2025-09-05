@@ -81,3 +81,4 @@ function createIcon(paths: string) {
 }
 
 export { plyrLayoutIcons };
+

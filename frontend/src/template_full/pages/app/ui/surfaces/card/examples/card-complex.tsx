@@ -10,11 +10,11 @@ import CardMedia from "@mui/material/CardMedia";
 import Collapse from "@mui/material/Collapse";
 import Typography from "@mui/material/Typography";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiEllipsisVertical from "@/icons/nexture/ni-ellipsis-vertical";
-import NiHeart from "@/icons/nexture/ni-heart";
-import NiShare from "@/icons/nexture/ni-share";
-import { cn } from "@/lib/utils";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiEllipsisVertical from "@/template_full/icons/nexture/ni-ellipsis-vertical";
+import NiHeart from "@/template_full/icons/nexture/ni-heart";
+import NiShare from "@/template_full/icons/nexture/ni-share";
+import { cn } from "@/template_full/lib/utils";
 
 export default function CardComplex() {
   const [expanded, setExpanded] = useState(false);
@@ -104,3 +104,4 @@ export default function CardComplex() {
     </Card>
   );
 }
+

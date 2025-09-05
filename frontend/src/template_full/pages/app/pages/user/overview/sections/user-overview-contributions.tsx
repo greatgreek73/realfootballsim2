@@ -4,8 +4,8 @@ import { Card, CardContent, Typography, useTheme } from "@mui/material";
 import { Heatmap } from "@mui/x-charts-pro";
 import { HeatmapValueType } from "@mui/x-charts-pro/models";
 
-import CustomChartTooltipPro from "@/components/charts/tooltip/custom-chart-tooltip-pro";
-import { cssVariableColorToRgb } from "@/lib/chart-helper";
+import CustomChartTooltipPro from "@/template_full/components/charts/tooltip/custom-chart-tooltip-pro";
+import { cssVariableColorToRgb } from "@/template_full/lib/chart-helper";
 
 const data: HeatmapValueType[] = [
   [0, 0, 1],
@@ -260,3 +260,4 @@ export default function UserOverviewContributions() {
 const ColorCell: ElementType = ({ x, y, ownerState, ...other }) => (
   <rect {...other} x={x + 4} y={y + 10} rx={5} ry={5} width={16} height={16} fill={ownerState.color} />
 );
+

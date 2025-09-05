@@ -2,8 +2,8 @@ import { Link } from "react-router-dom";
 
 import { Breadcrumbs, Card, CardContent, Grid, Typography } from "@mui/material";
 
-import BasicScatter from "@/pages/app/ui/mui-x/charts/scatter/examples/basic-scatter";
-import MultipleYAxis from "@/pages/app/ui/mui-x/charts/scatter/examples/multiple-y-axis";
+import BasicScatter from "@/template_full/pages/app/ui/mui-x/charts/scatter/examples/basic-scatter";
+import MultipleYAxis from "@/template_full/pages/app/ui/mui-x/charts/scatter/examples/multiple-y-axis";
 
 export default function ScatterCharts() {
   return (
@@ -50,3 +50,4 @@ export default function ScatterCharts() {
     </Grid>
   );
 }
+

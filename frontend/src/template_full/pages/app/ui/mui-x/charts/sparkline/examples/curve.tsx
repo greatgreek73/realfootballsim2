@@ -1,8 +1,8 @@
 import { Grid, Typography } from "@mui/material";
 import { SparkLineChart } from "@mui/x-charts";
 
-import CustomChartTooltip from "@/components/charts/tooltip/custom-chart-tooltip";
-import useChartPalette from "@/hooks/use-chart-palette";
+import CustomChartTooltip from "@/template_full/components/charts/tooltip/custom-chart-tooltip";
+import useChartPalette from "@/template_full/hooks/use-chart-palette";
 
 export default function Curve() {
   const chartPalette = useChartPalette();
@@ -162,3 +162,4 @@ export default function Curve() {
     </Grid>
   );
 }
+

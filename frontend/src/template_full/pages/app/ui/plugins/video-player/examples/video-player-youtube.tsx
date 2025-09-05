@@ -3,7 +3,7 @@ import "@vidstack/react/player/styles/plyr/theme.css";
 
 import { Card, CardContent, Typography } from "@mui/material";
 
-import { plyrLayoutIcons } from "@/components/plugins/video-player-controls";
+import { plyrLayoutIcons } from "@/template_full/components/plugins/video-player-controls";
 import { MediaPlayer, MediaProvider, Poster } from "@vidstack/react";
 import { PlyrLayout } from "@vidstack/react/player/layouts/plyr";
 
@@ -24,3 +24,4 @@ export default function VideoPlayerYoutube() {
     </Card>
   );
 }
+

@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { Button, ButtonGroup, Card, CardContent, Grid, Typography } from "@mui/material";
 
-import NiFloppyDisk from "@/icons/nexture/ni-floppy-disk";
+import NiFloppyDisk from "@/template_full/icons/nexture/ni-floppy-disk";
 
 export default function ButtonGroupLoading() {
   const [loading, setLoading] = useState(false);
@@ -47,3 +47,4 @@ export default function ButtonGroupLoading() {
     </Grid>
   );
 }
+

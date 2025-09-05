@@ -1,6 +1,6 @@
 import { Card, CardContent, FormGroup, FormLabel, Grid, Rating, Typography } from "@mui/material";
 
-import NiStar from "@/icons/nexture/ni-star";
+import NiStar from "@/template_full/icons/nexture/ni-star";
 
 export default function RatingPrecision() {
   return (
@@ -37,3 +37,4 @@ export default function RatingPrecision() {
     </Grid>
   );
 }
+

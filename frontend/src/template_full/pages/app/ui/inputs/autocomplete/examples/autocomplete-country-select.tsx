@@ -13,8 +13,8 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiCross from "@/icons/nexture/ni-cross";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
 
 export default function AutocompleteCountrySelect() {
   const [currentCountry, setCurrentCountry] = useState<CountryType>({
@@ -198,3 +198,4 @@ const countryData: readonly CountryType[] = [
   { id: "4464", code: "YE", label: "Yemen", phone: "967" },
   { id: "4465", code: "ZA", label: "South Africa", phone: "27" },
 ];
+

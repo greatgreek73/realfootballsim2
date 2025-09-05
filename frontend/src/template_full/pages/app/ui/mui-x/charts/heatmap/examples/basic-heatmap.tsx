@@ -1,8 +1,8 @@
 import { useTheme } from "@mui/material";
 import { Heatmap } from "@mui/x-charts-pro";
 
-import CustomChartTooltipPro from "@/components/charts/tooltip/custom-chart-tooltip-pro";
-import { cssVariableColorToRgb } from "@/lib/chart-helper";
+import CustomChartTooltipPro from "@/template_full/components/charts/tooltip/custom-chart-tooltip-pro";
+import { cssVariableColorToRgb } from "@/template_full/lib/chart-helper";
 
 export default function BasicHeatmap() {
   const { palette } = useTheme();
@@ -55,3 +55,4 @@ export default function BasicHeatmap() {
     />
   );
 }
+

@@ -1,7 +1,7 @@
 import { Button, Card, CardContent, Typography } from "@mui/material";
 
-import IllustrationAnalytics from "@/icons/illustrations/illustration-analytics";
-import NiChartPolar from "@/icons/nexture/ni-chart-polar";
+import IllustrationAnalytics from "@/template_full/icons/illustrations/illustration-analytics";
+import NiChartPolar from "@/template_full/icons/nexture/ni-chart-polar";
 
 export default function DashboardVisualAnalytics() {
   return (
@@ -22,3 +22,4 @@ export default function DashboardVisualAnalytics() {
     </Card>
   );
 }
+

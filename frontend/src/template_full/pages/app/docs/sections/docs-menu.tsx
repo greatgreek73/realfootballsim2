@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
 
-import NextureIcons, { IconName } from "@/icons/nexture-icons";
+import NextureIcons, { IconName } from "@/template_full/icons/nexture-icons";
 
 export type DocsMenuItemProps = {
   label?: string;
@@ -129,3 +129,4 @@ export default function DocsMenu({ selectedID }: any) {
     </List>
   );
 }
+

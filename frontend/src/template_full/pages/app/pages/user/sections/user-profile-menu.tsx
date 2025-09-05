@@ -2,13 +2,13 @@ import { useNavigate } from "react-router-dom";
 
 import { Avatar, Box, Button, Card, CardContent, ListItemIcon, MenuItem, MenuList, Typography } from "@mui/material";
 
-import NiController from "@/icons/nexture/ni-controller";
-import NiEllipsisHorizontal from "@/icons/nexture/ni-ellipsis-horizontal";
-import NiFolder from "@/icons/nexture/ni-folder";
-import NiHearts from "@/icons/nexture/ni-hearts";
-import NiLock from "@/icons/nexture/ni-lock";
-import NiMessages from "@/icons/nexture/ni-messages";
-import NiPulse from "@/icons/nexture/ni-pulse";
+import NiController from "@/template_full/icons/nexture/ni-controller";
+import NiEllipsisHorizontal from "@/template_full/icons/nexture/ni-ellipsis-horizontal";
+import NiFolder from "@/template_full/icons/nexture/ni-folder";
+import NiHearts from "@/template_full/icons/nexture/ni-hearts";
+import NiLock from "@/template_full/icons/nexture/ni-lock";
+import NiMessages from "@/template_full/icons/nexture/ni-messages";
+import NiPulse from "@/template_full/icons/nexture/ni-pulse";
 
 type UserProfileMenuProps = {
   selected: "overview" | "projects" | "permissions" | "friends" | "social";
@@ -90,3 +90,4 @@ export default function UserProfileMenu({ selected }: UserProfileMenuProps) {
     </Card>
   );
 }
+

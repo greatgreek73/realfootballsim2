@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 import { Breadcrumbs, Card, CardContent, Grid, Typography } from "@mui/material";
 
-import BasicHeatmap from "@/pages/app/ui/mui-x/charts/heatmap/examples/basic-heatmap";
+import BasicHeatmap from "@/template_full/pages/app/ui/mui-x/charts/heatmap/examples/basic-heatmap";
 
 export default function HeatmapCharts() {
   return (
@@ -38,3 +38,4 @@ export default function HeatmapCharts() {
     </Grid>
   );
 }
+

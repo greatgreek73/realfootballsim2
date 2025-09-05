@@ -2,9 +2,9 @@ import Box from "@mui/material/Box";
 import { TreeViewBaseItem } from "@mui/x-tree-view/models";
 import { RichTreeView } from "@mui/x-tree-view/RichTreeView";
 
-import NiBookmarkSingle from "@/icons/nexture/ni-bookmark-single";
-import NiMinus from "@/icons/nexture/ni-minus";
-import NiPlus from "@/icons/nexture/ni-plus";
+import NiBookmarkSingle from "@/template_full/icons/nexture/ni-bookmark-single";
+import NiMinus from "@/template_full/icons/nexture/ni-minus";
+import NiPlus from "@/template_full/icons/nexture/ni-plus";
 
 const MUI_X_PRODUCTS: TreeViewBaseItem[] = [
   {
@@ -53,3 +53,4 @@ export default function CustomIconRich() {
     </Box>
   );
 }
+

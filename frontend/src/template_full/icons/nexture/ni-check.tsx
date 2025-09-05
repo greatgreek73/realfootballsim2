@@ -40,3 +40,4 @@ export default function NiCheck({ className, variant = "outlined", size = "mediu
     );
   }
 }
+

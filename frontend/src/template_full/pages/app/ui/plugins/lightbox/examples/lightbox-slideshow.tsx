@@ -6,11 +6,11 @@ import Slideshow from "yet-another-react-lightbox/plugins/slideshow";
 
 import { Card, CardContent, Grid, Typography } from "@mui/material";
 
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiCross from "@/icons/nexture/ni-cross";
-import NiPause from "@/icons/nexture/ni-pause";
-import NiPlay from "@/icons/nexture/ni-play";
+import NiChevronLeftSmall from "@/template_full/icons/nexture/ni-chevron-left-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
+import NiPause from "@/template_full/icons/nexture/ni-pause";
+import NiPlay from "@/template_full/icons/nexture/ni-play";
 
 const largeImages = [
   {
@@ -79,3 +79,4 @@ export default function LightboxSlideshow() {
     </Card>
   );
 }
+

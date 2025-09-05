@@ -14,8 +14,8 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import { cn } from "@/lib/utils";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import { cn } from "@/template_full/lib/utils";
 
 export default function ButtonGroupSplitButton() {
   const [selectedIndex, setSelectedIndex] = useState(1);
@@ -140,3 +140,4 @@ export default function ButtonGroupSplitButton() {
     </Grid>
   );
 }
+

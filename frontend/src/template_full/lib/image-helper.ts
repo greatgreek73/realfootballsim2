@@ -1,4 +1,4 @@
-import { ThemeVariant } from "@/constants";
+import { ThemeVariant } from "@/template_full/constants";
 
 type ThemeImageConfig = {
   [key in ThemeVariant]?: string | string[];
@@ -69,3 +69,4 @@ export function getThemeImage({ srcSet, current, directory }: GetThemeImageParam
 
   return "";
 }
+

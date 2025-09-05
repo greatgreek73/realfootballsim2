@@ -23,3 +23,4 @@ export const withChartElementStyle = <T extends ChartElementType>(
 
     return <Component {...componentProps} />;
   };
+

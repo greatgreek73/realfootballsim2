@@ -3,10 +3,10 @@ import { useTranslation } from "react-i18next";
 
 import { Box, Button, Card, CardContent, Paper, Typography } from "@mui/material";
 
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiEllipsisHorizontal from "@/icons/nexture/ni-ellipsis-horizontal";
-import { getThemeImage } from "@/lib/image-helper";
-import { useThemeContext } from "@/theme/theme-provider";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiEllipsisHorizontal from "@/template_full/icons/nexture/ni-ellipsis-horizontal";
+import { getThemeImage } from "@/template_full/lib/image-helper";
+import { useThemeContext } from "@/template_full/theme/theme-provider";
 
 export default function LPImage() {
   const { isDarkMode, theme } = useThemeContext();
@@ -65,3 +65,4 @@ export default function LPImage() {
     </Card>
   );
 }
+

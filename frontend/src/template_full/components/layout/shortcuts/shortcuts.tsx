@@ -18,15 +18,15 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiBag from "@/icons/nexture/ni-bag";
-import NiCells from "@/icons/nexture/ni-cells";
-import NiEllipsisHorizontal from "@/icons/nexture/ni-ellipsis-horizontal";
-import NiMessages from "@/icons/nexture/ni-messages";
-import NiPercent from "@/icons/nexture/ni-percent";
-import NiPlus from "@/icons/nexture/ni-plus";
-import NiTelescope from "@/icons/nexture/ni-telescope";
-import NiUsers from "@/icons/nexture/ni-users";
-import { cn } from "@/lib/utils";
+import NiBag from "@/template_full/icons/nexture/ni-bag";
+import NiCells from "@/template_full/icons/nexture/ni-cells";
+import NiEllipsisHorizontal from "@/template_full/icons/nexture/ni-ellipsis-horizontal";
+import NiMessages from "@/template_full/icons/nexture/ni-messages";
+import NiPercent from "@/template_full/icons/nexture/ni-percent";
+import NiPlus from "@/template_full/icons/nexture/ni-plus";
+import NiTelescope from "@/template_full/icons/nexture/ni-telescope";
+import NiUsers from "@/template_full/icons/nexture/ni-users";
+import { cn } from "@/template_full/lib/utils";
 
 export default function Shortcuts() {
   const [tooltipShow, setTooltipShow] = useState(false);
@@ -256,3 +256,4 @@ export default function Shortcuts() {
     </>
   );
 }
+

@@ -3,8 +3,8 @@ import { useTreeViewApiRef } from "@mui/x-tree-view/hooks";
 import { TreeViewBaseItem } from "@mui/x-tree-view/models";
 import { RichTreeViewPro } from "@mui/x-tree-view-pro/RichTreeViewPro";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
 
 const MUI_X_PRODUCTS: TreeViewBaseItem[] = [
   {
@@ -59,3 +59,4 @@ export default function LimitOrdering() {
     </Box>
   );
 }
+

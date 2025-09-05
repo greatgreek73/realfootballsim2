@@ -7,7 +7,7 @@ import {
   CheckboxSmallChecked,
   CheckboxSmallEmpty,
   CheckboxSmallEmptyOutlined,
-} from "@/icons/form/mui-checkbox";
+} from "@/template_full/icons/form/mui-checkbox";
 
 export default function CheckboxSizeAndVariants() {
   return (
@@ -51,3 +51,4 @@ export default function CheckboxSizeAndVariants() {
     </Grid>
   );
 }
+

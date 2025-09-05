@@ -12,8 +12,8 @@ import {
   Typography,
 } from "@mui/material";
 
-import Logo from "@/components/logo/logo";
-import { RadiobuttonSmallChecked, RadiobuttonSmallEmptyOutlined } from "@/icons/form/mui-radiobutton";
+import Logo from "@/template_full/components/logo/logo";
+import { RadiobuttonSmallChecked, RadiobuttonSmallEmptyOutlined } from "@/template_full/icons/form/mui-radiobutton";
 
 export default function Page() {
   const navigate = useNavigate();
@@ -112,3 +112,4 @@ export default function Page() {
     </Box>
   );
 }
+

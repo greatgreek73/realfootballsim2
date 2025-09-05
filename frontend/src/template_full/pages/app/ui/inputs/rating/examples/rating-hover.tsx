@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { Box, Card, CardContent, Grid, Rating, Typography } from "@mui/material";
 
-import NiStar from "@/icons/nexture/ni-star";
+import NiStar from "@/template_full/icons/nexture/ni-star";
 
 export default function RatingHover() {
   const labels: { [index: string]: string } = {
@@ -52,3 +52,4 @@ export default function RatingHover() {
     </Grid>
   );
 }
+

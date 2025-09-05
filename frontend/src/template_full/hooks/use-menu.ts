@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocalStorage } from "react-use";
 
-import { useScreenEffect } from "@/hooks/use-screen";
-import { MenuDefaultWidth, MenuShowState, MenuType, MenuWidth, Screens } from "@/types/types";
+import { useScreenEffect } from "@/template_full/hooks/use-screen";
+import { MenuDefaultWidth, MenuShowState, MenuType, MenuWidth, Screens } from "@/template_full/types/types";
 
 type Props = {
   primaryBreakpoint: keyof Screens;
@@ -157,3 +157,4 @@ export function useMenu(config: Props) {
     setShowBackdrop,
   };
 }
+

@@ -2,7 +2,7 @@ import { FormControl, MenuItem, Select, SelectChangeEvent } from "@mui/material"
 import { SelectProps } from "@mui/material/Select";
 import { GridRenderEditCellParams, GridSingleSelectColDef, useGridApiContext } from "@mui/x-data-grid-pro";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
 
 interface DataGridSelectProps extends GridRenderEditCellParams {
   editorProps?: Omit<SelectProps<any>, "value" | "onChange" | "defaultValue" | "children">;
@@ -40,3 +40,4 @@ export default function DataGridSelect(props: DataGridSelectProps) {
     </FormControl>
   );
 }
+

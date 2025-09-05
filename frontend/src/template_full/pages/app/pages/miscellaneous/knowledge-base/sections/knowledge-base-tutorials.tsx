@@ -1,7 +1,7 @@
 import { Box, Button, Card, CardContent, Typography } from "@mui/material";
 
-import IllustrationStorage from "@/icons/illustrations/illustration-storage";
-import NiNext from "@/icons/nexture/ni-next";
+import IllustrationStorage from "@/template_full/icons/illustrations/illustration-storage";
+import NiNext from "@/template_full/icons/nexture/ni-next";
 
 export default function KnowledgeBaseTutorials() {
   return (
@@ -38,3 +38,4 @@ export default function KnowledgeBaseTutorials() {
     </Card>
   );
 }
+

@@ -5,9 +5,9 @@ import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import Snackbar, { SnackbarCloseReason } from "@mui/material/Snackbar";
 
-import NiCheckSquare from "@/icons/nexture/ni-check-square";
-import NiCross from "@/icons/nexture/ni-cross";
-import NiDocumentFull from "@/icons/nexture/ni-document-full";
+import NiCheckSquare from "@/template_full/icons/nexture/ni-check-square";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
+import NiDocumentFull from "@/template_full/icons/nexture/ni-document-full";
 
 export default function SnackbarCustomization() {
   const [openAlert, setOpenAlert] = useState(false);
@@ -116,3 +116,4 @@ export default function SnackbarCustomization() {
     </Box>
   );
 }
+

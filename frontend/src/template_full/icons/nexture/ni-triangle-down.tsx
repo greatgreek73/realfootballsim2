@@ -39,3 +39,4 @@ export default function NiTriangleDown({ className, variant = "outlined", size =
     );
   }
 }
+

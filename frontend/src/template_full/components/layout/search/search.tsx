@@ -23,22 +23,22 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiBriefcase from "@/icons/nexture/ni-briefcase";
-import NiCheckSquare from "@/icons/nexture/ni-check-square";
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiController from "@/icons/nexture/ni-controller";
-import NiCrossSquare from "@/icons/nexture/ni-cross-square";
-import NiDirectory from "@/icons/nexture/ni-directory";
-import NiDocumentCode from "@/icons/nexture/ni-document-code";
-import NiDocumentImage from "@/icons/nexture/ni-document-image";
-import NiEllipsisHorizontal from "@/icons/nexture/ni-ellipsis-horizontal";
-import NiPlus from "@/icons/nexture/ni-plus";
-import NiSearch from "@/icons/nexture/ni-search";
-import NiSlashHexagon from "@/icons/nexture/ni-slash-hexagon";
-import NiStructure from "@/icons/nexture/ni-structure";
-import NiUsers from "@/icons/nexture/ni-users";
-import { cn } from "@/lib/utils";
+import NiBriefcase from "@/template_full/icons/nexture/ni-briefcase";
+import NiCheckSquare from "@/template_full/icons/nexture/ni-check-square";
+import NiChevronLeftSmall from "@/template_full/icons/nexture/ni-chevron-left-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiController from "@/template_full/icons/nexture/ni-controller";
+import NiCrossSquare from "@/template_full/icons/nexture/ni-cross-square";
+import NiDirectory from "@/template_full/icons/nexture/ni-directory";
+import NiDocumentCode from "@/template_full/icons/nexture/ni-document-code";
+import NiDocumentImage from "@/template_full/icons/nexture/ni-document-image";
+import NiEllipsisHorizontal from "@/template_full/icons/nexture/ni-ellipsis-horizontal";
+import NiPlus from "@/template_full/icons/nexture/ni-plus";
+import NiSearch from "@/template_full/icons/nexture/ni-search";
+import NiSlashHexagon from "@/template_full/icons/nexture/ni-slash-hexagon";
+import NiStructure from "@/template_full/icons/nexture/ni-structure";
+import NiUsers from "@/template_full/icons/nexture/ni-users";
+import { cn } from "@/template_full/lib/utils";
 
 export default function Search() {
   const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
@@ -426,3 +426,4 @@ export default function Search() {
     </>
   );
 }
+

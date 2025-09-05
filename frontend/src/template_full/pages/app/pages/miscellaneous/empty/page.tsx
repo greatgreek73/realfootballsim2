@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 import { Breadcrumbs, Button, Grid, Typography } from "@mui/material";
 
-import NiEllipsisHorizontal from "@/icons/nexture/ni-ellipsis-horizontal";
+import NiEllipsisHorizontal from "@/template_full/icons/nexture/ni-ellipsis-horizontal";
 
 export default function Page() {
   return (
@@ -36,3 +36,4 @@ export default function Page() {
     </Grid>
   );
 }
+

@@ -4,9 +4,9 @@ import { useLocation } from "react-router-dom";
 
 import { Box, Button, Tooltip, Typography } from "@mui/material";
 
-import NextureIcons from "@/icons/nexture-icons";
-import { cn, isPathMatch } from "@/lib/utils";
-import { MenuItem, MenuType } from "@/types/types";
+import NextureIcons from "@/template_full/icons/nexture-icons";
+import { cn, isPathMatch } from "@/template_full/lib/utils";
+import { MenuItem, MenuType } from "@/template_full/types/types";
 
 type Props = {
   item: MenuItem;
@@ -134,3 +134,4 @@ export const PrimaryItem = memo(function PrimaryItem({ item, onSelect, isActive,
     </Box>
   );
 });
+

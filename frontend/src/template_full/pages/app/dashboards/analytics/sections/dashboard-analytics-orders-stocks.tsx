@@ -1,8 +1,8 @@
 import { Card, CardContent, Typography, useTheme } from "@mui/material";
 import { RadarChart } from "@mui/x-charts";
 
-import CustomChartMark from "@/components/charts/mark/custom-chart-mark";
-import CustomChartTooltip from "@/components/charts/tooltip/custom-chart-tooltip";
+import CustomChartMark from "@/template_full/components/charts/mark/custom-chart-mark";
+import CustomChartTooltip from "@/template_full/components/charts/tooltip/custom-chart-tooltip";
 
 export default function DashboardAnalyticsOrdersStocks() {
   const { palette } = useTheme();
@@ -44,3 +44,4 @@ export default function DashboardAnalyticsOrdersStocks() {
     </Card>
   );
 }
+

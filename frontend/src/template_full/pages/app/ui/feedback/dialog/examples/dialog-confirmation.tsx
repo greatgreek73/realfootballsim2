@@ -15,7 +15,7 @@ import {
   RadioGroup,
 } from "@mui/material";
 
-import { RadiobuttonSmallChecked, RadiobuttonSmallEmptyOutlined } from "@/icons/form/mui-radiobutton";
+import { RadiobuttonSmallChecked, RadiobuttonSmallEmptyOutlined } from "@/template_full/icons/form/mui-radiobutton";
 const options = [
   "None",
   "Atria",
@@ -140,3 +140,4 @@ export default function DialogConfirmation() {
     </Card>
   );
 }
+

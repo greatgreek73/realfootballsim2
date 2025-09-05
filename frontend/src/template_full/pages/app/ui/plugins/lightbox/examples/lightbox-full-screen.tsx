@@ -6,11 +6,11 @@ import Fullscreen from "yet-another-react-lightbox/plugins/fullscreen";
 
 import { Card, CardContent, Grid, Typography } from "@mui/material";
 
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiCollapse from "@/icons/nexture/ni-collapse";
-import NiCross from "@/icons/nexture/ni-cross";
-import NiExpand from "@/icons/nexture/ni-expand";
+import NiChevronLeftSmall from "@/template_full/icons/nexture/ni-chevron-left-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiCollapse from "@/template_full/icons/nexture/ni-collapse";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
+import NiExpand from "@/template_full/icons/nexture/ni-expand";
 
 const largeImages = [
   {
@@ -79,3 +79,4 @@ export default function LightboxFullScreen() {
     </Card>
   );
 }
+

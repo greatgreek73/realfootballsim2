@@ -9,9 +9,9 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiSearch from "@/icons/nexture/ni-search";
-import { cn } from "@/lib/utils";
-import { useThemeContext } from "@/theme/theme-provider";
+import NiSearch from "@/template_full/icons/nexture/ni-search";
+import { cn } from "@/template_full/lib/utils";
+import { useThemeContext } from "@/template_full/theme/theme-provider";
 
 export default function SupportOverviewSearch() {
   const { isDarkMode } = useThemeContext();
@@ -49,3 +49,4 @@ export default function SupportOverviewSearch() {
     </Card>
   );
 }
+

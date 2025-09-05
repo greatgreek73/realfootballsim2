@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { Box, Breadcrumbs, Button, Card, CardContent, Drawer, Tooltip, Typography } from "@mui/material";
 import { Grid } from "@mui/material";
 
-import NiListCircle from "@/icons/nexture/ni-list-circle";
+import NiListCircle from "@/template_full/icons/nexture/ni-list-circle";
 
 const MenuContent = () => {
   return (
@@ -280,3 +280,4 @@ export default function DocsThemeSettings() {
     </Grid>
   );
 }
+

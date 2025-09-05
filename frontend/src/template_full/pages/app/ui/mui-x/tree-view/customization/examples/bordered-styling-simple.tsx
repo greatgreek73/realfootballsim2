@@ -2,8 +2,8 @@ import Box from "@mui/material/Box";
 import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView";
 import { TreeItem } from "@mui/x-tree-view/TreeItem";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
 
 export default function BorderedStylingSimple() {
   return (
@@ -39,3 +39,4 @@ export default function BorderedStylingSimple() {
     </Box>
   );
 }
+

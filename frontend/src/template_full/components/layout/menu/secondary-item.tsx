@@ -5,10 +5,10 @@ import { Link, useLocation } from "react-router-dom";
 
 import { Accordion, AccordionDetails, AccordionSummary, Button } from "@mui/material";
 
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NextureIcons from "@/icons/nexture-icons";
-import { cn, isPathMatch } from "@/lib/utils";
-import { MenuItem } from "@/types/types";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NextureIcons from "@/template_full/icons/nexture-icons";
+import { cn, isPathMatch } from "@/template_full/lib/utils";
+import { MenuItem } from "@/template_full/types/types";
 
 type Props = {
   item: MenuItem;
@@ -161,3 +161,4 @@ export function SecondaryItem({ item, indent = 0, openedAccordions, setOpenedAcc
     </Accordion>
   );
 }
+

@@ -12,7 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 
-import { CheckboxSmallChecked, CheckboxSmallEmpty } from "@/icons/form/mui-checkbox";
+import { CheckboxSmallChecked, CheckboxSmallEmpty } from "@/template_full/icons/form/mui-checkbox";
 
 export default function CheckboxControlled() {
   const [checked1, setChecked1] = useState(true);
@@ -83,3 +83,4 @@ export default function CheckboxControlled() {
     </Grid>
   );
 }
+

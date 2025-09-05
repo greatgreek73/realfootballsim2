@@ -1,6 +1,6 @@
 import { Card, CardContent, FormControl, FormControlLabel, Grid, Radio, RadioGroup, Typography } from "@mui/material";
 
-import { RadiobuttonSmallChecked, RadiobuttonSmallEmpty } from "@/icons/form/mui-radiobutton";
+import { RadiobuttonSmallChecked, RadiobuttonSmallEmpty } from "@/template_full/icons/form/mui-radiobutton";
 
 export default function RadioGroupColor() {
   return (
@@ -168,3 +168,4 @@ export default function RadioGroupColor() {
     </Grid>
   );
 }
+

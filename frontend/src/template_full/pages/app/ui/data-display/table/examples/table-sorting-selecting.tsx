@@ -19,13 +19,13 @@ import {
   CheckboxSmallChecked,
   CheckboxSmallEmptyOutlined,
   CheckboxSmallIndeterminate,
-} from "@/icons/form/mui-checkbox";
-import NiArrowUp from "@/icons/nexture/ni-arrow-up";
-import NiBinEmpty from "@/icons/nexture/ni-bin-empty";
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiFilter from "@/icons/nexture/ni-filter";
+} from "@/template_full/icons/form/mui-checkbox";
+import NiArrowUp from "@/template_full/icons/nexture/ni-arrow-up";
+import NiBinEmpty from "@/template_full/icons/nexture/ni-bin-empty";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiChevronLeftSmall from "@/template_full/icons/nexture/ni-chevron-left-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiFilter from "@/template_full/icons/nexture/ni-filter";
 
 interface Data {
   id: number;
@@ -399,3 +399,4 @@ export default function TableSortingSelecting() {
     </>
   );
 }
+

@@ -14,19 +14,19 @@ import {
 } from "@mui/material";
 import Box from "@mui/material/Box";
 
-import NiCalendar from "@/icons/nexture/ni-calendar";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiDevops from "@/icons/nexture/ni-devops";
-import NiDocumentFull from "@/icons/nexture/ni-document-full";
-import NiFire from "@/icons/nexture/ni-fire";
-import NiFlask from "@/icons/nexture/ni-flask";
-import NiIntegration from "@/icons/nexture/ni-integration";
-import NiQuestionHexagon from "@/icons/nexture/ni-question-hexagon";
-import NiScreen from "@/icons/nexture/ni-screen";
-import NiSendUpRight from "@/icons/nexture/ni-send-up-right";
-import NiSettings from "@/icons/nexture/ni-settings";
-import NiShieldCheck from "@/icons/nexture/ni-shield-check";
-import NiStars from "@/icons/nexture/ni-stars";
+import NiCalendar from "@/template_full/icons/nexture/ni-calendar";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiDevops from "@/template_full/icons/nexture/ni-devops";
+import NiDocumentFull from "@/template_full/icons/nexture/ni-document-full";
+import NiFire from "@/template_full/icons/nexture/ni-fire";
+import NiFlask from "@/template_full/icons/nexture/ni-flask";
+import NiIntegration from "@/template_full/icons/nexture/ni-integration";
+import NiQuestionHexagon from "@/template_full/icons/nexture/ni-question-hexagon";
+import NiScreen from "@/template_full/icons/nexture/ni-screen";
+import NiSendUpRight from "@/template_full/icons/nexture/ni-send-up-right";
+import NiSettings from "@/template_full/icons/nexture/ni-settings";
+import NiShieldCheck from "@/template_full/icons/nexture/ni-shield-check";
+import NiStars from "@/template_full/icons/nexture/ni-stars";
 
 export default function KnowledgeBaseReference() {
   const navigate = useNavigate();
@@ -438,3 +438,4 @@ export default function KnowledgeBaseReference() {
     </Card>
   );
 }
+

@@ -100,3 +100,4 @@ export default function IllustrationAccess({ className }: IllustrationProps) {
     </svg>
   );
 }
+

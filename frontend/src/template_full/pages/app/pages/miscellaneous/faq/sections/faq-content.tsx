@@ -3,8 +3,8 @@ import { atomOneDark, atomOneLight } from "react-syntax-highlighter/dist/esm/sty
 
 import { Accordion, AccordionDetails, AccordionSummary, Box, Card, CardContent, Typography } from "@mui/material";
 
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import { useThemeContext } from "@/theme/theme-provider";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import { useThemeContext } from "@/template_full/theme/theme-provider";
 
 const FaqDetail = () => {
   const { isDarkMode } = useThemeContext();
@@ -263,3 +263,4 @@ export default function FaqContent() {
     </>
   );
 }
+

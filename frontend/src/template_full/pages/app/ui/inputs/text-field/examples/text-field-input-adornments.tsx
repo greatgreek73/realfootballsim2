@@ -17,8 +17,8 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiEyeClose from "@/icons/nexture/ni-eye-close";
-import NiEyeOpen from "@/icons/nexture/ni-eye-open";
+import NiEyeClose from "@/template_full/icons/nexture/ni-eye-close";
+import NiEyeOpen from "@/template_full/icons/nexture/ni-eye-open";
 
 export default function TextFieldInputAdornments() {
   const [showPassword, setShowPassword] = useState(false);
@@ -382,3 +382,4 @@ export default function TextFieldInputAdornments() {
     </Grid>
   );
 }
+

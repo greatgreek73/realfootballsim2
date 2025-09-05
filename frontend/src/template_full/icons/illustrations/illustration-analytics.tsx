@@ -89,3 +89,4 @@ export default function IllustrationAnalytics({ className }: IllustrationProps) 
     </svg>
   );
 }
+

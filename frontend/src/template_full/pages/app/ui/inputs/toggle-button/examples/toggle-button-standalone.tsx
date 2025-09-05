@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { Box, Card, CardContent, Grid, ToggleButton, Typography } from "@mui/material";
 
-import NiCheck from "@/icons/nexture/ni-check";
+import NiCheck from "@/template_full/icons/nexture/ni-check";
 
 export default function ToggleButtonStandalone() {
   const [selected, setSelected] = useState(false);
@@ -106,3 +106,4 @@ export default function ToggleButtonStandalone() {
     </Grid>
   );
 }
+

@@ -9,8 +9,8 @@ import MenuList from "@mui/material/MenuList";
 import Paper from "@mui/material/Paper";
 import Popper from "@mui/material/Popper";
 
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import { cn } from "@/lib/utils";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import { cn } from "@/template_full/lib/utils";
 
 export default function MenuComposition() {
   const [open, setOpen] = useState(false);
@@ -87,3 +87,4 @@ export default function MenuComposition() {
     </Box>
   );
 }
+

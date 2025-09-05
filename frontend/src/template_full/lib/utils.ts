@@ -18,3 +18,4 @@ export const isPathMatch = (pathname: string, href: string): boolean => {
 
   return pathParts.slice(0, menuParts.length).join("/") === cleanHref;
 };
+

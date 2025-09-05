@@ -5,8 +5,8 @@ import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { MultiInputTimeRangeField, SingleInputTimeRangeField, TimeRangePicker } from "@mui/x-date-pickers-pro";
 
-import NiClock from "@/icons/nexture/ni-clock";
-import { cn } from "@/lib/utils";
+import NiClock from "@/template_full/icons/nexture/ni-clock";
+import { cn } from "@/template_full/lib/utils";
 
 export default function TimeRangeOutlined() {
   return (
@@ -148,3 +148,4 @@ export default function TimeRangeOutlined() {
     </Box>
   );
 }
+

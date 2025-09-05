@@ -2,8 +2,8 @@ import { Link } from "react-router-dom";
 
 import { Breadcrumbs, Card, CardContent, Grid, Typography } from "@mui/material";
 
-import BasicSparkline from "@/pages/app/ui/mui-x/charts/sparkline/examples/basic-sparkline";
-import Curve from "@/pages/app/ui/mui-x/charts/sparkline/examples/curve";
+import BasicSparkline from "@/template_full/pages/app/ui/mui-x/charts/sparkline/examples/basic-sparkline";
+import Curve from "@/template_full/pages/app/ui/mui-x/charts/sparkline/examples/curve";
 
 export default function SparklineCharts() {
   return (
@@ -50,3 +50,4 @@ export default function SparklineCharts() {
     </Grid>
   );
 }
+

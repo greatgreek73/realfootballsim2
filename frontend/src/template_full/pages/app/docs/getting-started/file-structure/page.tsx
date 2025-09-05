@@ -7,8 +7,8 @@ import { atomOneDark, atomOneLight } from "react-syntax-highlighter/dist/esm/sty
 import { Box, Breadcrumbs, Button, Card, CardContent, Drawer, Tooltip, Typography } from "@mui/material";
 import { Grid } from "@mui/material";
 
-import NiListCircle from "@/icons/nexture/ni-list-circle";
-import { useThemeContext } from "@/theme/theme-provider";
+import NiListCircle from "@/template_full/icons/nexture/ni-list-circle";
+import { useThemeContext } from "@/template_full/theme/theme-provider";
 
 const MenuContent = () => {
   return (
@@ -144,3 +144,4 @@ export default function DocsGettingStartedFileStructure() {
     </Grid>
   );
 }
+

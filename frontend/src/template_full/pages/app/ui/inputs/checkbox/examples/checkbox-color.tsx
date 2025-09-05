@@ -1,6 +1,6 @@
 import { Box, Card, CardContent, Checkbox, FormControl, FormControlLabel, Grid, Typography } from "@mui/material";
 
-import { CheckboxSmallChecked, CheckboxSmallEmpty } from "@/icons/form/mui-checkbox";
+import { CheckboxSmallChecked, CheckboxSmallEmpty } from "@/template_full/icons/form/mui-checkbox";
 
 export default function CheckboxColor() {
   return (
@@ -158,3 +158,4 @@ export default function CheckboxColor() {
     </Grid>
   );
 }
+

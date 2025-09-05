@@ -20,18 +20,18 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiCode from "@/icons/nexture/ni-code";
-import NiCross from "@/icons/nexture/ni-cross";
-import NiDocumentCode from "@/icons/nexture/ni-document-code";
-import NiLink from "@/icons/nexture/ni-link";
-import NiList from "@/icons/nexture/ni-list";
-import NiListCheck from "@/icons/nexture/ni-list-check";
-import NiListNumber from "@/icons/nexture/ni-list-number";
-import NiTextBold from "@/icons/nexture/ni-text-bold";
-import NiTextItalic from "@/icons/nexture/ni-text-italic";
-import NiTextQuote from "@/icons/nexture/ni-text-quote";
-import NiTextStrikethrough from "@/icons/nexture/ni-text-strikethrough";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiCode from "@/template_full/icons/nexture/ni-code";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
+import NiDocumentCode from "@/template_full/icons/nexture/ni-document-code";
+import NiLink from "@/template_full/icons/nexture/ni-link";
+import NiList from "@/template_full/icons/nexture/ni-list";
+import NiListCheck from "@/template_full/icons/nexture/ni-list-check";
+import NiListNumber from "@/template_full/icons/nexture/ni-list-number";
+import NiTextBold from "@/template_full/icons/nexture/ni-text-bold";
+import NiTextItalic from "@/template_full/icons/nexture/ni-text-italic";
+import NiTextQuote from "@/template_full/icons/nexture/ni-text-quote";
+import NiTextStrikethrough from "@/template_full/icons/nexture/ni-text-strikethrough";
 
 interface ProductInfoData {
   id: string;
@@ -183,3 +183,4 @@ export default function ProductDetailInfo() {
     </Card>
   );
 }
+

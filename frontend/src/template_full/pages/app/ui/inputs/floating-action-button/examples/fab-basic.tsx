@@ -1,6 +1,6 @@
 import { Box, Card, CardContent, Fab, Grid, Typography } from "@mui/material";
 
-import NiBriefcase from "@/icons/nexture/ni-briefcase";
+import NiBriefcase from "@/template_full/icons/nexture/ni-briefcase";
 
 export default function FabBasic() {
   return (
@@ -27,3 +27,4 @@ export default function FabBasic() {
     </Grid>
   );
 }
+

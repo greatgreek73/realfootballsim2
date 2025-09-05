@@ -41,3 +41,4 @@ export default function NiPulse({ className, variant = "outlined", size = "mediu
     );
   }
 }
+

@@ -1,6 +1,6 @@
 import { Box, Card, CardContent, Fab, Grid, Typography } from "@mui/material";
 
-import NiDocumentCode from "@/icons/nexture/ni-document-code";
+import NiDocumentCode from "@/template_full/icons/nexture/ni-document-code";
 
 export default function FabSize() {
   return (
@@ -55,3 +55,4 @@ export default function FabSize() {
     </Grid>
   );
 }
+

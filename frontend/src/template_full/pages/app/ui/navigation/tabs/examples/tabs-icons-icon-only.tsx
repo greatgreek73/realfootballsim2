@@ -3,9 +3,9 @@ import { SyntheticEvent, useState } from "react";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 
-import NiDrop from "@/icons/nexture/ni-drop";
-import NiFire from "@/icons/nexture/ni-fire";
-import NiFlash from "@/icons/nexture/ni-flash";
+import NiDrop from "@/template_full/icons/nexture/ni-drop";
+import NiFire from "@/template_full/icons/nexture/ni-fire";
+import NiFlash from "@/template_full/icons/nexture/ni-flash";
 
 export default function TabsIconsIconOnly() {
   const [value, setValue] = useState(0);
@@ -22,3 +22,4 @@ export default function TabsIconsIconOnly() {
     </Tabs>
   );
 }
+

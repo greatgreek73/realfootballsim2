@@ -40,3 +40,4 @@ export default function NiChevronUp({ className, variant = "outlined", size = "m
     );
   }
 }
+

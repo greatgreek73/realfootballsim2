@@ -2,8 +2,8 @@ import { SyntheticEvent, useState } from "react";
 
 import { Box, Button, Fade, Menu, MenuItem, PopoverVirtualElement } from "@mui/material";
 
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import { cn } from "@/lib/utils";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import { cn } from "@/template_full/lib/utils";
 
 export default function MenuOutlined() {
   const [anchorElOutlined, setAnchorElOutlined] = useState<EventTarget | Element | PopoverVirtualElement | null>(null);
@@ -43,3 +43,4 @@ export default function MenuOutlined() {
     </Box>
   );
 }
+

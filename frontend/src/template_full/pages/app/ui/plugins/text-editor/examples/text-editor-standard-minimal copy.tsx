@@ -7,16 +7,16 @@ import ReactQuill from "react-quill-new";
 
 import { Card, CardContent, Typography } from "@mui/material";
 
-import NiCode from "@/icons/nexture/ni-code";
-import NiDocumentCode from "@/icons/nexture/ni-document-code";
-import NiLink from "@/icons/nexture/ni-link";
-import NiList from "@/icons/nexture/ni-list";
-import NiListCheck from "@/icons/nexture/ni-list-check";
-import NiListNumber from "@/icons/nexture/ni-list-number";
-import NiTextBold from "@/icons/nexture/ni-text-bold";
-import NiTextItalic from "@/icons/nexture/ni-text-italic";
-import NiTextQuote from "@/icons/nexture/ni-text-quote";
-import NiTextStrikethrough from "@/icons/nexture/ni-text-strikethrough";
+import NiCode from "@/template_full/icons/nexture/ni-code";
+import NiDocumentCode from "@/template_full/icons/nexture/ni-document-code";
+import NiLink from "@/template_full/icons/nexture/ni-link";
+import NiList from "@/template_full/icons/nexture/ni-list";
+import NiListCheck from "@/template_full/icons/nexture/ni-list-check";
+import NiListNumber from "@/template_full/icons/nexture/ni-list-number";
+import NiTextBold from "@/template_full/icons/nexture/ni-text-bold";
+import NiTextItalic from "@/template_full/icons/nexture/ni-text-italic";
+import NiTextQuote from "@/template_full/icons/nexture/ni-text-quote";
+import NiTextStrikethrough from "@/template_full/icons/nexture/ni-text-strikethrough";
 
 export default function TextEditorStandardMinimal() {
   const [value, setValue] = useState("");
@@ -57,3 +57,4 @@ export default function TextEditorStandardMinimal() {
     </Card>
   );
 }
+

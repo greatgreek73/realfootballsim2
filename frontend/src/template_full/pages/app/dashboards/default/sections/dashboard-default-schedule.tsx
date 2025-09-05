@@ -2,11 +2,11 @@ import { SyntheticEvent, useState } from "react";
 
 import { Box, Card, CardContent, Tab, Tabs, Typography } from "@mui/material";
 
-import NiBag from "@/icons/nexture/ni-bag";
-import NiChef from "@/icons/nexture/ni-chef";
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiPresentation from "@/icons/nexture/ni-presentation";
+import NiBag from "@/template_full/icons/nexture/ni-bag";
+import NiChef from "@/template_full/icons/nexture/ni-chef";
+import NiChevronLeftSmall from "@/template_full/icons/nexture/ni-chevron-left-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiPresentation from "@/template_full/icons/nexture/ni-presentation";
 
 export default function DashboardDefaultSchedule() {
   const [tabValue, setTabValue] = useState(0);
@@ -167,3 +167,4 @@ export default function DashboardDefaultSchedule() {
     </Card>
   );
 }
+

@@ -2,9 +2,9 @@ import { PropsWithChildren, useEffect, useState } from "react";
 
 import { Box, Paper } from "@mui/material";
 
-import { cn } from "@/lib/utils";
-import { useThemeContext } from "@/theme/theme-provider";
-import { ContentType } from "@/types/types";
+import { cn } from "@/template_full/lib/utils";
+import { useThemeContext } from "@/template_full/theme/theme-provider";
+import { ContentType } from "@/template_full/types/types";
 
 export default function ContentWrapper({ children }: PropsWithChildren) {
   const { content } = useThemeContext();
@@ -31,3 +31,4 @@ export default function ContentWrapper({ children }: PropsWithChildren) {
     </Paper>
   );
 }
+

@@ -21,9 +21,9 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiCross from "@/icons/nexture/ni-cross";
-import NiCrossSquare from "@/icons/nexture/ni-cross-square";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
+import NiCrossSquare from "@/template_full/icons/nexture/ni-cross-square";
 
 const validationSchema = yup.object({
   Input: yup.string().required("The field is required").email("Enter a valid email"),
@@ -176,3 +176,4 @@ export default function FormikStandard() {
     </Card>
   );
 }
+

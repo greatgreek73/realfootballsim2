@@ -40,3 +40,4 @@ export default function NiPlusFull({ className, variant = "outlined", size = "me
     );
   }
 }
+

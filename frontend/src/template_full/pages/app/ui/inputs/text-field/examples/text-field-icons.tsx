@@ -1,8 +1,8 @@
 import { Box, Card, CardContent, FormControl, Grid, Input, InputAdornment, TextField, Typography } from "@mui/material";
 
-import NiEmail from "@/icons/nexture/ni-email";
-import NiPin from "@/icons/nexture/ni-pin";
-import NiUser from "@/icons/nexture/ni-user";
+import NiEmail from "@/template_full/icons/nexture/ni-email";
+import NiPin from "@/template_full/icons/nexture/ni-pin";
+import NiUser from "@/template_full/icons/nexture/ni-user";
 
 export default function TextFieldIcons() {
   return (
@@ -187,3 +187,4 @@ export default function TextFieldIcons() {
     </Grid>
   );
 }
+

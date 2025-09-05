@@ -1,7 +1,7 @@
 import { Box, Button, Card, CardContent, Typography } from "@mui/material";
 
-import IllustrationPlatforms from "@/icons/illustrations/illustration-platforms";
-import NiDocumentFull from "@/icons/nexture/ni-document-full";
+import IllustrationPlatforms from "@/template_full/icons/illustrations/illustration-platforms";
+import NiDocumentFull from "@/template_full/icons/nexture/ni-document-full";
 
 export default function KnowledgeBaseTips() {
   return (
@@ -38,3 +38,4 @@ export default function KnowledgeBaseTips() {
     </Card>
   );
 }
+

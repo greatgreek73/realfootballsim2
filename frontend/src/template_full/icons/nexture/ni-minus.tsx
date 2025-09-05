@@ -35,3 +35,4 @@ export default function NiMinus({ className, variant = "outlined", size = "mediu
     );
   }
 }
+

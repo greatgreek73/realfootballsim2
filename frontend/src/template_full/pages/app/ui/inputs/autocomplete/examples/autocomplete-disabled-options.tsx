@@ -1,7 +1,7 @@
 import { Autocomplete, Card, CardContent, FormControl, FormLabel, Grid, TextField, Typography } from "@mui/material";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiCross from "@/icons/nexture/ni-cross";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
 
 export default function AutocompleteDisabledOptions() {
   return (
@@ -41,3 +41,4 @@ export default function AutocompleteDisabledOptions() {
 const timeSlots = Array.from(new Array(24 * 2)).map(
   (_, index) => `${index < 20 ? "0" : ""}${Math.floor(index / 2)}:${index % 2 === 0 ? "00" : "30"}`,
 );
+

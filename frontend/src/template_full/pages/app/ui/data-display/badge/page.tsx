@@ -14,9 +14,9 @@ import {
 } from "@mui/material";
 import { Grid } from "@mui/material";
 
-import NiBell from "@/icons/nexture/ni-bell";
-import NiCalendar from "@/icons/nexture/ni-calendar";
-import NiEmail from "@/icons/nexture/ni-email";
+import NiBell from "@/template_full/icons/nexture/ni-bell";
+import NiCalendar from "@/template_full/icons/nexture/ni-calendar";
+import NiEmail from "@/template_full/icons/nexture/ni-email";
 
 export default function Page() {
   const [invisible, setInvisible] = useState(false);
@@ -305,3 +305,4 @@ export default function Page() {
     </Grid>
   );
 }
+

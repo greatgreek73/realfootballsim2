@@ -39,3 +39,4 @@ export default function NiFolder({ className, variant = "outlined", size = "medi
     );
   }
 }
+

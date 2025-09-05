@@ -4,11 +4,11 @@ import Box from "@mui/material/Box";
 import SpeedDial from "@mui/material/SpeedDial";
 import SpeedDialAction from "@mui/material/SpeedDialAction";
 
-import NiDuplicate from "@/icons/nexture/ni-duplicate";
-import NiFloppyDisk from "@/icons/nexture/ni-floppy-disk";
-import NiPlus from "@/icons/nexture/ni-plus";
-import NiPrinter from "@/icons/nexture/ni-printer";
-import NiShare from "@/icons/nexture/ni-share";
+import NiDuplicate from "@/template_full/icons/nexture/ni-duplicate";
+import NiFloppyDisk from "@/template_full/icons/nexture/ni-floppy-disk";
+import NiPlus from "@/template_full/icons/nexture/ni-plus";
+import NiPrinter from "@/template_full/icons/nexture/ni-printer";
+import NiShare from "@/template_full/icons/nexture/ni-share";
 
 const actions = [
   { icon: <NiDuplicate />, name: "Copy" },
@@ -46,3 +46,4 @@ export default function SpeedDialControlled() {
     </Box>
   );
 }
+

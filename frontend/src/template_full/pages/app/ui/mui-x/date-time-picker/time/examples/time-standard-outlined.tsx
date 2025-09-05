@@ -4,8 +4,8 @@ import { Box, FormControl, FormLabel } from "@mui/material";
 import { LocalizationProvider, TimeField, TimePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
-import NiClock from "@/icons/nexture/ni-clock";
-import { cn } from "@/lib/utils";
+import NiClock from "@/template_full/icons/nexture/ni-clock";
+import { cn } from "@/template_full/lib/utils";
 
 export default function TimeStandardOutlined() {
   return (
@@ -102,3 +102,4 @@ export default function TimeStandardOutlined() {
     </Box>
   );
 }
+

@@ -14,11 +14,11 @@ import {
 import { TreeViewBaseItem } from "@mui/x-tree-view/models";
 import { RichTreeView } from "@mui/x-tree-view/RichTreeView";
 
-import NiCheck from "@/icons/nexture/ni-check";
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiCross from "@/icons/nexture/ni-cross";
-import NiPen from "@/icons/nexture/ni-pen";
+import NiCheck from "@/template_full/icons/nexture/ni-check";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
+import NiPen from "@/template_full/icons/nexture/ni-pen";
 
 type ExtendedTreeItemProps = {
   editable?: boolean;
@@ -172,3 +172,4 @@ export default function EditingWithIcons() {
     </Box>
   );
 }
+

@@ -1,6 +1,6 @@
 import { Box, Button, Card, CardContent, Link, Typography } from "@mui/material";
 
-import NiCheckSquare from "@/icons/nexture/ni-check-square";
+import NiCheckSquare from "@/template_full/icons/nexture/ni-check-square";
 
 export default function OrderDetailSummary() {
   return (
@@ -60,3 +60,4 @@ export default function OrderDetailSummary() {
     </Card>
   );
 }
+

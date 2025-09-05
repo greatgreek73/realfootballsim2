@@ -1,10 +1,10 @@
 import { Card, CardContent, Grid, IconContainerProps, Rating, Typography } from "@mui/material";
 
-import NiFaceFrown from "@/icons/nexture/ni-face-frown";
-import NiFaceFrownMore from "@/icons/nexture/ni-face-frown-more";
-import NiFaceNeutral from "@/icons/nexture/ni-face-neutral";
-import NiFaceSmile from "@/icons/nexture/ni-face-smile";
-import NiFaceSmileMore from "@/icons/nexture/ni-face-smile-more";
+import NiFaceFrown from "@/template_full/icons/nexture/ni-face-frown";
+import NiFaceFrownMore from "@/template_full/icons/nexture/ni-face-frown-more";
+import NiFaceNeutral from "@/template_full/icons/nexture/ni-face-neutral";
+import NiFaceSmile from "@/template_full/icons/nexture/ni-face-smile";
+import NiFaceSmileMore from "@/template_full/icons/nexture/ni-face-smile-more";
 
 export default function RatingRadioGroup() {
   const customIcons: {
@@ -64,3 +64,4 @@ export default function RatingRadioGroup() {
     </Grid>
   );
 }
+

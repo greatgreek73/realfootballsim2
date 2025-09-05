@@ -5,8 +5,8 @@ import { Swiper, SwiperSlide } from "swiper/react";
 
 import { Box, Button, Card, CardContent, Typography } from "@mui/material";
 
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
+import NiChevronLeftSmall from "@/template_full/icons/nexture/ni-chevron-left-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
 
 export default function CarouselBasic() {
   const swiperRef = useRef<any>(null);
@@ -118,3 +118,4 @@ export default function CarouselBasic() {
     </Card>
   );
 }
+

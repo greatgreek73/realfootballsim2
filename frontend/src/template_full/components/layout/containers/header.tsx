@@ -7,11 +7,11 @@ import { Link } from "react-router-dom";
 
 import { Box, Button } from "@mui/material";
 
-import { useLayoutContext } from "@/components/layout/layout-context";
-import Logo from "@/components/logo/logo";
-import { MIN_LOGO_CONTAINER_WIDTH } from "@/constants";
-import NiMenuSplit from "@/icons/nexture/ni-menu-split";
-import { cn } from "@/lib/utils";
+import { useLayoutContext } from "@/template_full/components/layout/layout-context";
+import Logo from "@/template_full/components/logo/logo";
+import { MIN_LOGO_CONTAINER_WIDTH } from "@/template_full/constants";
+import NiMenuSplit from "@/template_full/icons/nexture/ni-menu-split";
+import { cn } from "@/template_full/lib/utils";
 
 export default function Header() {
   const { showLeftInMobile, showLeftMobileButton, leftMenuWidth, leftShowBackdrop } = useLayoutContext();
@@ -87,3 +87,4 @@ export default function Header() {
     </Box>
   );
 }
+

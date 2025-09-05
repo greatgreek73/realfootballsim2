@@ -1,9 +1,9 @@
 import { createContext, type PropsWithChildren, useContext, useEffect, useState } from "react";
 
-import { DEFAULTS } from "@/config";
-import { LOCAL_STORAGE_KEYS } from "@/constants";
-import { useMenu } from "@/hooks/use-menu";
-import { MenuShowState } from "@/types/types";
+import { DEFAULTS } from "@/template_full/config";
+import { LOCAL_STORAGE_KEYS } from "@/template_full/constants";
+import { useMenu } from "@/template_full/hooks/use-menu";
+import { MenuShowState } from "@/template_full/types/types";
 
 type LayoutContextType = ReturnType<typeof useLayoutContextValue>;
 
@@ -77,3 +77,4 @@ export const useLayoutContext = () => {
   }
   return context;
 };
+

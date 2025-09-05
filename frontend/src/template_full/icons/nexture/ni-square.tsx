@@ -35,3 +35,4 @@ export default function NiSquare({ className, variant = "outlined", size = "medi
     );
   }
 }
+

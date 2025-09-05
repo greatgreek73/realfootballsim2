@@ -2,10 +2,10 @@ import ScrollToBottom from "react-scroll-to-bottom";
 
 import { Box, Button, Card, CardContent, FormControl, Link, TextareaAutosize, Typography } from "@mui/material";
 
-import NiArrowOutUp from "@/icons/nexture/ni-arrow-out-up";
-import NiFaceSmile from "@/icons/nexture/ni-face-smile";
-import NiMicrophone from "@/icons/nexture/ni-microphone";
-import NiRobot from "@/icons/nexture/ni-robot";
+import NiArrowOutUp from "@/template_full/icons/nexture/ni-arrow-out-up";
+import NiFaceSmile from "@/template_full/icons/nexture/ni-face-smile";
+import NiMicrophone from "@/template_full/icons/nexture/ni-microphone";
+import NiRobot from "@/template_full/icons/nexture/ni-robot";
 
 export default function DashboardVisualHelp() {
   return (
@@ -178,3 +178,4 @@ export default function DashboardVisualHelp() {
     </Card>
   );
 }
+

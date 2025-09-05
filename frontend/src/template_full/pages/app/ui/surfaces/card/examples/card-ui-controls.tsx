@@ -5,9 +5,9 @@ import CardContent from "@mui/material/CardContent";
 import CardMedia from "@mui/material/CardMedia";
 import Typography from "@mui/material/Typography";
 
-import NiNext from "@/icons/nexture/ni-next";
-import NiPlay from "@/icons/nexture/ni-play";
-import NiPrevious from "@/icons/nexture/ni-previous";
+import NiNext from "@/template_full/icons/nexture/ni-next";
+import NiPlay from "@/template_full/icons/nexture/ni-play";
+import NiPrevious from "@/template_full/icons/nexture/ni-previous";
 
 export default function CardUIControls() {
   return (
@@ -54,3 +54,4 @@ export default function CardUIControls() {
     </Card>
   );
 }
+

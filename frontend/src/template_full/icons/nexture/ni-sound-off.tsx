@@ -39,3 +39,4 @@ export default function NiSoundOff({ className, variant = "outlined", size = "me
     );
   }
 }
+

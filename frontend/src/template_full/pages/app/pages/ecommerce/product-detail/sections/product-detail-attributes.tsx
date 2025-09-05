@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 
 import { Autocomplete, Box, Button, Card, CardContent, Chip, TextField, Typography } from "@mui/material";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiCross from "@/icons/nexture/ni-cross";
-import NiPlus from "@/icons/nexture/ni-plus";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
+import NiPlus from "@/template_full/icons/nexture/ni-plus";
 
 interface AttributeData {
   id: string;
@@ -128,3 +128,4 @@ export default function ProductDetailAttributes() {
     </Card>
   );
 }
+

@@ -4,12 +4,12 @@ import { BrowserRouter } from "react-router-dom";
 
 import { Box, StyledEngineProvider } from "@mui/material";
 
-import BackgroundWrapper from "@/components/layout/containers/background-wrapper";
-import SnackbarWrapper from "@/components/layout/containers/snackbar-wrapper";
-import LayoutContextProvider from "@/components/layout/layout-context";
-import Loading from "@/pages/loading";
-import AppRoutes from "@/routes";
-import ThemeProvider from "@/theme/theme-provider";
+import BackgroundWrapper from "@/template_full/components/layout/containers/background-wrapper";
+import SnackbarWrapper from "@/template_full/components/layout/containers/snackbar-wrapper";
+import LayoutContextProvider from "@/template_full/components/layout/layout-context";
+import Loading from "@/template_full/pages/loading";
+import AppRoutes from "@/template_full/routes";
+import ThemeProvider from "@/template_full/theme/theme-provider";
 const App = () => {
   const { i18n } = useTranslation();
 
@@ -41,3 +41,4 @@ const App = () => {
 };
 
 export default App;
+

@@ -38,3 +38,4 @@ export default function NiRecord({ className, variant = "outlined", size = "medi
     );
   }
 }
+

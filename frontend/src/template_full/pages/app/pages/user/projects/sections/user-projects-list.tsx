@@ -18,14 +18,14 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiEyeOpen from "@/icons/nexture/ni-eye-open";
-import NiLike from "@/icons/nexture/ni-like";
-import NiSearch from "@/icons/nexture/ni-search";
-import NiStar from "@/icons/nexture/ni-star";
-import NextureIcons, { IconName } from "@/icons/nexture-icons";
-import { cn } from "@/lib/utils";
+import NiChevronLeftSmall from "@/template_full/icons/nexture/ni-chevron-left-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiEyeOpen from "@/template_full/icons/nexture/ni-eye-open";
+import NiLike from "@/template_full/icons/nexture/ni-like";
+import NiSearch from "@/template_full/icons/nexture/ni-search";
+import NiStar from "@/template_full/icons/nexture/ni-star";
+import NextureIcons, { IconName } from "@/template_full/icons/nexture-icons";
+import { cn } from "@/template_full/lib/utils";
 
 interface AvatarData {
   id: string;
@@ -367,3 +367,4 @@ export default function UserProjectsList() {
     </>
   );
 }
+

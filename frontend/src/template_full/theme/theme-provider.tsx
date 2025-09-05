@@ -4,20 +4,20 @@ import { useLocalStorage } from "react-use";
 
 import { createTheme, ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 
-import { DEFAULTS } from "@/config";
+import { DEFAULTS } from "@/template_full/config";
 import {
   LOCAL_STORAGE_KEYS as LS_KEYS,
   ModeVariant,
   THEME_MODE_OPTIONS,
   THEME_OPTIONS,
   ThemeVariant,
-} from "@/constants";
+} from "@/template_full/constants";
 import {
   CheckboxSmallChecked,
   CheckboxSmallEmptyOutlined,
   CheckboxSmallIndeterminate,
-} from "@/icons/form/mui-checkbox";
-import { ContentType } from "@/types/types";
+} from "@/template_full/icons/form/mui-checkbox";
+import { ContentType } from "@/template_full/types/types";
 
 type ThemeContextType = {
   theme: ThemeVariant;
@@ -294,3 +294,4 @@ export const useThemeContext = () => {
   }
   return context;
 };
+

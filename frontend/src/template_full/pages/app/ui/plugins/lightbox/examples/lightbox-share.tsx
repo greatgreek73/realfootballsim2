@@ -6,10 +6,10 @@ import Share from "yet-another-react-lightbox/plugins/share";
 
 import { Card, CardContent, Grid, Typography } from "@mui/material";
 
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiCross from "@/icons/nexture/ni-cross";
-import NiShare from "@/icons/nexture/ni-share";
+import NiChevronLeftSmall from "@/template_full/icons/nexture/ni-chevron-left-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
+import NiShare from "@/template_full/icons/nexture/ni-share";
 
 const largeImages = [
   {
@@ -77,3 +77,4 @@ export default function LightboxShare() {
     </Card>
   );
 }
+

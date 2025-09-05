@@ -2,7 +2,7 @@ import { TablePagination, TablePaginationProps } from "@mui/material";
 import MuiPagination from "@mui/material/Pagination";
 import { gridPageCountSelector, useGridApiContext, useGridSelector } from "@mui/x-data-grid-pro";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
 
 function Pagination({
   page,
@@ -97,3 +97,4 @@ export function DataGridPaginationFullPage(props: any) {
     />
   );
 }
+

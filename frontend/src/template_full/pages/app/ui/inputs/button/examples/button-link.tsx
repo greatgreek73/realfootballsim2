@@ -2,8 +2,8 @@ import { Link } from "react-router-dom";
 
 import { Box, Button, Card, CardContent, Grid, Typography } from "@mui/material";
 
-import NiExternal from "@/icons/nexture/ni-external";
-import NiInternal from "@/icons/nexture/ni-internal";
+import NiExternal from "@/template_full/icons/nexture/ni-external";
+import NiInternal from "@/template_full/icons/nexture/ni-internal";
 
 export default function ButtonLink() {
   return (
@@ -41,3 +41,4 @@ export default function ButtonLink() {
     </Grid>
   );
 }
+

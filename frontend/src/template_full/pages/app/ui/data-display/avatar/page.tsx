@@ -3,9 +3,9 @@ import { Link } from "react-router-dom";
 import { Avatar, AvatarGroup, Badge, Box, Breadcrumbs, Card, CardContent, Typography } from "@mui/material";
 import { Grid } from "@mui/material";
 
-import NiEllipsisHorizontal from "@/icons/nexture/ni-ellipsis-horizontal";
-import NiPower from "@/icons/nexture/ni-power";
-import NiUser from "@/icons/nexture/ni-user";
+import NiEllipsisHorizontal from "@/template_full/icons/nexture/ni-ellipsis-horizontal";
+import NiPower from "@/template_full/icons/nexture/ni-power";
+import NiUser from "@/template_full/icons/nexture/ni-user";
 
 export default function Page() {
   return (
@@ -241,3 +241,4 @@ export default function Page() {
     </Grid>
   );
 }
+

@@ -3,9 +3,9 @@ import dayjs from "dayjs";
 import { Box, Card, CardContent, Grid, Typography, useTheme } from "@mui/material";
 import { SparkLineChart } from "@mui/x-charts";
 
-import useHighlightedSparkline from "@/hooks/use-highlighted-sparkline";
-import NiTriangleDown from "@/icons/nexture/ni-triangle-down";
-import NiTriangleUp from "@/icons/nexture/ni-triangle-up";
+import useHighlightedSparkline from "@/template_full/hooks/use-highlighted-sparkline";
+import NiTriangleDown from "@/template_full/icons/nexture/ni-triangle-down";
+import NiTriangleUp from "@/template_full/icons/nexture/ni-triangle-up";
 
 const earningsData = [60, 140, 140, 140, 220, 340, 340, 100, 60, 60, 340];
 const ordersData = [40, 70, 70, 210, 140, 70, 163];
@@ -152,3 +152,4 @@ const ChangeStatus = ({ change }: { change: number | string }) => {
     </Box>
   );
 };
+

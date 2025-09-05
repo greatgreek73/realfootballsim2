@@ -23,13 +23,13 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiChartPie from "@/icons/nexture/ni-chart-pie";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiFloppyDisk from "@/icons/nexture/ni-floppy-disk";
-import NiMessages from "@/icons/nexture/ni-messages";
-import NiPenSquare from "@/icons/nexture/ni-pen-square";
-import NiSendUpRight from "@/icons/nexture/ni-send-up-right";
-import { cn } from "@/lib/utils";
+import NiChartPie from "@/template_full/icons/nexture/ni-chart-pie";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiFloppyDisk from "@/template_full/icons/nexture/ni-floppy-disk";
+import NiMessages from "@/template_full/icons/nexture/ni-messages";
+import NiPenSquare from "@/template_full/icons/nexture/ni-pen-square";
+import NiSendUpRight from "@/template_full/icons/nexture/ni-send-up-right";
+import { cn } from "@/template_full/lib/utils";
 
 export default function Page() {
   const [anchorEl, setAnchorEl] = useState<EventTarget | Element | PopoverVirtualElement | null>(null);
@@ -180,3 +180,4 @@ export default function Page() {
     </Grid>
   );
 }
+

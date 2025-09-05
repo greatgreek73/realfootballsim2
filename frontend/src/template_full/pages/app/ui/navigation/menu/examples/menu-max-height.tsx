@@ -4,7 +4,7 @@ import { Button } from "@mui/material";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 
-import NiEllipsisVertical from "@/icons/nexture/ni-ellipsis-vertical";
+import NiEllipsisVertical from "@/template_full/icons/nexture/ni-ellipsis-vertical";
 
 const options = [
   "None",
@@ -62,3 +62,4 @@ export default function MenuMaxHeight() {
     </div>
   );
 }
+

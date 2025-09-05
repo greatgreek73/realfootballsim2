@@ -8,9 +8,9 @@ import TimelineItem from "@mui/lab/TimelineItem";
 import TimelineSeparator from "@mui/lab/TimelineSeparator";
 import { Card, CardContent, Typography } from "@mui/material";
 
-import NiCar from "@/icons/nexture/ni-car";
-import NiChef from "@/icons/nexture/ni-chef";
-import NiEyeInactive from "@/icons/nexture/ni-eye-inactive";
+import NiCar from "@/template_full/icons/nexture/ni-car";
+import NiChef from "@/template_full/icons/nexture/ni-chef";
+import NiEyeInactive from "@/template_full/icons/nexture/ni-eye-inactive";
 
 export default function LPTimeline() {
   const { t } = useTranslation();
@@ -76,3 +76,4 @@ export default function LPTimeline() {
     </Card>
   );
 }
+

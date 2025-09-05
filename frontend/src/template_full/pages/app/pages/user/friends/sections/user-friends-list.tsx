@@ -16,13 +16,13 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiBookmark from "@/icons/nexture/ni-bookmark";
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiHeadset from "@/icons/nexture/ni-headset";
-import NiPin from "@/icons/nexture/ni-pin";
-import NiSearch from "@/icons/nexture/ni-search";
-import { cn } from "@/lib/utils";
+import NiBookmark from "@/template_full/icons/nexture/ni-bookmark";
+import NiChevronLeftSmall from "@/template_full/icons/nexture/ni-chevron-left-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiHeadset from "@/template_full/icons/nexture/ni-headset";
+import NiPin from "@/template_full/icons/nexture/ni-pin";
+import NiSearch from "@/template_full/icons/nexture/ni-search";
+import { cn } from "@/template_full/lib/utils";
 
 interface UserData {
   id: string;
@@ -227,3 +227,4 @@ export default function UserFriendsList() {
     </>
   );
 }
+

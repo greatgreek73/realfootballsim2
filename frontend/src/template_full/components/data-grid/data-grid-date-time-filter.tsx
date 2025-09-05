@@ -3,11 +3,11 @@ import dayjs from "dayjs";
 import { GridFilterInputValueProps } from "@mui/x-data-grid-pro";
 import { DateTimePicker } from "@mui/x-date-pickers";
 
-import NiCalendar from "@/icons/nexture/ni-calendar";
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import { cn } from "@/lib/utils";
+import NiCalendar from "@/template_full/icons/nexture/ni-calendar";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiChevronLeftSmall from "@/template_full/icons/nexture/ni-chevron-left-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import { cn } from "@/template_full/lib/utils";
 
 export default function DataGridDateTimeFilter(props: GridFilterInputValueProps) {
   const { item, applyValue, apiRef } = props;
@@ -43,3 +43,4 @@ export default function DataGridDateTimeFilter(props: GridFilterInputValueProps)
     />
   );
 }
+

@@ -2,9 +2,9 @@ import { Link } from "react-router-dom";
 
 import { Box, Card, CardContent, Chip, Typography } from "@mui/material";
 
-import NiLike from "@/icons/nexture/ni-like";
-import NiShuffle from "@/icons/nexture/ni-shuffle";
-import NiUsers from "@/icons/nexture/ni-users";
+import NiLike from "@/template_full/icons/nexture/ni-like";
+import NiShuffle from "@/template_full/icons/nexture/ni-shuffle";
+import NiUsers from "@/template_full/icons/nexture/ni-users";
 
 export default function UserAchievements() {
   return (
@@ -61,3 +61,4 @@ export default function UserAchievements() {
     </Card>
   );
 }
+

@@ -1,10 +1,10 @@
 import { SnackbarProvider } from "notistack";
 import { PropsWithChildren } from "react";
 
-import NiCheckSquare from "@/icons/nexture/ni-check-square";
-import NiCrossSquare from "@/icons/nexture/ni-cross-square";
-import NiExclamationSquare from "@/icons/nexture/ni-exclamation-square";
-import NiInfoSquare from "@/icons/nexture/ni-info-square";
+import NiCheckSquare from "@/template_full/icons/nexture/ni-check-square";
+import NiCrossSquare from "@/template_full/icons/nexture/ni-cross-square";
+import NiExclamationSquare from "@/template_full/icons/nexture/ni-exclamation-square";
+import NiInfoSquare from "@/template_full/icons/nexture/ni-info-square";
 
 const iconVariants = {
   success: <NiCheckSquare className="mr-2" />,
@@ -20,3 +20,4 @@ export default function SnackbarWrapper({ children }: PropsWithChildren) {
     </SnackbarProvider>
   );
 }
+

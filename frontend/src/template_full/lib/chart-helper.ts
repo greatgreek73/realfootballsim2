@@ -2,7 +2,7 @@ import { hslToRgb } from "@mui/material";
 import { ChartsTooltipProps, UseAxisTooltipReturnValue, UseItemTooltipReturnValue } from "@mui/x-charts";
 import { ChartSeriesType } from "@mui/x-charts/internals";
 
-import { IDataset } from "@/components/charts/tooltip/custom-chart-tooltip-content";
+import { IDataset } from "@/template_full/components/charts/tooltip/custom-chart-tooltip-content";
 
 export const colorWithOpacity = (color?: string, alpha: number = 0.1) => {
   if (!color) return color;
@@ -128,3 +128,4 @@ export const cssVariableColorToRgb = (color: string) => {
   // Convert space-separated to comma-separated
   return hslToRgb(hsl.replace(/hsl\(\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*\)/i, "hsl($1, $2%, $3%)"));
 };
+

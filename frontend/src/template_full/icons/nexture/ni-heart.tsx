@@ -41,3 +41,4 @@ export default function NiHeart({ className, variant = "outlined", size = "mediu
     );
   }
 }
+

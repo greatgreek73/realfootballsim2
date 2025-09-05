@@ -39,3 +39,4 @@ export default function NiCheckFull({ className, variant = "outlined", size = "m
     );
   }
 }
+

@@ -4,14 +4,14 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { Box, Paper, Typography } from "@mui/material";
 
-import { useLayoutContext } from "@/components/layout/layout-context";
-import { PrimaryItem } from "@/components/layout/menu/primary-item";
-import { SecondaryItem } from "@/components/layout/menu/secondary-item";
-import { DEFAULTS } from "@/config";
-import IllustrationLaunch from "@/icons/illustrations/illustration-launch";
-import { cn, isPathMatch } from "@/lib/utils";
-import { leftMenuBottomItems, leftMenuItems } from "@/menu-items";
-import { MenuItem, MenuShowState, MenuType } from "@/types/types";
+import { useLayoutContext } from "@/template_full/components/layout/layout-context";
+import { PrimaryItem } from "@/template_full/components/layout/menu/primary-item";
+import { SecondaryItem } from "@/template_full/components/layout/menu/secondary-item";
+import { DEFAULTS } from "@/template_full/config";
+import IllustrationLaunch from "@/template_full/icons/illustrations/illustration-launch";
+import { cn, isPathMatch } from "@/template_full/lib/utils";
+import { leftMenuBottomItems, leftMenuItems } from "@/template_full/menu-items";
+import { MenuItem, MenuShowState, MenuType } from "@/template_full/types/types";
 
 export type OpenedAccordion = { indent: number; id: string };
 
@@ -251,3 +251,4 @@ export default function LeftMenu() {
     </nav>
   );
 }
+

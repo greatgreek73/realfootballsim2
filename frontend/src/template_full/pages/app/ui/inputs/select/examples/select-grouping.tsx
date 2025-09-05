@@ -10,7 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
 
 export default function SelectGrouping() {
   return (
@@ -41,3 +41,4 @@ export default function SelectGrouping() {
     </Grid>
   );
 }
+

@@ -14,8 +14,8 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiPlus from "@/icons/nexture/ni-plus";
-import NiUser from "@/icons/nexture/ni-user";
+import NiPlus from "@/template_full/icons/nexture/ni-plus";
+import NiUser from "@/template_full/icons/nexture/ni-user";
 
 const emails = ["username@gmail.com", "user02@gmail.com"];
 
@@ -91,3 +91,4 @@ export default function DialogIntroduction() {
     </Box>
   );
 }
+

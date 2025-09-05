@@ -19,7 +19,7 @@ import {
   Switch,
 } from "@mui/material";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
 
 export default function DialogSizes() {
   const [openOptionalSizes, setOpenOptionalSizes] = useState(false);
@@ -100,3 +100,4 @@ export default function DialogSizes() {
     </Box>
   );
 }
+

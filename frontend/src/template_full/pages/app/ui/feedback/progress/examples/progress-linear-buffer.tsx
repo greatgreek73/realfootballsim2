@@ -34,3 +34,4 @@ export default function ProgressLinearBuffer() {
 
   return <LinearProgress variant="buffer" value={progress} valueBuffer={buffer} />;
 }
+

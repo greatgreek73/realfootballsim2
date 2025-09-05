@@ -4,8 +4,8 @@ import Button from "@mui/material/Button";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import { cn } from "@/lib/utils";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import { cn } from "@/template_full/lib/utils";
 
 export default function MenuPositioned() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -48,3 +48,4 @@ export default function MenuPositioned() {
     </div>
   );
 }
+

@@ -9,13 +9,13 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiCake from "@/icons/nexture/ni-cake";
-import NiEmail from "@/icons/nexture/ni-email";
-import NiEyeOpen from "@/icons/nexture/ni-eye-open";
-import NiRocket from "@/icons/nexture/ni-rocket";
-import NiUser from "@/icons/nexture/ni-user";
-import NiUsers from "@/icons/nexture/ni-users";
-import NiWallet from "@/icons/nexture/ni-wallet";
+import NiCake from "@/template_full/icons/nexture/ni-cake";
+import NiEmail from "@/template_full/icons/nexture/ni-email";
+import NiEyeOpen from "@/template_full/icons/nexture/ni-eye-open";
+import NiRocket from "@/template_full/icons/nexture/ni-rocket";
+import NiUser from "@/template_full/icons/nexture/ni-user";
+import NiUsers from "@/template_full/icons/nexture/ni-users";
+import NiWallet from "@/template_full/icons/nexture/ni-wallet";
 
 export default function FaqCategories() {
   return (
@@ -99,3 +99,4 @@ export default function FaqCategories() {
     </>
   );
 }
+

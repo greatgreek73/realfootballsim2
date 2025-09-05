@@ -27,3 +27,4 @@ export default function DataGridSlider(props: DataGridSliderProps) {
     </FormControl>
   );
 }
+

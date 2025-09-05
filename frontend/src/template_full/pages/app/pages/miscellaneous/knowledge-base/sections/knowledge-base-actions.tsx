@@ -1,10 +1,10 @@
 import { Box, Button, Card, CardContent, Typography } from "@mui/material";
 import { Grid } from "@mui/material";
 
-import NiDocumentFull from "@/icons/nexture/ni-document-full";
-import NiPath from "@/icons/nexture/ni-path";
-import NiTicket from "@/icons/nexture/ni-ticket";
-import NiUsers from "@/icons/nexture/ni-users";
+import NiDocumentFull from "@/template_full/icons/nexture/ni-document-full";
+import NiPath from "@/template_full/icons/nexture/ni-path";
+import NiTicket from "@/template_full/icons/nexture/ni-ticket";
+import NiUsers from "@/template_full/icons/nexture/ni-users";
 
 export default function KnowledgeBaseActions() {
   return (
@@ -80,3 +80,4 @@ export default function KnowledgeBaseActions() {
     </>
   );
 }
+

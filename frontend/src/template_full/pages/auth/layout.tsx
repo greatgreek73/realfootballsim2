@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { Outlet } from "react-router-dom";
 
-import Loading from "@/pages/loading";
+import Loading from "@/template_full/pages/loading";
 
 export default function AuthLayout() {
   return (
@@ -10,3 +10,4 @@ export default function AuthLayout() {
     </Suspense>
   );
 }
+

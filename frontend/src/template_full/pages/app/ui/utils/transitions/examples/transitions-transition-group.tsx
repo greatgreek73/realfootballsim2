@@ -8,7 +8,7 @@ import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 
-import NiBinEmpty from "@/icons/nexture/ni-bin-empty";
+import NiBinEmpty from "@/template_full/icons/nexture/ni-bin-empty";
 
 const FRUITS = ["🍏 Apple", "🍌 Banana", "🍍 Pineapple", "🥥 Coconut", "🍉 Watermelon"];
 
@@ -64,3 +64,4 @@ export default function TransitionsTransitionGroup() {
     </div>
   );
 }
+

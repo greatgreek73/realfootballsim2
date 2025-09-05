@@ -12,8 +12,8 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiCross from "@/icons/nexture/ni-cross";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
 
 export default function AutocompleteAsyncRequest() {
   const [openAsync, setOpenAsync] = useState(false);
@@ -229,3 +229,4 @@ function sleep(duration: number): Promise<void> {
     }, duration);
   });
 }
+

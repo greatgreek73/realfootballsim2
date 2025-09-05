@@ -47,3 +47,4 @@ export default function NiPause({ className, variant = "outlined", size = "mediu
     );
   }
 }
+

@@ -10,11 +10,11 @@ import TableFooter from "@mui/material/TableFooter";
 import TablePagination from "@mui/material/TablePagination";
 import TableRow from "@mui/material/TableRow";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiForwardLeftSmall from "@/icons/nexture/ni-forward-left-small";
-import NiForwardRightSmall from "@/icons/nexture/ni-forward-right-small";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiChevronLeftSmall from "@/template_full/icons/nexture/ni-chevron-left-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiForwardLeftSmall from "@/template_full/icons/nexture/ni-forward-left-small";
+import NiForwardRightSmall from "@/template_full/icons/nexture/ni-forward-right-small";
 
 interface TablePaginationActionsProps {
   count: number;
@@ -181,3 +181,4 @@ export default function TableCustomActions() {
     </TableContainer>
   );
 }
+

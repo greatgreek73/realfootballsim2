@@ -917,3 +917,4 @@ export const strokeSizeHelper = (size: number) => {
 };
 
 export default NextureIcons;
+

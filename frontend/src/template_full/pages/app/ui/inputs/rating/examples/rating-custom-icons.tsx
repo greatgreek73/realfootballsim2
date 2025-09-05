@@ -1,8 +1,8 @@
 import { Card, CardContent, FormGroup, FormLabel, Grid, Rating, Typography } from "@mui/material";
 
-import NiBrush from "@/icons/nexture/ni-brush";
-import NiChef from "@/icons/nexture/ni-chef";
-import NiDrink from "@/icons/nexture/ni-drink";
+import NiBrush from "@/template_full/icons/nexture/ni-brush";
+import NiChef from "@/template_full/icons/nexture/ni-chef";
+import NiDrink from "@/template_full/icons/nexture/ni-drink";
 
 export default function RatingCustomIcons() {
   return (
@@ -45,3 +45,4 @@ export default function RatingCustomIcons() {
     </Grid>
   );
 }
+

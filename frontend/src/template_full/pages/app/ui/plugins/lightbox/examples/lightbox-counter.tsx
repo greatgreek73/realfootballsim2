@@ -7,9 +7,9 @@ import Counter from "yet-another-react-lightbox/plugins/counter";
 
 import { Card, CardContent, Grid, Typography } from "@mui/material";
 
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiCross from "@/icons/nexture/ni-cross";
+import NiChevronLeftSmall from "@/template_full/icons/nexture/ni-chevron-left-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
 
 const largeImages = [
   {
@@ -81,3 +81,4 @@ export default function LightboxCounter() {
     </Card>
   );
 }
+

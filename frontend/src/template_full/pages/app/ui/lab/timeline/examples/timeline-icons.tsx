@@ -7,10 +7,10 @@ import TimelineOppositeContent from "@mui/lab/TimelineOppositeContent";
 import TimelineSeparator from "@mui/lab/TimelineSeparator";
 import { Typography } from "@mui/material";
 
-import NiChef from "@/icons/nexture/ni-chef";
-import NiDocumentCode from "@/icons/nexture/ni-document-code";
-import NiEyeInactive from "@/icons/nexture/ni-eye-inactive";
-import NiRefresh from "@/icons/nexture/ni-refresh";
+import NiChef from "@/template_full/icons/nexture/ni-chef";
+import NiDocumentCode from "@/template_full/icons/nexture/ni-document-code";
+import NiEyeInactive from "@/template_full/icons/nexture/ni-eye-inactive";
+import NiRefresh from "@/template_full/icons/nexture/ni-refresh";
 
 export default function TimelineIcons() {
   return (
@@ -90,3 +90,4 @@ export default function TimelineIcons() {
     </Timeline>
   );
 }
+

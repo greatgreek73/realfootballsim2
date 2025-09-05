@@ -1,7 +1,7 @@
 import { LineChart } from "@mui/x-charts";
 
-import CustomChartTooltip from "@/components/charts/tooltip/custom-chart-tooltip";
-import useChartPalette from "@/hooks/use-chart-palette";
+import CustomChartTooltip from "@/template_full/components/charts/tooltip/custom-chart-tooltip";
+import useChartPalette from "@/template_full/hooks/use-chart-palette";
 
 export default function BasicLine() {
   const chartPalette = useChartPalette();
@@ -18,3 +18,4 @@ export default function BasicLine() {
     />
   );
 }
+

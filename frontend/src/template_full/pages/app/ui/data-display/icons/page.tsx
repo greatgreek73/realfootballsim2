@@ -3,14 +3,14 @@ import { Link } from "react-router-dom";
 import { Box, Breadcrumbs, Card, CardContent, Typography } from "@mui/material";
 import { Grid } from "@mui/material";
 
-import NiFolderCheck from "@/icons/nexture/ni-folder-check";
-import NiHome from "@/icons/nexture/ni-home";
-import NiLike from "@/icons/nexture/ni-like";
-import NiLock from "@/icons/nexture/ni-lock";
-import NiShieldCheck from "@/icons/nexture/ni-shield-check";
-import NiUnlike from "@/icons/nexture/ni-unlike";
-import NiUnlock from "@/icons/nexture/ni-unlock";
-import NiVerified from "@/icons/nexture/ni-verified";
+import NiFolderCheck from "@/template_full/icons/nexture/ni-folder-check";
+import NiHome from "@/template_full/icons/nexture/ni-home";
+import NiLike from "@/template_full/icons/nexture/ni-like";
+import NiLock from "@/template_full/icons/nexture/ni-lock";
+import NiShieldCheck from "@/template_full/icons/nexture/ni-shield-check";
+import NiUnlike from "@/template_full/icons/nexture/ni-unlike";
+import NiUnlock from "@/template_full/icons/nexture/ni-unlock";
+import NiVerified from "@/template_full/icons/nexture/ni-verified";
 
 export default function Page() {
   return (
@@ -218,3 +218,4 @@ export default function Page() {
     </Grid>
   );
 }
+

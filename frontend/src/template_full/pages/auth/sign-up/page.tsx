@@ -18,12 +18,12 @@ import {
   Typography,
 } from "@mui/material";
 
-import Logo from "@/components/logo/logo";
-import { DEFAULTS } from "@/config";
-import NiCheck from "@/icons/nexture/ni-check";
-import NiCross from "@/icons/nexture/ni-cross";
-import NiCrossSquare from "@/icons/nexture/ni-cross-square";
-import { cn } from "@/lib/utils";
+import Logo from "@/template_full/components/logo/logo";
+import { DEFAULTS } from "@/template_full/config";
+import NiCheck from "@/template_full/icons/nexture/ni-check";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
+import NiCrossSquare from "@/template_full/icons/nexture/ni-cross-square";
+import { cn } from "@/template_full/lib/utils";
 
 const validationSchema = yup.object({
   name: yup.string().required("The field is required").min(3, "Should be at least 3 characters"),
@@ -345,3 +345,4 @@ export default function Page() {
     </Box>
   );
 }
+

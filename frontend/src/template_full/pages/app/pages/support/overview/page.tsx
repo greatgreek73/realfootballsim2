@@ -10,8 +10,8 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { Box, Breadcrumbs, Button, Card, Drawer, Grid, Tooltip, Typography } from "@mui/material";
 
-import NiListCircle from "@/icons/nexture/ni-list-circle";
-import NiPlus from "@/icons/nexture/ni-plus";
+import NiListCircle from "@/template_full/icons/nexture/ni-list-circle";
+import NiPlus from "@/template_full/icons/nexture/ni-plus";
 
 export default function Page() {
   const navigate = useNavigate();
@@ -98,3 +98,4 @@ export default function Page() {
     </Grid>
   );
 }
+

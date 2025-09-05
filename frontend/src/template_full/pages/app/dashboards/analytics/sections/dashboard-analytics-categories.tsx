@@ -1,9 +1,9 @@
 import { Card, CardContent, Typography, useTheme } from "@mui/material";
 import { PieArc, PieChart } from "@mui/x-charts";
 
-import CustomChartMark from "@/components/charts/mark/custom-chart-mark";
-import CustomChartTooltip from "@/components/charts/tooltip/custom-chart-tooltip";
-import { withChartElementStyle } from "@/lib/chart-element-hoc";
+import CustomChartMark from "@/template_full/components/charts/mark/custom-chart-mark";
+import CustomChartTooltip from "@/template_full/components/charts/tooltip/custom-chart-tooltip";
+import { withChartElementStyle } from "@/template_full/lib/chart-element-hoc";
 
 export default function DashboardAnalyticsCategories() {
   const { palette } = useTheme();
@@ -36,3 +36,4 @@ export default function DashboardAnalyticsCategories() {
     </Card>
   );
 }
+

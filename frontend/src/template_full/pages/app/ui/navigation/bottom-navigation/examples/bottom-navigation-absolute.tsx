@@ -11,9 +11,9 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import Paper from "@mui/material/Paper";
 
-import NiArrowCircleLeft from "@/icons/nexture/ni-arrow-circle-left";
-import NiHeart from "@/icons/nexture/ni-heart";
-import NiPin from "@/icons/nexture/ni-pin";
+import NiArrowCircleLeft from "@/template_full/icons/nexture/ni-arrow-circle-left";
+import NiHeart from "@/template_full/icons/nexture/ni-heart";
+import NiPin from "@/template_full/icons/nexture/ni-pin";
 
 function refreshMessages(): MessageExample[] {
   const getRandomInt = (max: number) => Math.floor(Math.random() * Math.floor(max));
@@ -109,3 +109,4 @@ const messageExamples: readonly MessageExample[] = [
     person: "/images/avatars/avatar-1.jpg",
   },
 ];
+

@@ -29,15 +29,15 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiBell from "@/icons/nexture/ni-bell";
-import NiBellInactive from "@/icons/nexture/ni-bell-inactive";
-import NiEllipsisHorizontal from "@/icons/nexture/ni-ellipsis-horizontal";
-import NiScreen from "@/icons/nexture/ni-screen";
-import NiSettings from "@/icons/nexture/ni-settings";
-import NiStructure from "@/icons/nexture/ni-structure";
-import NiUsers from "@/icons/nexture/ni-users";
-import NextureIcons, { IconName } from "@/icons/nexture-icons";
-import { cn } from "@/lib/utils";
+import NiBell from "@/template_full/icons/nexture/ni-bell";
+import NiBellInactive from "@/template_full/icons/nexture/ni-bell-inactive";
+import NiEllipsisHorizontal from "@/template_full/icons/nexture/ni-ellipsis-horizontal";
+import NiScreen from "@/template_full/icons/nexture/ni-screen";
+import NiSettings from "@/template_full/icons/nexture/ni-settings";
+import NiStructure from "@/template_full/icons/nexture/ni-structure";
+import NiUsers from "@/template_full/icons/nexture/ni-users";
+import NextureIcons, { IconName } from "@/template_full/icons/nexture-icons";
+import { cn } from "@/template_full/lib/utils";
 
 type ChipData = {
   id: string;
@@ -618,3 +618,4 @@ function NotificationItem({
     </>
   );
 }
+

@@ -9,7 +9,7 @@ import {
   CheckboxSmallChecked,
   CheckboxSmallEmpty,
   CheckboxSmallIndeterminate,
-} from "@/icons/form/mui-checkbox";
+} from "@/template_full/icons/form/mui-checkbox";
 
 export default function CheckboxIndeterminate() {
   const [checkedStates, setCheckedStates] = useState([true, false]);
@@ -141,3 +141,4 @@ export default function CheckboxIndeterminate() {
     </Grid>
   );
 }
+

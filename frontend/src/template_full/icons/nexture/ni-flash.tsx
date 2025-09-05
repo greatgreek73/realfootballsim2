@@ -38,3 +38,4 @@ export default function NiFlash({ className, variant = "outlined", size = "mediu
     );
   }
 }
+

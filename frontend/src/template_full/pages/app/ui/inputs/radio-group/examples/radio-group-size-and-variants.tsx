@@ -7,7 +7,7 @@ import {
   RadiobuttonSmallChecked,
   RadiobuttonSmallEmpty,
   RadiobuttonSmallEmptyOutlined,
-} from "@/icons/form/mui-radiobutton";
+} from "@/template_full/icons/form/mui-radiobutton";
 
 export default function RadioGroupSizeAndVariants() {
   return (
@@ -69,3 +69,4 @@ export default function RadioGroupSizeAndVariants() {
     </Grid>
   );
 }
+

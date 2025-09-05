@@ -14,34 +14,34 @@ import {
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
-import DataGridAutocomplete from "@/components/data-grid/data-grid-autocomplete";
-import DataGridDate from "@/components/data-grid/data-grid-date";
-import DataGridDateFilter from "@/components/data-grid/data-grid-date-filter";
-import DataGridDateTime from "@/components/data-grid/data-grid-date-time";
-import DataGridDateTimeFilter from "@/components/data-grid/data-grid-date-time-filter";
-import DataGridInput from "@/components/data-grid/data-grid-input";
-import DataGridInputFilter from "@/components/data-grid/data-grid-input-filter";
-import DataGridPagination from "@/components/data-grid/data-grid-pagination";
-import DataGridSelect from "@/components/data-grid/data-grid-select";
-import DataGridSlider from "@/components/data-grid/data-grid-slider";
-import NiArrowDown from "@/icons/nexture/ni-arrow-down";
-import NiArrowUp from "@/icons/nexture/ni-arrow-up";
-import NiBinEmpty from "@/icons/nexture/ni-bin-empty";
-import NiCheckSquare from "@/icons/nexture/ni-check-square";
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronLeftRightSmall from "@/icons/nexture/ni-chevron-left-right-small";
-import NiCols from "@/icons/nexture/ni-cols";
-import NiCross from "@/icons/nexture/ni-cross";
-import NiCrossSquare from "@/icons/nexture/ni-cross-square";
-import NiEllipsisVertical from "@/icons/nexture/ni-ellipsis-vertical";
-import NiEyeInactive from "@/icons/nexture/ni-eye-inactive";
-import NiFilter from "@/icons/nexture/ni-filter";
-import NiFilterPlus from "@/icons/nexture/ni-filter-plus";
-import NiPlus from "@/icons/nexture/ni-plus";
-import NiPushPinLeft from "@/icons/nexture/ni-push-pin-left";
-import NiPushPinRight from "@/icons/nexture/ni-push-pin-right";
-import NiSearch from "@/icons/nexture/ni-search";
-import { cn } from "@/lib/utils";
+import DataGridAutocomplete from "@/template_full/components/data-grid/data-grid-autocomplete";
+import DataGridDate from "@/template_full/components/data-grid/data-grid-date";
+import DataGridDateFilter from "@/template_full/components/data-grid/data-grid-date-filter";
+import DataGridDateTime from "@/template_full/components/data-grid/data-grid-date-time";
+import DataGridDateTimeFilter from "@/template_full/components/data-grid/data-grid-date-time-filter";
+import DataGridInput from "@/template_full/components/data-grid/data-grid-input";
+import DataGridInputFilter from "@/template_full/components/data-grid/data-grid-input-filter";
+import DataGridPagination from "@/template_full/components/data-grid/data-grid-pagination";
+import DataGridSelect from "@/template_full/components/data-grid/data-grid-select";
+import DataGridSlider from "@/template_full/components/data-grid/data-grid-slider";
+import NiArrowDown from "@/template_full/icons/nexture/ni-arrow-down";
+import NiArrowUp from "@/template_full/icons/nexture/ni-arrow-up";
+import NiBinEmpty from "@/template_full/icons/nexture/ni-bin-empty";
+import NiCheckSquare from "@/template_full/icons/nexture/ni-check-square";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiChevronLeftRightSmall from "@/template_full/icons/nexture/ni-chevron-left-right-small";
+import NiCols from "@/template_full/icons/nexture/ni-cols";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
+import NiCrossSquare from "@/template_full/icons/nexture/ni-cross-square";
+import NiEllipsisVertical from "@/template_full/icons/nexture/ni-ellipsis-vertical";
+import NiEyeInactive from "@/template_full/icons/nexture/ni-eye-inactive";
+import NiFilter from "@/template_full/icons/nexture/ni-filter";
+import NiFilterPlus from "@/template_full/icons/nexture/ni-filter-plus";
+import NiPlus from "@/template_full/icons/nexture/ni-plus";
+import NiPushPinLeft from "@/template_full/icons/nexture/ni-push-pin-left";
+import NiPushPinRight from "@/template_full/icons/nexture/ni-push-pin-right";
+import NiSearch from "@/template_full/icons/nexture/ni-search";
+import { cn } from "@/template_full/lib/utils";
 
 export default function DataGridProVersion() {
   return (
@@ -451,3 +451,4 @@ const columnsPro: GridColDef<(typeof rowsPro)[number]>[] = [
     editable: true,
   },
 ];
+

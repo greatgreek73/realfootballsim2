@@ -14,7 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 
-import { RadiobuttonSmallChecked, RadiobuttonSmallEmpty } from "@/icons/form/mui-radiobutton";
+import { RadiobuttonSmallChecked, RadiobuttonSmallEmpty } from "@/template_full/icons/form/mui-radiobutton";
 
 export default function RadioGroupShowError() {
   const [valueErrorExample, setValueErrorExample] = useState("");
@@ -83,3 +83,4 @@ export default function RadioGroupShowError() {
     </Grid>
   );
 }
+

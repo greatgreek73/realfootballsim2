@@ -21,7 +21,7 @@ import {
 } from "@mui/material";
 import { Grid } from "@mui/material";
 
-import NiBinEmpty from "@/icons/nexture/ni-bin-empty";
+import NiBinEmpty from "@/template_full/icons/nexture/ni-bin-empty";
 import { Instance } from "@popperjs/core";
 
 export default function Page() {
@@ -782,3 +782,4 @@ export default function Page() {
     </Grid>
   );
 }
+

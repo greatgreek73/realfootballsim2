@@ -1,9 +1,9 @@
 import { LineChart } from "@mui/x-charts";
 
-import CustomChartMark from "@/components/charts/mark/custom-chart-mark";
-import CustomChartTooltip from "@/components/charts/tooltip/custom-chart-tooltip";
-import useChartPalette from "@/hooks/use-chart-palette";
-import { colorWithOpacity } from "@/lib/chart-helper";
+import CustomChartMark from "@/template_full/components/charts/mark/custom-chart-mark";
+import CustomChartTooltip from "@/template_full/components/charts/tooltip/custom-chart-tooltip";
+import useChartPalette from "@/template_full/hooks/use-chart-palette";
+import { colorWithOpacity } from "@/template_full/lib/chart-helper";
 
 export default function Stacking() {
   const chartPalette = useChartPalette();
@@ -94,3 +94,4 @@ export default function Stacking() {
     />
   );
 }
+

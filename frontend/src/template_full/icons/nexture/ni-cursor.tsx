@@ -38,3 +38,4 @@ export default function NiCursor({ className, variant = "outlined", size = "medi
     );
   }
 }
+

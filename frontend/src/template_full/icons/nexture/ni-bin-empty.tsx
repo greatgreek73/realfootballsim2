@@ -58,3 +58,4 @@ export default function NiBinEmpty({ className, variant = "outlined", size = "me
     );
   }
 }
+

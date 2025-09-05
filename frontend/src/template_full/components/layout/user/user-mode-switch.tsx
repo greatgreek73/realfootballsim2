@@ -3,12 +3,12 @@ import { useTranslation } from "react-i18next";
 
 import { Chip, Fade, ListItemIcon, Menu, MenuItem, PopoverVirtualElement } from "@mui/material";
 
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiMoon from "@/icons/nexture/ni-moon";
-import NiScreen from "@/icons/nexture/ni-screen";
-import NiSun from "@/icons/nexture/ni-sun";
-import { cn } from "@/lib/utils";
-import { useThemeContext } from "@/theme/theme-provider";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiMoon from "@/template_full/icons/nexture/ni-moon";
+import NiScreen from "@/template_full/icons/nexture/ni-screen";
+import NiSun from "@/template_full/icons/nexture/ni-sun";
+import { cn } from "@/template_full/lib/utils";
+import { useThemeContext } from "@/template_full/theme/theme-provider";
 
 export default function UserModeSwitch() {
   const { mode, setMode } = useThemeContext();
@@ -103,3 +103,4 @@ export default function UserModeSwitch() {
     </>
   );
 }
+

@@ -1,7 +1,7 @@
 import { Autocomplete, Card, CardContent, FormControl, FormLabel, Grid, TextField, Typography } from "@mui/material";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiCross from "@/icons/nexture/ni-cross";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
 
 export default function AutocompleteFreeSolo() {
   return (
@@ -71,3 +71,4 @@ export default function AutocompleteFreeSolo() {
     </Grid>
   );
 }
+

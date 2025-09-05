@@ -17,9 +17,9 @@ import {
 import { TreeViewBaseItem } from "@mui/x-tree-view/models";
 import { RichTreeViewPro } from "@mui/x-tree-view-pro/RichTreeViewPro";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiDragVertical from "@/icons/nexture/ni-drag-vertical";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiDragVertical from "@/template_full/icons/nexture/ni-drag-vertical";
 
 const MUI_X_PRODUCTS: TreeViewBaseItem[] = [
   {
@@ -127,3 +127,4 @@ export default function DragHandle() {
     </Box>
   );
 }
+

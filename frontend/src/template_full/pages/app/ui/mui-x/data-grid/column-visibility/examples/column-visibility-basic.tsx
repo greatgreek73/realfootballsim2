@@ -5,20 +5,20 @@ import Box from "@mui/material/Box";
 import { DataGrid } from "@mui/x-data-grid";
 import { useMovieData } from "@mui/x-data-grid-generator";
 
-import DataGridPagination from "@/components/data-grid/data-grid-pagination";
-import NiArrowDown from "@/icons/nexture/ni-arrow-down";
-import NiArrowInDown from "@/icons/nexture/ni-arrow-in-down";
-import NiArrowUp from "@/icons/nexture/ni-arrow-up";
-import NiBinEmpty from "@/icons/nexture/ni-bin-empty";
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronLeftRightSmall from "@/icons/nexture/ni-chevron-left-right-small";
-import NiCols from "@/icons/nexture/ni-cols";
-import NiCross from "@/icons/nexture/ni-cross";
-import NiEllipsisVertical from "@/icons/nexture/ni-ellipsis-vertical";
-import NiEyeInactive from "@/icons/nexture/ni-eye-inactive";
-import NiFilter from "@/icons/nexture/ni-filter";
-import NiFilterPlus from "@/icons/nexture/ni-filter-plus";
-import NiSearch from "@/icons/nexture/ni-search";
+import DataGridPagination from "@/template_full/components/data-grid/data-grid-pagination";
+import NiArrowDown from "@/template_full/icons/nexture/ni-arrow-down";
+import NiArrowInDown from "@/template_full/icons/nexture/ni-arrow-in-down";
+import NiArrowUp from "@/template_full/icons/nexture/ni-arrow-up";
+import NiBinEmpty from "@/template_full/icons/nexture/ni-bin-empty";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiChevronLeftRightSmall from "@/template_full/icons/nexture/ni-chevron-left-right-small";
+import NiCols from "@/template_full/icons/nexture/ni-cols";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
+import NiEllipsisVertical from "@/template_full/icons/nexture/ni-ellipsis-vertical";
+import NiEyeInactive from "@/template_full/icons/nexture/ni-eye-inactive";
+import NiFilter from "@/template_full/icons/nexture/ni-filter";
+import NiFilterPlus from "@/template_full/icons/nexture/ni-filter-plus";
+import NiSearch from "@/template_full/icons/nexture/ni-search";
 
 const VISIBLE_FIELDS = ["title", "company", "director", "year", "cinematicUniverse"];
 
@@ -98,3 +98,4 @@ export default function ColumnVisibilityBasic() {
     </Box>
   );
 }
+

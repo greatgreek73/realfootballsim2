@@ -3,9 +3,9 @@ import { useState } from "react";
 import BottomNavigation from "@mui/material/BottomNavigation";
 import BottomNavigationAction from "@mui/material/BottomNavigationAction";
 
-import NiArrowCircleLeft from "@/icons/nexture/ni-arrow-circle-left";
-import NiHeart from "@/icons/nexture/ni-heart";
-import NiPin from "@/icons/nexture/ni-pin";
+import NiArrowCircleLeft from "@/template_full/icons/nexture/ni-arrow-circle-left";
+import NiHeart from "@/template_full/icons/nexture/ni-heart";
+import NiPin from "@/template_full/icons/nexture/ni-pin";
 
 export default function BottomNavigationBasic() {
   const [value, setValue] = useState(0);
@@ -25,3 +25,4 @@ export default function BottomNavigationBasic() {
     </BottomNavigation>
   );
 }
+

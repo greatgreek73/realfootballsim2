@@ -3,9 +3,9 @@ import { useTranslation } from "react-i18next";
 
 import { Avatar, Box, Button, Card, CardContent, Link, Typography } from "@mui/material";
 
-import NiBookmark from "@/icons/nexture/ni-bookmark";
-import NiPin from "@/icons/nexture/ni-pin";
-import { cn } from "@/lib/utils";
+import NiBookmark from "@/template_full/icons/nexture/ni-bookmark";
+import NiPin from "@/template_full/icons/nexture/ni-pin";
+import { cn } from "@/template_full/lib/utils";
 
 export default function LPUser() {
   const { t } = useTranslation();
@@ -56,3 +56,4 @@ export default function LPUser() {
     </Card>
   );
 }
+

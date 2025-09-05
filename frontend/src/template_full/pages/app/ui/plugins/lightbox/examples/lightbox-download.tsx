@@ -6,10 +6,10 @@ import Download from "yet-another-react-lightbox/plugins/download";
 
 import { Card, CardContent, Grid, Typography } from "@mui/material";
 
-import NiArrowInDown from "@/icons/nexture/ni-arrow-in-down";
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiCross from "@/icons/nexture/ni-cross";
+import NiArrowInDown from "@/template_full/icons/nexture/ni-arrow-in-down";
+import NiChevronLeftSmall from "@/template_full/icons/nexture/ni-chevron-left-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
 
 const largeImages = [
   {
@@ -77,3 +77,4 @@ export default function LightboxDownload() {
     </Card>
   );
 }
+

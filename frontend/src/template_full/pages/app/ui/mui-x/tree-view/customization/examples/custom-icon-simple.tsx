@@ -2,9 +2,9 @@ import Box from "@mui/material/Box";
 import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView";
 import { TreeItem } from "@mui/x-tree-view/TreeItem";
 
-import NiBookmarkSingle from "@/icons/nexture/ni-bookmark-single";
-import NiMinus from "@/icons/nexture/ni-minus";
-import NiPlus from "@/icons/nexture/ni-plus";
+import NiBookmarkSingle from "@/template_full/icons/nexture/ni-bookmark-single";
+import NiMinus from "@/template_full/icons/nexture/ni-minus";
+import NiPlus from "@/template_full/icons/nexture/ni-plus";
 
 export default function CustomIconSimple() {
   return (
@@ -38,3 +38,4 @@ export default function CustomIconSimple() {
     </Box>
   );
 }
+

@@ -3,10 +3,10 @@ import { useState } from "react";
 import Button from "@mui/material/Button";
 import MobileStepper from "@mui/material/MobileStepper";
 
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import { NextureIconsProps } from "@/icons/nexture-icons";
-import { cn } from "@/lib/utils";
+import NiChevronLeftSmall from "@/template_full/icons/nexture/ni-chevron-left-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import { NextureIconsProps } from "@/template_full/icons/nexture-icons";
+import { cn } from "@/template_full/lib/utils";
 
 export default function StepperMobileText({ className }: NextureIconsProps) {
   const [activeStep, setActiveStep] = useState(0);
@@ -52,3 +52,4 @@ export default function StepperMobileText({ className }: NextureIconsProps) {
     />
   );
 }
+

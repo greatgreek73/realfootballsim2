@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { Box, Card, CardContent, FormGroup, FormLabel, Grid, Rating, Typography } from "@mui/material";
 
-import NiStar from "@/icons/nexture/ni-star";
+import NiStar from "@/template_full/icons/nexture/ni-star";
 
 export default function RatingBasic() {
   const [valueBasic, setValueBasic] = useState<number | null>(4);
@@ -85,3 +85,4 @@ export default function RatingBasic() {
     </Grid>
   );
 }
+

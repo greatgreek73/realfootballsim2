@@ -25,15 +25,15 @@ import MenuItem from "@mui/material/MenuItem";
 import MenuList from "@mui/material/MenuList";
 import Popper from "@mui/material/Popper";
 
-import NiBuilding from "@/icons/nexture/ni-building";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiDocumentFull from "@/icons/nexture/ni-document-full";
-import NiFolder from "@/icons/nexture/ni-folder";
-import NiQuestionHexagon from "@/icons/nexture/ni-question-hexagon";
-import NiSettings from "@/icons/nexture/ni-settings";
-import NiUser from "@/icons/nexture/ni-user";
-import NiUsers from "@/icons/nexture/ni-users";
-import { cn } from "@/lib/utils";
+import NiBuilding from "@/template_full/icons/nexture/ni-building";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiDocumentFull from "@/template_full/icons/nexture/ni-document-full";
+import NiFolder from "@/template_full/icons/nexture/ni-folder";
+import NiQuestionHexagon from "@/template_full/icons/nexture/ni-question-hexagon";
+import NiSettings from "@/template_full/icons/nexture/ni-settings";
+import NiUser from "@/template_full/icons/nexture/ni-user";
+import NiUsers from "@/template_full/icons/nexture/ni-users";
+import { cn } from "@/template_full/lib/utils";
 
 export default function User() {
   const [open, setOpen] = useState(false);
@@ -308,3 +308,4 @@ export default function User() {
     </>
   );
 }
+

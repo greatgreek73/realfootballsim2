@@ -3,20 +3,20 @@ import { Link } from "react-router-dom";
 
 import { Box, Button, Paper, Tooltip, Typography } from "@mui/material";
 
-import Logo from "@/components/logo/logo";
-import NiBasket from "@/icons/nexture/ni-basket";
-import NiCatalog from "@/icons/nexture/ni-catalog";
-import NiSendUpRight from "@/icons/nexture/ni-send-up-right";
-import { cn } from "@/lib/utils";
-import LPAction from "@/pages/auth/landing-page/sections/lp-action";
-import LPImage from "@/pages/auth/landing-page/sections/lp-image";
-import LPInputs from "@/pages/auth/landing-page/sections/lp-inputs";
-import LPLogos from "@/pages/auth/landing-page/sections/lp-logos";
-import LPRatings from "@/pages/auth/landing-page/sections/lp-ratings";
-import LPSettings from "@/pages/auth/landing-page/sections/lp-settings";
-import LPStat from "@/pages/auth/landing-page/sections/lp-stat";
-import LPTimeline from "@/pages/auth/landing-page/sections/lp-timeline";
-import LPUser from "@/pages/auth/landing-page/sections/lp-user";
+import Logo from "@/template_full/components/logo/logo";
+import NiBasket from "@/template_full/icons/nexture/ni-basket";
+import NiCatalog from "@/template_full/icons/nexture/ni-catalog";
+import NiSendUpRight from "@/template_full/icons/nexture/ni-send-up-right";
+import { cn } from "@/template_full/lib/utils";
+import LPAction from "@/template_full/pages/auth/landing-page/sections/lp-action";
+import LPImage from "@/template_full/pages/auth/landing-page/sections/lp-image";
+import LPInputs from "@/template_full/pages/auth/landing-page/sections/lp-inputs";
+import LPLogos from "@/template_full/pages/auth/landing-page/sections/lp-logos";
+import LPRatings from "@/template_full/pages/auth/landing-page/sections/lp-ratings";
+import LPSettings from "@/template_full/pages/auth/landing-page/sections/lp-settings";
+import LPStat from "@/template_full/pages/auth/landing-page/sections/lp-stat";
+import LPTimeline from "@/template_full/pages/auth/landing-page/sections/lp-timeline";
+import LPUser from "@/template_full/pages/auth/landing-page/sections/lp-user";
 
 export default function Home() {
   const { t } = useTranslation();
@@ -164,3 +164,4 @@ export default function Home() {
     </Box>
   );
 }
+

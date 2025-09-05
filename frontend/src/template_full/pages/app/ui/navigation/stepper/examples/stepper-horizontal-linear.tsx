@@ -8,10 +8,10 @@ import StepLabel from "@mui/material/StepLabel";
 import Stepper from "@mui/material/Stepper";
 import Typography from "@mui/material/Typography";
 
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NextureIcons, { IconName } from "@/icons/nexture-icons";
-import { cn } from "@/lib/utils";
+import NiChevronLeftSmall from "@/template_full/icons/nexture/ni-chevron-left-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NextureIcons, { IconName } from "@/template_full/icons/nexture-icons";
+import { cn } from "@/template_full/lib/utils";
 
 const steps = [
   {
@@ -159,3 +159,4 @@ export default function StepperHorizontalLinear() {
     </Box>
   );
 }
+

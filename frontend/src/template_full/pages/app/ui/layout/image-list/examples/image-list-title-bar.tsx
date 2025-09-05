@@ -3,7 +3,7 @@ import ImageList from "@mui/material/ImageList";
 import ImageListItem from "@mui/material/ImageListItem";
 import ImageListItemBar from "@mui/material/ImageListItemBar";
 
-import NiShare from "@/icons/nexture/ni-share";
+import NiShare from "@/template_full/icons/nexture/ni-share";
 
 export default function ImageListTitleBar() {
   return (
@@ -108,3 +108,4 @@ const itemData = [
     cols: 2,
   },
 ];
+

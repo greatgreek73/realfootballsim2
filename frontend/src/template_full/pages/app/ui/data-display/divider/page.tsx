@@ -18,15 +18,15 @@ import {
 } from "@mui/material";
 import { Grid } from "@mui/material";
 
-import NiMoon from "@/icons/nexture/ni-moon";
-import NiScreen from "@/icons/nexture/ni-screen";
-import NiSun from "@/icons/nexture/ni-sun";
-import NiTextBold from "@/icons/nexture/ni-text-bold";
-import NiTextCenter from "@/icons/nexture/ni-text-center";
-import NiTextItalic from "@/icons/nexture/ni-text-italic";
-import NiTextLeft from "@/icons/nexture/ni-text-left";
-import NiTextRight from "@/icons/nexture/ni-text-right";
-import NiTextUnderline from "@/icons/nexture/ni-text-underline";
+import NiMoon from "@/template_full/icons/nexture/ni-moon";
+import NiScreen from "@/template_full/icons/nexture/ni-screen";
+import NiSun from "@/template_full/icons/nexture/ni-sun";
+import NiTextBold from "@/template_full/icons/nexture/ni-text-bold";
+import NiTextCenter from "@/template_full/icons/nexture/ni-text-center";
+import NiTextItalic from "@/template_full/icons/nexture/ni-text-italic";
+import NiTextLeft from "@/template_full/icons/nexture/ni-text-left";
+import NiTextRight from "@/template_full/icons/nexture/ni-text-right";
+import NiTextUnderline from "@/template_full/icons/nexture/ni-text-underline";
 
 export default function Page() {
   const [toggleButtonValue, setToggleButtonValue] = useState<string | null>("left");
@@ -204,3 +204,4 @@ export default function Page() {
     </Grid>
   );
 }
+

@@ -4,7 +4,7 @@ import { Box, Portal } from "@mui/material";
 import Button from "@mui/material/Button";
 import Snackbar, { SnackbarCloseReason } from "@mui/material/Snackbar";
 
-import NiCross from "@/icons/nexture/ni-cross";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
 
 export interface SnackbarMessage {
   message: string;
@@ -83,3 +83,4 @@ export default function SnackbarConsecutive() {
     </Box>
   );
 }
+

@@ -24,3 +24,4 @@ export const LOCAL_STORAGE_KEYS = {
   leftMenuType: `${storagePrefix}-left-menu-type`,
   contentType: `${storagePrefix}-content-type`,
 };
+

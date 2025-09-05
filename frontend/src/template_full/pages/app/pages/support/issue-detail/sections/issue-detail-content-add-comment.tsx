@@ -1,10 +1,10 @@
 import { Box, Button, Card, CardContent, FormControl, TextareaAutosize, Typography } from "@mui/material";
 
-import NiArrowOutUp from "@/icons/nexture/ni-arrow-out-up";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiFaceSmile from "@/icons/nexture/ni-face-smile";
-import NiMessages from "@/icons/nexture/ni-messages";
-import NiMicrophone from "@/icons/nexture/ni-microphone";
+import NiArrowOutUp from "@/template_full/icons/nexture/ni-arrow-out-up";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiFaceSmile from "@/template_full/icons/nexture/ni-face-smile";
+import NiMessages from "@/template_full/icons/nexture/ni-messages";
+import NiMicrophone from "@/template_full/icons/nexture/ni-microphone";
 
 export default function IssueDetailContentAddComment() {
   return (
@@ -57,3 +57,4 @@ export default function IssueDetailContentAddComment() {
     </Card>
   );
 }
+

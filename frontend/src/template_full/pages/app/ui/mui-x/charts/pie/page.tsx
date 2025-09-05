@@ -2,8 +2,8 @@ import { Link } from "react-router-dom";
 
 import { Breadcrumbs, Card, CardContent, Grid, Typography } from "@mui/material";
 
-import BasicPie from "@/pages/app/ui/mui-x/charts/pie/examples/basic-pie";
-import Doughnut from "@/pages/app/ui/mui-x/charts/pie/examples/doughnut";
+import BasicPie from "@/template_full/pages/app/ui/mui-x/charts/pie/examples/basic-pie";
+import Doughnut from "@/template_full/pages/app/ui/mui-x/charts/pie/examples/doughnut";
 
 export default function PieCharts() {
   return (
@@ -50,3 +50,4 @@ export default function PieCharts() {
     </Grid>
   );
 }
+

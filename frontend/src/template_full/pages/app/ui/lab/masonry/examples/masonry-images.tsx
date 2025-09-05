@@ -2,9 +2,9 @@ import Masonry from "@mui/lab/Masonry";
 import { Button, Card, Typography } from "@mui/material";
 import Box from "@mui/material/Box";
 
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiEllipsisHorizontal from "@/icons/nexture/ni-ellipsis-horizontal";
-import NiShare from "@/icons/nexture/ni-share";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiEllipsisHorizontal from "@/template_full/icons/nexture/ni-ellipsis-horizontal";
+import NiShare from "@/template_full/icons/nexture/ni-share";
 
 export default function MasonryImages() {
   return (
@@ -107,3 +107,4 @@ const itemData = [
     title: "Bubbles",
   },
 ];
+

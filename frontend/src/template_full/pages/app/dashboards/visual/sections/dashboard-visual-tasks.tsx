@@ -2,9 +2,9 @@ import { useState } from "react";
 
 import { Box, Card, CardContent, Checkbox, FormControl, FormControlLabel, Typography } from "@mui/material";
 
-import NiCheckSquare from "@/icons/nexture/ni-check-square";
-import NiSquircle from "@/icons/nexture/ni-squircle";
-import { cn } from "@/lib/utils";
+import NiCheckSquare from "@/template_full/icons/nexture/ni-check-square";
+import NiSquircle from "@/template_full/icons/nexture/ni-squircle";
+import { cn } from "@/template_full/lib/utils";
 
 interface Task {
   id: string;
@@ -129,3 +129,4 @@ export default function DashboardVisualTasks() {
     </Card>
   );
 }
+

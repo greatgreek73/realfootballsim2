@@ -12,13 +12,13 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiEmail from "@/icons/nexture/ni-email";
-import NiLinkBroken from "@/icons/nexture/ni-link-broken";
-import NiScreen from "@/icons/nexture/ni-screen";
-import NiSearch from "@/icons/nexture/ni-search";
-import NiTriangleDown from "@/icons/nexture/ni-triangle-down";
-import NiTriangleUp from "@/icons/nexture/ni-triangle-up";
-import NiWallet from "@/icons/nexture/ni-wallet";
+import NiEmail from "@/template_full/icons/nexture/ni-email";
+import NiLinkBroken from "@/template_full/icons/nexture/ni-link-broken";
+import NiScreen from "@/template_full/icons/nexture/ni-screen";
+import NiSearch from "@/template_full/icons/nexture/ni-search";
+import NiTriangleDown from "@/template_full/icons/nexture/ni-triangle-down";
+import NiTriangleUp from "@/template_full/icons/nexture/ni-triangle-up";
+import NiWallet from "@/template_full/icons/nexture/ni-wallet";
 
 export default function DashboardDefaultSources() {
   return (
@@ -212,3 +212,4 @@ export default function DashboardDefaultSources() {
     </Card>
   );
 }
+

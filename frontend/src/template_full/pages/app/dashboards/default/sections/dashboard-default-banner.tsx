@@ -1,7 +1,7 @@
 import { Box, Button, Card, CardContent, Typography } from "@mui/material";
 
-import IllustrationConfigure from "@/icons/illustrations/illustration-configure";
-import NiPalette from "@/icons/nexture/ni-palette";
+import IllustrationConfigure from "@/template_full/icons/illustrations/illustration-configure";
+import NiPalette from "@/template_full/icons/nexture/ni-palette";
 
 export default function DashboardDefaultBanner() {
   const handleConfigureButtonClick = () => {
@@ -45,3 +45,4 @@ export default function DashboardDefaultBanner() {
     </Card>
   );
 }
+

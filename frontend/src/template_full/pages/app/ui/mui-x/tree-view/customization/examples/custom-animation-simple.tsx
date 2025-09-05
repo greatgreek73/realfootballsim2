@@ -6,8 +6,8 @@ import { TransitionProps } from "@mui/material/transitions";
 import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView";
 import { TreeItem, TreeItemProps } from "@mui/x-tree-view/TreeItem";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
 import { animated, useSpring } from "@react-spring/web";
 
 function TransitionComponent(props: TransitionProps) {
@@ -62,3 +62,4 @@ export default function CustomAnimationSimple() {
     </Box>
   );
 }
+

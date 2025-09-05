@@ -3,12 +3,12 @@ import { useMemo, useState } from "react";
 import { Box, Button, Card, CardContent, Typography, useTheme } from "@mui/material";
 import { BarChart, BarElement, BarSeriesType } from "@mui/x-charts";
 
-import CustomChartTooltip from "@/components/charts/tooltip/custom-chart-tooltip";
-import NiBookmark from "@/icons/nexture/ni-bookmark";
-import NiController from "@/icons/nexture/ni-controller";
-import NiRocket from "@/icons/nexture/ni-rocket";
-import NiStructure from "@/icons/nexture/ni-structure";
-import { withChartElementStyle } from "@/lib/chart-element-hoc";
+import CustomChartTooltip from "@/template_full/components/charts/tooltip/custom-chart-tooltip";
+import NiBookmark from "@/template_full/icons/nexture/ni-bookmark";
+import NiController from "@/template_full/icons/nexture/ni-controller";
+import NiRocket from "@/template_full/icons/nexture/ni-rocket";
+import NiStructure from "@/template_full/icons/nexture/ni-structure";
+import { withChartElementStyle } from "@/template_full/lib/chart-element-hoc";
 
 export default function DashboardAnalyticsSales() {
   const { palette } = useTheme();
@@ -116,3 +116,4 @@ export default function DashboardAnalyticsSales() {
     </Card>
   );
 }
+

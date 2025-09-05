@@ -1,0 +1,18 @@
+Default Dashboard page not found in this repo.
+
+Searched under: frontend/src/pages/**/page.tsx and menu/routes for any of:
+- dashboards/default
+- dashboard/default
+- default dashboard
+- menu items referencing dashboards
+
+Closest existing sample pages:
+- frontend/src/pages/app/home/sub/page.tsx (placeholder demo page)
+- frontend/src/pages/app/home/page.tsx (empty)
+
+Where a "Default Dashboard" would be wired if present:
+- Route generation: frontend/src/routes.tsx (generateRoutesFromMenuItems + explicit routes)
+- Menu: frontend/src/menu-items.ts (no "Dashboards" group present)
+- Layout containers: frontend/src/pages/app/layout.tsx, frontend/src/components/layout/containers/content-wrapper.tsx
+
+Provide the original template's dashboard files (paths) to import, or I can add a new page e.g. /dashboards/default following the template structure.

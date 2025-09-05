@@ -1,12 +1,12 @@
 import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
-import { leftMenuBottomItems, leftMenuItems } from "@/menu-items";
-import AppLayout from "@/pages/app/layout";
-import AuthLayout from "@/pages/auth/layout";
-import Loading from "@/pages/loading.tsx";
-import NotFound from "@/pages/not-found";
-import { MenuItem } from "@/types/types";
+import { leftMenuBottomItems, leftMenuItems } from "@/template_full/menu-items";
+import AppLayout from "@/template_full/pages/app/layout";
+import AuthLayout from "@/template_full/pages/auth/layout";
+import Loading from "@/template_full/pages/loading.tsx";
+import NotFound from "@/template_full/pages/not-found";
+import { MenuItem } from "@/template_full/types/types";
 
 // Statically import all possible pages for build
 const modules = import.meta.glob("./pages/**/page.tsx");
@@ -106,3 +106,4 @@ const AppRoutes = () => {
 };
 
 export default AppRoutes;
+

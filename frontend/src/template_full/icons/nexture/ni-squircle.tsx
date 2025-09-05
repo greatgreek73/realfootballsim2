@@ -38,3 +38,4 @@ export default function NiSquircle({ className, variant = "outlined", size = "me
     );
   }
 }
+

@@ -40,3 +40,4 @@ export default function NiChevronDownSmall({ className, variant = "outlined", si
     );
   }
 }
+

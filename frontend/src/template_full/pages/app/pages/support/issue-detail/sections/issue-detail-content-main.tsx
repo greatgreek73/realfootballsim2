@@ -3,11 +3,11 @@ import { atomOneDark, atomOneLight } from "react-syntax-highlighter/dist/esm/sty
 
 import { Avatar, Box, Button, Card, CardContent, ListItemAvatar, ListItemText, Typography } from "@mui/material";
 
-import NiEllipsisHorizontal from "@/icons/nexture/ni-ellipsis-horizontal";
-import NiEyeOpen from "@/icons/nexture/ni-eye-open";
-import NiLike from "@/icons/nexture/ni-like";
-import NiRocket from "@/icons/nexture/ni-rocket";
-import { useThemeContext } from "@/theme/theme-provider";
+import NiEllipsisHorizontal from "@/template_full/icons/nexture/ni-ellipsis-horizontal";
+import NiEyeOpen from "@/template_full/icons/nexture/ni-eye-open";
+import NiLike from "@/template_full/icons/nexture/ni-like";
+import NiRocket from "@/template_full/icons/nexture/ni-rocket";
+import { useThemeContext } from "@/template_full/theme/theme-provider";
 
 export default function IssueDetailContentMain() {
   const { isDarkMode } = useThemeContext();
@@ -253,3 +253,4 @@ button {
     </Card>
   );
 }
+

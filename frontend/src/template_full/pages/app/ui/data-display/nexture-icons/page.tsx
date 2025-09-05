@@ -22,12 +22,12 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiCross from "@/icons/nexture/ni-cross";
-import NiDuplicate from "@/icons/nexture/ni-duplicate";
-import NiSearch from "@/icons/nexture/ni-search";
-import NextureIcons, { IconName, IconSize, IconVariant } from "@/icons/nexture-icons";
-import { cn } from "@/lib/utils";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
+import NiDuplicate from "@/template_full/icons/nexture/ni-duplicate";
+import NiSearch from "@/template_full/icons/nexture/ni-search";
+import NextureIcons, { IconName, IconSize, IconVariant } from "@/template_full/icons/nexture-icons";
+import { cn } from "@/template_full/lib/utils";
 
 export default function SwitchPage() {
   const [size, setSize] = useState<IconSize>("large");
@@ -344,3 +344,4 @@ export default function SwitchPage() {
     </Grid>
   );
 }
+

@@ -13,13 +13,13 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiArrowDown from "@/icons/nexture/ni-arrow-down";
-import NiArrowUp from "@/icons/nexture/ni-arrow-up";
-import NiEllipsisHorizontal from "@/icons/nexture/ni-ellipsis-horizontal";
-import NiEyeOpen from "@/icons/nexture/ni-eye-open";
-import NiLike from "@/icons/nexture/ni-like";
-import NiRocket from "@/icons/nexture/ni-rocket";
-import NiSearch from "@/icons/nexture/ni-search";
+import NiArrowDown from "@/template_full/icons/nexture/ni-arrow-down";
+import NiArrowUp from "@/template_full/icons/nexture/ni-arrow-up";
+import NiEllipsisHorizontal from "@/template_full/icons/nexture/ni-ellipsis-horizontal";
+import NiEyeOpen from "@/template_full/icons/nexture/ni-eye-open";
+import NiLike from "@/template_full/icons/nexture/ni-like";
+import NiRocket from "@/template_full/icons/nexture/ni-rocket";
+import NiSearch from "@/template_full/icons/nexture/ni-search";
 
 export default function UserSocialList() {
   return (
@@ -487,3 +487,4 @@ export default function UserSocialList() {
     </>
   );
 }
+

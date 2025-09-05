@@ -4,11 +4,11 @@ import { Link } from "react-router-dom";
 import { Breadcrumbs, Button, Card, CardContent, Menu, MenuItem, Typography } from "@mui/material";
 import { Grid } from "@mui/material";
 
-import NiCatalog from "@/icons/nexture/ni-catalog";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiEllipsisHorizontal from "@/icons/nexture/ni-ellipsis-horizontal";
-import NiHome from "@/icons/nexture/ni-home";
-import NiScreen from "@/icons/nexture/ni-screen";
+import NiCatalog from "@/template_full/icons/nexture/ni-catalog";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiEllipsisHorizontal from "@/template_full/icons/nexture/ni-ellipsis-horizontal";
+import NiHome from "@/template_full/icons/nexture/ni-home";
+import NiScreen from "@/template_full/icons/nexture/ni-screen";
 
 export default function Page() {
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
@@ -182,3 +182,4 @@ export default function Page() {
     </Grid>
   );
 }
+

@@ -14,11 +14,11 @@ import {
 } from "@mui/material";
 import { Grid } from "@mui/material";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiEndLeftSmall from "@/icons/nexture/ni-end-left-small";
-import NiEndRightSmall from "@/icons/nexture/ni-end-right-small";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiChevronLeftSmall from "@/template_full/icons/nexture/ni-chevron-left-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiEndLeftSmall from "@/template_full/icons/nexture/ni-end-left-small";
+import NiEndRightSmall from "@/template_full/icons/nexture/ni-end-right-small";
 
 export default function Page() {
   const [page, setPage] = useState(1);
@@ -404,3 +404,4 @@ export default function Page() {
     </Grid>
   );
 }
+

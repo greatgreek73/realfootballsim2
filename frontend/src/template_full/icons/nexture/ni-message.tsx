@@ -39,3 +39,4 @@ export default function NiMessage({ className, variant = "outlined", size = "med
     );
   }
 }
+

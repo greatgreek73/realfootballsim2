@@ -11,18 +11,18 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 
-import NiBinEmpty from "@/icons/nexture/ni-bin-empty";
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronUpSmall from "@/icons/nexture/ni-chevron-up-small";
-import NiDirectory from "@/icons/nexture/ni-directory";
-import NiEmailOpen from "@/icons/nexture/ni-email-open";
-import NiExclamationHexagon from "@/icons/nexture/ni-exclamation-hexagon";
-import NiInbox from "@/icons/nexture/ni-inbox";
-import NiSendRight from "@/icons/nexture/ni-send-right";
-import NiSign from "@/icons/nexture/ni-sign";
-import NiStar from "@/icons/nexture/ni-star";
-import NiTag from "@/icons/nexture/ni-tag";
-import { cn } from "@/lib/utils";
+import NiBinEmpty from "@/template_full/icons/nexture/ni-bin-empty";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiChevronUpSmall from "@/template_full/icons/nexture/ni-chevron-up-small";
+import NiDirectory from "@/template_full/icons/nexture/ni-directory";
+import NiEmailOpen from "@/template_full/icons/nexture/ni-email-open";
+import NiExclamationHexagon from "@/template_full/icons/nexture/ni-exclamation-hexagon";
+import NiInbox from "@/template_full/icons/nexture/ni-inbox";
+import NiSendRight from "@/template_full/icons/nexture/ni-send-right";
+import NiSign from "@/template_full/icons/nexture/ni-sign";
+import NiStar from "@/template_full/icons/nexture/ni-star";
+import NiTag from "@/template_full/icons/nexture/ni-tag";
+import { cn } from "@/template_full/lib/utils";
 
 type Anchor = "top" | "left" | "bottom" | "right";
 
@@ -147,3 +147,4 @@ export default function DrawerAnchor() {
     </Box>
   );
 }
+

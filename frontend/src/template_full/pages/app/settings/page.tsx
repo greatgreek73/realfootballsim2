@@ -19,21 +19,21 @@ import {
 } from "@mui/material";
 import { Grid } from "@mui/material";
 
-import NiBasket from "@/icons/nexture/ni-basket";
-import NiBell from "@/icons/nexture/ni-bell";
-import NiCheckSquare from "@/icons/nexture/ni-check-square";
-import NiDocumentFull from "@/icons/nexture/ni-document-full";
-import NiEmail from "@/icons/nexture/ni-email";
-import NiLaptop from "@/icons/nexture/ni-laptop";
-import NiListCircle from "@/icons/nexture/ni-list-circle";
-import NiLock from "@/icons/nexture/ni-lock";
-import NiMoneyBag from "@/icons/nexture/ni-money-bag";
-import NiPaintRoller from "@/icons/nexture/ni-paint-roller";
-import NiReceipt from "@/icons/nexture/ni-receipt";
-import NiStars from "@/icons/nexture/ni-stars";
-import NiUser from "@/icons/nexture/ni-user";
-import NiUsers from "@/icons/nexture/ni-users";
-import NiWallet from "@/icons/nexture/ni-wallet";
+import NiBasket from "@/template_full/icons/nexture/ni-basket";
+import NiBell from "@/template_full/icons/nexture/ni-bell";
+import NiCheckSquare from "@/template_full/icons/nexture/ni-check-square";
+import NiDocumentFull from "@/template_full/icons/nexture/ni-document-full";
+import NiEmail from "@/template_full/icons/nexture/ni-email";
+import NiLaptop from "@/template_full/icons/nexture/ni-laptop";
+import NiListCircle from "@/template_full/icons/nexture/ni-list-circle";
+import NiLock from "@/template_full/icons/nexture/ni-lock";
+import NiMoneyBag from "@/template_full/icons/nexture/ni-money-bag";
+import NiPaintRoller from "@/template_full/icons/nexture/ni-paint-roller";
+import NiReceipt from "@/template_full/icons/nexture/ni-receipt";
+import NiStars from "@/template_full/icons/nexture/ni-stars";
+import NiUser from "@/template_full/icons/nexture/ni-user";
+import NiUsers from "@/template_full/icons/nexture/ni-users";
+import NiWallet from "@/template_full/icons/nexture/ni-wallet";
 
 const MenuContent = () => {
   return (
@@ -262,3 +262,4 @@ export default function Settings() {
     </Grid>
   );
 }
+

@@ -35,3 +35,4 @@ export default function NiCircle({ className, variant = "outlined", size = "medi
     );
   }
 }
+

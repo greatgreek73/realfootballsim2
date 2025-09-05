@@ -2,8 +2,8 @@ import Box from "@mui/material/Box";
 import { TreeItem } from "@mui/x-tree-view";
 import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
 
 export default function SmallTreeViewSimple() {
   return (
@@ -38,3 +38,4 @@ export default function SmallTreeViewSimple() {
     </Box>
   );
 }
+

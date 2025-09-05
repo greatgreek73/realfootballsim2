@@ -2,8 +2,8 @@ import { Link } from "react-router-dom";
 
 import { Breadcrumbs, Card, CardContent, Grid, Typography } from "@mui/material";
 
-import BasicGauge from "@/pages/app/ui/mui-x/charts/gauge/examples/basic-gauge";
-import Pointer from "@/pages/app/ui/mui-x/charts/gauge/examples/pointer";
+import BasicGauge from "@/template_full/pages/app/ui/mui-x/charts/gauge/examples/basic-gauge";
+import Pointer from "@/template_full/pages/app/ui/mui-x/charts/gauge/examples/pointer";
 
 export default function GaugeCharts() {
   return (
@@ -50,3 +50,4 @@ export default function GaugeCharts() {
     </Grid>
   );
 }
+

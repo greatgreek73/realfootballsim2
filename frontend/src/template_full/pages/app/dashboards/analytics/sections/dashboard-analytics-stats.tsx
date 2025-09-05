@@ -1,13 +1,13 @@
 import { Box, Card, CardContent, Grid, Typography } from "@mui/material";
 
-import NiBasket from "@/icons/nexture/ni-basket";
-import NiCatalog from "@/icons/nexture/ni-catalog";
-import NiCells from "@/icons/nexture/ni-cells";
-import NiPercent from "@/icons/nexture/ni-percent";
-import NiQuestionHexagon from "@/icons/nexture/ni-question-hexagon";
-import NiScreen from "@/icons/nexture/ni-screen";
-import NiStars from "@/icons/nexture/ni-stars";
-import NiUser from "@/icons/nexture/ni-user";
+import NiBasket from "@/template_full/icons/nexture/ni-basket";
+import NiCatalog from "@/template_full/icons/nexture/ni-catalog";
+import NiCells from "@/template_full/icons/nexture/ni-cells";
+import NiPercent from "@/template_full/icons/nexture/ni-percent";
+import NiQuestionHexagon from "@/template_full/icons/nexture/ni-question-hexagon";
+import NiScreen from "@/template_full/icons/nexture/ni-screen";
+import NiStars from "@/template_full/icons/nexture/ni-stars";
+import NiUser from "@/template_full/icons/nexture/ni-user";
 
 export default function DashboardAnalyticsStats() {
   return (
@@ -135,3 +135,4 @@ export default function DashboardAnalyticsStats() {
     </>
   );
 }
+

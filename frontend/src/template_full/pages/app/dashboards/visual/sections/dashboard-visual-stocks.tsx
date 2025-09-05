@@ -1,12 +1,12 @@
 import { Box, Button, Card, CardContent, Chip, Link, Typography } from "@mui/material";
 
-import NiAirBalloon from "@/icons/nexture/ni-air-balloon";
-import NiBook from "@/icons/nexture/ni-book";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiController from "@/icons/nexture/ni-controller";
-import NiCrown from "@/icons/nexture/ni-crown";
-import NiDocumentCode from "@/icons/nexture/ni-document-code";
-import NiScreen from "@/icons/nexture/ni-screen";
+import NiAirBalloon from "@/template_full/icons/nexture/ni-air-balloon";
+import NiBook from "@/template_full/icons/nexture/ni-book";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiController from "@/template_full/icons/nexture/ni-controller";
+import NiCrown from "@/template_full/icons/nexture/ni-crown";
+import NiDocumentCode from "@/template_full/icons/nexture/ni-document-code";
+import NiScreen from "@/template_full/icons/nexture/ni-screen";
 
 export default function DashboardVisualStocks() {
   return (
@@ -128,3 +128,4 @@ export default function DashboardVisualStocks() {
     </Card>
   );
 }
+

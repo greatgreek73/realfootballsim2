@@ -20,10 +20,10 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiEllipsisHorizontal from "@/icons/nexture/ni-ellipsis-horizontal";
-import NiExclamationSquare from "@/icons/nexture/ni-exclamation-square";
-import { cn } from "@/lib/utils";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiEllipsisHorizontal from "@/template_full/icons/nexture/ni-ellipsis-horizontal";
+import NiExclamationSquare from "@/template_full/icons/nexture/ni-exclamation-square";
+import { cn } from "@/template_full/lib/utils";
 
 export default function Page() {
   const [anchorEl, setAnchorEl] = useState<EventTarget | Element | PopoverVirtualElement | null>(null);
@@ -111,3 +111,4 @@ export default function Page() {
     </Grid>
   );
 }
+

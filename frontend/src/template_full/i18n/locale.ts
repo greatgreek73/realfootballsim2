@@ -1,8 +1,8 @@
 import Cookies from "js-cookie";
 
-import { DEFAULTS } from "@/config";
-import { COOKIE_KEYS, LocaleOption } from "@/constants";
-import i18n from "@/i18n/i18n";
+import { DEFAULTS } from "@/template_full/config";
+import { COOKIE_KEYS, LocaleOption } from "@/template_full/constants";
+import i18n from "@/template_full/i18n/i18n";
 
 // Get client locale from cookie
 export function getClientLocale(): LocaleOption {
@@ -14,3 +14,4 @@ export function setClientLocale(locale: LocaleOption) {
   i18n.changeLanguage(locale);
   Cookies.set(COOKIE_KEYS.locale, locale, { sameSite: "lax" });
 }
+

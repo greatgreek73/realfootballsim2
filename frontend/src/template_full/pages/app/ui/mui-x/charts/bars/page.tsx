@@ -2,9 +2,9 @@ import { Link } from "react-router-dom";
 
 import { Breadcrumbs, Card, CardContent, Grid, Typography } from "@mui/material";
 
-import BasicBar from "@/pages/app/ui/mui-x/charts/bars/examples/basic-bar";
-import Stacking from "@/pages/app/ui/mui-x/charts/bars/examples/stacking";
-import UsingADataset from "@/pages/app/ui/mui-x/charts/bars/examples/using-a-dataset";
+import BasicBar from "@/template_full/pages/app/ui/mui-x/charts/bars/examples/basic-bar";
+import Stacking from "@/template_full/pages/app/ui/mui-x/charts/bars/examples/stacking";
+import UsingADataset from "@/template_full/pages/app/ui/mui-x/charts/bars/examples/using-a-dataset";
 
 export default function BarsCharts() {
   return (
@@ -62,3 +62,4 @@ export default function BarsCharts() {
     </Grid>
   );
 }
+

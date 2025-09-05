@@ -1,7 +1,7 @@
 import { useTheme } from "@mui/material";
 import { UseChartSeriesParameters } from "@mui/x-charts/internals";
 
-import { useThemeContext } from "@/theme/theme-provider";
+import { useThemeContext } from "@/template_full/theme/theme-provider";
 
 const useChartPalette = () => {
   const { palette } = useTheme();
@@ -21,3 +21,4 @@ const useChartPalette = () => {
 };
 
 export default useChartPalette;
+

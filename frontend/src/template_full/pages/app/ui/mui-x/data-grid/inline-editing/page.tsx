@@ -47,3 +47,4 @@ export default function InlineEditingPage() {
     </Grid>
   );
 }
+

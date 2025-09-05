@@ -2,9 +2,9 @@ import { MouseEvent, useState } from "react";
 
 import { Box, Card, CardContent, Grid, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 
-import NiCells from "@/icons/nexture/ni-cells";
-import NiMasonary from "@/icons/nexture/ni-masonary";
-import NiRows from "@/icons/nexture/ni-rows";
+import NiCells from "@/template_full/icons/nexture/ni-cells";
+import NiMasonary from "@/template_full/icons/nexture/ni-masonary";
+import NiRows from "@/template_full/icons/nexture/ni-rows";
 
 export default function ToggleButtonVertical() {
   const [view, setView] = useState("list");
@@ -81,3 +81,4 @@ export default function ToggleButtonVertical() {
     </Grid>
   );
 }
+

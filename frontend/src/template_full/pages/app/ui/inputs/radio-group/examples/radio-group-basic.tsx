@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { Box, Card, CardContent, Grid, Radio, Typography } from "@mui/material";
 
-import { RadiobuttonSmallChecked, RadiobuttonSmallEmpty } from "@/icons/form/mui-radiobutton";
+import { RadiobuttonSmallChecked, RadiobuttonSmallEmpty } from "@/template_full/icons/form/mui-radiobutton";
 
 export default function RadioGroupBasic() {
   const [selectedValueStandalone, setSelectedValueStandalone] = useState("a");
@@ -66,3 +66,4 @@ export default function RadioGroupBasic() {
     </Grid>
   );
 }
+

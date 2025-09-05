@@ -4,8 +4,8 @@ import { TransitionProps } from "@mui/material/transitions";
 import { TreeViewBaseItem } from "@mui/x-tree-view/models";
 import { RichTreeView } from "@mui/x-tree-view/RichTreeView";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
 import { animated, useSpring } from "@react-spring/web";
 
 const MUI_X_PRODUCTS: TreeViewBaseItem[] = [
@@ -72,3 +72,4 @@ export default function CustomAnimationRich() {
     </Box>
   );
 }
+

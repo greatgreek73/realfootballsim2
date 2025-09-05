@@ -23,34 +23,34 @@ import {
 } from "@mui/material";
 import { Grid } from "@mui/material";
 
-import { CheckboxSmallChecked, CheckboxSmallEmpty } from "@/icons/form/mui-checkbox";
-import NiAntenna from "@/icons/nexture/ni-antenna";
-import NiArrowUpDown from "@/icons/nexture/ni-arrow-up-down";
-import NiBinEmpty from "@/icons/nexture/ni-bin-empty";
-import NiBluetooth from "@/icons/nexture/ni-bluetooth";
-import NiBriefcase from "@/icons/nexture/ni-briefcase";
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronUpSmall from "@/icons/nexture/ni-chevron-up-small";
-import NiDirectory from "@/icons/nexture/ni-directory";
-import NiDocumentImage from "@/icons/nexture/ni-document-image";
-import NiDollarSquare from "@/icons/nexture/ni-dollar-square";
-import NiDrink from "@/icons/nexture/ni-drink";
-import NiEllipsisHorizontal from "@/icons/nexture/ni-ellipsis-horizontal";
-import NiEmailOpen from "@/icons/nexture/ni-email-open";
-import NiEuroSquare from "@/icons/nexture/ni-euro-square";
-import NiExclamationHexagon from "@/icons/nexture/ni-exclamation-hexagon";
-import NiFolder from "@/icons/nexture/ni-folder";
-import NiInbox from "@/icons/nexture/ni-inbox";
-import NiMessage from "@/icons/nexture/ni-message";
-import NiMusic from "@/icons/nexture/ni-music";
-import NiPlus from "@/icons/nexture/ni-plus";
-import NiPoundSquare from "@/icons/nexture/ni-pound-square";
-import NiSendRight from "@/icons/nexture/ni-send-right";
-import NiSign from "@/icons/nexture/ni-sign";
-import NiSignalLeftRight from "@/icons/nexture/ni-signal-left-right";
-import NiSignalUp from "@/icons/nexture/ni-signal-up";
-import NiStar from "@/icons/nexture/ni-star";
-import NiTag from "@/icons/nexture/ni-tag";
+import { CheckboxSmallChecked, CheckboxSmallEmpty } from "@/template_full/icons/form/mui-checkbox";
+import NiAntenna from "@/template_full/icons/nexture/ni-antenna";
+import NiArrowUpDown from "@/template_full/icons/nexture/ni-arrow-up-down";
+import NiBinEmpty from "@/template_full/icons/nexture/ni-bin-empty";
+import NiBluetooth from "@/template_full/icons/nexture/ni-bluetooth";
+import NiBriefcase from "@/template_full/icons/nexture/ni-briefcase";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiChevronUpSmall from "@/template_full/icons/nexture/ni-chevron-up-small";
+import NiDirectory from "@/template_full/icons/nexture/ni-directory";
+import NiDocumentImage from "@/template_full/icons/nexture/ni-document-image";
+import NiDollarSquare from "@/template_full/icons/nexture/ni-dollar-square";
+import NiDrink from "@/template_full/icons/nexture/ni-drink";
+import NiEllipsisHorizontal from "@/template_full/icons/nexture/ni-ellipsis-horizontal";
+import NiEmailOpen from "@/template_full/icons/nexture/ni-email-open";
+import NiEuroSquare from "@/template_full/icons/nexture/ni-euro-square";
+import NiExclamationHexagon from "@/template_full/icons/nexture/ni-exclamation-hexagon";
+import NiFolder from "@/template_full/icons/nexture/ni-folder";
+import NiInbox from "@/template_full/icons/nexture/ni-inbox";
+import NiMessage from "@/template_full/icons/nexture/ni-message";
+import NiMusic from "@/template_full/icons/nexture/ni-music";
+import NiPlus from "@/template_full/icons/nexture/ni-plus";
+import NiPoundSquare from "@/template_full/icons/nexture/ni-pound-square";
+import NiSendRight from "@/template_full/icons/nexture/ni-send-right";
+import NiSign from "@/template_full/icons/nexture/ni-sign";
+import NiSignalLeftRight from "@/template_full/icons/nexture/ni-signal-left-right";
+import NiSignalUp from "@/template_full/icons/nexture/ni-signal-up";
+import NiStar from "@/template_full/icons/nexture/ni-star";
+import NiTag from "@/template_full/icons/nexture/ni-tag";
 
 export default function Page() {
   const [open, setOpen] = useState(false);
@@ -788,3 +788,4 @@ export default function Page() {
     </Grid>
   );
 }
+

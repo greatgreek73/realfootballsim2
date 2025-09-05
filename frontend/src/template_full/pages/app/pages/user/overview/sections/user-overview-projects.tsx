@@ -2,12 +2,12 @@ import { useNavigate } from "react-router-dom";
 
 import { Box, Button, Card, CardContent, Chip, Grid, Link, Paper, Typography } from "@mui/material";
 
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiEyeOpen from "@/icons/nexture/ni-eye-open";
-import NiLike from "@/icons/nexture/ni-like";
-import NiStar from "@/icons/nexture/ni-star";
-import NextureIcons, { IconName } from "@/icons/nexture-icons";
-import { cn } from "@/lib/utils";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiEyeOpen from "@/template_full/icons/nexture/ni-eye-open";
+import NiLike from "@/template_full/icons/nexture/ni-like";
+import NiStar from "@/template_full/icons/nexture/ni-star";
+import NextureIcons, { IconName } from "@/template_full/icons/nexture-icons";
+import { cn } from "@/template_full/lib/utils";
 
 interface ProjectData {
   id: string;
@@ -241,3 +241,4 @@ export default function UserOverviewProjects() {
     </Card>
   );
 }
+

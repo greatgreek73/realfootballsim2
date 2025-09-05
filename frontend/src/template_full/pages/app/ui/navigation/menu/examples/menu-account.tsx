@@ -10,9 +10,9 @@ import MenuItem from "@mui/material/MenuItem";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 
-import NiArrowOutRight from "@/icons/nexture/ni-arrow-out-right";
-import NiPlusSquare from "@/icons/nexture/ni-plus-square";
-import NiSettings from "@/icons/nexture/ni-settings";
+import NiArrowOutRight from "@/template_full/icons/nexture/ni-arrow-out-right";
+import NiPlusSquare from "@/template_full/icons/nexture/ni-plus-square";
+import NiSettings from "@/template_full/icons/nexture/ni-settings";
 
 export default function MenuAccount() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -76,3 +76,4 @@ export default function MenuAccount() {
     </>
   );
 }
+

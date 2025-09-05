@@ -1,7 +1,7 @@
 import { Box, Button, Card, CardContent, Rating, Typography } from "@mui/material";
 
-import NiCheckSquare from "@/icons/nexture/ni-check-square";
-import NiStar from "@/icons/nexture/ni-star";
+import NiCheckSquare from "@/template_full/icons/nexture/ni-check-square";
+import NiStar from "@/template_full/icons/nexture/ni-star";
 
 export default function ProductDetailSummary() {
   return (
@@ -60,3 +60,4 @@ export default function ProductDetailSummary() {
     </Card>
   );
 }
+

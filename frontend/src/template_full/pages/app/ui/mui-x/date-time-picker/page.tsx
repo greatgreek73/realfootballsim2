@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Breadcrumbs, Typography } from "@mui/material";
 import { Grid } from "@mui/material";
 
-import ListingPageContent from "@/components/layout/listing-page-content";
+import ListingPageContent from "@/template_full/components/layout/listing-page-content";
 
 export default function DateAndTimePicker() {
   return (
@@ -30,3 +30,4 @@ export default function DateAndTimePicker() {
     </Grid>
   );
 }
+

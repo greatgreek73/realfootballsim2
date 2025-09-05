@@ -12,12 +12,12 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiDashboard from "@/icons/nexture/ni-dashboard";
-import NiDevops from "@/icons/nexture/ni-devops";
-import NiScreen from "@/icons/nexture/ni-screen";
-import NiServer from "@/icons/nexture/ni-server";
-import NiShield from "@/icons/nexture/ni-shield";
-import NiShuffle from "@/icons/nexture/ni-shuffle";
+import NiDashboard from "@/template_full/icons/nexture/ni-dashboard";
+import NiDevops from "@/template_full/icons/nexture/ni-devops";
+import NiScreen from "@/template_full/icons/nexture/ni-screen";
+import NiServer from "@/template_full/icons/nexture/ni-server";
+import NiShield from "@/template_full/icons/nexture/ni-shield";
+import NiShuffle from "@/template_full/icons/nexture/ni-shuffle";
 
 export default function SupportOverviewCategories() {
   const navigate = useNavigate();
@@ -234,3 +234,4 @@ export default function SupportOverviewCategories() {
     </>
   );
 }
+

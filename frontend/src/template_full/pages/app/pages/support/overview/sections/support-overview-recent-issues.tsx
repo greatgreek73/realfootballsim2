@@ -18,35 +18,35 @@ import {
 import { GridActionsCellItem, GridRenderCellParams } from "@mui/x-data-grid";
 import { DataGridPro, GridColDef } from "@mui/x-data-grid-pro";
 
-import NiArrowDown from "@/icons/nexture/ni-arrow-down";
-import NiArrowInDown from "@/icons/nexture/ni-arrow-in-down";
-import NiArrowUp from "@/icons/nexture/ni-arrow-up";
-import NiBinEmpty from "@/icons/nexture/ni-bin-empty";
-import NiCheckSquare from "@/icons/nexture/ni-check-square";
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronLeftRightSmall from "@/icons/nexture/ni-chevron-left-right-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiClock from "@/icons/nexture/ni-clock";
-import NiCols from "@/icons/nexture/ni-cols";
-import NiCross from "@/icons/nexture/ni-cross";
-import NiCrossSquare from "@/icons/nexture/ni-cross-square";
-import NiDashboard from "@/icons/nexture/ni-dashboard";
-import NiDevops from "@/icons/nexture/ni-devops";
-import NiDuplicate from "@/icons/nexture/ni-duplicate";
-import NiEllipsisVertical from "@/icons/nexture/ni-ellipsis-vertical";
-import NiExclamationSquare from "@/icons/nexture/ni-exclamation-square";
-import NiExpand from "@/icons/nexture/ni-expand";
-import NiEyeInactive from "@/icons/nexture/ni-eye-inactive";
-import NiFilter from "@/icons/nexture/ni-filter";
-import NiFilterPlus from "@/icons/nexture/ni-filter-plus";
-import NiPlus from "@/icons/nexture/ni-plus";
-import NiPushPinLeft from "@/icons/nexture/ni-push-pin-left";
-import NiPushPinRight from "@/icons/nexture/ni-push-pin-right";
-import NiScreen from "@/icons/nexture/ni-screen";
-import NiSearch from "@/icons/nexture/ni-search";
-import NiServer from "@/icons/nexture/ni-server";
-import NiShield from "@/icons/nexture/ni-shield";
-import NiShuffle from "@/icons/nexture/ni-shuffle";
+import NiArrowDown from "@/template_full/icons/nexture/ni-arrow-down";
+import NiArrowInDown from "@/template_full/icons/nexture/ni-arrow-in-down";
+import NiArrowUp from "@/template_full/icons/nexture/ni-arrow-up";
+import NiBinEmpty from "@/template_full/icons/nexture/ni-bin-empty";
+import NiCheckSquare from "@/template_full/icons/nexture/ni-check-square";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiChevronLeftRightSmall from "@/template_full/icons/nexture/ni-chevron-left-right-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiClock from "@/template_full/icons/nexture/ni-clock";
+import NiCols from "@/template_full/icons/nexture/ni-cols";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
+import NiCrossSquare from "@/template_full/icons/nexture/ni-cross-square";
+import NiDashboard from "@/template_full/icons/nexture/ni-dashboard";
+import NiDevops from "@/template_full/icons/nexture/ni-devops";
+import NiDuplicate from "@/template_full/icons/nexture/ni-duplicate";
+import NiEllipsisVertical from "@/template_full/icons/nexture/ni-ellipsis-vertical";
+import NiExclamationSquare from "@/template_full/icons/nexture/ni-exclamation-square";
+import NiExpand from "@/template_full/icons/nexture/ni-expand";
+import NiEyeInactive from "@/template_full/icons/nexture/ni-eye-inactive";
+import NiFilter from "@/template_full/icons/nexture/ni-filter";
+import NiFilterPlus from "@/template_full/icons/nexture/ni-filter-plus";
+import NiPlus from "@/template_full/icons/nexture/ni-plus";
+import NiPushPinLeft from "@/template_full/icons/nexture/ni-push-pin-left";
+import NiPushPinRight from "@/template_full/icons/nexture/ni-push-pin-right";
+import NiScreen from "@/template_full/icons/nexture/ni-screen";
+import NiSearch from "@/template_full/icons/nexture/ni-search";
+import NiServer from "@/template_full/icons/nexture/ni-server";
+import NiShield from "@/template_full/icons/nexture/ni-shield";
+import NiShuffle from "@/template_full/icons/nexture/ni-shuffle";
 
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
@@ -351,3 +351,4 @@ const rows = [
     category: "Compatibility ",
   },
 ];
+

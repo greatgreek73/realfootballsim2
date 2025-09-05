@@ -82,3 +82,4 @@ export default function IllustrationServers({ className }: IllustrationProps) {
     </svg>
   );
 }
+

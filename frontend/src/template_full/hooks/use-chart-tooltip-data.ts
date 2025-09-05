@@ -1,6 +1,6 @@
 import { ChartsTooltipProps, useAxesTooltip, useItemTooltip } from "@mui/x-charts";
 
-import { tooltipHooksToDataset } from "@/lib/chart-helper";
+import { tooltipHooksToDataset } from "@/template_full/lib/chart-helper";
 
 export default function useChartTooltipData(trigger: ChartsTooltipProps["trigger"] = "axis") {
   const axesTooltip = useAxesTooltip();
@@ -8,3 +8,4 @@ export default function useChartTooltipData(trigger: ChartsTooltipProps["trigger
 
   return tooltipHooksToDataset({ axesTooltip, itemTooltip, trigger });
 }
+

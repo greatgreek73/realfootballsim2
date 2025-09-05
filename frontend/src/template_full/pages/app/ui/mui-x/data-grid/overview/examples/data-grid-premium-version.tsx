@@ -15,39 +15,39 @@ import {
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
-import DataGridDate from "@/components/data-grid/data-grid-date";
-import DataGridDateFilter from "@/components/data-grid/data-grid-date-filter";
-import DataGridInput from "@/components/data-grid/data-grid-input";
-import DataGridPagination from "@/components/data-grid/data-grid-pagination";
-import DataGridSelect from "@/components/data-grid/data-grid-select";
-import DataGridSlider from "@/components/data-grid/data-grid-slider";
-import NiArrowDown from "@/icons/nexture/ni-arrow-down";
-import NiArrowInDown from "@/icons/nexture/ni-arrow-in-down";
-import NiArrowUp from "@/icons/nexture/ni-arrow-up";
-import NiBinEmpty from "@/icons/nexture/ni-bin-empty";
-import NiCheck from "@/icons/nexture/ni-check";
-import NiCheckSquare from "@/icons/nexture/ni-check-square";
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronLeftRightSmall from "@/icons/nexture/ni-chevron-left-right-small";
-import NiChevronUpSmall from "@/icons/nexture/ni-chevron-up-small";
-import NiCols from "@/icons/nexture/ni-cols";
-import NiCross from "@/icons/nexture/ni-cross";
-import NiCrossSquare from "@/icons/nexture/ni-cross-square";
-import NiEllipsisVertical from "@/icons/nexture/ni-ellipsis-vertical";
-import NiEndDownSmall from "@/icons/nexture/ni-end-down-small";
-import NiEndUpSmall from "@/icons/nexture/ni-end-up-small";
-import NiEyeInactive from "@/icons/nexture/ni-eye-inactive";
-import NiFilter from "@/icons/nexture/ni-filter";
-import NiFilterPlus from "@/icons/nexture/ni-filter-plus";
-import NiGroup from "@/icons/nexture/ni-group";
-import NiPivot from "@/icons/nexture/ni-pivot";
-import NiPlus from "@/icons/nexture/ni-plus";
-import NiPushPinLeft from "@/icons/nexture/ni-push-pin-left";
-import NiPushPinRight from "@/icons/nexture/ni-push-pin-right";
-import NiSearch from "@/icons/nexture/ni-search";
-import NiSum from "@/icons/nexture/ni-sum";
-import NiUngroup from "@/icons/nexture/ni-ungroup";
-import { cn } from "@/lib/utils";
+import DataGridDate from "@/template_full/components/data-grid/data-grid-date";
+import DataGridDateFilter from "@/template_full/components/data-grid/data-grid-date-filter";
+import DataGridInput from "@/template_full/components/data-grid/data-grid-input";
+import DataGridPagination from "@/template_full/components/data-grid/data-grid-pagination";
+import DataGridSelect from "@/template_full/components/data-grid/data-grid-select";
+import DataGridSlider from "@/template_full/components/data-grid/data-grid-slider";
+import NiArrowDown from "@/template_full/icons/nexture/ni-arrow-down";
+import NiArrowInDown from "@/template_full/icons/nexture/ni-arrow-in-down";
+import NiArrowUp from "@/template_full/icons/nexture/ni-arrow-up";
+import NiBinEmpty from "@/template_full/icons/nexture/ni-bin-empty";
+import NiCheck from "@/template_full/icons/nexture/ni-check";
+import NiCheckSquare from "@/template_full/icons/nexture/ni-check-square";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiChevronLeftRightSmall from "@/template_full/icons/nexture/ni-chevron-left-right-small";
+import NiChevronUpSmall from "@/template_full/icons/nexture/ni-chevron-up-small";
+import NiCols from "@/template_full/icons/nexture/ni-cols";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
+import NiCrossSquare from "@/template_full/icons/nexture/ni-cross-square";
+import NiEllipsisVertical from "@/template_full/icons/nexture/ni-ellipsis-vertical";
+import NiEndDownSmall from "@/template_full/icons/nexture/ni-end-down-small";
+import NiEndUpSmall from "@/template_full/icons/nexture/ni-end-up-small";
+import NiEyeInactive from "@/template_full/icons/nexture/ni-eye-inactive";
+import NiFilter from "@/template_full/icons/nexture/ni-filter";
+import NiFilterPlus from "@/template_full/icons/nexture/ni-filter-plus";
+import NiGroup from "@/template_full/icons/nexture/ni-group";
+import NiPivot from "@/template_full/icons/nexture/ni-pivot";
+import NiPlus from "@/template_full/icons/nexture/ni-plus";
+import NiPushPinLeft from "@/template_full/icons/nexture/ni-push-pin-left";
+import NiPushPinRight from "@/template_full/icons/nexture/ni-push-pin-right";
+import NiSearch from "@/template_full/icons/nexture/ni-search";
+import NiSum from "@/template_full/icons/nexture/ni-sum";
+import NiUngroup from "@/template_full/icons/nexture/ni-ungroup";
+import { cn } from "@/template_full/lib/utils";
 
 const getTogglableColumns = (columns: GridColDef[]) => {
   return columns.filter((column) => column.type !== "custom").map((column) => column.field);
@@ -704,3 +704,4 @@ const columnsPremium: GridColDef<(typeof rowsPremium)[number]>[] = [
     valueGetter: (_value, row) => row.quantity * row.unitPrice,
   },
 ];
+

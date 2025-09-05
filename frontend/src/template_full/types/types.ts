@@ -1,6 +1,6 @@
 import { ButtonProps } from "@mui/material";
 
-import { IconName } from "@/icons/nexture-icons";
+import { IconName } from "@/template_full/icons/nexture-icons";
 
 export type Screens = {
   sm: string;
@@ -55,3 +55,4 @@ export type MenuDefaultWidth = {
   [MenuType.Comfort]: MenuWidth;
   [MenuType.SingleLayer]: MenuWidth;
 };
+

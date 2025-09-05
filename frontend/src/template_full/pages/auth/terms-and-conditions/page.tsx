@@ -1,6 +1,6 @@
 import { Box, Paper, Typography } from "@mui/material";
 
-import Logo from "@/components/logo/logo";
+import Logo from "@/template_full/components/logo/logo";
 
 export default function Page() {
   return (
@@ -152,3 +152,4 @@ export default function Page() {
     </Box>
   );
 }
+

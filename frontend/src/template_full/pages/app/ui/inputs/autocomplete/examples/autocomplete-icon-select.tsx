@@ -13,9 +13,9 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiCross from "@/icons/nexture/ni-cross";
-import NextureIcons, { IconName } from "@/icons/nexture-icons";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
+import NextureIcons, { IconName } from "@/template_full/icons/nexture-icons";
 
 export default function AutocompleteIconSelect() {
   const [currentIcon, setCurrentIcon] = useState<IconType>({
@@ -227,3 +227,4 @@ const iconData: IconType[] = [
     code: "NiZoomIn",
   },
 ];
+

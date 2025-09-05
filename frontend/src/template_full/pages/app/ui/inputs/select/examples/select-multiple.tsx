@@ -16,8 +16,8 @@ import {
   Typography,
 } from "@mui/material";
 
-import { CheckboxSmallChecked, CheckboxSmallEmpty } from "@/icons/form/mui-checkbox";
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
+import { CheckboxSmallChecked, CheckboxSmallEmpty } from "@/template_full/icons/form/mui-checkbox";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
 
 export default function SelectMultiple() {
   const names = [
@@ -122,3 +122,4 @@ export default function SelectMultiple() {
     </Grid>
   );
 }
+

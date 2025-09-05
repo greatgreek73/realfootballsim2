@@ -39,3 +39,4 @@ export default function NiFilter({ className, variant = "outlined", size = "medi
     );
   }
 }
+

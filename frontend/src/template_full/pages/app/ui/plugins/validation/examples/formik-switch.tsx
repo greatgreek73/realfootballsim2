@@ -19,7 +19,7 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiCrossSquare from "@/icons/nexture/ni-cross-square";
+import NiCrossSquare from "@/template_full/icons/nexture/ni-cross-square";
 
 type InputErrorProps = {
   title: string;
@@ -141,3 +141,4 @@ export default function FormikSwitch() {
     </Card>
   );
 }
+

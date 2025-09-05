@@ -54,3 +54,4 @@ export default function NiAI({ className, variant = "outlined", size = "medium",
     );
   }
 }
+

@@ -12,12 +12,12 @@ import {
   PopoverVirtualElement,
 } from "@mui/material";
 
-import NiArrowOutRight from "@/icons/nexture/ni-arrow-out-right";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiPlusSquare from "@/icons/nexture/ni-plus-square";
-import NiSettings from "@/icons/nexture/ni-settings";
-import NiUser from "@/icons/nexture/ni-user";
-import { cn } from "@/lib/utils";
+import NiArrowOutRight from "@/template_full/icons/nexture/ni-arrow-out-right";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiPlusSquare from "@/template_full/icons/nexture/ni-plus-square";
+import NiSettings from "@/template_full/icons/nexture/ni-settings";
+import NiUser from "@/template_full/icons/nexture/ni-user";
+import { cn } from "@/template_full/lib/utils";
 
 export default function MenuDense() {
   const [anchorEl, setAnchorEl] = useState<EventTarget | Element | PopoverVirtualElement | null>(null);
@@ -77,3 +77,4 @@ export default function MenuDense() {
     </Box>
   );
 }
+

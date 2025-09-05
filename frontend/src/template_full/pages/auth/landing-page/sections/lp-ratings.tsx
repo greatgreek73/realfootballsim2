@@ -2,8 +2,8 @@ import { useTranslation } from "react-i18next";
 
 import { Card, CardContent, FormGroup, FormLabel, Rating } from "@mui/material";
 
-import NiChef from "@/icons/nexture/ni-chef";
-import NiDrink from "@/icons/nexture/ni-drink";
+import NiChef from "@/template_full/icons/nexture/ni-chef";
+import NiDrink from "@/template_full/icons/nexture/ni-drink";
 
 export default function LPRatings() {
   const { t } = useTranslation();
@@ -33,3 +33,4 @@ export default function LPRatings() {
     </Card>
   );
 }
+

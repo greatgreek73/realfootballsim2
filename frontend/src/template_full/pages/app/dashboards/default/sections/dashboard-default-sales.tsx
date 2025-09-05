@@ -3,8 +3,8 @@ import { useMemo, useState } from "react";
 import { Box, Card, CardContent, FormControl, MenuItem, Select, Typography, useTheme } from "@mui/material";
 import { CurveType, LineChart } from "@mui/x-charts";
 
-import CustomChartTooltip from "@/components/charts/tooltip/custom-chart-tooltip";
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
+import CustomChartTooltip from "@/template_full/components/charts/tooltip/custom-chart-tooltip";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
 
 export default function DashboardDefaultSales() {
   const theme = useTheme();
@@ -107,3 +107,4 @@ export default function DashboardDefaultSales() {
     </Card>
   );
 }
+

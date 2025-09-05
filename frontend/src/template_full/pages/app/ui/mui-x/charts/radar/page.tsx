@@ -2,8 +2,8 @@ import { Link } from "react-router-dom";
 
 import { Breadcrumbs, Card, CardContent, Grid, Typography } from "@mui/material";
 
-import BasicRadar from "@/pages/app/ui/mui-x/charts/radar/examples/basic-radar";
-import MultiSeries from "@/pages/app/ui/mui-x/charts/radar/examples/multi-series";
+import BasicRadar from "@/template_full/pages/app/ui/mui-x/charts/radar/examples/basic-radar";
+import MultiSeries from "@/template_full/pages/app/ui/mui-x/charts/radar/examples/multi-series";
 
 export default function RadarCharts() {
   return (
@@ -50,3 +50,4 @@ export default function RadarCharts() {
     </Grid>
   );
 }
+

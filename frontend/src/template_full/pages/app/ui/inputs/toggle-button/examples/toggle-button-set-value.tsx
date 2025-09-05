@@ -2,12 +2,12 @@ import { MouseEvent, useState } from "react";
 
 import { Box, Card, CardContent, Grid, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 
-import NiLaptop from "@/icons/nexture/ni-laptop";
-import NiPhone from "@/icons/nexture/ni-phone";
-import NiScreen from "@/icons/nexture/ni-screen";
-import NiTextCenter from "@/icons/nexture/ni-text-center";
-import NiTextLeft from "@/icons/nexture/ni-text-left";
-import NiTextRight from "@/icons/nexture/ni-text-right";
+import NiLaptop from "@/template_full/icons/nexture/ni-laptop";
+import NiPhone from "@/template_full/icons/nexture/ni-phone";
+import NiScreen from "@/template_full/icons/nexture/ni-screen";
+import NiTextCenter from "@/template_full/icons/nexture/ni-text-center";
+import NiTextLeft from "@/template_full/icons/nexture/ni-text-left";
+import NiTextRight from "@/template_full/icons/nexture/ni-text-right";
 
 export default function ToggleButtonSetValue() {
   const [alignmentEnforced, setAlignmentEnforced] = useState("left");
@@ -64,3 +64,4 @@ export default function ToggleButtonSetValue() {
     </Grid>
   );
 }
+

@@ -20,11 +20,11 @@ import {
   Typography,
 } from "@mui/material";
 
-import Logo from "@/components/logo/logo";
-import { DEFAULTS } from "@/config";
-import NiCrossSquare from "@/icons/nexture/ni-cross-square";
-import NiEyeClose from "@/icons/nexture/ni-eye-close";
-import NiEyeOpen from "@/icons/nexture/ni-eye-open";
+import Logo from "@/template_full/components/logo/logo";
+import { DEFAULTS } from "@/template_full/config";
+import NiCrossSquare from "@/template_full/icons/nexture/ni-cross-square";
+import NiEyeClose from "@/template_full/icons/nexture/ni-eye-close";
+import NiEyeOpen from "@/template_full/icons/nexture/ni-eye-open";
 
 const validationSchema = yup.object({
   email: yup.string().required("The field is required").email("Enter a valid email"),
@@ -267,3 +267,4 @@ export default function Page() {
     </Box>
   );
 }
+

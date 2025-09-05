@@ -11,9 +11,9 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronUpSmall from "@/icons/nexture/ni-chevron-up-small";
-import { cn } from "@/lib/utils";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiChevronUpSmall from "@/template_full/icons/nexture/ni-chevron-up-small";
+import { cn } from "@/template_full/lib/utils";
 
 function createData(name: string, calories: number, fat: number, carbs: number, protein: number, price: number) {
   return {
@@ -137,3 +137,4 @@ export default function TableCollapsible() {
     </TableContainer>
   );
 }
+

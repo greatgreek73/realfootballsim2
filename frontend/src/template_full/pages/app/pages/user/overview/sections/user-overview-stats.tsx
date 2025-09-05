@@ -1,11 +1,11 @@
 import { Box, Card, CardContent, Grid, Typography } from "@mui/material";
 
-import NiFloppyDisk from "@/icons/nexture/ni-floppy-disk";
-import NiLike from "@/icons/nexture/ni-like";
-import NiScreen from "@/icons/nexture/ni-screen";
-import NiTriangleDown from "@/icons/nexture/ni-triangle-down";
-import NiTriangleUp from "@/icons/nexture/ni-triangle-up";
-import NiUsers from "@/icons/nexture/ni-users";
+import NiFloppyDisk from "@/template_full/icons/nexture/ni-floppy-disk";
+import NiLike from "@/template_full/icons/nexture/ni-like";
+import NiScreen from "@/template_full/icons/nexture/ni-screen";
+import NiTriangleDown from "@/template_full/icons/nexture/ni-triangle-down";
+import NiTriangleUp from "@/template_full/icons/nexture/ni-triangle-up";
+import NiUsers from "@/template_full/icons/nexture/ni-users";
 
 export default function UserOverviewStats() {
   return (
@@ -105,3 +105,4 @@ export default function UserOverviewStats() {
     </Grid>
   );
 }
+

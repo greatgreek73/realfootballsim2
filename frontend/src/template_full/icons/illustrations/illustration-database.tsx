@@ -131,3 +131,4 @@ export default function IllustrationDatabase({ className }: IllustrationProps) {
     </svg>
   );
 }
+

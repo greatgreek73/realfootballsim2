@@ -12,7 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 
-import { RadiobuttonSmallChecked, RadiobuttonSmallEmpty } from "@/icons/form/mui-radiobutton";
+import { RadiobuttonSmallChecked, RadiobuttonSmallEmpty } from "@/template_full/icons/form/mui-radiobutton";
 
 export default function RadioGroupControlled() {
   const [value, setValue] = useState("female");
@@ -57,3 +57,4 @@ export default function RadioGroupControlled() {
     </Grid>
   );
 }
+

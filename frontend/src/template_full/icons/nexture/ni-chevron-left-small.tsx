@@ -40,3 +40,4 @@ export default function NiChevronLeftSmall({ className, variant = "outlined", si
     );
   }
 }
+

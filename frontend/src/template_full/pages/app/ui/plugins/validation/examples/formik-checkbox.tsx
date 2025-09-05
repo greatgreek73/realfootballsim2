@@ -19,8 +19,8 @@ import {
   Typography,
 } from "@mui/material";
 
-import { CheckboxSmallChecked, CheckboxSmallEmptyOutlined } from "@/icons/form/mui-checkbox";
-import NiCrossSquare from "@/icons/nexture/ni-cross-square";
+import { CheckboxSmallChecked, CheckboxSmallEmptyOutlined } from "@/template_full/icons/form/mui-checkbox";
+import NiCrossSquare from "@/template_full/icons/nexture/ni-cross-square";
 
 type InputErrorProps = {
   title: string;
@@ -170,3 +170,4 @@ export default function FormikCheckbox() {
     </Card>
   );
 }
+

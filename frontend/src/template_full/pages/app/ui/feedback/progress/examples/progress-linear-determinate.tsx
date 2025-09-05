@@ -23,3 +23,4 @@ export default function ProgressLinearDeterminate() {
 
   return <LinearProgress variant="determinate" value={progress} />;
 }
+

@@ -1,7 +1,7 @@
 import { Card, CardContent, Typography, useTheme } from "@mui/material";
 import { RadarChart } from "@mui/x-charts";
 
-import CustomChartMark from "@/components/charts/mark/custom-chart-mark";
+import CustomChartMark from "@/template_full/components/charts/mark/custom-chart-mark";
 
 export default function UserOverviewActivity() {
   const { palette } = useTheme();
@@ -40,3 +40,4 @@ export default function UserOverviewActivity() {
     </Card>
   );
 }
+

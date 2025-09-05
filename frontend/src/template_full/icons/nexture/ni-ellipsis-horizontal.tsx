@@ -63,3 +63,4 @@ export default function NiEllipsisHorizontal({ className, variant = "outlined", 
     );
   }
 }
+

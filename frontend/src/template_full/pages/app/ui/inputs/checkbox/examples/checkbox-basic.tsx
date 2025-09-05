@@ -1,6 +1,6 @@
 import { Box, Card, CardContent, Checkbox, Grid, Typography } from "@mui/material";
 
-import { CheckboxSmallChecked, CheckboxSmallEmpty } from "@/icons/form/mui-checkbox";
+import { CheckboxSmallChecked, CheckboxSmallEmpty } from "@/template_full/icons/form/mui-checkbox";
 
 export default function CheckboxBasic() {
   return (
@@ -27,3 +27,4 @@ export default function CheckboxBasic() {
     </Grid>
   );
 }
+

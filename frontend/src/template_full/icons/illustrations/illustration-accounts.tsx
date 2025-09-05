@@ -98,3 +98,4 @@ export default function IllustrationAccount({ className }: IllustrationProps) {
     </svg>
   );
 }
+

@@ -2,11 +2,11 @@ import { useNavigate } from "react-router-dom";
 
 import { Box, Card, CardContent, Grid, Typography } from "@mui/material";
 
-import NiCheckSquare from "@/icons/nexture/ni-check-square";
-import NiClock from "@/icons/nexture/ni-clock";
-import NiExclamationSquare from "@/icons/nexture/ni-exclamation-square";
-import NiTriangleDown from "@/icons/nexture/ni-triangle-down";
-import NiTriangleUp from "@/icons/nexture/ni-triangle-up";
+import NiCheckSquare from "@/template_full/icons/nexture/ni-check-square";
+import NiClock from "@/template_full/icons/nexture/ni-clock";
+import NiExclamationSquare from "@/template_full/icons/nexture/ni-exclamation-square";
+import NiTriangleDown from "@/template_full/icons/nexture/ni-triangle-down";
+import NiTriangleUp from "@/template_full/icons/nexture/ni-triangle-up";
 
 export default function SupportOverviewStats() {
   const navigate = useNavigate();
@@ -105,3 +105,4 @@ export default function SupportOverviewStats() {
     </Grid>
   );
 }
+

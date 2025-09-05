@@ -11,7 +11,7 @@ import {
   Typography,
 } from "@mui/material";
 
-import { CheckboxSmallChecked, CheckboxSmallEmpty } from "@/icons/form/mui-checkbox";
+import { CheckboxSmallChecked, CheckboxSmallEmpty } from "@/template_full/icons/form/mui-checkbox";
 
 export default function CheckboxLabelPlacement() {
   return (
@@ -100,3 +100,4 @@ export default function CheckboxLabelPlacement() {
     </Grid>
   );
 }
+

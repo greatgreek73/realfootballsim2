@@ -5,8 +5,8 @@ import Typography from "@mui/material/Typography";
 import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView";
 import { TreeItem } from "@mui/x-tree-view/TreeItem";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
 
 export default function TrackingClicksSimple() {
   const [lastClickedItem, setLastClickedItem] = useState<string | null>(null);
@@ -48,3 +48,4 @@ export default function TrackingClicksSimple() {
     </Box>
   );
 }
+

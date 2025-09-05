@@ -11,3 +11,4 @@ export default function Auth() {
 
   return <div>Welcome!</div>;
 }
+

@@ -3,8 +3,8 @@ import { useDropzone } from "react-dropzone";
 
 import { Box, Button, Grid, Typography } from "@mui/material";
 
-import NiBinEmpty from "@/icons/nexture/ni-bin-empty";
-import NiPlus from "@/icons/nexture/ni-plus";
+import NiBinEmpty from "@/template_full/icons/nexture/ni-bin-empty";
+import NiPlus from "@/template_full/icons/nexture/ni-plus";
 
 export default function ProductDetailMediaImages() {
   const [files, setFiles] = useState<(any & { preview: string })[]>([
@@ -131,3 +131,4 @@ export default function ProductDetailMediaImages() {
     </Box>
   );
 }
+

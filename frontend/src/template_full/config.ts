@@ -1,5 +1,5 @@
-import { ModeVariant, ThemeVariant } from "@/constants";
-import { ContentType, MenuType } from "@/types/types";
+import { ModeVariant, ThemeVariant } from "@/template_full/constants";
+import { ContentType, MenuType } from "@/template_full/types/types";
 
 export const DEFAULTS = {
   appRoot: "/dashboards/default",
@@ -15,3 +15,4 @@ export const DEFAULTS = {
   },
   transitionDuration: 150,
 };
+

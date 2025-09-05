@@ -39,3 +39,4 @@ export default function NiShield({ className, variant = "outlined", size = "medi
     );
   }
 }
+

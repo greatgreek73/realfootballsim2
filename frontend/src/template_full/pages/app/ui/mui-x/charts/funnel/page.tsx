@@ -2,8 +2,8 @@ import { Link } from "react-router-dom";
 
 import { Breadcrumbs, Card, CardContent, Grid, Typography } from "@mui/material";
 
-import BasicFunnel from "@/pages/app/ui/mui-x/charts/funnel/examples/basic-funnel";
-import Curve from "@/pages/app/ui/mui-x/charts/funnel/examples/Curve";
+import BasicFunnel from "@/template_full/pages/app/ui/mui-x/charts/funnel/examples/basic-funnel";
+import Curve from "@/template_full/pages/app/ui/mui-x/charts/funnel/examples/Curve";
 
 export default function FunnelCharts() {
   return (
@@ -50,3 +50,4 @@ export default function FunnelCharts() {
     </Grid>
   );
 }
+

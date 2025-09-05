@@ -50,3 +50,4 @@ export default function NiChevronUpDownSmall({ className, variant = "outlined", 
     );
   }
 }
+

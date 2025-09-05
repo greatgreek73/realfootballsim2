@@ -12,11 +12,11 @@ import { Link } from "react-router-dom";
 
 import { Box, Button, Paper, Tooltip, Typography } from "@mui/material";
 
-import Logo from "@/components/logo/logo";
-import NiBasket from "@/icons/nexture/ni-basket";
-import NiCatalog from "@/icons/nexture/ni-catalog";
-import NiSendUpRight from "@/icons/nexture/ni-send-up-right";
-import { cn } from "@/lib/utils";
+import Logo from "@/template_full/components/logo/logo";
+import NiBasket from "@/template_full/icons/nexture/ni-basket";
+import NiCatalog from "@/template_full/icons/nexture/ni-catalog";
+import NiSendUpRight from "@/template_full/icons/nexture/ni-send-up-right";
+import { cn } from "@/template_full/lib/utils";
 
 export default function Page() {
   const { t } = useTranslation();
@@ -165,3 +165,4 @@ export default function Page() {
     </Box>
   );
 }
+

@@ -1,8 +1,8 @@
 import { Box, Button, ButtonGroup, Card, CardContent, Grid, Typography } from "@mui/material";
 
-import NiFloppyDisk from "@/icons/nexture/ni-floppy-disk";
-import NiSendRight from "@/icons/nexture/ni-send-right";
-import NiShare from "@/icons/nexture/ni-share";
+import NiFloppyDisk from "@/template_full/icons/nexture/ni-floppy-disk";
+import NiSendRight from "@/template_full/icons/nexture/ni-send-right";
+import NiShare from "@/template_full/icons/nexture/ni-share";
 
 export default function ButtonGroupIcons() {
   return (
@@ -24,3 +24,4 @@ export default function ButtonGroupIcons() {
     </Grid>
   );
 }
+

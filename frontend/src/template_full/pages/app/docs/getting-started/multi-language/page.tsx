@@ -6,8 +6,8 @@ import { atomOneDark, atomOneLight } from "react-syntax-highlighter/dist/esm/sty
 
 import { Box, Breadcrumbs, Button, Card, CardContent, Drawer, Grid, Tooltip, Typography } from "@mui/material";
 
-import NiListCircle from "@/icons/nexture/ni-list-circle";
-import { useThemeContext } from "@/theme/theme-provider";
+import NiListCircle from "@/template_full/icons/nexture/ni-list-circle";
+import { useThemeContext } from "@/template_full/theme/theme-provider";
 
 const MenuContent = () => {
   return (
@@ -135,8 +135,8 @@ export default function LPAction() {
 
 import { Button } from "@mui/material";
 
-import { LocaleOption } from "@/constants";
-import { setClientLocale } from "@/i18n/locale";
+import { LocaleOption } from "@/template_full/constants";
+import { setClientLocale } from "@/template_full/i18n/locale";
 
 export default function UserLanguageSwitch() {
   function handleOnChangeLocale(value: LocaleOption) {
@@ -177,3 +177,4 @@ export default function UserLanguageSwitch() {
     </Grid>
   );
 }
+

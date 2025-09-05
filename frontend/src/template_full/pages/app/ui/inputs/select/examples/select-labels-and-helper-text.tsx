@@ -14,7 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
 
 export default function SelectLabelsAndHelperText() {
   const [age, setAge] = useState("");
@@ -69,3 +69,4 @@ export default function SelectLabelsAndHelperText() {
     </Grid>
   );
 }
+

@@ -13,7 +13,7 @@ import {
   Typography,
 } from "@mui/material";
 
-import { CheckboxSmallChecked, CheckboxSmallEmpty } from "@/icons/form/mui-checkbox";
+import { CheckboxSmallChecked, CheckboxSmallEmpty } from "@/template_full/icons/form/mui-checkbox";
 
 export default function CheckboxFormGroup() {
   const [stateGroup, setStateGroup] = useState({
@@ -133,3 +133,4 @@ export default function CheckboxFormGroup() {
     </Grid>
   );
 }
+

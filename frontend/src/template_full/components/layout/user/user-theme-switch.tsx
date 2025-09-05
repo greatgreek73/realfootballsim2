@@ -3,11 +3,11 @@ import { useTranslation } from "react-i18next";
 
 import { Chip, Fade, ListItemIcon, Menu, MenuItem, PopoverVirtualElement } from "@mui/material";
 
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiPaintRoller from "@/icons/nexture/ni-paint-roller";
-import NiSquircle from "@/icons/nexture/ni-squircle";
-import { cn } from "@/lib/utils";
-import { useThemeContext } from "@/theme/theme-provider";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiPaintRoller from "@/template_full/icons/nexture/ni-paint-roller";
+import NiSquircle from "@/template_full/icons/nexture/ni-squircle";
+import { cn } from "@/template_full/lib/utils";
+import { useThemeContext } from "@/template_full/theme/theme-provider";
 
 export default function UserThemeSwitch() {
   const { theme, setTheme } = useThemeContext();
@@ -110,3 +110,4 @@ export default function UserThemeSwitch() {
     </>
   );
 }
+

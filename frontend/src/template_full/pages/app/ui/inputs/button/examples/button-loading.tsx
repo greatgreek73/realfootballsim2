@@ -2,10 +2,10 @@ import { useState } from "react";
 
 import { Box, Button, Card, CardContent, FormControlLabel, Grid, Switch, Typography } from "@mui/material";
 
-import NiArrowOutUp from "@/icons/nexture/ni-arrow-out-up";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiFloppyDisk from "@/icons/nexture/ni-floppy-disk";
-import NiSendRight from "@/icons/nexture/ni-send-right";
+import NiArrowOutUp from "@/template_full/icons/nexture/ni-arrow-out-up";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiFloppyDisk from "@/template_full/icons/nexture/ni-floppy-disk";
+import NiSendRight from "@/template_full/icons/nexture/ni-send-right";
 
 export default function ButtonLoading() {
   const [loading, setLoading] = useState(true);
@@ -267,3 +267,4 @@ export default function ButtonLoading() {
     </Grid>
   );
 }
+

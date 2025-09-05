@@ -3,12 +3,12 @@ import SpeedDial from "@mui/material/SpeedDial";
 import SpeedDialAction from "@mui/material/SpeedDialAction";
 import SpeedDialIcon from "@mui/material/SpeedDialIcon";
 
-import NiCross from "@/icons/nexture/ni-cross";
-import NiDuplicate from "@/icons/nexture/ni-duplicate";
-import NiFloppyDisk from "@/icons/nexture/ni-floppy-disk";
-import NiPenSquare from "@/icons/nexture/ni-pen-square";
-import NiPrinter from "@/icons/nexture/ni-printer";
-import NiShare from "@/icons/nexture/ni-share";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
+import NiDuplicate from "@/template_full/icons/nexture/ni-duplicate";
+import NiFloppyDisk from "@/template_full/icons/nexture/ni-floppy-disk";
+import NiPenSquare from "@/template_full/icons/nexture/ni-pen-square";
+import NiPrinter from "@/template_full/icons/nexture/ni-printer";
+import NiShare from "@/template_full/icons/nexture/ni-share";
 
 const actions = [
   { icon: <NiDuplicate />, name: "Copy" },
@@ -32,3 +32,4 @@ export default function SpeedDialCustomIcon() {
     </Box>
   );
 }
+

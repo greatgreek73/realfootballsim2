@@ -3,8 +3,8 @@ import parse from "autosuggest-highlight/parse";
 
 import { Autocomplete, Card, CardContent, FormControl, FormLabel, Grid, TextField, Typography } from "@mui/material";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiCross from "@/icons/nexture/ni-cross";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
 
 export default function AutocompleteHighlight() {
   return (
@@ -195,3 +195,4 @@ const top100Films: readonly FilmOptionType[] = [
   { title: "3 Idiots", year: 2009 },
   { title: "Monty Python and the Holy Grail", year: 1975 },
 ];
+

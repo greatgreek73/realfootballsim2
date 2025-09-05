@@ -4,12 +4,12 @@ import { Link } from "react-router-dom";
 import { Alert, AlertTitle, Box, Breadcrumbs, Button, Card, CardContent, Collapse, Typography } from "@mui/material";
 import { Grid } from "@mui/material";
 
-import NiCheck from "@/icons/nexture/ni-check";
-import NiCheckSquare from "@/icons/nexture/ni-check-square";
-import NiCross from "@/icons/nexture/ni-cross";
-import NiCrossSquare from "@/icons/nexture/ni-cross-square";
-import NiExclamationSquare from "@/icons/nexture/ni-exclamation-square";
-import NiInfoSquare from "@/icons/nexture/ni-info-square";
+import NiCheck from "@/template_full/icons/nexture/ni-check";
+import NiCheckSquare from "@/template_full/icons/nexture/ni-check-square";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
+import NiCrossSquare from "@/template_full/icons/nexture/ni-cross-square";
+import NiExclamationSquare from "@/template_full/icons/nexture/ni-exclamation-square";
+import NiInfoSquare from "@/template_full/icons/nexture/ni-info-square";
 
 export default function Page() {
   const [open, setOpen] = useState(true);
@@ -282,3 +282,4 @@ export default function Page() {
     </Grid>
   );
 }
+

@@ -17,7 +17,7 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiEllipsisHorizontal from "@/icons/nexture/ni-ellipsis-horizontal";
+import NiEllipsisHorizontal from "@/template_full/icons/nexture/ni-ellipsis-horizontal";
 
 export default function Page() {
   const [anchorElMainMenu, setAnchorElMainMenu] = useState<EventTarget | Element | PopoverVirtualElement | null>(null);
@@ -95,3 +95,4 @@ export default function Page() {
     </Grid>
   );
 }
+

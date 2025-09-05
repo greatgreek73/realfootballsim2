@@ -40,3 +40,4 @@ export default function NiCross({ className, variant = "outlined", size = "mediu
     );
   }
 }
+

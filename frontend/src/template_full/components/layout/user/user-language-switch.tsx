@@ -3,11 +3,11 @@ import { useTranslation } from "react-i18next";
 
 import { Avatar, Chip, Fade, ListItemIcon, Menu, MenuItem, PopoverVirtualElement } from "@mui/material";
 
-import { LocaleOption } from "@/constants";
-import { setClientLocale } from "@/i18n/locale";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiMessages from "@/icons/nexture/ni-messages";
-import { cn } from "@/lib/utils";
+import { LocaleOption } from "@/template_full/constants";
+import { setClientLocale } from "@/template_full/i18n/locale";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiMessages from "@/template_full/icons/nexture/ni-messages";
+import { cn } from "@/template_full/lib/utils";
 
 export default function UserLanguageSwitch() {
   const [anchorElLang, setAnchorElLang] = useState<EventTarget | Element | PopoverVirtualElement | null>(null);
@@ -107,3 +107,4 @@ export default function UserLanguageSwitch() {
     </>
   );
 }
+

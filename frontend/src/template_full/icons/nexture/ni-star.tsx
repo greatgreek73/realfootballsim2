@@ -38,3 +38,4 @@ export default function NiStar({ className, variant = "outlined", size = "medium
     );
   }
 }
+

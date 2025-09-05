@@ -80,3 +80,4 @@ export default function IllustrationExperiment({ className }: IllustrationProps)
     </svg>
   );
 }
+

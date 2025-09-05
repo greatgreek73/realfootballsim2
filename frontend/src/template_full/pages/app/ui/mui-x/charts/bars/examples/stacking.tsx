@@ -1,8 +1,8 @@
 import { BarChart, BarElement } from "@mui/x-charts";
 
-import CustomChartTooltip from "@/components/charts/tooltip/custom-chart-tooltip";
-import useChartPalette from "@/hooks/use-chart-palette";
-import { withChartElementStyle } from "@/lib/chart-element-hoc";
+import CustomChartTooltip from "@/template_full/components/charts/tooltip/custom-chart-tooltip";
+import useChartPalette from "@/template_full/hooks/use-chart-palette";
+import { withChartElementStyle } from "@/template_full/lib/chart-element-hoc";
 
 export default function Stacking() {
   const chartPalette = useChartPalette();
@@ -107,3 +107,4 @@ export default function Stacking() {
     />
   );
 }
+

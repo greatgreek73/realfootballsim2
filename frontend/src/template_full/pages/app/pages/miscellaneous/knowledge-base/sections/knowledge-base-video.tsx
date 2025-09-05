@@ -3,8 +3,8 @@ import "@vidstack/react/player/styles/plyr/theme.css";
 
 import { Card, CardContent } from "@mui/material";
 
-import { plyrLayoutIcons } from "@/components/plugins/video-player-controls";
-import { useThemeContext } from "@/theme/theme-provider";
+import { plyrLayoutIcons } from "@/template_full/components/plugins/video-player-controls";
+import { useThemeContext } from "@/template_full/theme/theme-provider";
 import { MediaPlayer, MediaProvider, Poster } from "@vidstack/react";
 import { PlyrLayout } from "@vidstack/react/player/layouts/plyr";
 
@@ -32,3 +32,4 @@ export default function KnowledgeBaseVideo() {
     </Card>
   );
 }
+

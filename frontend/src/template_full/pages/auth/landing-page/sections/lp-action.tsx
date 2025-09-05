@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import { Box, Card, CardContent, Typography } from "@mui/material";
 
-import NiBag from "@/icons/nexture/ni-bag";
+import NiBag from "@/template_full/icons/nexture/ni-bag";
 
 export default function LPAction() {
   const { t } = useTranslation();
@@ -25,3 +25,4 @@ export default function LPAction() {
     </Card>
   );
 }
+

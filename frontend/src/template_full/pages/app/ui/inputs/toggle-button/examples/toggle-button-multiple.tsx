@@ -2,11 +2,11 @@ import { MouseEvent, useState } from "react";
 
 import { Box, Card, CardContent, Grid, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiTextBold from "@/icons/nexture/ni-text-bold";
-import NiTextFont from "@/icons/nexture/ni-text-font";
-import NiTextItalic from "@/icons/nexture/ni-text-italic";
-import NiTextUnderline from "@/icons/nexture/ni-text-underline";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiTextBold from "@/template_full/icons/nexture/ni-text-bold";
+import NiTextFont from "@/template_full/icons/nexture/ni-text-font";
+import NiTextItalic from "@/template_full/icons/nexture/ni-text-italic";
+import NiTextUnderline from "@/template_full/icons/nexture/ni-text-underline";
 
 export default function ToggleButtonMultiple() {
   const [formats, setFormats] = useState(() => ["bold", "italic"]);
@@ -43,3 +43,4 @@ export default function ToggleButtonMultiple() {
     </Grid>
   );
 }
+

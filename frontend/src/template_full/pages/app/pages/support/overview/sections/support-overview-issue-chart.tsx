@@ -1,14 +1,14 @@
 import { Card, CardContent, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { BarChart, BarElement, ChartsText, ChartsTextProps } from "@mui/x-charts";
 
-import CustomChartTooltip from "@/components/charts/tooltip/custom-chart-tooltip";
-import NiDashboard from "@/icons/nexture/ni-dashboard";
-import NiDevops from "@/icons/nexture/ni-devops";
-import NiScreen from "@/icons/nexture/ni-screen";
-import NiServer from "@/icons/nexture/ni-server";
-import NiShield from "@/icons/nexture/ni-shield";
-import NiShuffle from "@/icons/nexture/ni-shuffle";
-import { withChartElementStyle } from "@/lib/chart-element-hoc";
+import CustomChartTooltip from "@/template_full/components/charts/tooltip/custom-chart-tooltip";
+import NiDashboard from "@/template_full/icons/nexture/ni-dashboard";
+import NiDevops from "@/template_full/icons/nexture/ni-devops";
+import NiScreen from "@/template_full/icons/nexture/ni-screen";
+import NiServer from "@/template_full/icons/nexture/ni-server";
+import NiShield from "@/template_full/icons/nexture/ni-shield";
+import NiShuffle from "@/template_full/icons/nexture/ni-shuffle";
+import { withChartElementStyle } from "@/template_full/lib/chart-element-hoc";
 
 const category = ["Performance", "Security", "Interface", "Functional", "Compatibility ", "Database "] as const;
 
@@ -87,3 +87,4 @@ const AxisTickLabelWithIcon = (props: ChartsTextProps) => {
     </g>
   );
 };
+

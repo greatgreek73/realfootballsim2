@@ -35,3 +35,4 @@ export default function NiMinusFull({ className, variant = "outlined", size = "m
     );
   }
 }
+

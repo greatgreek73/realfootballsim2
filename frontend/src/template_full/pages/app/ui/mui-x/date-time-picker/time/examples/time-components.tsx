@@ -10,10 +10,10 @@ import {
 } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiClock from "@/icons/nexture/ni-clock";
-import { cn } from "@/lib/utils";
+import NiChevronLeftSmall from "@/template_full/icons/nexture/ni-chevron-left-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiClock from "@/template_full/icons/nexture/ni-clock";
+import { cn } from "@/template_full/lib/utils";
 
 export default function TimeComponents() {
   return (
@@ -112,3 +112,4 @@ export default function TimeComponents() {
     </Box>
   );
 }
+

@@ -40,3 +40,4 @@ export default function NiCrossFull({ className, variant = "outlined", size = "m
     );
   }
 }
+

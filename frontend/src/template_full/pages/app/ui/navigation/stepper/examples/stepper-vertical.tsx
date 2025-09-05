@@ -10,8 +10,8 @@ import StepLabel from "@mui/material/StepLabel";
 import Stepper from "@mui/material/Stepper";
 import Typography from "@mui/material/Typography";
 
-import NextureIcons, { IconName } from "@/icons/nexture-icons";
-import { cn } from "@/lib/utils";
+import NextureIcons, { IconName } from "@/template_full/icons/nexture-icons";
+import { cn } from "@/template_full/lib/utils";
 
 const steps = [
   {
@@ -114,3 +114,4 @@ export default function StepperVertical() {
     </Box>
   );
 }
+

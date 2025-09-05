@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/template_full/lib/utils";
 
 export default function Logo({ classNameFull, classNameMobile }: { classNameFull?: string; classNameMobile?: string }) {
   return (
@@ -61,3 +61,4 @@ export default function Logo({ classNameFull, classNameMobile }: { classNameFull
     </>
   );
 }
+

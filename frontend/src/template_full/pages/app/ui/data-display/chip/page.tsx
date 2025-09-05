@@ -4,10 +4,10 @@ import { Link } from "react-router-dom";
 import { Avatar, Box, Breadcrumbs, Card, CardContent, Chip, Typography } from "@mui/material";
 import { Grid } from "@mui/material";
 
-import NiCross from "@/icons/nexture/ni-cross";
-import NiFaceSmile from "@/icons/nexture/ni-face-smile";
-import NiMinus from "@/icons/nexture/ni-minus";
-import NiStar from "@/icons/nexture/ni-star";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
+import NiFaceSmile from "@/template_full/icons/nexture/ni-face-smile";
+import NiMinus from "@/template_full/icons/nexture/ni-minus";
+import NiStar from "@/template_full/icons/nexture/ni-star";
 
 interface ChipData {
   key: number;
@@ -306,3 +306,4 @@ export default function Page() {
     </Grid>
   );
 }
+

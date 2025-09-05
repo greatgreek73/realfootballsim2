@@ -1,7 +1,7 @@
 import { Box, Button, ButtonGroup, Card, CardContent, Grid, Typography } from "@mui/material";
 
-import NiArrowDown from "@/icons/nexture/ni-arrow-down";
-import NiArrowUp from "@/icons/nexture/ni-arrow-up";
+import NiArrowDown from "@/template_full/icons/nexture/ni-arrow-down";
+import NiArrowUp from "@/template_full/icons/nexture/ni-arrow-up";
 
 export default function ButtonGroupInactiveButton() {
   return (
@@ -38,3 +38,4 @@ export default function ButtonGroupInactiveButton() {
     </Grid>
   );
 }
+

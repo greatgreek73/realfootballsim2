@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 
 import { Box, Breadcrumbs, Button, Card, Drawer, Grid, Tooltip, Typography } from "@mui/material";
 
-import NiListCircle from "@/icons/nexture/ni-list-circle";
+import NiListCircle from "@/template_full/icons/nexture/ni-list-circle";
 
 export default function Page() {
   const [openDrawer, setOpenDrawer] = useState(false);
@@ -66,3 +66,4 @@ export default function Page() {
     </Grid>
   );
 }
+

@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { Card, CardContent, FormControl, FormLabel, Input, MenuItem, Select, Typography } from "@mui/material";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
 
 interface PriceData {
   basePrice: string;
@@ -104,3 +104,4 @@ export default function ProductDetailPrice() {
     </Card>
   );
 }
+

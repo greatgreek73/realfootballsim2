@@ -2,10 +2,10 @@ import { useState } from "react";
 
 import { Box, Card, CardContent, Grid, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 
-import NiTextCenter from "@/icons/nexture/ni-text-center";
-import NiTextJustify from "@/icons/nexture/ni-text-justify";
-import NiTextLeft from "@/icons/nexture/ni-text-left";
-import NiTextRight from "@/icons/nexture/ni-text-right";
+import NiTextCenter from "@/template_full/icons/nexture/ni-text-center";
+import NiTextJustify from "@/template_full/icons/nexture/ni-text-justify";
+import NiTextLeft from "@/template_full/icons/nexture/ni-text-left";
+import NiTextRight from "@/template_full/icons/nexture/ni-text-right";
 
 export default function ToggleButtonSizeAndVariants() {
   const [alignment, setAlignment] = useState<string | null>("left");
@@ -161,3 +161,4 @@ export default function ToggleButtonSizeAndVariants() {
     </Grid>
   );
 }
+

@@ -10,8 +10,8 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiCross from "@/icons/nexture/ni-cross";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
 
 export default function AutocompleteStandardOutlined() {
   return (
@@ -154,3 +154,4 @@ export default function AutocompleteStandardOutlined() {
     </Grid>
   );
 }
+

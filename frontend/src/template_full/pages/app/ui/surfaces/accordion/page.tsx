@@ -8,17 +8,17 @@ import AccordionDetails from "@mui/material/AccordionDetails";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import Button from "@mui/material/Button";
 
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiChevronUpSmall from "@/icons/nexture/ni-chevron-up-small";
-import NiCloudRain from "@/icons/nexture/ni-cloud-rain";
-import NiCloudSnow from "@/icons/nexture/ni-cloud-snow";
-import NiCloudThunder from "@/icons/nexture/ni-cloud-thunder";
-import NiDrop from "@/icons/nexture/ni-drop";
-import NiFire from "@/icons/nexture/ni-fire";
-import NiFlash from "@/icons/nexture/ni-flash";
-import NiScreen from "@/icons/nexture/ni-screen";
-import NiTablet from "@/icons/nexture/ni-tablet";
-import NiWatch from "@/icons/nexture/ni-watch";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiChevronUpSmall from "@/template_full/icons/nexture/ni-chevron-up-small";
+import NiCloudRain from "@/template_full/icons/nexture/ni-cloud-rain";
+import NiCloudSnow from "@/template_full/icons/nexture/ni-cloud-snow";
+import NiCloudThunder from "@/template_full/icons/nexture/ni-cloud-thunder";
+import NiDrop from "@/template_full/icons/nexture/ni-drop";
+import NiFire from "@/template_full/icons/nexture/ni-fire";
+import NiFlash from "@/template_full/icons/nexture/ni-flash";
+import NiScreen from "@/template_full/icons/nexture/ni-screen";
+import NiTablet from "@/template_full/icons/nexture/ni-tablet";
+import NiWatch from "@/template_full/icons/nexture/ni-watch";
 
 export default function Page() {
   return (
@@ -359,3 +359,4 @@ export default function Page() {
     </Grid>
   );
 }
+

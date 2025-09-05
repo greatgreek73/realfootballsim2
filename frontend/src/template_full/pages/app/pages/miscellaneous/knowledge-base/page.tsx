@@ -16,7 +16,7 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiSearch from "@/icons/nexture/ni-search";
+import NiSearch from "@/template_full/icons/nexture/ni-search";
 
 export default function Page() {
   return (
@@ -80,3 +80,4 @@ export default function Page() {
     </Grid>
   );
 }
+

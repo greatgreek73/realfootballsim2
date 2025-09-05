@@ -1,8 +1,8 @@
 import { Card, CardContent, MenuList } from "@mui/material";
 
-import UserLanguageSwitch from "@/components/layout/user/user-language-switch";
-import UserModeSwitch from "@/components/layout/user/user-mode-switch";
-import UserThemeSwitch from "@/components/layout/user/user-theme-switch";
+import UserLanguageSwitch from "@/template_full/components/layout/user/user-language-switch";
+import UserModeSwitch from "@/template_full/components/layout/user/user-mode-switch";
+import UserThemeSwitch from "@/template_full/components/layout/user/user-theme-switch";
 
 export default function LPSettings() {
   return (
@@ -17,3 +17,4 @@ export default function LPSettings() {
     </Card>
   );
 }
+

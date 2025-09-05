@@ -3,9 +3,9 @@ import dayjs from "dayjs";
 import { Box, Card, CardContent, Grid, Typography, useTheme } from "@mui/material";
 import { SparkLineChart } from "@mui/x-charts";
 
-import useHighlightedSparkline from "@/hooks/use-highlighted-sparkline";
-import NiTriangleDown from "@/icons/nexture/ni-triangle-down";
-import NiTriangleUp from "@/icons/nexture/ni-triangle-up";
+import useHighlightedSparkline from "@/template_full/hooks/use-highlighted-sparkline";
+import NiTriangleDown from "@/template_full/icons/nexture/ni-triangle-down";
+import NiTriangleUp from "@/template_full/icons/nexture/ni-triangle-up";
 
 const btcUsdData = [8000, 8300, 9000, 9000, 9500, 9800, 9800, 9400, 9548.31];
 const ethUsdData = [110, 120, 125, 125, 140, 150, 150, 130, 128.42];
@@ -128,3 +128,4 @@ const ChangeStatus = ({ change }: { change: number | string }) => {
     </Box>
   );
 };
+

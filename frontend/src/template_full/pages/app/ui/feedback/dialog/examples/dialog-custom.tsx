@@ -2,15 +2,15 @@ import { PropsWithChildren, useState } from "react";
 
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material";
 
-import NiBell from "@/icons/nexture/ni-bell";
-import NiBinEmpty from "@/icons/nexture/ni-bin-empty";
-import NiCrossFull from "@/icons/nexture/ni-cross-full";
-import NiExpandFull from "@/icons/nexture/ni-expand-full";
-import NiFaceSmile from "@/icons/nexture/ni-face-smile";
-import NiPaperclip from "@/icons/nexture/ni-paperclip";
-import NiPenSquare from "@/icons/nexture/ni-pen-square";
-import NiSendUpRight from "@/icons/nexture/ni-send-up-right";
-import NiShrinkFull from "@/icons/nexture/ni-shrink-full";
+import NiBell from "@/template_full/icons/nexture/ni-bell";
+import NiBinEmpty from "@/template_full/icons/nexture/ni-bin-empty";
+import NiCrossFull from "@/template_full/icons/nexture/ni-cross-full";
+import NiExpandFull from "@/template_full/icons/nexture/ni-expand-full";
+import NiFaceSmile from "@/template_full/icons/nexture/ni-face-smile";
+import NiPaperclip from "@/template_full/icons/nexture/ni-paperclip";
+import NiPenSquare from "@/template_full/icons/nexture/ni-pen-square";
+import NiSendUpRight from "@/template_full/icons/nexture/ni-send-up-right";
+import NiShrinkFull from "@/template_full/icons/nexture/ni-shrink-full";
 
 export default function DialogCustom() {
   const [openDialog, setOpenDialog] = useState(false);
@@ -97,3 +97,4 @@ export default function DialogCustom() {
     </Box>
   );
 }
+

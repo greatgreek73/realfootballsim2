@@ -3,7 +3,7 @@ import { useDropzone } from "react-dropzone";
 
 import { Box, Button, Card, CardContent, FormControl, FormLabel, Typography } from "@mui/material";
 
-import NiBinEmpty from "@/icons/nexture/ni-bin-empty";
+import NiBinEmpty from "@/template_full/icons/nexture/ni-bin-empty";
 
 export default function DropzoneStandard() {
   return (
@@ -211,3 +211,4 @@ function DropzoneStandardFilled() {
     </FormControl>
   );
 }
+

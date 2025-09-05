@@ -15,11 +15,11 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiSearch from "@/icons/nexture/ni-search";
-import NextureIcons, { IconName } from "@/icons/nexture-icons";
-import { cn } from "@/lib/utils";
-import { leftMenuItems } from "@/menu-items";
-import { MenuItem } from "@/types/types";
+import NiSearch from "@/template_full/icons/nexture/ni-search";
+import NextureIcons, { IconName } from "@/template_full/icons/nexture-icons";
+import { cn } from "@/template_full/lib/utils";
+import { leftMenuItems } from "@/template_full/menu-items";
+import { MenuItem } from "@/template_full/types/types";
 
 export default function ListingPageContent() {
   const { t } = useTranslation();
@@ -182,3 +182,4 @@ export default function ListingPageContent() {
     </>
   );
 }
+

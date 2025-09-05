@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 
 import { Breadcrumbs, Card, CardContent, Grid, Typography } from "@mui/material";
 
-import SetExpansionRich from "@/pages/app/ui/mui-x/tree-view/expansion/examples/set-expansion-rich";
+import SetExpansionRich from "@/template_full/pages/app/ui/mui-x/tree-view/expansion/examples/set-expansion-rich";
 
 export default function Overview() {
   return (
@@ -101,3 +101,4 @@ export default function Overview() {
     </Grid>
   );
 }
+

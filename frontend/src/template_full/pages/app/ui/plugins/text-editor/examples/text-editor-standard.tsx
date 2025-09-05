@@ -7,34 +7,34 @@ import ReactQuill from "react-quill-new";
 
 import { Card, CardContent, Typography } from "@mui/material";
 
-import NiBrackets from "@/icons/nexture/ni-brackets";
-import NiCode from "@/icons/nexture/ni-code";
-import NiDocumentCode from "@/icons/nexture/ni-document-code";
-import NiDocumentImage from "@/icons/nexture/ni-document-image";
-import NiDocumentVideo from "@/icons/nexture/ni-document-video";
-import NiEndLeftSmall from "@/icons/nexture/ni-end-left-small";
-import NiEndRightSmall from "@/icons/nexture/ni-end-right-small";
-import NiEraser from "@/icons/nexture/ni-eraser";
-import NiLayout from "@/icons/nexture/ni-layout";
-import NiLink from "@/icons/nexture/ni-link";
-import NiList from "@/icons/nexture/ni-list";
-import NiListCheck from "@/icons/nexture/ni-list-check";
-import NiListNumber from "@/icons/nexture/ni-list-number";
-import NiMenuLeft from "@/icons/nexture/ni-menu-left";
-import NiMenuRight from "@/icons/nexture/ni-menu-right";
-import NiPaintBucket from "@/icons/nexture/ni-paint-bucket";
-import NiPaintRoller from "@/icons/nexture/ni-paint-roller";
-import NiScriptSub from "@/icons/nexture/ni-script-sub";
-import NiScriptSuper from "@/icons/nexture/ni-script-super";
-import NiTextBold from "@/icons/nexture/ni-text-bold";
-import NiTextCenter from "@/icons/nexture/ni-text-center";
-import NiTextItalic from "@/icons/nexture/ni-text-italic";
-import NiTextJustify from "@/icons/nexture/ni-text-justify";
-import NiTextLeft from "@/icons/nexture/ni-text-left";
-import NiTextQuote from "@/icons/nexture/ni-text-quote";
-import NiTextRight from "@/icons/nexture/ni-text-right";
-import NiTextStrikethrough from "@/icons/nexture/ni-text-strikethrough";
-import NiTextUnderline from "@/icons/nexture/ni-text-underline";
+import NiBrackets from "@/template_full/icons/nexture/ni-brackets";
+import NiCode from "@/template_full/icons/nexture/ni-code";
+import NiDocumentCode from "@/template_full/icons/nexture/ni-document-code";
+import NiDocumentImage from "@/template_full/icons/nexture/ni-document-image";
+import NiDocumentVideo from "@/template_full/icons/nexture/ni-document-video";
+import NiEndLeftSmall from "@/template_full/icons/nexture/ni-end-left-small";
+import NiEndRightSmall from "@/template_full/icons/nexture/ni-end-right-small";
+import NiEraser from "@/template_full/icons/nexture/ni-eraser";
+import NiLayout from "@/template_full/icons/nexture/ni-layout";
+import NiLink from "@/template_full/icons/nexture/ni-link";
+import NiList from "@/template_full/icons/nexture/ni-list";
+import NiListCheck from "@/template_full/icons/nexture/ni-list-check";
+import NiListNumber from "@/template_full/icons/nexture/ni-list-number";
+import NiMenuLeft from "@/template_full/icons/nexture/ni-menu-left";
+import NiMenuRight from "@/template_full/icons/nexture/ni-menu-right";
+import NiPaintBucket from "@/template_full/icons/nexture/ni-paint-bucket";
+import NiPaintRoller from "@/template_full/icons/nexture/ni-paint-roller";
+import NiScriptSub from "@/template_full/icons/nexture/ni-script-sub";
+import NiScriptSuper from "@/template_full/icons/nexture/ni-script-super";
+import NiTextBold from "@/template_full/icons/nexture/ni-text-bold";
+import NiTextCenter from "@/template_full/icons/nexture/ni-text-center";
+import NiTextItalic from "@/template_full/icons/nexture/ni-text-italic";
+import NiTextJustify from "@/template_full/icons/nexture/ni-text-justify";
+import NiTextLeft from "@/template_full/icons/nexture/ni-text-left";
+import NiTextQuote from "@/template_full/icons/nexture/ni-text-quote";
+import NiTextRight from "@/template_full/icons/nexture/ni-text-right";
+import NiTextStrikethrough from "@/template_full/icons/nexture/ni-text-strikethrough";
+import NiTextUnderline from "@/template_full/icons/nexture/ni-text-underline";
 
 export default function TextEditorStandard() {
   const [value, setValue] = useState("");
@@ -112,3 +112,4 @@ export default function TextEditorStandard() {
     </Card>
   );
 }
+

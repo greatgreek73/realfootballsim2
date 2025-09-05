@@ -40,3 +40,4 @@ export default function NiSum({ className, variant = "outlined", size = "medium"
     );
   }
 }
+

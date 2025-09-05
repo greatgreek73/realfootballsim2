@@ -1,9 +1,9 @@
 import { FunnelSection, Unstable_FunnelChart as FunnelChart } from "@mui/x-charts-pro/FunnelChart";
 
-import CustomChartMark from "@/components/charts/mark/custom-chart-mark";
-import CustomChartTooltipPro from "@/components/charts/tooltip/custom-chart-tooltip-pro";
-import useChartPalette from "@/hooks/use-chart-palette";
-import { withChartElementStyle } from "@/lib/chart-element-hoc";
+import CustomChartMark from "@/template_full/components/charts/mark/custom-chart-mark";
+import CustomChartTooltipPro from "@/template_full/components/charts/tooltip/custom-chart-tooltip-pro";
+import useChartPalette from "@/template_full/hooks/use-chart-palette";
+import { withChartElementStyle } from "@/template_full/lib/chart-element-hoc";
 
 export default function BasicFunnel() {
   const chartPalette = useChartPalette();
@@ -28,3 +28,4 @@ export default function BasicFunnel() {
     />
   );
 }
+

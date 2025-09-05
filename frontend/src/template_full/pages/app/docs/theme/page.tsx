@@ -9,3 +9,4 @@ export default function DocsTheme() {
   }, [navigate]);
   return <></>;
 }
+

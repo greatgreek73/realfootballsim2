@@ -28,24 +28,24 @@ import {
 } from "@mui/x-data-grid";
 import { DataGridPro } from "@mui/x-data-grid-pro";
 
-import DataGridSelect from "@/components/data-grid/data-grid-select";
-import NiArrowDown from "@/icons/nexture/ni-arrow-down";
-import NiArrowUp from "@/icons/nexture/ni-arrow-up";
-import NiBinEmpty from "@/icons/nexture/ni-bin-empty";
-import NiCheckSquare from "@/icons/nexture/ni-check-square";
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronLeftRightSmall from "@/icons/nexture/ni-chevron-left-right-small";
-import NiCols from "@/icons/nexture/ni-cols";
-import NiCross from "@/icons/nexture/ni-cross";
-import NiCrossSquare from "@/icons/nexture/ni-cross-square";
-import NiDuplicate from "@/icons/nexture/ni-duplicate";
-import NiEllipsisVertical from "@/icons/nexture/ni-ellipsis-vertical";
-import NiEyeInactive from "@/icons/nexture/ni-eye-inactive";
-import NiFilter from "@/icons/nexture/ni-filter";
-import NiFilterPlus from "@/icons/nexture/ni-filter-plus";
-import NiPenSquare from "@/icons/nexture/ni-pen-square";
-import NiSearch from "@/icons/nexture/ni-search";
-import { cn } from "@/lib/utils";
+import DataGridSelect from "@/template_full/components/data-grid/data-grid-select";
+import NiArrowDown from "@/template_full/icons/nexture/ni-arrow-down";
+import NiArrowUp from "@/template_full/icons/nexture/ni-arrow-up";
+import NiBinEmpty from "@/template_full/icons/nexture/ni-bin-empty";
+import NiCheckSquare from "@/template_full/icons/nexture/ni-check-square";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiChevronLeftRightSmall from "@/template_full/icons/nexture/ni-chevron-left-right-small";
+import NiCols from "@/template_full/icons/nexture/ni-cols";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
+import NiCrossSquare from "@/template_full/icons/nexture/ni-cross-square";
+import NiDuplicate from "@/template_full/icons/nexture/ni-duplicate";
+import NiEllipsisVertical from "@/template_full/icons/nexture/ni-ellipsis-vertical";
+import NiEyeInactive from "@/template_full/icons/nexture/ni-eye-inactive";
+import NiFilter from "@/template_full/icons/nexture/ni-filter";
+import NiFilterPlus from "@/template_full/icons/nexture/ni-filter-plus";
+import NiPenSquare from "@/template_full/icons/nexture/ni-pen-square";
+import NiSearch from "@/template_full/icons/nexture/ni-search";
+import { cn } from "@/template_full/lib/utils";
 
 const initialRows = [
   {
@@ -449,3 +449,4 @@ export default function UserPermissionsList() {
     />
   );
 }
+

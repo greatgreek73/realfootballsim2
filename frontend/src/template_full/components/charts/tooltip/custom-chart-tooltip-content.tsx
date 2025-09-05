@@ -3,7 +3,7 @@ import { ElementType } from "react";
 import { Box, Table, TableBody, TableCell, TableRow, Typography } from "@mui/material";
 import { ChartsTooltipContainerProps } from "@mui/x-charts";
 
-import CustomChartMark from "@/components/charts/mark/custom-chart-mark";
+import CustomChartMark from "@/template_full/components/charts/mark/custom-chart-mark";
 
 interface ITitle {
   color?: string;
@@ -74,3 +74,4 @@ export default function CustomChartTooltipContent({
     </ContentContainer>
   );
 }
+

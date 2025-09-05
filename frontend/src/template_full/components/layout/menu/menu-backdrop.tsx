@@ -1,4 +1,4 @@
-import { useLayoutContext } from "@/components/layout/layout-context";
+import { useLayoutContext } from "@/template_full/components/layout/layout-context";
 
 export default function MenuBackdrop() {
   const { resetLeftMenu, leftShowBackdrop } = useLayoutContext();
@@ -13,3 +13,4 @@ export default function MenuBackdrop() {
     <>{leftShowBackdrop && <div className="absolute inset-0 top-0 left-0 z-0" onClick={() => handleOnClick()}></div>}</>
   );
 }
+

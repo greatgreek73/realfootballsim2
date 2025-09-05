@@ -18,14 +18,14 @@ import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateRange, DateRangePicker } from "@mui/x-date-pickers-pro";
 
-import NiCalendar from "@/icons/nexture/ni-calendar";
-import NiCellsPlus from "@/icons/nexture/ni-cells-plus";
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiCross from "@/icons/nexture/ni-cross";
-import NiKnobs from "@/icons/nexture/ni-knobs";
-import { cn } from "@/lib/utils";
+import NiCalendar from "@/template_full/icons/nexture/ni-calendar";
+import NiCellsPlus from "@/template_full/icons/nexture/ni-cells-plus";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiChevronLeftSmall from "@/template_full/icons/nexture/ni-chevron-left-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
+import NiKnobs from "@/template_full/icons/nexture/ni-knobs";
+import { cn } from "@/template_full/lib/utils";
 
 export default function Page() {
   const [dateRange, setDateRange] = useState<DateRange<Dayjs>>([dayjs("2022-04-17"), dayjs("2022-04-21")]);
@@ -148,3 +148,4 @@ export default function Page() {
     </Grid>
   );
 }
+

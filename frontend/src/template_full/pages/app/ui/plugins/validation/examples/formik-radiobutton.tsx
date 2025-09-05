@@ -19,8 +19,8 @@ import {
   Typography,
 } from "@mui/material";
 
-import { RadiobuttonSmallChecked, RadiobuttonSmallEmptyOutlined } from "@/icons/form/mui-radiobutton";
-import NiCrossSquare from "@/icons/nexture/ni-cross-square";
+import { RadiobuttonSmallChecked, RadiobuttonSmallEmptyOutlined } from "@/template_full/icons/form/mui-radiobutton";
+import NiCrossSquare from "@/template_full/icons/nexture/ni-cross-square";
 
 type InputErrorProps = {
   title: string;
@@ -167,3 +167,4 @@ export default function FormikRadiobutton() {
     </Card>
   );
 }
+

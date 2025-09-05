@@ -1,7 +1,7 @@
 import { Avatar, Box, Button, Card, CardContent, Link, ListItemAvatar, ListItemText, Typography } from "@mui/material";
 
-import NiDashboard from "@/icons/nexture/ni-dashboard";
-import NiExclamationSquare from "@/icons/nexture/ni-exclamation-square";
+import NiDashboard from "@/template_full/icons/nexture/ni-dashboard";
+import NiExclamationSquare from "@/template_full/icons/nexture/ni-exclamation-square";
 
 export default function IssueDetailSummary() {
   return (
@@ -70,3 +70,4 @@ export default function IssueDetailSummary() {
     </Card>
   );
 }
+

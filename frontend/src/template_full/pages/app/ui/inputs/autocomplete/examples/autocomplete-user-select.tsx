@@ -14,8 +14,8 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiCross from "@/icons/nexture/ni-cross";
+import NiChevronDownSmall from "@/template_full/icons/nexture/ni-chevron-down-small";
+import NiCross from "@/template_full/icons/nexture/ni-cross";
 
 export default function AutocompleteUserSelect() {
   const [currentUser, setCurrentUser] = useState<UserType>({
@@ -168,3 +168,4 @@ const userData: UserType[] = [
     image: "/images/avatars/avatar-8.jpg",
   },
 ];
+

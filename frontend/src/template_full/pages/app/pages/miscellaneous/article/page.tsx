@@ -20,15 +20,15 @@ import {
 } from "@mui/material";
 import { Grid } from "@mui/material";
 
-import NiCalendar from "@/icons/nexture/ni-calendar";
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiDocumentFull from "@/icons/nexture/ni-document-full";
-import NiListCircle from "@/icons/nexture/ni-list-circle";
-import NiScreen from "@/icons/nexture/ni-screen";
-import NiSendUpRight from "@/icons/nexture/ni-send-up-right";
-import NiSettings from "@/icons/nexture/ni-settings";
-import { useThemeContext } from "@/theme/theme-provider";
+import NiCalendar from "@/template_full/icons/nexture/ni-calendar";
+import NiChevronLeftSmall from "@/template_full/icons/nexture/ni-chevron-left-small";
+import NiChevronRightSmall from "@/template_full/icons/nexture/ni-chevron-right-small";
+import NiDocumentFull from "@/template_full/icons/nexture/ni-document-full";
+import NiListCircle from "@/template_full/icons/nexture/ni-list-circle";
+import NiScreen from "@/template_full/icons/nexture/ni-screen";
+import NiSendUpRight from "@/template_full/icons/nexture/ni-send-up-right";
+import NiSettings from "@/template_full/icons/nexture/ni-settings";
+import { useThemeContext } from "@/template_full/theme/theme-provider";
 
 const ArticleDetail = () => {
   const { isDarkMode } = useThemeContext();
@@ -446,3 +446,4 @@ export default function Page() {
     </Grid>
   );
 }
+

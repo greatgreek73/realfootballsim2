@@ -2,8 +2,8 @@ import { Link } from "react-router-dom";
 
 import { Alert, AlertTitle, Box, Divider, Paper, Typography } from "@mui/material";
 
-import Logo from "@/components/logo/logo";
-import NiCheckSquare from "@/icons/nexture/ni-check-square";
+import Logo from "@/template_full/components/logo/logo";
+import NiCheckSquare from "@/template_full/icons/nexture/ni-check-square";
 
 export default function Page() {
   return (
@@ -50,3 +50,4 @@ export default function Page() {
     </Box>
   );
 }
+

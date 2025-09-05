@@ -2,10 +2,10 @@ import { Link } from "react-router-dom";
 
 import { Box, Button, Paper, Typography } from "@mui/material";
 
-import Logo from "@/components/logo/logo";
-import NiHome from "@/icons/nexture/ni-home";
-import { cn } from "@/lib/utils";
-import { useThemeContext } from "@/theme/theme-provider";
+import Logo from "@/template_full/components/logo/logo";
+import NiHome from "@/template_full/icons/nexture/ni-home";
+import { cn } from "@/template_full/lib/utils";
+import { useThemeContext } from "@/template_full/theme/theme-provider";
 
 export default function Page() {
   const { isDarkMode } = useThemeContext();
@@ -44,3 +44,4 @@ export default function Page() {
     </Box>
   );
 }
+

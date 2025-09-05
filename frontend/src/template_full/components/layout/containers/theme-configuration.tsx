@@ -4,24 +4,24 @@ import { useTranslation } from "react-i18next";
 
 import { Box, Button, Divider, Drawer, Tooltip, Typography } from "@mui/material";
 
-import { DEFAULTS } from "@/config";
-import { ModeVariant, THEME_OPTIONS } from "@/constants";
-import { RadiobuttonSmallChecked, RadiobuttonSmallEmptyOutlined } from "@/icons/form/mui-radiobutton";
-import NiArrowCircleLeft from "@/icons/nexture/ni-arrow-circle-left";
-import NiBasket from "@/icons/nexture/ni-basket";
-import NiChevronLeftRightReverseSmall from "@/icons/nexture/ni-chevron-left-right-reverse-small";
-import NiChevronLeftRightSmall from "@/icons/nexture/ni-chevron-left-right-small";
-import NiKnobs from "@/icons/nexture/ni-knobs";
-import NiMenu from "@/icons/nexture/ni-menu";
-import NiMenuSplit from "@/icons/nexture/ni-menu-split";
-import NiMenuSplitDot from "@/icons/nexture/ni-menu-split-dot";
-import NiMoon from "@/icons/nexture/ni-moon";
-import NiPalette from "@/icons/nexture/ni-palette";
-import NiScreen from "@/icons/nexture/ni-screen";
-import NiSun from "@/icons/nexture/ni-sun";
-import { cn } from "@/lib/utils";
-import { useThemeContext } from "@/theme/theme-provider";
-import { ContentType, MenuType } from "@/types/types";
+import { DEFAULTS } from "@/template_full/config";
+import { ModeVariant, THEME_OPTIONS } from "@/template_full/constants";
+import { RadiobuttonSmallChecked, RadiobuttonSmallEmptyOutlined } from "@/template_full/icons/form/mui-radiobutton";
+import NiArrowCircleLeft from "@/template_full/icons/nexture/ni-arrow-circle-left";
+import NiBasket from "@/template_full/icons/nexture/ni-basket";
+import NiChevronLeftRightReverseSmall from "@/template_full/icons/nexture/ni-chevron-left-right-reverse-small";
+import NiChevronLeftRightSmall from "@/template_full/icons/nexture/ni-chevron-left-right-small";
+import NiKnobs from "@/template_full/icons/nexture/ni-knobs";
+import NiMenu from "@/template_full/icons/nexture/ni-menu";
+import NiMenuSplit from "@/template_full/icons/nexture/ni-menu-split";
+import NiMenuSplitDot from "@/template_full/icons/nexture/ni-menu-split-dot";
+import NiMoon from "@/template_full/icons/nexture/ni-moon";
+import NiPalette from "@/template_full/icons/nexture/ni-palette";
+import NiScreen from "@/template_full/icons/nexture/ni-screen";
+import NiSun from "@/template_full/icons/nexture/ni-sun";
+import { cn } from "@/template_full/lib/utils";
+import { useThemeContext } from "@/template_full/theme/theme-provider";
+import { ContentType, MenuType } from "@/template_full/types/types";
 
 export default function ThemeConfiguration() {
   const [openDrawer, setOpenDrawer] = useState(false);
@@ -210,3 +210,4 @@ export default function ThemeConfiguration() {
     </>
   );
 }
+

@@ -1,10 +1,10 @@
 import { Box, Button, Card, CardContent, Typography } from "@mui/material";
 import { Grid } from "@mui/material";
 
-import NiBag from "@/icons/nexture/ni-bag";
-import NiCellsPlus from "@/icons/nexture/ni-cells-plus";
-import NiChartLine from "@/icons/nexture/ni-chart-line";
-import NiPercent from "@/icons/nexture/ni-percent";
+import NiBag from "@/template_full/icons/nexture/ni-bag";
+import NiCellsPlus from "@/template_full/icons/nexture/ni-cells-plus";
+import NiChartLine from "@/template_full/icons/nexture/ni-chart-line";
+import NiPercent from "@/template_full/icons/nexture/ni-percent";
 
 export default function DashboardDefaultActions() {
   return (
@@ -80,3 +80,4 @@ export default function DashboardDefaultActions() {
     </>
   );
 }
+

@@ -2,9 +2,9 @@ import { Link } from "react-router-dom";
 
 import { Breadcrumbs, Card, CardContent, Grid, Typography } from "@mui/material";
 
-import Area from "@/pages/app/ui/mui-x/charts/lines/examples/area";
-import BasicLine from "@/pages/app/ui/mui-x/charts/lines/examples/basic-line";
-import Stacking from "@/pages/app/ui/mui-x/charts/lines/examples/stacking";
+import Area from "@/template_full/pages/app/ui/mui-x/charts/lines/examples/area";
+import BasicLine from "@/template_full/pages/app/ui/mui-x/charts/lines/examples/basic-line";
+import Stacking from "@/template_full/pages/app/ui/mui-x/charts/lines/examples/stacking";
 
 export default function LinesCharts() {
   return (
@@ -62,3 +62,4 @@ export default function LinesCharts() {
     </Grid>
   );
 }
+

@@ -455,3 +455,4 @@ declare module "@mui/x-charts" {
     hideTitle?: boolean;
   }
 }
+

@@ -1,7 +1,7 @@
 import { Box } from "@mui/material";
 import { ChartsLabelCustomMarkProps } from "@mui/x-charts";
 
-import { colorWithOpacity } from "@/lib/chart-helper";
+import { colorWithOpacity } from "@/template_full/lib/chart-helper";
 
 export default function CustomChartMark({ color }: Readonly<ChartsLabelCustomMarkProps>) {
   return (
@@ -14,3 +14,4 @@ export default function CustomChartMark({ color }: Readonly<ChartsLabelCustomMar
     />
   );
 }
+

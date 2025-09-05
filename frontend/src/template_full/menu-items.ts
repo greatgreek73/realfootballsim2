@@ -1,4 +1,4 @@
-import { MenuItem } from "@/types/types";
+import { MenuItem } from "@/template_full/types/types";
 
 export const leftMenuItems: MenuItem[] = [
   {
@@ -1316,3 +1316,4 @@ export const leftMenuBottomItems: MenuItem[] = [
   },
   { id: "settings", label: "menu-settings", href: "/settings", icon: "NiSettings" },
 ];
+

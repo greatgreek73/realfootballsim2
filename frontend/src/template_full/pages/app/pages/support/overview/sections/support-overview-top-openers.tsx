@@ -12,8 +12,8 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiTriangleDown from "@/icons/nexture/ni-triangle-down";
-import NiTriangleUp from "@/icons/nexture/ni-triangle-up";
+import NiTriangleDown from "@/template_full/icons/nexture/ni-triangle-down";
+import NiTriangleUp from "@/template_full/icons/nexture/ni-triangle-up";
 
 export default function SupportOverviewTopOpeners() {
   return (
@@ -167,3 +167,4 @@ export default function SupportOverviewTopOpeners() {
     </Card>
   );
 }
+

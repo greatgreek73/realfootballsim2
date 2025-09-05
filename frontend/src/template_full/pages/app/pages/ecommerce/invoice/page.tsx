@@ -4,9 +4,9 @@ import { useReactToPrint } from "react-to-print";
 
 import { Box, Breadcrumbs, Button, Card, CardContent, Grid, Tooltip, Typography } from "@mui/material";
 
-import Logo from "@/components/logo/logo";
-import NiArrowInDown from "@/icons/nexture/ni-arrow-in-down";
-import NiPrinter from "@/icons/nexture/ni-printer";
+import Logo from "@/template_full/components/logo/logo";
+import NiArrowInDown from "@/template_full/icons/nexture/ni-arrow-in-down";
+import NiPrinter from "@/template_full/icons/nexture/ni-printer";
 
 interface InvoiceData {
   image: string;
@@ -269,3 +269,4 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
+

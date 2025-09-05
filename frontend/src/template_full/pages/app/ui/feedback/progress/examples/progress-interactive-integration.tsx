@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 
 import { Box, Button, CircularProgress, Fab } from "@mui/material";
 
-import NiCheck from "@/icons/nexture/ni-check";
-import NiFloppyDisk from "@/icons/nexture/ni-floppy-disk";
+import NiCheck from "@/template_full/icons/nexture/ni-check";
+import NiFloppyDisk from "@/template_full/icons/nexture/ni-floppy-disk";
 
 export default function ProgressInteractiveIntegration() {
   const [loading, setLoading] = useState(false);
@@ -58,3 +58,4 @@ export default function ProgressInteractiveIntegration() {
     </Box>
   );
 }
+

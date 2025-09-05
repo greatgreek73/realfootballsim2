@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { BarElement, SparkLineChartProps, useAxesTooltip } from "@mui/x-charts";
 
-import { withChartElementStyle } from "@/lib/chart-element-hoc";
+import { withChartElementStyle } from "@/template_full/lib/chart-element-hoc";
 
 type HighlightedData = ReturnType<typeof useAxesTooltip>;
 
@@ -74,3 +74,4 @@ const Tooltip = ({ onItemChange }: { onItemChange: (i: HighlightedData) => void 
 };
 
 export default useHighlightedSparkline;
+

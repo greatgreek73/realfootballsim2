@@ -2,11 +2,11 @@ import Footer from "./footer";
 import { PropsWithChildren, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 
-import { useLayoutContext } from "@/components/layout/layout-context";
-import { isPathMatch } from "@/lib/utils";
-import { leftMenuBottomItems } from "@/menu-items";
-import { leftMenuItems } from "@/menu-items";
-import { MenuItem, MenuShowState } from "@/types/types";
+import { useLayoutContext } from "@/template_full/components/layout/layout-context";
+import { isPathMatch } from "@/template_full/lib/utils";
+import { leftMenuBottomItems } from "@/template_full/menu-items";
+import { leftMenuItems } from "@/template_full/menu-items";
+import { MenuItem, MenuShowState } from "@/template_full/types/types";
 
 export default function Main({ children }: PropsWithChildren) {
   const { leftPrimaryCurrent, leftSecondaryCurrent, leftMenuWidth } = useLayoutContext();
@@ -62,3 +62,4 @@ export default function Main({ children }: PropsWithChildren) {
     </main>
   );
 }
+

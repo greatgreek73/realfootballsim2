@@ -1,10 +1,10 @@
 import { Box, Button, Card, CardContent, Grid, Typography } from "@mui/material";
 
-import NiBag from "@/icons/nexture/ni-bag";
-import NiCrown from "@/icons/nexture/ni-crown";
-import NiHome from "@/icons/nexture/ni-home";
-import NiKnobs from "@/icons/nexture/ni-knobs";
-import NiStars from "@/icons/nexture/ni-stars";
+import NiBag from "@/template_full/icons/nexture/ni-bag";
+import NiCrown from "@/template_full/icons/nexture/ni-crown";
+import NiHome from "@/template_full/icons/nexture/ni-home";
+import NiKnobs from "@/template_full/icons/nexture/ni-knobs";
+import NiStars from "@/template_full/icons/nexture/ni-stars";
 
 export default function ButtonIconAndLabel() {
   return (
@@ -147,3 +147,4 @@ export default function ButtonIconAndLabel() {
     </Grid>
   );
 }
+

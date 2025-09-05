@@ -53,3 +53,4 @@ export default function NiAt({ className, variant = "outlined", size = "medium",
     );
   }
 }
+

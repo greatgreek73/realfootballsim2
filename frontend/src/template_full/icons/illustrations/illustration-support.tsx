@@ -110,3 +110,4 @@ export default function IllustrationSupport({ className }: IllustrationProps) {
     </svg>
   );
 }
+

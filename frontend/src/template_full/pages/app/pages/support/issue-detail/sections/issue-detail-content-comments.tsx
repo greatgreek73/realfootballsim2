@@ -2,10 +2,10 @@ import { Link } from "react-router-dom";
 
 import { Avatar, Box, Button, Card, CardContent, ListItemAvatar, ListItemText, Typography } from "@mui/material";
 
-import NiEllipsisHorizontal from "@/icons/nexture/ni-ellipsis-horizontal";
-import NiEyeOpen from "@/icons/nexture/ni-eye-open";
-import NiLike from "@/icons/nexture/ni-like";
-import NiRocket from "@/icons/nexture/ni-rocket";
+import NiEllipsisHorizontal from "@/template_full/icons/nexture/ni-ellipsis-horizontal";
+import NiEyeOpen from "@/template_full/icons/nexture/ni-eye-open";
+import NiLike from "@/template_full/icons/nexture/ni-like";
+import NiRocket from "@/template_full/icons/nexture/ni-rocket";
 
 export default function IssueDetailContentComments() {
   return (
@@ -150,3 +150,4 @@ export default function IssueDetailContentComments() {
     </>
   );
 }
+
