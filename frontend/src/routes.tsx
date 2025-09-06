@@ -2,6 +2,7 @@ import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { leftMenuBottomItems, leftMenuItems } from "@/menu-items";
+import TemplateRouter from "@/components/template/TemplateRouter";
 import AppLayout from "@/pages/app/layout";
 import AuthLayout from "@/pages/auth/layout";
 import Loading from "@/pages/loading.tsx";
@@ -30,6 +31,7 @@ const lazyLoad = (path: string) => {
     </React.Suspense>
   );
 };
+
 
 const generateRoutesFromMenuItems = (menuItems: MenuItem[]): React.ReactElement[] =>
   menuItems.flatMap((item: MenuItem) => {
@@ -64,6 +66,8 @@ const AppRoutes = () => (
     <Route element={<AppLayout />}>
       <Route key="my-club" path="/my-club" element={lazyLoad("/my-club")} />
       <Route key="my-club-players" path="/my-club/players" element={lazyLoad("/my-club/players")} />
+      {/* Шаблонные страницы под /template/* */}
+      <Route path="/template/*" element={<TemplateRouter />} />
       {mainRoutes}
       {bottomRoutes}
     </Route>

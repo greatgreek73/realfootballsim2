@@ -1,6 +1,6 @@
 import "@/i18n/i18n";
 import "@/style/global.css";
-
+import '@/template_full/style/global.css';
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
