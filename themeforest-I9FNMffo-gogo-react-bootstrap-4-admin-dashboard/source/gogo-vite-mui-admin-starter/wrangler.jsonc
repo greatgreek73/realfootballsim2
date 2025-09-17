@@ -1,0 +1,11 @@
+{
+  "main": "./worker/cloudflare-worker.ts",
+  "name": "gogo-vite-mui-admin",
+  "compatibility_date": "2025-06-20",
+  "assets": {
+    "not_found_handling": "single-page-application",
+  },
+  "observability": {
+    "enabled": true,
+  },
+}
