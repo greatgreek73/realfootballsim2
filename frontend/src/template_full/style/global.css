@@ -1,7 +1,7 @@
 /* --------------------------- */
 /* Global */
 /* --------------------------- */
-
+@config "../../../tailwind.config.ts";
 :root {
   --font-body: "Mulish", ui-sans-serif;
   --font-heading: "Urbanist", ui-sans-serif;
@@ -14,7 +14,6 @@
 @layer theme, base, mui, components, utilities;
 
 @import "tailwindcss";
-@config "../../tailwind.config.ts";
 
 /* --------- Theme --------- */
 @import "./theme/common.css";

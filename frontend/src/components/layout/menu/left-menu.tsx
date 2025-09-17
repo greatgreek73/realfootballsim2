@@ -15,6 +15,34 @@ import { MenuItem, MenuShowState, MenuType } from "@/types/types";
 
 export type OpenedAccordion = { indent: number; id: string };
 
+type MenuTrailNode = { item: MenuItem; depth: number };
+
+const hasVisibleChildren = (item?: MenuItem): boolean =>
+  !!item?.children?.some((child) => !child.hideInMenu);
+
+function findMenuTrail(
+  menu: MenuItem[],
+  pathname: string,
+  depth = 0,
+): MenuTrailNode[] | null {
+  for (const item of menu) {
+    if (item.hideInMenu) continue;
+
+    const current: MenuTrailNode = { item, depth };
+
+    if (item.children?.length) {
+      const childTrail = findMenuTrail(item.children, pathname, depth + 1);
+      if (childTrail) return [current, ...childTrail];
+    }
+
+    if (item.href && isPathMatch(pathname, item.href)) {
+      return [current];
+    }
+  }
+
+  return null;
+}
+
 export default function LeftMenu() {
   const { t } = useTranslation();
   const { pathname } = useLocation();
@@ -26,28 +54,39 @@ export default function LeftMenu() {
     leftSecondaryCurrent,
     showLeftSecondary,
     hideLeftSecondary,
-    hideLeft,
     resetLeftMenu,
     onResetLeft,
     leftShowBackdrop,
     setLeftShowBackdrop,
-    showLeftMobileButton,
   } = useLayoutContext();
 
   const selectedPrimary = useRef<undefined | MenuItem>(undefined);
   const [activeItem, setActiveItem] = useState<MenuItem | undefined>(undefined);
   const [openedAccordions, setOpenedAccordions] = useState<OpenedAccordion[]>([]);
 
+  const activeTrail = useMemo(
+    () =>
+      findMenuTrail(leftMenuItems, pathname) ?? findMenuTrail(leftMenuBottomItems, pathname),
+    [pathname],
+  );
+
   useEffect(() => {
-    let selectedMenu = leftMenuItems.find((item) => item.href && isPathMatch(pathname, item.href));
-    if (!selectedMenu && leftMenuBottomItems) {
-      selectedMenu = leftMenuBottomItems.find((item) => item.href && isPathMatch(pathname, item.href));
-    }
-    selectedPrimary.current = selectedMenu;
-    setActiveItem(selectedMenu);
+    const top = activeTrail?.[0]?.item;
+    selectedPrimary.current = top;
+    setActiveItem(top);
+
+    const accordions =
+      activeTrail
+        ?.slice(1)
+        .filter((node) => hasVisibleChildren(node.item))
+        .map((node) => ({
+          indent: Math.max(0, node.depth - 1),
+          id: node.item.id,
+        })) ?? [];
+
+    setOpenedAccordions(accordions);
     resetLeftMenu();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
+  }, [activeTrail, resetLeftMenu]);
 
   useEffect(() => {
     if (selectedPrimary.current?.id !== activeItem?.id && !leftShowBackdrop) {
@@ -75,6 +114,12 @@ export default function LeftMenu() {
     };
   }, [onResetLeft, hideLeftSecondary]);
 
+  useEffect(() => {
+    if (activeItem && hasVisibleChildren(activeItem)) {
+      showLeftSecondary();
+    }
+  }, [activeItem, showLeftSecondary]);
+
   const handleSelectPrimaryItem = (item: MenuItem) => {
     setActiveItem(item);
     if (item.children && item.children.filter((x) => !x.hideInMenu).length > 0) {
@@ -92,16 +137,6 @@ export default function LeftMenu() {
       }
     }
   };
-
-  useEffect(() => {
-    if (!activeItem) {
-      if (showLeftMobileButton) {
-        hideLeftSecondary();
-      } else {
-        hideLeft();
-      }
-    }
-  }, [hideLeft, activeItem, showLeftMobileButton, hideLeftSecondary]);
 
   useEffect(() => {
     if (!activeItem?.children && leftSecondaryCurrent === MenuShowState.Hide) {

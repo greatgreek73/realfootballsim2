@@ -2,6 +2,7 @@ import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { leftMenuBottomItems, leftMenuItems } from "@/menu-items";
+import DemoRouter from "@/router/DemoRouter";
 import AppLayout from "@/pages/app/layout";
 import AuthLayout from "@/pages/auth/layout";
 import Loading from "@/pages/loading.tsx";
@@ -11,7 +12,7 @@ import { MenuItem } from "@/types/types";
 // Сканируем все page.tsx
 const modules = import.meta.glob("./pages/**/page.tsx");
 
-// Ленивый загрузчик
+// Ленивый загрузчик (для ваших страниц)
 const lazyLoad = (path: string) => {
   let key: string;
   if (path === "/") {
@@ -23,7 +24,9 @@ const lazyLoad = (path: string) => {
   }
   const importer = modules[key];
   if (!importer) return <Navigate to="/404" replace />;
-  const Component = React.lazy(importer as () => Promise<{ default: React.ComponentType<any> }>);
+  const Component = React.lazy(
+    importer as () => Promise<{ default: React.ComponentType<any> }>
+  );
   return (
     <React.Suspense fallback={<Loading />}>
       <Component />
@@ -31,9 +34,16 @@ const lazyLoad = (path: string) => {
   );
 };
 
+// Пути демо, которые должен обрабатывать DemoRouter
+const DEMO_PREFIXES = ["/dashboards/", "/ui/", "/apps/", "/forms/", "/tables/", "/charts/", "/docs/"];
+
 const generateRoutesFromMenuItems = (menuItems: MenuItem[]): React.ReactElement[] =>
   menuItems.flatMap((item: MenuItem) => {
     if (item.isExternalLink || !item.href) return [];
+    // Демо-пути НЕ генерируем через lazyLoad – их отдаст DemoRouter
+    if (DEMO_PREFIXES.some((p) => item.href!.startsWith(p))) {
+      return item.children?.length ? generateRoutesFromMenuItems(item.children) : [];
+    }
     const routes: React.ReactElement[] = [
       <Route key={item.id} path={item.href} element={lazyLoad(item.href)} />,
     ];
@@ -57,15 +67,27 @@ const authRoutes = generateAuthRoutes();
 
 const AppRoutes = () => (
   <Routes>
-    {/* ВАЖНО: теперь корень редиректит на /my-club */}
+    {/* Корень остаётся на ваш интерфейс */}
     <Route path="/" element={<Navigate to="/my-club" replace />} />
 
     {/* Зона приложения */}
     <Route element={<AppLayout />}>
+      {/* Ваши основные страницы */}
       <Route key="my-club" path="/my-club" element={lazyLoad("/my-club")} />
       <Route key="my-club-players" path="/my-club/players" element={lazyLoad("/my-club/players")} />
+
+      {/* Автогенерация маршрутов из вашего меню (кроме демо) */}
       {mainRoutes}
       {bottomRoutes}
+
+      {/* Демо-страницы шаблона — через динамический DemoRouter */}
+      <Route path="/dashboards/*" element={<DemoRouter />} />
+      <Route path="/ui/*"         element={<DemoRouter />} />
+      <Route path="/apps/*"       element={<DemoRouter />} />
+      <Route path="/forms/*"      element={<DemoRouter />} />
+      <Route path="/tables/*"     element={<DemoRouter />} />
+      <Route path="/charts/*"     element={<DemoRouter />} />
+      <Route path="/docs/*"       element={<DemoRouter />} />
     </Route>
 
     {/* Auth */}
