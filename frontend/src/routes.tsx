@@ -88,6 +88,8 @@ const AppRoutes = () => (
       <Route path="/tables/*"     element={<DemoRouter />} />
       <Route path="/charts/*"     element={<DemoRouter />} />
       <Route path="/docs/*"       element={<DemoRouter />} />
+      <Route path="/pages/*"      element={<DemoRouter />} />
+      <Route path="/menu-levels/*" element={<DemoRouter />} />
     </Route>
 
     {/* Auth */}
