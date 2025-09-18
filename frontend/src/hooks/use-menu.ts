@@ -119,10 +119,9 @@ export function useMenu(config: Props) {
   }, [primaryCurrent]);
 
   const hideSecondary = useCallback(() => {
-    if (secondaryCurrent === MenuShowState.TemporaryShow) {
-      setSecondaryCurrent(MenuShowState.Hide);
-    }
-  }, [secondaryCurrent]);
+    setSecondaryCurrent(MenuShowState.Hide);
+    setShowBackdrop(false);
+  }, []);
 
   const hideMenu = useCallback(() => {
     hidePrimaryMenu();
@@ -131,8 +130,9 @@ export function useMenu(config: Props) {
   }, [hidePrimaryMenu, hideSecondary, hideBackdropIfNeeded]);
 
   const showSecondary = useCallback(() => {
-    setSecondaryCurrent(secondaryDefault ? MenuShowState.Show : MenuShowState.TemporaryShow);
-  }, [secondaryDefault]);
+    setSecondaryCurrent(MenuShowState.TemporaryShow);
+    setShowBackdrop(true);
+  }, []);
 
   const showInMobile = useCallback(() => {
     setPrimaryCurrent(MenuShowState.TemporaryShow);

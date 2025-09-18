@@ -71,22 +71,22 @@ export default function LeftMenu() {
   );
 
   useEffect(() => {
-    const top = activeTrail?.[0]?.item;
+    if (!activeTrail || activeTrail.length === 0) return;
+
+    const top = activeTrail[0]?.item;
     selectedPrimary.current = top;
     setActiveItem(top);
 
-    const accordions =
-      activeTrail
-        ?.slice(1)
-        .filter((node) => hasVisibleChildren(node.item))
-        .map((node) => ({
-          indent: Math.max(0, node.depth - 1),
-          id: node.item.id,
-        })) ?? [];
+    const accordions = activeTrail
+      .slice(1)
+      .filter((node) => hasVisibleChildren(node.item))
+      .map((node) => ({
+        indent: Math.max(0, node.depth - 1),
+        id: node.item.id,
+      }));
 
     setOpenedAccordions(accordions);
-    resetLeftMenu();
-  }, [activeTrail, resetLeftMenu]);
+  }, [activeTrail]);
 
   useEffect(() => {
     if (selectedPrimary.current?.id !== activeItem?.id && !leftShowBackdrop) {
@@ -114,28 +114,27 @@ export default function LeftMenu() {
     };
   }, [onResetLeft, hideLeftSecondary]);
 
-  useEffect(() => {
-    if (activeItem && hasVisibleChildren(activeItem)) {
-      showLeftSecondary();
-    }
-  }, [activeItem, showLeftSecondary]);
-
   const handleSelectPrimaryItem = (item: MenuItem) => {
+    const hasChildrenVisible = hasVisibleChildren(item);
+    const isSameItem = activeItem?.id === item.id;
+
+    console.info('[LeftMenu] select', item.id, { hasChildrenVisible, isSameItem, leftSecondaryCurrent });
+
     setActiveItem(item);
-    if (item.children && item.children.filter((x) => !x.hideInMenu).length > 0) {
-      showLeftSecondary();
-    } else {
-      // close all opened accordions
-      // if the item is the same as the current path, hide the secondary menu and reset the left menu
-      const isSameExactPath = !!item.href && pathname.replace(/\/$/, "") === item.href.replace(/\/$/, "");
-      if (isSameExactPath) {
-        hideLeftSecondary();
-        resetLeftMenu();
-      } else {
+
+    if (hasChildrenVisible) {
+      if (isSameItem && leftSecondaryCurrent !== MenuShowState.Hide) {
         setOpenedAccordions([]);
-        if (item.href) navigate(item.href);
+        hideLeftSecondary();
+        return;
       }
+      showLeftSecondary();
+      return;
     }
+
+    setOpenedAccordions([]);
+    hideLeftSecondary();
+    if (item.href) navigate(item.href);
   };
 
   useEffect(() => {
