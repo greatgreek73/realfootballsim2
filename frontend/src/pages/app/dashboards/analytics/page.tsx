@@ -14,8 +14,8 @@ import { Link } from "react-router-dom";
 
 import { Breadcrumbs, Button, FormControl, Tooltip, Typography } from "@mui/material";
 import { Grid } from "@mui/material";
-import { LocalizationProvider } from "@mui/x-date-pickers";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers-pro";
+import { AdapterDayjs } from "@mui/x-date-pickers-pro/AdapterDayjs";
 import { DateRange, DateRangePicker } from "@mui/x-date-pickers-pro";
 
 import NiCalendar from "@/icons/nexture/ni-calendar";

@@ -118,7 +118,6 @@ export default function LeftMenu() {
     const hasChildrenVisible = hasVisibleChildren(item);
     const isSameItem = activeItem?.id === item.id;
 
-    console.info('[LeftMenu] select', item.id, { hasChildrenVisible, isSameItem, leftSecondaryCurrent });
 
     setActiveItem(item);
 

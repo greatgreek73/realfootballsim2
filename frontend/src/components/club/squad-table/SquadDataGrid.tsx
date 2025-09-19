@@ -5,6 +5,7 @@ import {
   GridColDef,
   GridRenderCellParams,
   GridRowSpacingParams,
+  GridValueFormatterParams,
 } from "@mui/x-data-grid";
 
 import SquadToolbar from "./SquadToolbar";
@@ -54,8 +55,11 @@ const getRowSpacing = (params: GridRowSpacingParams) => {
   return { top: 8, bottom: 8 };
 };
 
-const formatNumber = (value: number | undefined) => (value !== undefined && value !== null ? String(value) : "-");
-const formatText = (value: string | undefined | null) => (value ? value : "-");
+const formatNumber = (value?: number | null) => (value !== undefined && value !== null ? String(value) : "-");
+const formatText = (value?: string | null) => (value ? value : "-");
+
+const formatNumberCell = (params?: GridValueFormatterParams<number | null>) => formatNumber(params?.value ?? null);
+const formatTextCell = (params?: GridValueFormatterParams<string | null>) => formatText(params?.value ?? null);
 
 const columns: GridColDef<SquadRow>[] = [
   {
@@ -113,13 +117,13 @@ const columns: GridColDef<SquadRow>[] = [
     width: 100,
     align: "center",
     headerAlign: "center",
-    valueFormatter: (value) => formatNumber(value as number | undefined),
+    valueFormatter: formatNumberCell,
   },
   {
     field: "morale",
     headerName: "Morale",
     width: 140,
-    valueFormatter: (value) => formatNumber(value as number | undefined),
+    valueFormatter: formatNumberCell,
   },
   {
     field: "status",
@@ -136,7 +140,7 @@ const columns: GridColDef<SquadRow>[] = [
     field: "updatedAt",
     headerName: "Updated",
     width: 180,
-    valueFormatter: (value) => formatText(value as string | undefined | null),
+    valueFormatter: formatTextCell,
   },
 ];
 
