@@ -24,7 +24,7 @@ const ICONS: Record<string, string> = {
   ui: "NiController",
   pages: "NiScreen",
   docs: "NiDocumentFull",
-  "menu-levels": "NiLayers",
+  "menu-levels": "NiStructure",
 };
 
 const routeKeys = Object.keys(modules).map(keyToRoute);
