@@ -20,6 +20,15 @@
     }
   }
 
+  .MuiDataGrid-cell,
+  .MuiDataGrid-columnHeader {
+    @apply items-center;
+  }
+
+  .MuiDataGrid-cell .MuiDataGrid-cellContent {
+    @apply flex items-center h-full;
+  }
+
   .MuiDataGrid-scrollbarFiller {
     @apply bg-transparent;
   }
@@ -411,4 +420,22 @@
     font-size: 0.75rem !important;
   }
 }
+
+
+
+@layer utilities {
+  .MuiDataGrid-root .MuiDataGrid-cell,
+  .MuiDataGrid-root .MuiDataGrid-columnHeader {
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .MuiDataGrid-root .MuiDataGrid-cell > *,
+  .MuiDataGrid-root .MuiDataGrid-columnHeader > * {
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+
 
