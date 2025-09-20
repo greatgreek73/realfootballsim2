@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { Avatar, Box, Chip, Typography } from "@mui/material";
+import { MouseEvent, useMemo, useState } from "react";
+import { Avatar, Box, Chip, IconButton, Menu, MenuItem, Typography } from "@mui/material";
 import {
   DataGrid,
   GridColDef,
@@ -9,6 +9,7 @@ import {
 } from "@mui/x-data-grid";
 
 import SquadToolbar from "./SquadToolbar";
+import NiEllipsisVertical from "@/icons/nexture/ni-ellipsis-vertical";
 import { DataGridPaginationFullPage } from "@/components/data-grid/data-grid-pagination";
 
 export type SquadRow = {
@@ -56,11 +57,53 @@ const getRowSpacing = (params: GridRowSpacingParams) => {
 };
 
 const formatNumber = (value?: number | null) => (value !== undefined && value !== null ? String(value) : "-");
-const formatText = (value?: string | null) => (value ? value : "-");
-
 const formatNumberCell = (params?: GridValueFormatterParams<number | null>) => formatNumber(params?.value ?? null);
-const formatTextCell = (params?: GridValueFormatterParams<string | null>) => formatText(params?.value ?? null);
 
+function initials(name: string): string {
+  const parts = name.split(" ").filter(Boolean);
+  return (parts[0]?.[0] ?? "").toUpperCase() + (parts[1]?.[0] ?? "").toUpperCase();
+}
+
+function PlayerActionsMenu({ playerId }: { playerId: number }) {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+
+  const handleOpen = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleNavigate = () => {
+    const backendBase = import.meta.env.VITE_BACKEND_URL ?? (import.meta.env.DEV ? "http://127.0.0.1:8000" : window.location.origin);
+    const normalizedBase = backendBase.endsWith("/") ? backendBase.slice(0, -1) : backendBase;
+    window.location.href = `${normalizedBase}/players/detail/${playerId}/`;
+    handleClose();
+  };
+
+  return (
+    <>
+      <IconButton size="small" onClick={handleOpen} aria-label="Player actions">
+        <NiEllipsisVertical size="medium" />
+      </IconButton>
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        onClick={(event) => event.stopPropagation()}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <MenuItem onClick={handleNavigate}>
+          Profile
+        </MenuItem>
+      </Menu>
+    </>
+  );
+}
 const columns: GridColDef<SquadRow>[] = [
   {
     field: "id",
@@ -115,8 +158,8 @@ const columns: GridColDef<SquadRow>[] = [
     field: "age",
     headerName: "Age",
     width: 100,
-    align: "center",
-    headerAlign: "center",
+    align: "left",
+    headerAlign: "left",
     valueFormatter: formatNumberCell,
   },
   {
@@ -137,17 +180,19 @@ const columns: GridColDef<SquadRow>[] = [
     },
   },
   {
-    field: "updatedAt",
-    headerName: "Updated",
-    width: 180,
-    valueFormatter: formatTextCell,
+    field: "actions",
+    headerName: "Actions",
+    width: 80,
+    align: "right",
+    headerAlign: "right",
+    sortable: false,
+    filterable: false,
+    disableColumnMenu: true,
+    renderCell: (params: GridRenderCellParams<SquadRow>) => (
+      <PlayerActionsMenu playerId={params.row.id} />
+    ),
   },
 ];
-
-function initials(name: string): string {
-  const parts = name.split(" ").filter(Boolean);
-  return (parts[0]?.[0] ?? "").toUpperCase() + (parts[1]?.[0] ?? "").toUpperCase();
-}
 
 type SquadDataGridProps = {
   rows: SquadRow[];
@@ -192,3 +237,10 @@ export default function SquadDataGrid({ rows, loading = false, pageSize = 10 }: 
     />
   );
 }
+
+
+
+
+
+
+
