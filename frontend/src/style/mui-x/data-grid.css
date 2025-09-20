@@ -3,7 +3,7 @@
 /* --------------------------- */
 @layer utilities {
   .MuiDataGrid-root {
-    @apply font-body text-text-primary bg-transparent tracking-normal normal-case;
+    @apply font-body text-sm text-text-primary bg-transparent tracking-normal normal-case;
   }
 
   .MuiDataGrid-columnHeader,
@@ -13,7 +13,7 @@
   }
 
   .MuiDataGrid-cell {
-    @apply border-transparent;
+    @apply border-transparent text-sm;
 
     &.Mui-selected {
       @apply text-primary;
@@ -46,12 +46,12 @@
 
   .MuiDataGrid-columnHeaders {
     .MuiDataGrid-filler {
-      @apply border-transparent;
+      @apply border-transparent text-sm;
     }
   }
 
   .MuiDataGrid-columnHeaderTitle {
-    @apply font-body text-sm font-bold;
+    @apply font-body text-xs font-bold;
   }
 
   .MuiDataGrid-footerContainer {
@@ -358,7 +358,7 @@
   }
 
   .MuiDataGrid-columnHeaderTitleContainerContent {
-    @apply font-body text-sm font-bold;
+    @apply font-body text-xs font-bold;
   }
 
   /* Column Header */
@@ -397,3 +397,18 @@
     }
   }
 }
+@layer utilities {
+  .MuiDataGrid-root,
+  .MuiDataGrid-root .MuiDataGrid-cell,
+  .MuiDataGrid-root .MuiDataGrid-cell .MuiDataGrid-cellContent,
+  .MuiDataGrid-root .MuiDataGrid-row,
+  .MuiDataGrid-root .MuiDataGrid-row *:not(.MuiSvgIcon-root) {
+    font-size: 0.875rem !important;
+  }
+
+  .MuiDataGrid-columnHeaderTitle,
+  .MuiDataGrid-columnHeaderTitleContainerContent {
+    font-size: 0.75rem !important;
+  }
+}
+
