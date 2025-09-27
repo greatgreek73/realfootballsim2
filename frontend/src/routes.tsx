@@ -75,6 +75,8 @@ const AppRoutes = () => (
       {/* Ваши основные страницы */}
       <Route key="my-club" path="/my-club" element={lazyLoad("/my-club")} />
       <Route key="my-club-players" path="/my-club/players" element={lazyLoad("/my-club/players")} />
+      <Route key="player-overview" path="/player/overview" element={lazyLoad("/player/overview")} />
+
 
       {/* Автогенерация маршрутов из вашего меню (кроме демо) */}
       {mainRoutes}

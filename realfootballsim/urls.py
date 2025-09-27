@@ -4,6 +4,8 @@ from django.views.generic import TemplateView
 from django.contrib.auth import views as auth_views
 from django.views.generic import RedirectView
 from accounts.views import SignUpView
+from players.api_views import player_detail_api  # <-- добавили
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -52,7 +54,9 @@ urlpatterns = [
     path('narrative/', include(('narrative.urls', 'narrative'), namespace='narrative')),
     path("api/auth/", include(("accounts.api_urls", "api-auth"), namespace="api-auth")),
     path("api/", include("clubs.api_urls")),  # API клуба
+    path("api/players/<int:pk>/", player_detail_api, name="api_player_detail"),
 ]
+
 
 # API URLs
 try:
