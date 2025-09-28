@@ -7,6 +7,7 @@ import {
   GridRowSpacingParams,
   GridValueFormatterParams,
 } from "@mui/x-data-grid";
+import { Link, useNavigate } from "react-router-dom";
 
 import SquadToolbar from "./SquadToolbar";
 import NiEllipsisVertical from "@/icons/nexture/ni-ellipsis-vertical";
@@ -52,7 +53,6 @@ const getRowSpacing = (params: GridRowSpacingParams) => {
   if (params.isFirstVisible) {
     return { top: 0, bottom: 8 };
   }
-
   return { top: 8, bottom: 8 };
 };
 
@@ -64,9 +64,11 @@ function initials(name: string): string {
   return (parts[0]?.[0] ?? "").toUpperCase() + (parts[1]?.[0] ?? "").toUpperCase();
 }
 
+/** Меню действий по игроку в колонке "Actions" */
 function PlayerActionsMenu({ playerId }: { playerId: number }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
+  const navigate = useNavigate();
 
   const handleOpen = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
@@ -77,10 +79,18 @@ function PlayerActionsMenu({ playerId }: { playerId: number }) {
     setAnchorEl(null);
   };
 
-  const handleNavigate = () => {
-    const backendBase = import.meta.env.VITE_BACKEND_URL ?? (import.meta.env.DEV ? "http://127.0.0.1:8000" : window.location.origin);
+  /** Переход на нашу SPA‑страницу */
+  const handleNavigateOverview = () => {
+    navigate(`/player/overview?id=${playerId}`);
+    handleClose();
+  };
+
+  /** Открыть старую Django‑страницу (на всякий случай оставить доступной) */
+  const handleOpenLegacy = () => {
+    const backendBase =
+      import.meta.env.VITE_BACKEND_URL ?? (import.meta.env.DEV ? "http://127.0.0.1:8000" : window.location.origin);
     const normalizedBase = backendBase.endsWith("/") ? backendBase.slice(0, -1) : backendBase;
-    window.location.href = `${normalizedBase}/players/detail/${playerId}/`;
+    window.open(`${normalizedBase}/players/detail/${playerId}/`, "_blank");
     handleClose();
   };
 
@@ -97,22 +107,21 @@ function PlayerActionsMenu({ playerId }: { playerId: number }) {
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
       >
-        <MenuItem onClick={handleNavigate}>
-          Profile
-        </MenuItem>
+        <MenuItem onClick={handleNavigateOverview}>Overview</MenuItem>
+        <MenuItem onClick={handleOpenLegacy}>Legacy profile (Django)</MenuItem>
       </Menu>
     </>
   );
 }
+
+/** Колонки грида */
 const columns: GridColDef<SquadRow>[] = [
   {
     field: "id",
     headerName: "ID",
     width: 120,
     renderCell: (params: GridRenderCellParams<SquadRow, number>) => (
-      <Typography variant="body2" color="text.secondary">
-        #{params.value}
-      </Typography>
+      <Typography variant="body2" color="text.secondary">#{params.value}</Typography>
     ),
   },
   {
@@ -129,7 +138,13 @@ const columns: GridColDef<SquadRow>[] = [
           <Avatar src={avatarUrl} alt={name} sx={{ width: 32, height: 32 }}>
             {initials(name)}
           </Avatar>
-          <Typography variant="body1" component="div">
+          <Typography
+            variant="body1"
+            component={Link}
+            to={`/player/overview?id=${params.row.id}`}
+            className="no-underline hover:underline"
+            onClick={(e) => e.stopPropagation()} // чтобы не дублировать onRowClick
+          >
             {name}
           </Typography>
         </Box>
@@ -188,9 +203,7 @@ const columns: GridColDef<SquadRow>[] = [
     sortable: false,
     filterable: false,
     disableColumnMenu: true,
-    renderCell: (params: GridRenderCellParams<SquadRow>) => (
-      <PlayerActionsMenu playerId={params.row.id} />
-    ),
+    renderCell: (params: GridRenderCellParams<SquadRow>) => <PlayerActionsMenu playerId={params.row.id} />,
   },
 ];
 
@@ -202,6 +215,7 @@ type SquadDataGridProps = {
 
 export default function SquadDataGrid({ rows, loading = false, pageSize = 10 }: SquadDataGridProps) {
   const paginationModel = useMemo(() => ({ pageSize, page: 0 }), [pageSize]);
+  const navigate = useNavigate();
 
   return (
     <DataGrid
@@ -234,13 +248,11 @@ export default function SquadDataGrid({ rows, loading = false, pageSize = 10 }: 
       hideFooterSelectedRowCount
       showCellVerticalBorder={false}
       showColumnVerticalBorder={false}
+      /** Переход по клику на строку */
+      onRowClick={(params: any) => {
+        const id = params?.row?.id ?? params?.id;
+        if (id != null) navigate(`/player/overview?id=${id}`);
+      }}
     />
   );
 }
-
-
-
-
-
-
-

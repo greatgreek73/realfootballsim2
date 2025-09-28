@@ -13,16 +13,16 @@ import {
 } from "@mui/material";
 import { Link, useSearchParams } from "react-router-dom";
 
-// Иконки карточек статов (если вдруг путь не совпадёт — временно удалите импорты и передайте <div/> вместо иконок)
+import PlayerProfileMenu from "./sections/player-profile-menu";
+
+// Иконки карточек статов
 import NiScreen from "@/icons/nexture/ni-screen";
 import NiFloppyDisk from "@/icons/nexture/ni-floppy-disk";
 import NiUsers from "@/icons/nexture/ni-users";
 import NiHearts from "@/icons/nexture/ni-hearts";
 
-// Радар из MUI X-Charts
-// Если появится ошибка импорта, попробуйте альтернативный импорт:
-//   import { RadarChart } from "@mui/x-charts";
-import { RadarChart } from "@mui/x-charts/RadarChart";
+// Радар (ваша версия требует radar.metrics)
+import { RadarChart } from "@mui/x-charts"; // если не соберётся — поставьте @mui/x-charts и перезапустите dev
 
 type Attr = { key: string; value: number };
 type Attributes = Record<string, Attr[]>;
@@ -81,7 +81,7 @@ function PrettyAttrName({ name }: { name: string }) {
 
 export default function Page() {
   const [searchParams] = useSearchParams();
-  const id = searchParams.get("id");
+  const id = searchParams.get("id") ?? undefined;
 
   const [data, setData] = useState<ApiPlayer | null>(null);
   const [loading, setLoading] = useState(false);
@@ -132,7 +132,7 @@ export default function Page() {
   const title = data?.full_name ?? (id ? `Player #${id}` : "Player Overview");
   const attributes = data?.attributes ?? {};
 
-  // === ДАННЫЕ ДЛЯ РАДАРА ===
+  // Данные для радара
   const radar = useMemo(() => {
     const entries = Object.entries(attributes);
     const labels = entries.map(([group]) => group);
@@ -173,139 +173,123 @@ export default function Page() {
         </Grid>
       )}
 
-      {/* 4 стат-карты */}
-      <Grid container size={12} spacing={2.5}>
-        {loading ? (
-          <>
-            <Grid size={{ lg: 3, xs: 12 }}>
-              <Skeleton variant="rounded" height={96} />
+      {/* ===== Основная сетка: левая колонка (меню) + правая колонка (контент) ===== */}
+      <Grid container size={12}>
+        {/* Левая колонка */}
+        <Grid size={{ "3xl": 3, lg: 4, xs: 12 }}>
+          <PlayerProfileMenu selected="overview" playerId={id} playerName={data?.full_name} />
+        </Grid>
+
+        {/* Правая колонка */}
+        <Grid container size={{ "3xl": 9, lg: 8, xs: 12 }} spacing={2.5}>
+          {/* 4 стат-карты */}
+          <Grid container size={12} spacing={2.5}>
+            {loading ? (
+              <>
+                <Grid size={{ lg: 3, xs: 12 }}>
+                  <Skeleton variant="rounded" height={96} />
+                </Grid>
+                <Grid size={{ lg: 3, xs: 12 }}>
+                  <Skeleton variant="rounded" height={96} />
+                </Grid>
+                <Grid size={{ lg: 3, xs: 12 }}>
+                  <Skeleton variant="rounded" height={96} />
+                </Grid>
+                <Grid size={{ lg: 3, xs: 12 }}>
+                  <Skeleton variant="rounded" height={96} />
+                </Grid>
+              </>
+            ) : (
+              <>
+                <Grid size={{ lg: 3, xs: 12 }}>
+                  <StatCard icon={<NiScreen className="text-primary" size={"large"} />} label="Overall Rating" value={data?.overall_rating ?? "-"} />
+                </Grid>
+                <Grid size={{ lg: 3, xs: 12 }}>
+                  <StatCard icon={<NiFloppyDisk className="text-secondary" size={"large"} />} label="Experience" value={data?.experience ?? "-"} />
+                </Grid>
+                <Grid size={{ lg: 3, xs: 12 }}>
+                  <StatCard icon={<NiUsers className="text-accent-1" size={"large"} />} label="Player Class" value={data?.player_class ?? "-"} />
+                </Grid>
+                <Grid size={{ lg: 3, xs: 12 }}>
+                  <StatCard icon={<NiHearts className="text-accent-2" size={"large"} />} label="Age" value={data?.age ?? "-"} />
+                </Grid>
+              </>
+            )}
+          </Grid>
+
+          {/* Attributes + Radar: 8/4 */}
+          {!!data && (
+            <Grid container size={12} spacing={2.5}>
+              {/* Attributes */}
+              <Grid size={{ "3xl": 8, lg: 8, xs: 12 }}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h5" component="h5" className="card-title">
+                      Attributes
+                    </Typography>
+
+                    {Object.keys(attributes).length === 0 ? (
+                      <Typography variant="body2" className="text-text-secondary">No attributes</Typography>
+                    ) : (
+                      <Stack spacing={2.5}>
+                        {Object.entries(attributes).map(([groupName, attrs]) => (
+                          <div key={groupName}>
+                            <Typography variant="subtitle2" className="mb-1.5">{groupName}</Typography>
+                            <Stack spacing={1.25}>
+                              {attrs.map((a) => (
+                                <div key={a.key} className="flex items-center gap-2">
+                                  <div className="w-48">
+                                    <Typography variant="body2"><PrettyAttrName name={a.key} /></Typography>
+                                  </div>
+                                  <LinearProgress
+                                    variant="determinate"
+                                    value={Math.max(0, Math.min(100, a.value))}
+                                    sx={{ flex: 1, height: 8, borderRadius: 4 }}
+                                  />
+                                  <Typography variant="body2" className="w-10 text-right">{a.value}</Typography>
+                                </div>
+                              ))}
+                            </Stack>
+                          </div>
+                        ))}
+                      </Stack>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Radar */}
+              <Grid size={{ "3xl": 4, lg: 4, xs: 12 }}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h5" component="h5" className="card-title">
+                      Attribute Radar (avg by group)
+                    </Typography>
+                    {radar.labels.length === 0 ? (
+                      <Typography variant="body2" className="text-text-secondary">No data</Typography>
+                    ) : (
+                      <RadarChart
+                        height={360}
+                        series={[{ data: radar.values, area: true }]}
+                        radar={{
+                          metrics: radar.labels,
+                          max: 100,
+                          labelGap: 22,
+                        }}
+                        axis={{
+                          angle: { disableTicks: true, disableLine: true },
+                          radius: { disableTicks: true, disableLine: true },
+                        }}
+                        grid={{ radial: { angle: 0 } }}
+                      />
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
             </Grid>
-            <Grid size={{ lg: 3, xs: 12 }}>
-              <Skeleton variant="rounded" height={96} />
-            </Grid>
-            <Grid size={{ lg: 3, xs: 12 }}>
-              <Skeleton variant="rounded" height={96} />
-            </Grid>
-            <Grid size={{ lg: 3, xs: 12 }}>
-              <Skeleton variant="rounded" height={96} />
-            </Grid>
-          </>
-        ) : (
-          <>
-            <Grid size={{ lg: 3, xs: 12 }}>
-              <StatCard icon={<NiScreen className="text-primary" size={"large"} />} label="Overall Rating" value={data?.overall_rating ?? "-"} />
-            </Grid>
-            <Grid size={{ lg: 3, xs: 12 }}>
-              <StatCard icon={<NiFloppyDisk className="text-secondary" size={"large"} />} label="Experience" value={data?.experience ?? "-"} />
-            </Grid>
-            <Grid size={{ lg: 3, xs: 12 }}>
-              <StatCard icon={<NiUsers className="text-accent-1" size={"large"} />} label="Player Class" value={data?.player_class ?? "-"} />
-            </Grid>
-            <Grid size={{ lg: 3, xs: 12 }}>
-              <StatCard icon={<NiHearts className="text-accent-2" size={"large"} />} label="Age" value={data?.age ?? "-"} />
-            </Grid>
-          </>
-        )}
+          )}
+        </Grid>
       </Grid>
-
-      {/* Basic & Club */}
-      {!!data && !loading && (
-        <Grid container size={12} spacing={2.5}>
-          <Grid size={{ lg: 6, xs: 12 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="subtitle1">Basic</Typography>
-                <Typography variant="body2" className="text-text-secondary">
-                  {data.position} • Age {data.age} • OVR {data.overall_rating}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid size={{ lg: 6, xs: 12 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="subtitle1">Club</Typography>
-                <Typography variant="body2" className="text-text-secondary">
-                  {data.club?.name ?? "Free agent"}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
-
-      {/* Attributes + Radar: 8/4 */}
-      {!!data && (
-        <Grid container size={12} spacing={2.5}>
-          {/* Attributes */}
-          <Grid size={{ "3xl": 8, lg: 8, xs: 12 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h5" component="h5" className="card-title">
-                  Attributes
-                </Typography>
-
-                {Object.keys(attributes).length === 0 ? (
-                  <Typography variant="body2" className="text-text-secondary">No attributes</Typography>
-                ) : (
-                  <Stack spacing={2.5}>
-                    {Object.entries(attributes).map(([groupName, attrs]) => (
-                      <div key={groupName}>
-                        <Typography variant="subtitle2" className="mb-1.5">{groupName}</Typography>
-                        <Stack spacing={1.25}>
-                          {attrs.map((a) => (
-                            <div key={a.key} className="flex items-center gap-2">
-                              <div className="w-48">
-                                <Typography variant="body2"><PrettyAttrName name={a.key} /></Typography>
-                              </div>
-                              <LinearProgress
-                                variant="determinate"
-                                value={Math.max(0, Math.min(100, a.value))}
-                                sx={{ flex: 1, height: 8, borderRadius: 4 }}
-                              />
-                              <Typography variant="body2" className="w-10 text-right">{a.value}</Typography>
-                            </div>
-                          ))}
-                        </Stack>
-                      </div>
-                    ))}
-                  </Stack>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Radar */}
-          <Grid size={{ "3xl": 4, lg: 4, xs: 12 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h5" component="h5" className="card-title">
-                  Attribute Radar (avg by group)
-                </Typography>
-                {radar.labels.length === 0 ? (
-                  <Typography variant="body2" className="text-text-secondary">No data</Typography>
-                ) : (
-                  <RadarChart
-                    height={360}
-                    series={[{ data: radar.values, area: true }]}
-                    radar={{
-                      metrics: radar.labels,   // подписи лучей (названия групп)
-                      max: 100,                // шкала 0..100
-                      labelGap: 22,            // отступ подписей от окружности
-                    }}
-                    axis={{
-                      angle: { disableTicks: true, disableLine: true },
-                      radius: { disableTicks: true, disableLine: true },
-                    }}
-                    grid={{ radial: { angle: 0 } }}
-                  />
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
     </Grid>
   );
 }
