@@ -37,6 +37,7 @@ type ApiPlayer = {
   player_class: number;
   club: { id: number; name: string } | null;
   attributes: Attributes;
+  avatar_url?: string | null; // ← добавлено: URL аватара из бэкенда
 };
 
 function StatCard({
@@ -132,6 +133,9 @@ export default function Page() {
   const title = data?.full_name ?? (id ? `Player #${id}` : "Player Overview");
   const attributes = data?.attributes ?? {};
 
+  // Плейсхолдер для аватара (если нет avatar_url с бэка)
+  const avatarUrl = data?.avatar_url ?? "/img/avatar-2.jpg"; // ← добавлено
+
   // Данные для радара
   const radar = useMemo(() => {
     const entries = Object.entries(attributes);
@@ -177,7 +181,12 @@ export default function Page() {
       <Grid container size={12}>
         {/* Левая колонка */}
         <Grid size={{ "3xl": 3, lg: 4, xs: 12 }}>
-          <PlayerProfileMenu selected="overview" playerId={id} playerName={data?.full_name} />
+          <PlayerProfileMenu
+            selected="overview"
+            playerId={id}
+            playerName={data?.full_name}
+            avatarUrl={avatarUrl} // ← проброс плейсхолдера/реального URL
+          />
         </Grid>
 
         {/* Правая колонка */}

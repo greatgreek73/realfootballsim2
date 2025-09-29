@@ -20,7 +20,7 @@ function toSquadRow(player: ApiPlayer): SquadRow {
   return {
     id: player.id,
     name: player.name,
-    avatarUrl: player.avatar_url ?? null,
+    avatarUrl: player.avatar_url ?? "/img/avatar-2.jpg",
     position: player.position,
     classLabel: player.cls,
     age: player.age,

@@ -11,9 +11,16 @@ type PlayerProfileMenuProps = {
   selected?: "overview" | "training" | "history" | "social";
   playerId?: string | number;
   playerName?: string;
+  /** URL аватара игрока (если нет — будет показан плейсхолдер) */
+  avatarUrl?: string; // ← добавлено
 };
 
-export default function PlayerProfileMenu({ selected = "overview", playerId, playerName }: PlayerProfileMenuProps) {
+export default function PlayerProfileMenu({
+  selected = "overview",
+  playerId,
+  playerName,
+  avatarUrl, // ← добавлено
+}: PlayerProfileMenuProps) {
   const navigate = useNavigate();
   const go = (path: string) => {
     if (!playerId) return;
@@ -30,7 +37,9 @@ export default function PlayerProfileMenu({ selected = "overview", playerId, pla
     <Card className="mb-2.5">
       <CardContent>
         <Box className="flex flex-row items-center gap-3 mb-2">
-          <Avatar sx={{ width: 40, height: 40 }}>{initials(playerName)}</Avatar>
+          <Avatar src={avatarUrl ?? "/img/avatar-2.jpg"} sx={{ width: 40, height: 40 }}>
+            {initials(playerName)}
+          </Avatar>
           <Typography variant="subtitle1" title={playerName ?? "Player"}>
             {playerName ?? "Player"}
           </Typography>
