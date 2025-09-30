@@ -12,14 +12,17 @@ type PlayerProfileMenuProps = {
   playerId?: string | number;
   playerName?: string;
   /** URL аватара игрока (если нет — будет показан плейсхолдер) */
-  avatarUrl?: string; // ← добавлено
+  avatarUrl?: string;
 };
+
+// целевой размер для десктопа
+const AVATAR_DESKTOP = 480;
 
 export default function PlayerProfileMenu({
   selected = "overview",
   playerId,
   playerName,
-  avatarUrl, // ← добавлено
+  avatarUrl,
 }: PlayerProfileMenuProps) {
   const navigate = useNavigate();
   const go = (path: string) => {
@@ -36,20 +39,54 @@ export default function PlayerProfileMenu({
   return (
     <Card className="mb-2.5">
       <CardContent>
-        <Box className="flex flex-row items-center gap-3 mb-2">
-          <Avatar src={avatarUrl ?? "/img/avatar-2.jpg"} sx={{ width: 40, height: 40 }}>
+        {/* Верхний блок — центр, столбик */}
+        <Box className="flex flex-col items-center text-center mb-2">
+          <Avatar
+            src={avatarUrl ?? "/img/avatar-2.jpg"}
+            // sx — адаптивно, style — жёсткий приоритет (перебивает внешние правила)
+            sx={{
+              width: { xs: 128, sm: 192, md: 240, lg: 320, xl: AVATAR_DESKTOP },
+              height: { xs: 128, sm: 192, md: 240, lg: 320, xl: AVATAR_DESKTOP },
+              mb: 1.5,
+            }}
+            style={{
+              width: "min(160px, 60vh, 100%)",
+              height: "min(160px, 60vh, 100%)",
+            }}
+          >
             {initials(playerName)}
           </Avatar>
-          <Typography variant="subtitle1" title={playerName ?? "Player"}>
+
+          <Typography variant="h6" className="mb-0 truncate" title={playerName ?? "Player"}>
             {playerName ?? "Player"}
           </Typography>
-          <Tooltip title="Actions">
-            <Button className="icon-only ml-auto" size="medium" color="primary" variant="pastel">
-              <NiEllipsisHorizontal size={"medium"} />
+
+          <Typography variant="body2" className="text-text-secondary mb-2">
+            Lorem ipsum dolor
+          </Typography>
+
+          <Box className="flex flex-row items-center justify-center gap-1.5">
+            <Button
+              size="medium"
+              color="primary"
+              variant="contained"
+              disableElevation
+              startIcon={<NiPulse size={20} />}
+            >
+              Contact
             </Button>
-          </Tooltip>
+            <Button size="medium" color="primary" variant="pastel">
+              Follow
+            </Button>
+            <Tooltip title="Actions">
+              <Button className="icon-only" size="medium" color="primary" variant="pastel">
+                <NiEllipsisHorizontal size={"medium"} />
+              </Button>
+            </Tooltip>
+          </Box>
         </Box>
 
+        {/* Меню пунктов */}
         <Box className="w-full">
           <MenuList className="p-0">
             <MenuItem selected={selected === "overview"} onClick={() => go("/player/overview")} disabled={!playerId}>
