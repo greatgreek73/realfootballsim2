@@ -15,6 +15,10 @@ export const leftMenuItems: MenuItem[] = [
     label: "Squad",
     color: "text-primary",
     href: "/my-club/players",
+    children: [
+      { id: 'players-list',   label: 'Players',       href: '/my-club/players' },
+      { id: 'players-create', label: 'Create Player', href: '/my-club/players/create' }
+    ]
   },
   {
     id: "single-menu",
