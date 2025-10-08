@@ -65,6 +65,8 @@ class Player(models.Model):
         verbose_name="Player Class"
     )
 
+    avatar = models.ImageField(upload_to="players/avatars/", null=True, blank=True)
+
     # Общие характеристики
     strength = models.IntegerField(default=0, verbose_name="Strength")
     stamina = models.IntegerField(default=0, verbose_name="Stamina")

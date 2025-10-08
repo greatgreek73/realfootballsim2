@@ -4,7 +4,12 @@ from django.views.generic import TemplateView
 from django.contrib.auth import views as auth_views
 from django.views.generic import RedirectView
 from accounts.views import SignUpView
-from players.api_views import player_detail_api  # <-- добавили
+from players.api_views import (
+    player_detail_api,
+    player_generate_avatar_api,
+    player_extra_training_api,
+)
+
 
 
 urlpatterns = [
@@ -55,6 +60,8 @@ urlpatterns = [
     path("api/auth/", include(("accounts.api_urls", "api-auth"), namespace="api-auth")),
     path("api/", include("clubs.api_urls")),  # API клуба
     path("api/players/<int:pk>/", player_detail_api, name="api_player_detail"),
+    path("api/players/<int:pk>/avatar/", player_generate_avatar_api, name="api_player_generate_avatar"),
+    path("api/players/<int:pk>/extra-training/", player_extra_training_api, name="api_player_extra_training"),
 ]
 
 

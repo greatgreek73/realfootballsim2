@@ -1,22 +1,32 @@
 from pathlib import Path
 import os
 from celery.schedules import crontab
+from dotenv import load_dotenv
 
-# 1) Check if we're in production (IS_PRODUCTION=1) or dev (IS_PRODUCTION != '1')
-IS_PRODUCTION = os.environ.get('IS_PRODUCTION')  # If not set, will be None
-
+# === Base paths & .env ===
 BASE_DIR = Path(__file__).resolve().parent.parent
+# Загружаем переменные окружения из .env в корне проекта (рядом с manage.py)
+load_dotenv(BASE_DIR / ".env")
 
-# Global duration of one simulated minute (in real seconds).
-# Used by both Celery Beat and the frontend.  Change this value to
-# speed up or slow down match simulation.
-# Can be overridden via the MATCH_MINUTE_REAL_SECONDS environment variable.
-MATCH_MINUTE_REAL_SECONDS = int(os.environ.get('MATCH_MINUTE_REAL_SECONDS', 20))
+# 1) Режим: прод / дев
+IS_PRODUCTION = os.getenv('IS_PRODUCTION')  # '1' для продакшена, иначе dev
+
+# Глобальная "реальная" длительность игровой минуты (секунды).
+# Поддерживаем оба названия ключа, чтобы не ломать существующий .env:
+# - MATCH_MINUTE_REAL_SECONDS (новый)
+# - MATCH_TICK_SECONDS       (старый, как в вашем .env)
+MATCH_MINUTE_REAL_SECONDS = int(
+    os.getenv('MATCH_MINUTE_REAL_SECONDS', os.getenv('MATCH_TICK_SECONDS', 20))
+)
 
 # Player Personality & Narrative AI Engine
-USE_PERSONALITY_ENGINE = os.environ.get('USE_PERSONALITY_ENGINE', 'True').lower() == 'true'
+USE_PERSONALITY_ENGINE = os.getenv('USE_PERSONALITY_ENGINE', 'True').lower() == 'true'
 
-# Default dev settings
+# === OpenAI (для генерации аватаров) ===
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_ENABLE_AVATAR_GENERATION = str(os.getenv("OPENAI_ENABLE_AVATAR_GENERATION", "true")).lower() in ("1", "true", "yes")
+
+# Базовые Django-настройки
 SECRET_KEY = 'django-insecure-0p3aqax2r2xolyvtfda6q_aa@q1l6n!w4$8sjo1ed&*)h*2l37'
 DEBUG = True
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
@@ -26,17 +36,14 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
 ]
 
-# If production environment variable is set, override specific settings
+# Если включён продакшен-режим
 if IS_PRODUCTION == '1':
     DEBUG = False
     ALLOWED_HOSTS = ['128.199.49.228', 'www.realfootballsim.com', 'realfootballsim.com']
-
     CSRF_TRUSTED_ORIGINS = [
-    'https://realfootballsim.com',
-    'https://www.realfootballsim.com'
-    
-]
-
+        'https://realfootballsim.com',
+        'https://www.realfootballsim.com'
+    ]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -45,15 +52,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
     'accounts',
     'core',
-    'players',
+    'players.apps.PlayersConfig',  # <-- важно: чтобы ready() подключал сигналы
     'clubs',
     'matches',
     'tournaments.apps.TournamentsConfig',
     'django_celery_beat',
-    'channels',  # Добавляем channels
-    'transfers',  # Явное указание конфига приложения
+    'channels',
+    'transfers',
     'narrative',  # Story Center Dashboard
 ]
 
@@ -93,10 +101,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'realfootballsim.wsgi.application'
 
-# Настройка Channels
+# Channels
 ASGI_APPLICATION = 'realfootballsim.asgi.application'
 
-# Настройка базы данных PostgreSQL для локальной разработки
+# База данных (локально PostgreSQL)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -109,8 +117,7 @@ DATABASES = {
     }
 }
 
-
-# Если установлен IS_PRODUCTION, используем PostgreSQL
+# Продакшен: при необходимости переопределяем (оставлено как у вас)
 if IS_PRODUCTION == '1':
     DATABASES = {
         'default': {
@@ -125,48 +132,37 @@ if IS_PRODUCTION == '1':
     }
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
 USE_TZ = True
 
+# Static
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
-# WhiteNoise: add long cache headers for font files under /static/fonts/*
+# WhiteNoise headers for fonts
 WHITENOISE_ADD_HEADERS_FUNCTION = 'realfootballsim.whitenoise_headers.add_headers'
 
-# Media files (uploads)
+# Media files (uploads) — используются для аватаров игроков
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
 LOGIN_REDIRECT_URL = 'core:home'
 LOGIN_URL = 'login'
 LOGOUT_REDIRECT_URL = 'core:home'
 
-# Настройки Celery
+# Celery
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
@@ -176,23 +172,17 @@ CELERY_TIMEZONE = 'UTC'
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_TASK_TIME_LIMIT = 300
 CELERY_TASK_SOFT_TIME_LIMIT = 240
-
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 50
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
-
-# Предотвращаем автоматические повторы задач
 CELERY_TASK_ACKS_LATE = True
 CELERY_TASK_REJECT_ON_WORKER_LOST = True
 CELERY_TASK_IGNORE_RESULT = False
-
-# Настройки для конкретных задач
 CELERY_TASK_ROUTES = {}
 
-# Настройки Celery Beat для периодических задач
 CELERY_BEAT_SCHEDULE = {
     'simulate-active-matches': {
         'task': 'tournaments.simulate_active_matches',
-        # Will be overridden in the database to MATCH_MINUTE_REAL_SECONDS
+        # Будет переопределено в БД до MATCH_MINUTE_REAL_SECONDS
         'schedule': MATCH_MINUTE_REAL_SECONDS,
     },
     'advance-match-minutes': {
@@ -201,11 +191,11 @@ CELERY_BEAT_SCHEDULE = {
     },
     'check-season-end': {
         'task': 'tournaments.check_season_end',
-        'schedule': crontab(hour=0, minute=0),  # Каждый день в полночь
+        'schedule': crontab(hour=0, minute=0),
     },
     'start-scheduled-matches': {
         'task': 'tournaments.start_scheduled_matches',
-        'schedule': 60.0,  # Каждую минуту
+        'schedule': 60.0,
     },
     'check-training-schedule': {
         'task': 'players.check_training_schedule',
@@ -213,7 +203,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'advance-player-seasons': {
         'task': 'players.advance_player_seasons',
-        'schedule': crontab(hour=0, minute=0, day_of_month=1),  # 1-е число каждого месяца в полночь
+        'schedule': crontab(hour=0, minute=0, day_of_month=1),
     },
 }
 
@@ -254,29 +244,12 @@ LOGGING = {
     },
 
     'loggers': {
-        'clubs': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-        'matches': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-        'tournaments': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-        'match_creation': {
-            'handlers': ['match_creation_handler'],
-            'level': 'INFO',
-            'propagate': False,
-        },
+        'clubs':   {'handlers': ['console', 'file'], 'level': 'DEBUG', 'propagate': True},
+        'matches': {'handlers': ['console', 'file'], 'level': 'DEBUG', 'propagate': True},
+        'tournaments': {'handlers': ['console', 'file'], 'level': 'DEBUG', 'propagate': True},
+        'match_creation': {'handlers': ['match_creation_handler'], 'level': 'INFO', 'propagate': False},
     },
 }
-
 
 TOURNAMENT_TIMEZONES = [
     ('UTC', 'UTC'),

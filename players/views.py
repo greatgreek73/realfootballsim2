@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.db import models
 from decimal import Decimal
+from django.templatetags.static import static
 
 from .models import Player, TrainingSettings
 from matches.models import CharacterEvolution, PlayerRivalry, TeamChemistry, NarrativeEvent
@@ -24,6 +25,13 @@ class PlayerDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         player = self.object
+        
+        # Avatar URL for legacy page (fallback to static placeholder)
+        try:
+            placeholder = static('players/img/player-placeholder.png')
+        except Exception:
+            placeholder = None
+        context['avatar_url'] = (getattr(player, 'avatar', None) and player.avatar.url) or placeholder
         
         # Check if personality engine is enabled
         from django.conf import settings
@@ -70,7 +78,7 @@ def boost_player(request, player_id):
     if request.method == 'POST':
         group_name = request.POST.get('group', '').strip()
         if not group_name:
-            messages.error(request, "Не выбрана группа характеристик для улучшения.")
+            messages.error(request, "Не указана группа характеристик.")
             return redirect('players:player_detail', pk=player_id)
 
         cost = player.get_boost_cost()
@@ -107,26 +115,23 @@ def boost_player(request, player_id):
         other_attrs = [a for a in all_attrs if a not in attrs_in_group]
         for _ in range(2):
             rand_attr = random.choice(other_attrs)
-            cur_val = getattr(player, rand_attr, 0)
-            setattr(player, rand_attr, cur_val + 1)
+            current_val = getattr(player, rand_attr, 0)
+            setattr(player, rand_attr, current_val + 1)
 
         player.boost_count += 1
         player.save()
 
-        messages.success(request,
-                         f"Характеристики игрока успешно улучшены! "
-                         f"Тренировка стоила {cost} токенов.")
+        messages.success(request, "Улучшение успешно применено.")
         return redirect('players:player_detail', pk=player_id)
 
-    # Не POST => просто редиректим на детальную страницу
+    # Если не POST — возвращаемся на страницу
     return redirect('players:player_detail', pk=player_id)
 
 
 @login_required
 def boost_player_ajax(request, player_id):
     """
-    Повышает характеристики игрока за токены (AJAX).
-    Возвращает JSON с информацией об изменённых характеристиках.
+    Современный AJAX-метод буста игрока (JSON).
     """
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Method not allowed'}, status=405)
@@ -136,45 +141,33 @@ def boost_player_ajax(request, player_id):
 
     # Проверяем, является ли пользователь владельцем клуба
     if player.club and player.club.owner != user:
-        return JsonResponse({
-            'success': False,
-            'message': "У вас нет прав на улучшение этого игрока."
-        }, status=403)
+        return JsonResponse({'success': False, 'message': 'Forbidden'}, status=403)
 
     try:
-        data = json.loads(request.body)
-        group_name = data.get('group', '').strip()
-    except (json.JSONDecodeError, AttributeError):
+        payload = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
         return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
 
+    group_name = (payload.get('group') or '').strip()
     if not group_name:
-        return JsonResponse({'success': False, 'message': 'No group selected'}, status=400)
+        return JsonResponse({'success': False, 'message': 'No group specified'}, status=400)
 
     cost = player.get_boost_cost()
     if user.tokens < cost:
-        return JsonResponse({
-            'success': False,
-            'message': f"Недостаточно токенов. Нужно {cost}, а у вас {user.tokens}."
-        }, status=400)
+        return JsonResponse({'success': False, 'message': 'Insufficient tokens', 'next_cost': cost}, status=400)
 
-    # Определяем нужный словарь групп
+    # Определяем группы
     if player.is_goalkeeper:
         group_dict = Player.GOALKEEPER_GROUPS
-    else:
-        group_dict = Player.FIELD_PLAYER_GROUPS
-
-    if group_name not in group_dict:
-        return JsonResponse({'success': False, 'message': 'Некорректная группа'}, status=400)
-
-    # Сохраняем "старые" значения, чтобы вернуть их в ответе
-    if player.is_goalkeeper:
         all_attrs = list(set(sum(Player.GOALKEEPER_GROUPS.values(), ())))
     else:
+        group_dict = Player.FIELD_PLAYER_GROUPS
         all_attrs = list(set(sum(Player.FIELD_PLAYER_GROUPS.values(), ())))
 
-    old_values = {}
-    for a in all_attrs:
-        old_values[a] = getattr(player, a, 0)
+    if group_name not in group_dict:
+        return JsonResponse({'success': False, 'message': 'Unknown group'}, status=400)
+
+    old_values = {a: getattr(player, a, 0) for a in all_attrs}
 
     # Списываем токены
     user.tokens -= cost
@@ -199,21 +192,14 @@ def boost_player_ajax(request, player_id):
     player.boost_count += 1
     player.save()
 
-    changes = {}
-    for attr_name in all_changed_attrs:
-        old_val = old_values[attr_name]
-        new_val = getattr(player, attr_name, 0)
-        changes[attr_name] = {
-            'old': old_val,
-            'new': new_val
-        }
+    new_values = {a: getattr(player, a, 0) for a in all_attrs}
+    changes = {a: (new_values[a] - old_values[a]) for a in all_changed_attrs}
 
     return JsonResponse({
         'success': True,
-        'message': f"Характеристики улучшены! Тренировка стоила {cost} токенов.",
         'changes': changes,
         'next_cost': player.get_boost_cost(),
-        'tokens_left': user.tokens
+        'tokens_left': user.tokens,
     })
 
 
@@ -261,20 +247,48 @@ def training_settings(request, player_id):
     settings, created = TrainingSettings.objects.get_or_create(
         player=player
     )
-    
+
+    if request.method == 'POST':
+        try:
+            data = request.POST
+            if player.is_goalkeeper:
+                settings.gk_physical_weight = Decimal(str(data.get('physical', 33.33)))
+                settings.gk_core_skills_weight = Decimal(str(data.get('core_gk_skills', 33.33)))
+                settings.gk_additional_skills_weight = Decimal(str(data.get('additional_gk_skills', 33.34)))
+                total = settings.gk_physical_weight + settings.gk_core_skills_weight + settings.gk_additional_skills_weight
+            else:
+                settings.physical_weight = Decimal(str(data.get('physical', 16.67)))
+                settings.defending_weight = Decimal(str(data.get('defending', 16.67)))
+                settings.attacking_weight = Decimal(str(data.get('attacking', 16.67)))
+                settings.mental_weight = Decimal(str(data.get('mental', 16.67)))
+                settings.technical_weight = Decimal(str(data.get('technical', 16.67)))
+                settings.tactical_weight = Decimal(str(data.get('tactical', 16.67)))
+                total = (settings.physical_weight + settings.defending_weight + 
+                         settings.attacking_weight + settings.mental_weight + 
+                         settings.technical_weight + settings.tactical_weight)
+
+            if abs(float(total) - 100.0) > 0.1:
+                messages.error(request, f'Сумма процентов должна равняться 100%. Текущая сумма: {total}%')
+                return redirect('players:training_settings', player_id=player_id)
+
+            settings.save()
+            messages.success(request, "Настройки тренировок обновлены.")
+            return redirect('players:training_settings', player_id=player_id)
+        except (ValueError, TypeError):
+            messages.error(request, "Неверные данные формы.")
+            return redirect('players:training_settings', player_id=player_id)
+
     context = {
         'player': player,
         'settings': settings,
-        'is_goalkeeper': player.is_goalkeeper,
     }
-    
     return render(request, 'players/training_settings.html', context)
 
 
 @login_required
 def update_training_settings(request, player_id):
     """
-    AJAX обновление настроек тренировок игрока.
+    Обновление настроек тренировок через JSON (AJAX).
     """
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Method not allowed'}, status=405)
@@ -305,21 +319,17 @@ def update_training_settings(request, player_id):
             settings.gk_core_skills_weight = Decimal(str(data.get('core_gk_skills', 33.33)))
             settings.gk_additional_skills_weight = Decimal(str(data.get('additional_gk_skills', 33.34)))
             
-            # Проверяем сумму
-            total = (settings.gk_physical_weight + 
-                    settings.gk_core_skills_weight + 
-                    settings.gk_additional_skills_weight)
+            total = settings.gk_physical_weight + settings.gk_core_skills_weight + settings.gk_additional_skills_weight
         else:
             # Обновляем настройки для полевого игрока
             settings.physical_weight = Decimal(str(data.get('physical', 16.67)))
-            settings.defensive_weight = Decimal(str(data.get('defensive', 16.67)))
+            settings.defending_weight = Decimal(str(data.get('defending', 16.67)))
             settings.attacking_weight = Decimal(str(data.get('attacking', 16.67)))
             settings.mental_weight = Decimal(str(data.get('mental', 16.67)))
             settings.technical_weight = Decimal(str(data.get('technical', 16.67)))
             settings.tactical_weight = Decimal(str(data.get('tactical', 16.67)))
-            
-            # Проверяем сумму
-            total = (settings.physical_weight + settings.defensive_weight + 
+
+            total = (settings.physical_weight + settings.defending_weight + 
                     settings.attacking_weight + settings.mental_weight + 
                     settings.technical_weight + settings.tactical_weight)
 

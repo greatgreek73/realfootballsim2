@@ -1,4 +1,4 @@
-import { Avatar, Box, Button, Card, CardContent, ListItemIcon, MenuItem, MenuList, Tooltip, Typography } from "@mui/material";
+import { Avatar, Box, Button, Card, CardContent, CircularProgress, ListItemIcon, MenuItem, MenuList, Tooltip, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
 import NiPulse from "@/icons/nexture/ni-pulse";
@@ -11,11 +11,12 @@ type PlayerProfileMenuProps = {
   selected?: "overview" | "training" | "history" | "social";
   playerId?: string | number;
   playerName?: string;
-  /** URL аватара игрока (если нет — будет показан плейсхолдер) */
   avatarUrl?: string;
+  onTraining?: () => void;
+  trainingDisabled?: boolean;
+  trainingLoading?: boolean;
 };
 
-// целевой размер для десктопа
 const AVATAR_DESKTOP = 480;
 
 export default function PlayerProfileMenu({
@@ -23,6 +24,9 @@ export default function PlayerProfileMenu({
   playerId,
   playerName,
   avatarUrl,
+  onTraining,
+  trainingDisabled,
+  trainingLoading,
 }: PlayerProfileMenuProps) {
   const navigate = useNavigate();
   const go = (path: string) => {
@@ -39,11 +43,9 @@ export default function PlayerProfileMenu({
   return (
     <Card className="mb-2.5">
       <CardContent>
-        {/* Верхний блок — центр, столбик */}
         <Box className="flex flex-col items-center text-center mb-2">
           <Avatar
             src={avatarUrl ?? "/img/avatar-2.jpg"}
-            // sx — адаптивно, style — жёсткий приоритет (перебивает внешние правила)
             sx={{
               width: { xs: 128, sm: 192, md: 240, lg: 320, xl: AVATAR_DESKTOP },
               height: { xs: 128, sm: 192, md: 240, lg: 320, xl: AVATAR_DESKTOP },
@@ -86,23 +88,45 @@ export default function PlayerProfileMenu({
           </Box>
         </Box>
 
-        {/* Меню пунктов */}
         <Box className="w-full">
           <MenuList className="p-0">
             <MenuItem selected={selected === "overview"} onClick={() => go("/player/overview")} disabled={!playerId}>
-              <ListItemIcon><NiPulse size={20} /></ListItemIcon>
+              <ListItemIcon>
+                <NiPulse size={20} />
+              </ListItemIcon>
               Overview
             </MenuItem>
-            <MenuItem selected={selected === "training"} onClick={() => go("/player/overview")} disabled>
-              <ListItemIcon><NiFolder size={20} /></ListItemIcon>
-              Training
+            <MenuItem
+              selected={selected === "training"}
+              onClick={() => {
+                if (trainingDisabled || !playerId) return;
+                if (onTraining) {
+                  onTraining();
+                } else {
+                  go("/player/overview");
+                }
+              }}
+              disabled={trainingDisabled || !playerId}
+              className="flex items-center justify-between"
+            >
+              <ListItemIcon>
+                <NiFolder size={20} />
+              </ListItemIcon>
+              <Box component="span" className="flex-1">
+                Training
+              </Box>
+              {trainingLoading && <CircularProgress size={16} />}
             </MenuItem>
             <MenuItem selected={selected === "history"} onClick={() => go("/player/overview")} disabled>
-              <ListItemIcon><NiLock size={20} /></ListItemIcon>
+              <ListItemIcon>
+                <NiLock size={20} />
+              </ListItemIcon>
               History
             </MenuItem>
             <MenuItem selected={selected === "social"} onClick={() => go("/player/overview")} disabled>
-              <ListItemIcon><NiController size={20} /></ListItemIcon>
+              <ListItemIcon>
+                <NiController size={20} />
+              </ListItemIcon>
               Social
             </MenuItem>
           </MenuList>

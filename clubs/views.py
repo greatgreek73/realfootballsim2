@@ -21,6 +21,11 @@ from players.utils import generate_player_stats
 from players.constants import PLAYER_PRICES
 from tournaments.models import Championship, League
 
+# --- ADDED ---
+from django.conf import settings
+from players.services.avatar import generate_and_save_avatar
+# --- /ADDED ---
+
 logger = logging.getLogger(__name__)
 
 def get_locale_from_country_code(country_code):
@@ -249,6 +254,14 @@ def create_player(request, pk):
             **stats
         )
 
+        # --- ADDED: ручная генерация аватара сразу после создания игрока ---
+        if settings.OPENAI_API_KEY and getattr(settings, "OPENAI_ENABLE_AVATAR_GENERATION", True):
+            try:
+                generate_and_save_avatar(player, overwrite=False)
+            except Exception as e:
+                logger.warning("Avatar generation failed for player %s: %s", getattr(player, "id", "?"), e)
+        # --- /ADDED ---
+
         request.user.tokens -= cost
         request.user.save()
 
@@ -318,7 +331,8 @@ def get_players(request, pk):
             'attributes': {
                 'attack': total_attack,
                 'defense': total_defense
-            }
+            },
+            'avatar_url': avatar_url,  # <-- ДОБАВЛЕНО ПОЛЕ
         })
 
     return JsonResponse(data, safe=False)
@@ -532,4 +546,3 @@ class ClubDashboardView(DetailView):
         context['current_timestamp'] = int(timezone.now().timestamp())
         
         return context
-
