@@ -97,13 +97,14 @@ export default function Page() {
   const [searchParams] = useSearchParams();
   const id = searchParams.get("id") ?? undefined;
 
-  const [data, setData] = useState<ApiPlayer | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [trainingDialogOpen, setTrainingDialogOpen] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-  const [trainingLoading, setTrainingLoading] = useState(false);
-  const [trainingAlert, setTrainingAlert] = useState<{ severity: "success" | "error"; message: string } | null>(null);
+  const [data, setData] = useState<ApiPlayer | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [trainingDialogOpen, setTrainingDialogOpen] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [trainingLoading, setTrainingLoading] = useState(false);
+  const [trainingAlert, setTrainingAlert] = useState<{ severity: "success" | "error"; message: string } | null>(null);
+  const [lastTrainingChanges, setLastTrainingChanges] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!id) return;
@@ -123,7 +124,10 @@ export default function Page() {
             const res = await fetch(url, { cache: "no-store" });
             if (res.ok) {
               const json = (await res.json()) as ApiPlayer;
-              if (!cancelled) setData(json);
+              if (!cancelled) {
+                setData(json);
+                setLastTrainingChanges({});
+              }
               lastErr = null;
               break;
             } else {
@@ -149,7 +153,7 @@ export default function Page() {
 
   const title = data?.full_name ?? (id ? `Player #${id}` : "Player Overview");
   const attributes = data?.attributes ?? {};
-  const attributeGroups = useMemo(() => Object.keys(attributes), [attributes]);
+  const attributeGroups = useMemo(() => Object.keys(attributes), [attributes]);
 
   useEffect(() => {
     if (!attributeGroups.length) {
@@ -171,26 +175,27 @@ export default function Page() {
   };
 
   type AttributeRow =
-    | { type: "group"; id: string; label: string }
-    | {
-        type: "attr";
-        id: string;
-        label: string;
-        value: number;
-        zebra: boolean;
-        color: string;
-      };
-
-  const {
-    rows: attributeRows,
-    sum: attributeSum,
-    count: attributeCount,
-  } = useMemo(() => {
-    const entries = Object.entries(attributes ?? {}) as [string, Attr[]][];
-    let zebraToggle = false;
-    const rows: AttributeRow[] = [];
-    let sum = 0;
-    let count = 0;
+    | { type: "group"; id: string; label: string }
+    | {
+        type: "attr";
+        id: string;
+        label: string;
+        value: number;
+        zebra: boolean;
+        color: string;
+        change?: number;
+      };
+
+  const {
+    rows: attributeRows,
+    sum: attributeSum,
+    count: attributeCount,
+  } = useMemo(() => {
+    const entries = Object.entries(attributes ?? {}) as [string, Attr[]][];
+    let zebraToggle = false;
+    const rows: AttributeRow[] = [];
+    let sum = 0;
+    let count = 0;
 
     entries.forEach(([groupName, attrList]) => {
       const safeList = Array.isArray(attrList) ? attrList : [];
@@ -204,22 +209,26 @@ export default function Page() {
         const safeValue = Number.isFinite(numericValue) ? Math.round(numericValue) : 0;
         const clampedValue = Math.max(0, Math.min(100, safeValue));
 
-        rows.push({
-          type: "attr",
-          id: `${groupName}-${attr.key}`,
-          label: attr.key,
-          value: safeValue,
-          zebra: zebraToggle,
-          color: getAttributeColor(clampedValue),
-        });
-
-        sum += safeValue;
-        count += 1;
-      });
+        const changeRaw = lastTrainingChanges?.[attr.key] ?? 0;
+        const changeValue = Number.isFinite(changeRaw) ? Number(changeRaw) : 0;
+
+        rows.push({
+          type: "attr",
+          id: `${groupName}-${attr.key}`,
+          label: attr.key,
+          value: safeValue,
+          zebra: zebraToggle,
+          color: getAttributeColor(clampedValue),
+          change: changeValue !== 0 ? changeValue : undefined,
+        });
+
+        sum += safeValue;
+        count += 1;
+      });
     });
 
-    return { rows, sum, count };
-  }, [attributes]);
+    return { rows, sum, count };
+  }, [attributes, lastTrainingChanges]);
 
   // Плейсхолдер для аватара (если нет avatar_url с бэка)
   const avatarUrl = data?.avatar_url ?? "/img/avatar-2.jpg"; // ← добавлено
@@ -281,11 +290,12 @@ export default function Page() {
         return;
       }
 
-      setData(json.player as ApiPlayer);
-      setTrainingAlert({
-        severity: "success",
-        message: `Дополнительная тренировка (${formatGroupName(json.group ?? selectedGroup)}) выполнена. Осталось токенов: ${json.tokens_left ?? "?"}.`,
-      });
+      setData(json.player as ApiPlayer);
+      setLastTrainingChanges((json.changes ?? {}) as Record<string, number>);
+      setTrainingAlert({
+        severity: "success",
+        message: `Дополнительная тренировка (${formatGroupName(json.group ?? selectedGroup)}) выполнена. Осталось токенов: ${json.tokens_left ?? "?"}.`,
+      });
       setTrainingDialogOpen(false);
     } catch (err: any) {
       setTrainingAlert({
@@ -436,49 +446,75 @@ export default function Page() {
                           }
 
                           return (
-                            <Box
-                              key={row.id}
-                              sx={(theme) => ({
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                gap: 1.5,
-                                px: 2,
-                                py: 1.1,
-                                borderTop: "1px solid",
-                                borderColor: theme.palette.divider,
-                                backgroundColor: row.zebra
-                                  ? alpha(row.color, theme.palette.mode === "dark" ? 0.24 : 0.08)
-                                  : "transparent",
-                                transition: "background-color 0.15s ease-in-out",
-                              })}
-                            >
-                              <Typography variant="body2" sx={{ textTransform: "capitalize", color: "text.secondary" }}>
-                                <PrettyAttrName name={row.label} />
-                              </Typography>
-                              <Box
-                                component="span"
-                                sx={(theme) => ({
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  minWidth: 36,
-                                  px: 1.25,
-                                  py: 0.25,
-                                  borderRadius: 999,
-                                  fontWeight: 600,
-                                  fontVariantNumeric: "tabular-nums",
-                                  backgroundColor: alpha(row.color, theme.palette.mode === "dark" ? 0.32 : 0.14),
-                                  color: row.color,
-                                })}
-                              >
-                                {row.value}
-                              </Box>
-                            </Box>
-                          );
-                        })}
-                      </Box>
-                    )}
+                            <Box
+                              key={row.id}
+                              sx={(theme) => ({
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: 1.25,
+                                px: 2,
+                                py: 1.1,
+                                borderTop: "1px solid",
+                                borderColor: theme.palette.divider,
+                                backgroundColor: row.zebra
+                                  ? alpha(row.color, theme.palette.mode === "dark" ? 0.24 : 0.08)
+                                  : "transparent",
+                                transition: "background-color 0.15s ease-in-out",
+                              })}
+                            >
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  textTransform: "capitalize",
+                                  color: "text.secondary",
+                                  flex: 1,
+                                }}
+                              >
+                                <PrettyAttrName name={row.label} />
+                              </Typography>
+                              <Box
+                                sx={{
+                                  minWidth: 36,
+                                  textAlign: "right",
+                                  fontWeight: 700,
+                                  color:
+                                    row.change && row.change > 0
+                                      ? "success.main"
+                                      : row.change && row.change < 0
+                                      ? "error.main"
+                                      : "inherit",
+                                }}
+                              >
+                                {typeof row.change === "number" && row.change !== 0
+                                  ? row.change > 0
+                                    ? `+${row.change}`
+                                    : row.change
+                                  : ""}
+                              </Box>
+                              <Box
+                                component="span"
+                                sx={(theme) => ({
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  minWidth: 36,
+                                  px: 1.25,
+                                  py: 0.25,
+                                  borderRadius: 999,
+                                  fontWeight: 600,
+                                  fontVariantNumeric: "tabular-nums",
+                                  backgroundColor: alpha(row.color, theme.palette.mode === "dark" ? 0.32 : 0.14),
+                                  color: row.color,
+                                })}
+                              >
+                                {row.value}
+                              </Box>
+                            </Box>
+                          );
+                        })}
+                      </Box>
+                    )}
                   </CardContent>
                 </Card>
               </Grid>
