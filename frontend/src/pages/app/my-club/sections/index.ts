@@ -4,3 +4,5 @@ export { default as ClubStats } from "./club-stats";
 export { default as ClubActivity } from "./club-activity";
 export { default as ClubSchedule } from "./club-schedule";
 export { default as ClubFinancePlaceholder } from "./club-finance-placeholder";
+export type { ClubActivityItem } from "./club-activity";
+export type { ClubFixture } from "./club-schedule";

@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 
 # === Base paths & .env ===
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+from .whitenoise_headers import add_headers as whitenoise_add_headers
 # Загружаем переменные окружения из .env в корне проекта (рядом с manage.py)
 load_dotenv(BASE_DIR / ".env")
 
@@ -149,7 +151,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
 # WhiteNoise headers for fonts
-WHITENOISE_ADD_HEADERS_FUNCTION = 'realfootballsim.whitenoise_headers.add_headers'
+WHITENOISE_ADD_HEADERS_FUNCTION = whitenoise_add_headers
 
 # Media files (uploads) — используются для аватаров игроков
 MEDIA_URL = '/media/'
@@ -187,7 +189,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'advance-match-minutes': {
         'task': 'tournaments.advance_match_minutes',
-        'schedule': 1.0,
+        'schedule': MATCH_MINUTE_REAL_SECONDS,
     },
     'check-season-end': {
         'task': 'tournaments.check_season_end',

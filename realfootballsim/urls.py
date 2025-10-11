@@ -9,6 +9,14 @@ from players.api_views import (
     player_generate_avatar_api,
     player_extra_training_api,
 )
+from matches.api_views import (
+    match_list_api,
+    match_detail_api,
+    match_events_api,
+    match_create_api,
+    match_simulate_api,
+    match_substitute_api,
+)
 
 
 
@@ -62,6 +70,12 @@ urlpatterns = [
     path("api/players/<int:pk>/", player_detail_api, name="api_player_detail"),
     path("api/players/<int:pk>/avatar/", player_generate_avatar_api, name="api_player_generate_avatar"),
     path("api/players/<int:pk>/extra-training/", player_extra_training_api, name="api_player_extra_training"),
+    path("api/matches/", match_list_api, name="api_matches_list"),
+    path("api/matches/create/", match_create_api, name="api_match_create"),
+    path("api/matches/<int:pk>/", match_detail_api, name="api_match_detail"),
+    path("api/matches/<int:pk>/events/", match_events_api, name="api_match_events"),
+    path("api/matches/<int:pk>/simulate/", match_simulate_api, name="api_match_simulate"),
+    path("api/matches/<int:pk>/substitute/", match_substitute_api, name="api_match_substitute"),
 ]
 
 

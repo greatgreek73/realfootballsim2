@@ -16,9 +16,20 @@ export const leftMenuItems: MenuItem[] = [
     color: "text-primary",
     href: "/my-club/players",
     children: [
-      { id: 'players-list',   label: 'Players',       href: '/my-club/players' },
-      { id: 'players-create', label: 'Create Player', href: '/my-club/players/create' }
-    ]
+      { id: "players-list", label: "Players", href: "/my-club/players" },
+      { id: "players-create", label: "Create Player", href: "/my-club/players/create" },
+    ],
+  },
+  {
+    id: "matches",
+    icon: "NiCalendar",
+    label: "Matches",
+    color: "text-primary",
+    href: "/matches",
+    children: [
+      { id: "matches-list", label: "All Matches", href: "/matches" },
+      { id: "matches-create", label: "Schedule Match", href: "/matches/create" },
+    ],
   },
   {
     id: "single-menu",
@@ -28,14 +39,12 @@ export const leftMenuItems: MenuItem[] = [
     href: "/single-menu",
   },
 
-  // --- РїС—Р…РїС—Р…РїС—Р…РїС—Р… Р°В В§РїС—Р…РїС—Р…РїС—Р…: Demo (РїС—Р…РїС—Р…Р°В В­РїС—Р…РїС—Р…РїС—Р… РїС—Р…РіР‡В«РїС—Р…РїС—Р…РїС—Р…РїС—Р…РїС—Р…РїС—Р… РёВ РЋРїС—Р…РїС—Р…РїС—Р…РїС—Р…) ---
   {
     id: "demo",
     icon: "NiHome",
     label: "Demo",
     color: "text-primary",
     children: [
-      // РїС—Р…РїС—Р…РїС—Р…РїС—Р…РїС—Р…РїС—Р…РїТђВ¬ РІВ®В«РјР„В® Р°ТђВ РїС—Р…РјВ­В® РїС—Р…РїС—Р…РїС—Р…РїС—Р…РїС—Р…РїС—Р…РїС—Р…Р№РЃТђ РїС—Р…РїС—Р…РїС—Р…РїС—Р…РїС—Р…РјВ­В® РїС—Р…РїС—Р…Р°В В­РїС—Р…РїС—Р…РїС—Р… РїС—Р…РїС—Р…РїС—Р…РїС—Р…
       { id: "demo-dashboard-visual", label: "Dashboards: Visual", href: "/dashboards/visual" },
       { id: "demo-ui-avatar", label: "UI: Avatar", href: "/ui/data-display/avatar" },
       { id: "demo-docs-intro", label: "Docs: Introduction", href: "/docs/welcome/introduction" },

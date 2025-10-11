@@ -12,8 +12,8 @@ This is a Django based football simulator featuring live match updates, player m
    The project expects PostgreSQL running locally with database name `rfsimdb`. Update `DATABASES` in `realfootballsim/settings.py` if needed.
 
 3. **Environment variables**
-   - `IS_PRODUCTION` – set to `1` to enable production settings.
-   - `MATCH_MINUTE_REAL_SECONDS` – real seconds that represent one simulated minute (default: `60`).
+   - `IS_PRODUCTION` - set to `1` to enable production settings.
+   - `MATCH_MINUTE_REAL_SECONDS` - real seconds that represent one simulated minute (default: `60`).
 
 4. **Running the project**
    ```bash
@@ -29,6 +29,8 @@ This is a Django based football simulator featuring live match updates, player m
    ```
 
 These workers drive match simulation and periodic season checks.
+
+- **Dev fallback:** when Celery is not running you can still auto-simulate quick friendly matches by setting  `VITE_AUTO_SIMULATE_FRIENDLY=true` in a frontend `.env` file (for example `.env.development`). Leave it `false` in production so background workers drive the simulation. 
 
 ## Player Skills
 

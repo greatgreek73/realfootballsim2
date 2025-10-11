@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Alert, Box, Grid, Typography } from "@mui/material";
 
@@ -10,6 +10,8 @@ import {
   ClubSchedule,
   ClubStats,
 } from "./sections";
+import type { ClubActivityItem, ClubFixture } from "./sections";
+import { fetchMatches, MatchSummary } from "@/api/matches";
 
 type ClubSummary = {
   id: number;
@@ -34,6 +36,54 @@ export default function MyClubPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [club, setClub] = useState<ClubSummary | null>(null);
+  const [matchesLoading, setMatchesLoading] = useState(true);
+  const [matchesError, setMatchesError] = useState<string | null>(null);
+  const [upcomingFixtures, setUpcomingFixtures] = useState<ClubFixture[]>([]);
+  const [recentActivity, setRecentActivity] = useState<ClubActivityItem[]>([]);
+
+  const dateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(undefined, {
+        month: "short",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    [],
+  );
+
+  const formatDate = (value: string | null) => {
+    if (!value) return "TBD";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return dateFormatter.format(date);
+  };
+
+  const buildFixture = (match: MatchSummary, clubId: number): ClubFixture => {
+    const isHome = match.home.id === clubId;
+    const opponent = isHome ? match.away.name : match.home.name;
+    return {
+      id: match.id,
+      opponent: `${isHome ? "vs" : "@"} ${opponent}`,
+      date: formatDate(match.datetime),
+      venue: isHome ? "Home" : "Away",
+    };
+  };
+
+  const buildActivityItems = (matches: MatchSummary[], clubId: number): ClubActivityItem[] =>
+    matches.map((match) => {
+      const isHome = match.home.id === clubId;
+      const opponent = isHome ? match.away.name : match.home.name;
+      const vsLabel = isHome ? `vs ${opponent}` : `@ ${opponent}`;
+      const score = `${match.score.home} : ${match.score.away}`;
+      const competition = match.competition?.name ?? "Friendly";
+      return {
+        id: match.id,
+        title: `${match.status_label} - ${score} ${vsLabel}`,
+        description: competition,
+        time: formatDate(match.datetime),
+      };
+    });
 
   useEffect(() => {
     let cancelled = false;
@@ -48,11 +98,31 @@ export default function MyClubPage() {
 
         if (!cancelled) {
           setClub(summary);
+          setMatchesLoading(true);
+          setMatchesError(null);
+          try {
+            const [upcoming, recent] = await Promise.all([
+              fetchMatches({ clubId: summary.id, processed: false, ordering: "datetime", pageSize: 5 }),
+              fetchMatches({ clubId: summary.id, processed: true, ordering: "-datetime", pageSize: 5 }),
+            ]);
+
+            if (!cancelled) {
+              setUpcomingFixtures(upcoming.results.map((match) => buildFixture(match, summary.id)));
+              setRecentActivity(buildActivityItems(recent.results, summary.id));
+            }
+          } catch (matchesErr: any) {
+            if (!cancelled) setMatchesError(matchesErr?.message ?? "Failed to load matches");
+          } finally {
+            if (!cancelled) setMatchesLoading(false);
+          }
         }
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? "Failed to load club data");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setMatchesLoading(false);
+        }
       }
     }
 
@@ -100,13 +170,13 @@ export default function MyClubPage() {
             </Grid>
           </Grid>
           <Grid size={{ lg: 4, xs: 12 }}>
-            <ClubActivity loading={loading} />
+            <ClubActivity loading={loading || matchesLoading} items={recentActivity} error={matchesError} />
           </Grid>
         </Grid>
 
         <Grid container size={12} spacing={2.5}>
           <Grid size={{ lg: 6, xs: 12 }}>
-            <ClubSchedule loading={loading} />
+            <ClubSchedule loading={loading || matchesLoading} fixtures={upcomingFixtures} error={matchesError} />
           </Grid>
           <Grid size={{ lg: 6, xs: 12 }}>
             <ClubFinancePlaceholder loading={loading} />

@@ -1,4 +1,6 @@
-import { Card, CardContent, CardHeader, Skeleton, Stack, Typography } from "@mui/material";
+import { Link as RouterLink } from "react-router-dom";
+
+import { Alert, Button, Card, CardActions, CardContent, CardHeader, Skeleton, Stack, Typography } from "@mui/material";
 
 export type ClubFixture = {
   id: string | number;
@@ -10,14 +12,17 @@ export type ClubFixture = {
 export type ClubScheduleProps = {
   loading: boolean;
   fixtures?: ClubFixture[];
+  error?: string | null;
 };
 
-export default function ClubSchedule({ loading, fixtures = [] }: ClubScheduleProps) {
+export default function ClubSchedule({ loading, fixtures = [], error }: ClubScheduleProps) {
   return (
     <Card className="h-full">
       <CardHeader title="Upcoming Fixtures" subheader="Next matches on the calendar" />
       <CardContent>
-        {loading ? (
+        {error ? (
+          <Alert severity="warning">{error}</Alert>
+        ) : loading ? (
           <Stack spacing={2}>
             <Skeleton height={24} />
             <Skeleton height={24} />
@@ -30,7 +35,7 @@ export default function ClubSchedule({ loading, fixtures = [] }: ClubSchedulePro
                 <Typography variant="body1">{fixture.opponent}</Typography>
                 <Typography variant="body2" color="text.secondary">
                   {fixture.date}
-                  {fixture.venue ? ` • ${fixture.venue}` : ""}
+                  {fixture.venue ? ` | ${fixture.venue}` : ""}
                 </Typography>
               </Stack>
             ))}
@@ -46,6 +51,11 @@ export default function ClubSchedule({ loading, fixtures = [] }: ClubSchedulePro
           </Stack>
         )}
       </CardContent>
+      <CardActions>
+        <Button component={RouterLink} to="/matches" size="small">
+          View all matches
+        </Button>
+      </CardActions>
     </Card>
   );
 }

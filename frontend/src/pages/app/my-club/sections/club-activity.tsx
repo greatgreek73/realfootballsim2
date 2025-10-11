@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, Divider, Skeleton, Stack, Typography } from "@mui/material";
+import { Alert, Card, CardContent, CardHeader, Divider, Skeleton, Stack, Typography } from "@mui/material";
 
 export type ClubActivityItem = {
   id: string | number;
@@ -10,14 +10,17 @@ export type ClubActivityItem = {
 export type ClubActivityProps = {
   loading: boolean;
   items?: ClubActivityItem[];
+  error?: string | null;
 };
 
-export default function ClubActivity({ loading, items = [] }: ClubActivityProps) {
+export default function ClubActivity({ loading, items = [], error }: ClubActivityProps) {
   return (
     <Card className="h-full">
       <CardHeader title="Recent Activity" subheader="Latest updates around your club" />
       <CardContent>
-        {loading ? (
+        {error ? (
+          <Alert severity="warning">{error}</Alert>
+        ) : loading ? (
           <Stack spacing={2}>
             <Skeleton height={20} />
             <Skeleton height={20} />
