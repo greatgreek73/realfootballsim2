@@ -7,16 +7,16 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 from .whitenoise_headers import add_headers as whitenoise_add_headers
-# Загружаем переменные окружения из .env в корне проекта (рядом с manage.py)
+# ╨Ч╨░╨│╤А╤Г╨╢╨░╨╡╨╝ ╨┐╨╡╤А╨╡╨╝╨╡╨╜╨╜╤Л╨╡ ╨╛╨║╤А╤Г╨╢╨╡╨╜╨╕╤П ╨╕╨╖ .env ╨▓ ╨║╨╛╤А╨╜╨╡ ╨┐╤А╨╛╨╡╨║╤В╨░ (╤А╤П╨┤╨╛╨╝ ╤Б manage.py)
 load_dotenv(BASE_DIR / ".env")
 
-# 1) Режим: прод / дев
-IS_PRODUCTION = os.getenv('IS_PRODUCTION')  # '1' для продакшена, иначе dev
+# 1) ╨а╨╡╨╢╨╕╨╝: ╨┐╤А╨╛╨┤ / ╨┤╨╡╨▓
+IS_PRODUCTION = os.getenv('IS_PRODUCTION')  # '1' ╨┤╨╗╤П ╨┐╤А╨╛╨┤╨░╨║╤И╨╡╨╜╨░, ╨╕╨╜╨░╤З╨╡ dev
 
-# Глобальная "реальная" длительность игровой минуты (секунды).
-# Поддерживаем оба названия ключа, чтобы не ломать существующий .env:
-# - MATCH_MINUTE_REAL_SECONDS (новый)
-# - MATCH_TICK_SECONDS       (старый, как в вашем .env)
+# ╨У╨╗╨╛╨▒╨░╨╗╤М╨╜╨░╤П "╤А╨╡╨░╨╗╤М╨╜╨░╤П" ╨┤╨╗╨╕╤В╨╡╨╗╤М╨╜╨╛╤Б╤В╤М ╨╕╨│╤А╨╛╨▓╨╛╨╣ ╨╝╨╕╨╜╤Г╤В╤Л (╤Б╨╡╨║╤Г╨╜╨┤╤Л).
+# ╨Я╨╛╨┤╨┤╨╡╤А╨╢╨╕╨▓╨░╨╡╨╝ ╨╛╨▒╨░ ╨╜╨░╨╖╨▓╨░╨╜╨╕╤П ╨║╨╗╤О╤З╨░, ╤З╤В╨╛╨▒╤Л ╨╜╨╡ ╨╗╨╛╨╝╨░╤В╤М ╤Б╤Г╤Й╨╡╤Б╤В╨▓╤Г╤О╤Й╨╕╨╣ .env:
+# - MATCH_MINUTE_REAL_SECONDS (╨╜╨╛╨▓╤Л╨╣)
+# - MATCH_TICK_SECONDS       (╤Б╤В╨░╤А╤Л╨╣, ╨║╨░╨║ ╨▓ ╨▓╨░╤И╨╡╨╝ .env)
 MATCH_MINUTE_REAL_SECONDS = int(
     os.getenv('MATCH_MINUTE_REAL_SECONDS', os.getenv('MATCH_TICK_SECONDS', 20))
 )
@@ -24,11 +24,11 @@ MATCH_MINUTE_REAL_SECONDS = int(
 # Player Personality & Narrative AI Engine
 USE_PERSONALITY_ENGINE = os.getenv('USE_PERSONALITY_ENGINE', 'True').lower() == 'true'
 
-# === OpenAI (для генерации аватаров) ===
+# === OpenAI (╨┤╨╗╤П ╨│╨╡╨╜╨╡╤А╨░╤Ж╨╕╨╕ ╨░╨▓╨░╤В╨░╤А╨╛╨▓) ===
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_ENABLE_AVATAR_GENERATION = str(os.getenv("OPENAI_ENABLE_AVATAR_GENERATION", "true")).lower() in ("1", "true", "yes")
 
-# Базовые Django-настройки
+# ╨С╨░╨╖╨╛╨▓╤Л╨╡ Django-╨╜╨░╤Б╤В╤А╨╛╨╣╨║╨╕
 SECRET_KEY = 'django-insecure-0p3aqax2r2xolyvtfda6q_aa@q1l6n!w4$8sjo1ed&*)h*2l37'
 DEBUG = True
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
@@ -38,7 +38,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
 ]
 
-# Если включён продакшен-режим
+# ╨Х╤Б╨╗╨╕ ╨▓╨║╨╗╤О╤З╤С╨╜ ╨┐╤А╨╛╨┤╨░╨║╤И╨╡╨╜-╤А╨╡╨╢╨╕╨╝
 if IS_PRODUCTION == '1':
     DEBUG = False
     ALLOWED_HOSTS = ['128.199.49.228', 'www.realfootballsim.com', 'realfootballsim.com']
@@ -57,7 +57,7 @@ INSTALLED_APPS = [
 
     'accounts',
     'core',
-    'players.apps.PlayersConfig',  # <-- важно: чтобы ready() подключал сигналы
+    'players.apps.PlayersConfig',  # <-- ╨▓╨░╨╢╨╜╨╛: ╤З╤В╨╛╨▒╤Л ready() ╨┐╨╛╨┤╨║╨╗╤О╤З╨░╨╗ ╤Б╨╕╨│╨╜╨░╨╗╤Л
     'clubs',
     'matches',
     'tournaments.apps.TournamentsConfig',
@@ -106,7 +106,7 @@ WSGI_APPLICATION = 'realfootballsim.wsgi.application'
 # Channels
 ASGI_APPLICATION = 'realfootballsim.asgi.application'
 
-# База данных (локально PostgreSQL)
+# ╨С╨░╨╖╨░ ╨┤╨░╨╜╨╜╤Л╤Е (╨╗╨╛╨║╨░╨╗╤М╨╜╨╛ PostgreSQL)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -119,7 +119,7 @@ DATABASES = {
     }
 }
 
-# Продакшен: при необходимости переопределяем (оставлено как у вас)
+# ╨Я╤А╨╛╨┤╨░╨║╤И╨╡╨╜: ╨┐╤А╨╕ ╨╜╨╡╨╛╨▒╤Е╨╛╨┤╨╕╨╝╨╛╤Б╤В╨╕ ╨┐╨╡╤А╨╡╨╛╨┐╤А╨╡╨┤╨╡╨╗╤П╨╡╨╝ (╨╛╤Б╤В╨░╨▓╨╗╨╡╨╜╨╛ ╨║╨░╨║ ╤Г ╨▓╨░╤Б)
 if IS_PRODUCTION == '1':
     DATABASES = {
         'default': {
@@ -153,7 +153,7 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 # WhiteNoise headers for fonts
 WHITENOISE_ADD_HEADERS_FUNCTION = whitenoise_add_headers
 
-# Media files (uploads) — используются для аватаров игроков
+# Media files (uploads) тАФ ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╤О╤В╤Б╤П ╨┤╨╗╤П ╨░╨▓╨░╤В╨░╤А╨╛╨▓ ╨╕╨│╤А╨╛╨║╨╛╨▓
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -184,7 +184,7 @@ CELERY_TASK_ROUTES = {}
 CELERY_BEAT_SCHEDULE = {
     'simulate-active-matches': {
         'task': 'tournaments.simulate_active_matches',
-        # Будет переопределено в БД до MATCH_MINUTE_REAL_SECONDS
+        # ╨С╤Г╨┤╨╡╤В ╨┐╨╡╤А╨╡╨╛╨┐╤А╨╡╨┤╨╡╨╗╨╡╨╜╨╛ ╨▓ ╨С╨Ф ╨┤╨╛ MATCH_MINUTE_REAL_SECONDS
         'schedule': MATCH_MINUTE_REAL_SECONDS,
     },
     'advance-match-minutes': {
@@ -201,7 +201,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'check-training-schedule': {
         'task': 'players.check_training_schedule',
-        'schedule': crontab(hour=11, minute=0, day_of_week='1,3,5'),  # Пн, Ср, Пт в 12:00 CET (11:00 UTC)
+        'schedule': crontab(hour=11, minute=0, day_of_week='1,3,5'),  # ╨Я╨╜, ╨б╤А, ╨Я╤В ╨▓ 12:00 CET (11:00 UTC)
     },
     'advance-player-seasons': {
         'task': 'players.advance_player_seasons',

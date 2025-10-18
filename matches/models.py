@@ -1,9 +1,9 @@
 # matches/models.py
 
 from django.db import models
-# from django.conf import settings # Не используется
+# from django.conf import settings # ╨Э╨╡ ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╤В╤Б╤П
 from clubs.models import Club
-from players.models import Player # Убедитесь, что этот импорт корректен
+from players.models import Player # ╨г╨▒╨╡╨┤╨╕╤В╨╡╤Б╤М, ╤З╤В╨╛ ╤Н╤В╨╛╤В ╨╕╨╝╨┐╨╛╤А╤В ╨║╨╛╤А╤А╨╡╨║╤В╨╡╨╜
 from django.utils import timezone
 
 class Match(models.Model):
@@ -18,17 +18,17 @@ class Match(models.Model):
     processed = models.BooleanField(
         default=False,
         db_index=True,
-        help_text="Indicates if match result has been processed" # Немного уточнил help_text
+        help_text="Indicates if match result has been processed" # ╨Э╨╡╨╝╨╜╨╛╨│╨╛ ╤Г╤В╨╛╤З╨╜╨╕╨╗ help_text
     )
     home_score = models.PositiveIntegerField(default=0)
     away_score = models.PositiveIntegerField(default=0)
 
-    # --- ИСПРАВЛЕНО ИМЯ ПОЛЯ ---
-    # Было: curent_posses
+    # --- ╨Ш╨б╨Я╨а╨Р╨Т╨Ы╨Х╨Э╨Ю ╨Ш╨Ь╨п ╨Я╨Ю╨Ы╨п ---
+    # ╨С╤Л╨╗╨╛: curent_posses
     possession_indicator = models.PositiveIntegerField(
         default=0,
         help_text="Indicates possession: 0=None/Start, 1=Home, 2=Away",
-        verbose_name="Possession Indicator" # Добавил verbose_name
+        verbose_name="Possession Indicator" # ╨Ф╨╛╨▒╨░╨▓╨╕╨╗ verbose_name
     )
     # --------------------------
 
@@ -46,25 +46,40 @@ class Match(models.Model):
         db_index=True
     )
 
-    # Составы команд
+    # ╨б╨╛╤Б╤В╨░╨▓╤Л ╨║╨╛╨╝╨░╨╜╨┤
     home_lineup = models.JSONField(null=True, blank=True)
     away_lineup = models.JSONField(null=True, blank=True)
 
-    # Тактики команд
+    # ╨в╨░╨║╤В╨╕╨║╨╕ ╨║╨╛╨╝╨░╨╜╨┤
     home_tactic = models.CharField(max_length=20, default='balanced')
     away_tactic = models.CharField(max_length=20, default='balanced')
 
-    # Текущая минута матча
+    # ╨в╨╡╨║╤Г╤Й╨░╤П ╨╝╨╕╨╜╤Г╤В╨░ ╨╝╨░╤В╤З╨░
     current_minute = models.PositiveIntegerField(default=1)
 
-    # Метка времени начала матча и последнего обновления минуты
+    # ╨Ь╨╡╤В╨║╨░ ╨▓╤А╨╡╨╝╨╡╨╜╨╕ ╨╜╨░╤З╨░╨╗╨░ ╨╝╨░╤В╤З╨░ ╨╕ ╨┐╨╛╤Б╨╗╨╡╨┤╨╜╨╡╨│╨╛ ╨╛╨▒╨╜╨╛╨▓╨╗╨╡╨╜╨╕╤П ╨╝╨╕╨╜╤Г╤В╤Л
     started_at = models.DateTimeField(null=True, blank=True)
     last_minute_update = models.DateTimeField(null=True, blank=True)
+    realtime_started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Timestamp when the current broadcast minute began."
+    )
+    realtime_last_broadcast_minute = models.PositiveIntegerField(
+        default=0,
+        help_text="Last game minute that was expanded into a broadcast timeline.",
+        db_column='match_last_broadcast_minute'
+    )
+    minute_building = models.BooleanField(
+        default=False,
+        help_text="Internal lock that prevents concurrent timeline generation."
+    )
 
-    # Флаг ожидания перехода на следующую минуту
+    # ╨д╨╗╨░╨│ ╨╛╨╢╨╕╨┤╨░╨╜╨╕╤П ╨┐╨╡╤А╨╡╤Е╨╛╨┤╨░ ╨╜╨░ ╤Б╨╗╨╡╨┤╤Г╤О╤Й╤Г╤О ╨╝╨╕╨╜╤Г╤В╤Г
     waiting_for_next_minute = models.BooleanField(default=False)
 
-    # Текущий игрок, владеющий мячом, и текущая зона
+    # ╨в╨╡╨║╤Г╤Й╨╕╨╣ ╨╕╨│╤А╨╛╨║, ╨▓╨╗╨░╨┤╨╡╤О╤Й╨╕╨╣ ╨╝╤П╤З╨╛╨╝, ╨╕ ╤В╨╡╨║╤Г╤Й╨░╤П ╨╖╨╛╨╜╨░
     current_player_with_ball = models.ForeignKey(
         Player,
         on_delete=models.SET_NULL,
@@ -87,15 +102,15 @@ class Match(models.Model):
         verbose_name="Current Zone"
     )
 
-    # Статистика матча
+    # ╨б╤В╨░╤В╨╕╤Б╤В╨╕╨║╨░ ╨╝╨░╤В╤З╨░
     st_shoots = models.PositiveIntegerField(default=0, verbose_name="Shoots")
     st_passes = models.PositiveIntegerField(default=0, verbose_name="Passes")
-    # --- ИСПРАВЛЕНО ИМЯ ПОЛЯ ---
-    # Было: st_posessions
-    st_possessions = models.PositiveIntegerField(default=0, verbose_name="Possessions (%)") # Уточнил
+    # --- ╨Ш╨б╨Я╨а╨Р╨Т╨Ы╨Х╨Э╨Ю ╨Ш╨Ь╨п ╨Я╨Ю╨Ы╨п ---
+    # ╨С╤Л╨╗╨╛: st_posessions
+    st_possessions = models.PositiveIntegerField(default=0, verbose_name="Possessions (%)") # ╨г╤В╨╛╤З╨╜╨╕╨╗
     # --------------------------
     st_fouls = models.PositiveIntegerField(default=0, verbose_name="Fouls")
-    # Поле для травм - просто счетчик? Если да, ок. Если нужны детали, лучше JSONField или отдельная модель.
+    # ╨Я╨╛╨╗╨╡ ╨┤╨╗╤П ╤В╤А╨░╨▓╨╝ - ╨┐╤А╨╛╤Б╤В╨╛ ╤Б╤З╨╡╤В╤З╨╕╨║? ╨Х╤Б╨╗╨╕ ╨┤╨░, ╨╛╨║. ╨Х╤Б╨╗╨╕ ╨╜╤Г╨╢╨╜╤Л ╨┤╨╡╤В╨░╨╗╨╕, ╨╗╤Г╤З╤И╨╡ JSONField ╨╕╨╗╨╕ ╨╛╤В╨┤╨╡╨╗╤М╨╜╨░╤П ╨╝╨╛╨┤╨╡╨╗╤М.
     st_injury = models.PositiveIntegerField(default=0, verbose_name="Injuries Count")
 
     # Momentum and pass streaks
@@ -105,13 +120,13 @@ class Match(models.Model):
     away_pass_streak = models.PositiveIntegerField(default=0)
 
     def __str__(self):
-        dt_str = timezone.localtime(self.datetime).strftime('%d.%m.%Y %H:%M') if self.datetime else "N/A" # Локальное время
-        return f"{self.home_team.name} vs {self.away_team.name} ({dt_str}) - {self.get_status_display()}" # Используем get_status_display
+        dt_str = timezone.localtime(self.datetime).strftime('%d.%m.%Y %H:%M') if self.datetime else "N/A" # ╨Ы╨╛╨║╨░╨╗╤М╨╜╨╛╨╡ ╨▓╤А╨╡╨╝╤П
+        return f"{self.home_team.name} vs {self.away_team.name} ({dt_str}) - {self.get_status_display()}" # ╨Ш╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╨╝ get_status_display
 
     class Meta:
         verbose_name = "Match"
         verbose_name_plural = "Matches"
-        ordering = ['-datetime'] # Сортировка по дате по умолчанию
+        ordering = ['-datetime'] # ╨б╨╛╤А╤В╨╕╤А╨╛╨▓╨║╨░ ╨┐╨╛ ╨┤╨░╤В╨╡ ╨┐╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О
 
 
 class MatchEvent(models.Model):
@@ -139,7 +154,7 @@ class MatchEvent(models.Model):
         ],
         db_index=True
     )
-    # Основной игрок события
+    # ╨Ю╤Б╨╜╨╛╨▓╨╜╨╛╨╣ ╨╕╨│╤А╨╛╨║ ╤Б╨╛╨▒╤Л╤В╨╕╤П
     player = models.ForeignKey(
         Player,
         on_delete=models.SET_NULL,
@@ -147,7 +162,7 @@ class MatchEvent(models.Model):
         blank=True,
         related_name='match_events'
     )
-    # Второй игрок, связанный с событием
+    # ╨Т╤В╨╛╤А╨╛╨╣ ╨╕╨│╤А╨╛╨║, ╤Б╨▓╤П╨╖╨░╨╜╨╜╤Л╨╣ ╤Б ╤Б╨╛╨▒╤Л╤В╨╕╨╡╨╝
     related_player = models.ForeignKey(
         Player,
         null=True,
@@ -165,18 +180,18 @@ class MatchEvent(models.Model):
         return f"M{self.match.id}-Min{self.minute}: {self.get_event_type_display()}{player_info}{related_info}"
 
     class Meta:
-        # Сортировка сначала по минуте, потом по времени создания
+        # ╨б╨╛╤А╤В╨╕╤А╨╛╨▓╨║╨░ ╤Б╨╜╨░╤З╨░╨╗╨░ ╨┐╨╛ ╨╝╨╕╨╜╤Г╤В╨╡, ╨┐╨╛╤В╨╛╨╝ ╨┐╨╛ ╨▓╤А╨╡╨╝╨╡╨╜╨╕ ╤Б╨╛╨╖╨┤╨░╨╜╨╕╤П
         ordering = ['match', 'minute', 'timestamp']
         verbose_name = "Match Event"
         verbose_name_plural = "Match Events"
         indexes = [
-            models.Index(fields=['match', 'minute']),  # Индекс для оптимизации запросов событий по матчу и минуте
+            models.Index(fields=['match', 'minute']),  # ╨Ш╨╜╨┤╨╡╨║╤Б ╨┤╨╗╤П ╨╛╨┐╤В╨╕╨╝╨╕╨╖╨░╤Ж╨╕╨╕ ╨╖╨░╨┐╤А╨╛╤Б╨╛╨▓ ╤Б╨╛╨▒╤Л╤В╨╕╨╣ ╨┐╨╛ ╨╝╨░╤В╤З╤Г ╨╕ ╨╝╨╕╨╜╤Г╤В╨╡
         ]
 
 
 class PlayerRivalry(models.Model):
     """
-    Модель для отслеживания соперничества между игроками
+    ╨Ь╨╛╨┤╨╡╨╗╤М ╨┤╨╗╤П ╨╛╤В╤Б╨╗╨╡╨╢╨╕╨▓╨░╨╜╨╕╤П ╤Б╨╛╨┐╨╡╤А╨╜╨╕╤З╨╡╤Б╤В╨▓╨░ ╨╝╨╡╨╢╨┤╤Г ╨╕╨│╤А╨╛╨║╨░╨╝╨╕
     """
     RIVALRY_TYPES = [
         ('competitive', 'Competitive Rivalry'),
@@ -216,7 +231,7 @@ class PlayerRivalry(models.Model):
     last_interaction = models.DateField(null=True, blank=True)
     interaction_count = models.PositiveIntegerField(default=0)
     
-    # Влияние на игру
+    # ╨Т╨╗╨╕╤П╨╜╨╕╨╡ ╨╜╨░ ╨╕╨│╤А╤Г
     aggression_modifier = models.FloatField(
         default=0.0,
         help_text="Modifier for aggression when playing against rival (-1.0 to 1.0)"
@@ -241,7 +256,7 @@ class PlayerRivalry(models.Model):
 
 class TeamChemistry(models.Model):
     """
-    Модель для отслеживания химии между игроками команды
+    ╨Ь╨╛╨┤╨╡╨╗╤М ╨┤╨╗╤П ╨╛╤В╤Б╨╗╨╡╨╢╨╕╨▓╨░╨╜╨╕╤П ╤Е╨╕╨╝╨╕╨╕ ╨╝╨╡╨╢╨┤╤Г ╨╕╨│╤А╨╛╨║╨░╨╝╨╕ ╨║╨╛╨╝╨░╨╜╨┤╤Л
     """
     CHEMISTRY_TYPES = [
         ('friendship', 'Friendship'),
@@ -273,7 +288,7 @@ class TeamChemistry(models.Model):
     last_positive_interaction = models.DateField(null=True, blank=True)
     positive_interactions = models.PositiveIntegerField(default=0)
     
-    # Влияние на игру
+    # ╨Т╨╗╨╕╤П╨╜╨╕╨╡ ╨╜╨░ ╨╕╨│╤А╤Г
     passing_bonus = models.FloatField(
         default=0.0,
         help_text="Bonus for passes between these players (0.0 to 1.0)"
@@ -298,7 +313,7 @@ class TeamChemistry(models.Model):
 
 class CharacterEvolution(models.Model):
     """
-    Модель для отслеживания эволюции характера игрока
+    ╨Ь╨╛╨┤╨╡╨╗╤М ╨┤╨╗╤П ╨╛╤В╤Б╨╗╨╡╨╢╨╕╨▓╨░╨╜╨╕╤П ╤Н╨▓╨╛╨╗╤О╤Ж╨╕╨╕ ╤Е╨░╤А╨░╨║╤В╨╡╤А╨░ ╨╕╨│╤А╨╛╨║╨░
     """
     EVOLUTION_TRIGGERS = [
         ('goal_scored', 'Goal Scored'),
@@ -328,7 +343,7 @@ class CharacterEvolution(models.Model):
     new_value = models.IntegerField()
     change_amount = models.IntegerField()
     
-    # Контекст изменения
+    # ╨Ъ╨╛╨╜╤В╨╡╨║╤Б╤В ╨╕╨╖╨╝╨╡╨╜╨╡╨╜╨╕╤П
     match = models.ForeignKey(
         Match,
         on_delete=models.CASCADE,
@@ -356,12 +371,12 @@ class CharacterEvolution(models.Model):
         ]
     
     def __str__(self):
-        return f"{self.player.full_name}: {self.trait_changed} {self.old_value}→{self.new_value}"
+        return f"{self.player.full_name}: {self.trait_changed} {self.old_value}тЖТ{self.new_value}"
 
 
 class NarrativeEvent(models.Model):
     """
-    Модель для хранения нарративных событий и историй
+    ╨Ь╨╛╨┤╨╡╨╗╤М ╨┤╨╗╤П ╤Е╤А╨░╨╜╨╡╨╜╨╕╤П ╨╜╨░╤А╤А╨░╤В╨╕╨▓╨╜╤Л╤Е ╤Б╨╛╨▒╤Л╤В╨╕╨╣ ╨╕ ╨╕╤Б╤В╨╛╤А╨╕╨╣
     """
     EVENT_TYPES = [
         ('rivalry_clash', 'Rivalry Clash'),
@@ -389,7 +404,7 @@ class NarrativeEvent(models.Model):
         default='minor'
     )
     
-    # Участники события
+    # ╨г╤З╨░╤Б╤В╨╜╨╕╨║╨╕ ╤Б╨╛╨▒╤Л╤В╨╕╤П
     primary_player = models.ForeignKey(
         Player,
         on_delete=models.CASCADE,
@@ -403,7 +418,7 @@ class NarrativeEvent(models.Model):
         related_name='secondary_narrative_events'
     )
     
-    # Контекст
+    # ╨Ъ╨╛╨╜╤В╨╡╨║╤Б╤В
     match = models.ForeignKey(
         Match,
         on_delete=models.CASCADE,
@@ -411,11 +426,11 @@ class NarrativeEvent(models.Model):
     )
     minute = models.PositiveIntegerField()
     
-    # Содержание
+    # ╨б╨╛╨┤╨╡╤А╨╢╨░╨╜╨╕╨╡
     title = models.CharField(max_length=200)
     description = models.TextField()
     
-    # Метаданные
+    # ╨Ь╨╡╤В╨░╨┤╨░╨╜╨╜╤Л╨╡
     timestamp = models.DateTimeField(auto_now_add=True)
     
     class Meta:

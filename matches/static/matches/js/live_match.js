@@ -1,13 +1,16 @@
 // matches/static/matches/js/live_match.js
 // ----------------------------------------------------------------------------
-// Лайв‑страница матча: WebSocket‑клиент, обработка статистики, моментума и т.д.
+// ╨Ы╨░╨╣╨▓тАС╤Б╤В╤А╨░╨╜╨╕╤Ж╨░ ╨╝╨░╤В╤З╨░: WebSocketтАС╨║╨╗╨╕╨╡╨╜╤В, ╨╛╨▒╤А╨░╨▒╨╛╤В╨║╨░ ╤Б╤В╨░╤В╨╕╤Б╤В╨╕╨║╨╕, ╨╝╨╛╨╝╨╡╨╜╤В╤Г╨╝╨░ ╨╕ ╤В.╨┤.
 // ----------------------------------------------------------------------------
 
-// --- Переменные верхнего уровня ------------------------------------------------
-let matchId = null;            // устанавливается после DOMContentLoaded
+// --- ╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╤Л╨╡ ╨▓╨╡╤А╤Е╨╜╨╡╨│╨╛ ╤Г╤А╨╛╨▓╨╜╤П ------------------------------------------------
+let matchId = null;            // ╤Г╤Б╤В╨░╨╜╨░╨▓╨╗╨╕╨▓╨░╨╡╤В╤Б╤П ╨┐╨╛╤Б╨╗╨╡ DOMContentLoaded
 const EVENT_DELAY_MS = 1000;
+const minutesMap = new Map();
+const seenEventIds = new Set();
+const eventsBox = document.querySelector('.events-box');
 
-// --- Утилита получение CSRF ----------------------------------------------------
+// --- ╨г╤В╨╕╨╗╨╕╤В╨░ ╨┐╨╛╨╗╤Г╤З╨╡╨╜╨╕╨╡ CSRF ----------------------------------------------------
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -23,7 +26,7 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// --- Обработчик кнопки замены --------------------------------------------------
+// --- ╨Ю╨▒╤А╨░╨▒╨╛╤В╤З╨╕╨║ ╨║╨╜╨╛╨┐╨║╨╕ ╨╖╨░╨╝╨╡╨╜╤Л --------------------------------------------------
 const replaceButton = document.querySelector('#replace-player');
 if (replaceButton) {
     replaceButton.addEventListener('click', () => {
@@ -51,7 +54,7 @@ if (replaceButton) {
     });
 }
 
-// --- Основная логика -----------------------------------------------------------
+// --- ╨Ю╤Б╨╜╨╛╨▓╨╜╨░╤П ╨╗╨╛╨│╨╕╨║╨░ -----------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
     const matchInfoArea = document.getElementById('matchInfoArea');
     if (!matchInfoArea) {
@@ -64,16 +67,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let   currentStatus   = initialStatus;
     const isLive          = initialStatus === 'in_progress';
 
-    // Добавлено: ID команд для маппинга possessing_team
+    // ╨Ф╨╛╨▒╨░╨▓╨╗╨╡╨╜╨╛: ID ╨║╨╛╨╝╨░╨╜╨┤ ╨┤╨╗╤П ╨╝╨░╨┐╨┐╨╕╨╜╨│╨░ possessing_team
     const homeTeamId = parseInt(matchInfoArea.dataset.homeTeamId);
     const awayTeamId = parseInt(matchInfoArea.dataset.awayTeamId);
 
-    // DOM‑элементы, используемые повторно
+    // DOMтАС╤Н╨╗╨╡╨╝╨╡╨╜╤В╤Л, ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╨╝╤Л╨╡ ╨┐╨╛╨▓╤В╨╛╤А╨╜╨╛
     const timeElement        = document.getElementById('matchTime');
     const homeScoreElement   = document.querySelector('.home-score');
     const awayScoreElement   = document.querySelector('.away-score');
     const eventsContainer    = document.getElementById('originalEvents');
-    const eventsBox          = eventsContainer ? eventsContainer.querySelector('.events-box') : null;
     const statBox            = document.querySelector('.stat-box');
     const homeMomentumIcon   = document.getElementById('homeMomentumIcon');
     const awayMomentumIcon   = document.getElementById('awayMomentumIcon');
@@ -83,23 +85,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const nextMinuteBtn      = document.getElementById('nextMinuteBtn');
     const pitchEl            = document.getElementById('pitch');
 
-    // --- Защитные проверки на наличие ключевых узлов --------------------------
+    // --- ╨Ч╨░╤Й╨╕╤В╨╜╤Л╨╡ ╨┐╤А╨╛╨▓╨╡╤А╨║╨╕ ╨╜╨░ ╨╜╨░╨╗╨╕╤З╨╕╨╡ ╨║╨╗╤О╤З╨╡╨▓╤Л╤Е ╤Г╨╖╨╗╨╛╨▓ --------------------------
     if (!timeElement)      console.error('Element #matchTime not found!');
     if (!homeScoreElement) console.error('Element .home-score not found!');
     if (!awayScoreElement) console.error('Element .away-score not found!');
-    if (!eventsBox)        console.error('Element .events-box inside #originalEvents not found!');
+    if (!eventsBox)        console.error('Element .events-box not found!');
     if (!statBox)          console.error('Element .stat-box not found!');
 
     //---------------------------------------------------------------------------
-    // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+    // ╨Т╨б╨Я╨Ю╨Ь╨Ю╨У╨Р╨в╨Х╨Ы╨м╨Э╨л╨Х ╨д╨г╨Э╨Ъ╨ж╨Ш╨Ш
     //---------------------------------------------------------------------------
 
-    // Показ сообщений пользователю (упрощённое, выводит в консоль)
+    // ╨Я╨╛╨║╨░╨╖ ╤Б╨╛╨╛╨▒╤Й╨╡╨╜╨╕╨╣ ╨┐╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤О (╤Г╨┐╤А╨╛╤Й╤С╨╜╨╜╨╛╨╡, ╨▓╤Л╨▓╨╛╨┤╨╕╤В ╨▓ ╨║╨╛╨╜╤Б╨╛╨╗╤М)
     function showMessage(text, type = 'info') {
         console.log(`MESSAGE (${type}): ${text}`);
     }
 
-    // Маппинг абстрактных зон на физические (с зеркалированием)
+    // ╨Ь╨░╨┐╨┐╨╕╨╜╨│ ╨░╨▒╤Б╤В╤А╨░╨║╤В╨╜╤Л╤Е ╨╖╨╛╨╜ ╨╜╨░ ╤Д╨╕╨╖╨╕╤З╨╡╤Б╨║╨╕╨╡ (╤Б ╨╖╨╡╤А╨║╨░╨╗╨╕╤А╨╛╨▓╨░╨╜╨╕╨╡╨╝)
     const homeZoneMap = {
         'GK': 'goal-left',
         'DEF-R': 'left-def-top',
@@ -138,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'FWD-R': 'left-def-bottom',
     };
 
-    // Функция для получения физической зоны
+    // ╨д╤Г╨╜╨║╤Ж╨╕╤П ╨┤╨╗╤П ╨┐╨╛╨╗╤Г╤З╨╡╨╜╨╕╤П ╤Д╨╕╨╖╨╕╤З╨╡╤Б╨║╨╛╨╣ ╨╖╨╛╨╜╤Л
     function getPhysicalZone(abstractZone, possessingTeamId) {
         if (!abstractZone || possessingTeamId === undefined) return null;
         const isHome = possessingTeamId === homeTeamId;
@@ -147,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return map[key] || null;
     }
 
-    // Выделение зоны (теперь работает с физической зоной)
+    // ╨Т╤Л╨┤╨╡╨╗╨╡╨╜╨╕╨╡ ╨╖╨╛╨╜╤Л (╤В╨╡╨┐╨╡╤А╤М ╤А╨░╨▒╨╛╤В╨░╨╡╤В ╤Б ╤Д╨╕╨╖╨╕╤З╨╡╤Б╨║╨╛╨╣ ╨╖╨╛╨╜╨╛╨╣)
     function highlight(physicalZone) {
         if (!pitchEl || !physicalZone) return;
         document.querySelectorAll('#pitch .zone').forEach(z => {
@@ -155,12 +157,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Показ иконки события в зоне (теперь с физической зоной)
+    // ╨Я╨╛╨║╨░╨╖ ╨╕╨║╨╛╨╜╨║╨╕ ╤Б╨╛╨▒╤Л╤В╨╕╤П ╨▓ ╨╖╨╛╨╜╨╡ (╤В╨╡╨┐╨╡╤А╤М ╤Б ╤Д╨╕╨╖╨╕╤З╨╡╤Б╨║╨╛╨╣ ╨╖╨╛╨╜╨╛╨╣)
     function showIcon(physicalZone, type) {
         if (!pitchEl || !physicalZone) return;
         const icons = {
-            goal: '⚽', shot: '⚽', shot_miss: '❌', pass: '➡️',
-            interception: '🔄', foul: '⚠️', counterattack: '⚡', dribble: '↕️'
+            goal: 'тЪ╜', shot: 'тЪ╜', shot_miss: 'тЭМ', pass: 'тЮбя╕П',
+            interception: 'ЁЯФД', foul: 'тЪая╕П', counterattack: 'тЪб', dribble: 'тЖХя╕П'
         };
         const cell = document.querySelector(`#pitch .zone[data-zone="${physicalZone}"]`);
         if (!cell) return;
@@ -176,10 +178,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setMomentum(iconEl, value, valueEl) {
-        // Обновляем значение (если элемент есть)
+        // ╨Ю╨▒╨╜╨╛╨▓╨╗╤П╨╡╨╝ ╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡ (╨╡╤Б╨╗╨╕ ╤Н╨╗╨╡╨╝╨╡╨╜╤В ╨╡╤Б╤В╤М)
         if (valueEl) valueEl.textContent = value;
 
-        // Обновляем иконку в зависимости от диапазона
+        // ╨Ю╨▒╨╜╨╛╨▓╨╗╤П╨╡╨╝ ╨╕╨║╨╛╨╜╨║╤Г ╨▓ ╨╖╨░╨▓╨╕╤Б╨╕╨╝╨╛╤Б╤В╨╕ ╨╛╤В ╨┤╨╕╨░╨┐╨░╨╖╨╛╨╜╨░
         if (!iconEl) return;
 
         iconEl.classList.remove(
@@ -189,25 +191,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (value >= -10 && value <= 10) {
             iconEl.classList.add('momentum-neutral');
-            iconEl.textContent = '😐';
+            iconEl.textContent = 'ЁЯШР';
         } else if (value > 10 && value <= 30) {
             iconEl.classList.add('momentum-positive');
-            iconEl.textContent = '😊';
+            iconEl.textContent = 'ЁЯШК';
         } else if (value > 30 && value <= 60) {
             iconEl.classList.add('momentum-hot');
-            iconEl.textContent = '🔥';
+            iconEl.textContent = 'ЁЯФе';
         } else if (value > 60) {
             iconEl.classList.add('momentum-unstoppable');
-            iconEl.textContent = '🚀';
+            iconEl.textContent = 'ЁЯЪА';
         } else if (value < -10 && value >= -30) {
             iconEl.classList.add('momentum-nervous');
-            iconEl.textContent = '😟';
+            iconEl.textContent = 'ЁЯШЯ';
         } else if (value < -30 && value >= -60) {
             iconEl.classList.add('momentum-demoralized');
-            iconEl.textContent = '😢';
+            iconEl.textContent = 'ЁЯШв';
         } else if (value < -60) {
             iconEl.classList.add('momentum-panic');
-            iconEl.textContent = '😱';
+            iconEl.textContent = 'ЁЯШ▒';
         }
     }
 
@@ -221,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateStatistics(data) {
         if (!statBox) return;
 
-        // Обновляем статистику по классам
+        // ╨Ю╨▒╨╜╨╛╨▓╨╗╤П╨╡╨╝ ╤Б╤В╨░╤В╨╕╤Б╤В╨╕╨║╤Г ╨┐╨╛ ╨║╨╗╨░╤Б╤Б╨░╨╝
         const statMap = {
             'st_passes': 'stat-passes',
             'st_shoots': 'stat-shoots',
@@ -239,12 +241,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Специальная обработка для травм
+        // ╨б╨┐╨╡╤Ж╨╕╨░╨╗╤М╨╜╨░╤П ╨╛╨▒╤А╨░╨▒╨╛╤В╨║╨░ ╨┤╨╗╤П ╤В╤А╨░╨▓╨╝
         if (data.st_injury !== undefined && injuryActionForm) {
             const injuryBadge = document.getElementById('inj');
             if (injuryBadge) injuryBadge.textContent = data.st_injury;
             
-            // Показываем форму замены только для команды пользователя
+            // ╨Я╨╛╨║╨░╨╖╤Л╨▓╨░╨╡╨╝ ╤Д╨╛╤А╨╝╤Г ╨╖╨░╨╝╨╡╨╜╤Л ╤В╨╛╨╗╤М╨║╨╛ ╨┤╨╗╤П ╨║╨╛╨╝╨░╨╜╨┤╤Л ╨┐╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤П
             const userClubId = parseInt(document.querySelector('[data-user-club-id]')?.dataset.userClubId || '0');
             if (data.st_injury > 0 && (userClubId === homeTeamId || userClubId === awayTeamId)) {
                 injuryActionForm.style.display = 'block';
@@ -252,59 +254,280 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function addEventToList(evt) {
-        if (!eventsBox) return;
+    const eventIconMap = {
+    goal: '⚽',
+    counterattack: '⚡',
+    interception: '🔄',
+    shot_miss: '❌',
+    pass: '➡️',
+    foul: '⚠️',
+    injury_concern: '✚',
+};
 
-        // DEBUG: Логируем полученное событие
-        console.log('=== DEBUG: addEventToList ===');
-        console.log('Event received:', evt);
-        console.log('Event type:', evt.event_type);
-        console.log('Personality reason:', evt.personality_reason);
-        console.log('===========================');
+let currentOpenMinuteKey = null;
 
-        const item = document.createElement('div');
-        item.className = 'list-group-item new-event';
+function eventKey(evt) {
+    if (!evt) return null;
+    if (evt.id !== undefined && evt.id !== null) {
+        return String(evt.id);
+    }
+    const minute = evt.minute ?? '';
+    const type = evt.event_type || '';
+    const description = evt.description || '';
+    const player = evt.player_name || '';
+    const related = evt.related_player_name || '';
+    return `${minute}|${type}|${description}|${player}|${related}`;
+}
 
-        // Иконка события
-        const iconMap = {
-            goal: '⚽', counterattack: '⚡', interception: '🔄',
-            shot_miss: '❌', pass: '➡️', foul: '⚠️', injury_concern: '✚'
-        };
-        const icon = iconMap[evt.event_type] || 'M';
+function getComparableMinute(minute) {
+    if (minute === null || minute === undefined) return -Infinity;
+    const str = String(minute);
+    if (str.includes('+')) {
+        const [base, extra] = str.split('+');
+        const baseValue = parseInt(base, 10) || 0;
+        const extraValue = parseInt(extra, 10) || 0;
+        return baseValue + extraValue / 100;
+    }
+    const numeric = parseInt(str, 10);
+    return Number.isNaN(numeric) ? -Infinity : numeric;
+}
 
-        // Формируем HTML события
-        let html = `<strong>${evt.minute}'</strong> <span class="event-icon">${icon}</span> ${evt.description}`;
-        
-        // Добавляем информацию об игроках
-        if (evt.player_name) {
-            html += ` <small class="text-muted">(${evt.player_name}`;
-            if (evt.related_player_name) {
-                html += ` → ${evt.related_player_name}`;
-            }
-            html += `)</small>`;
-        }
-        
-        // Добавляем информацию о влиянии черты характера
-        if (evt.personality_reason) {
-            console.log('DEBUG: Adding personality_reason to HTML:', evt.personality_reason);
-            html += `<div class="personality-reason mt-1"><small class="text-secondary fst-italic">(${evt.personality_reason})</small></div>`;
+function currentScoreText() {
+    const home = homeScoreElement ? homeScoreElement.textContent.trim() : '';
+    const away = awayScoreElement ? awayScoreElement.textContent.trim() : '';
+    return `${home}-${away}`;
+}
+
+function scoreFromPayload(data) {
+    if (!data || data.home_score === undefined || data.away_score === undefined) {
+        return null;
+    }
+    if (data.home_score === null || data.away_score === null) {
+        return null;
+    }
+    return `${data.home_score}-${data.away_score}`;
+}
+
+function collapseCard(card) {
+    if (!card) return;
+    const body = card.querySelector('.minute-body');
+    if (body) body.style.display = 'none';
+    card.classList.add('collapsed');
+    card.classList.remove('expanded');
+}
+
+function expandCard(card) {
+    if (!card) return;
+    const body = card.querySelector('.minute-body');
+    if (body) body.style.display = '';
+    card.classList.add('expanded');
+    card.classList.remove('collapsed');
+}
+
+function openMinuteCard(minuteKey) {
+    minutesMap.forEach((card, key) => {
+        if (key === minuteKey) {
+            expandCard(card);
         } else {
-            console.log('DEBUG: No personality_reason found in event');
+            collapseCard(card);
         }
+    });
+    currentOpenMinuteKey = minuteKey;
+}
 
-        item.innerHTML = html;
+function toggleMinuteCard(minuteKey) {
+    const card = minutesMap.get(minuteKey);
+    if (!card) return;
+    const isCollapsed = card.classList.contains('collapsed');
+    if (isCollapsed) {
+        openMinuteCard(minuteKey);
+    } else {
+        collapseCard(card);
+        currentOpenMinuteKey = null;
+    }
+}
 
-        // Добавляем в начало списка и анимируем
-        eventsBox.insertBefore(item, eventsBox.firstChild);
-        requestAnimationFrame(() => {
-            item.classList.add('new-event-visible');
-        });
+function collapseOldMinutes(minute) {
+    if (minute === undefined || minute === null) return;
+    openMinuteCard(String(minute));
+}
 
-        // Прокручиваем к новому событию
-        eventsContainer.scrollTop = 0;
+function ensureMinuteCard(minute, scoreText) {
+    if (!eventsBox) return null;
+    const minuteKey = minute !== undefined && minute !== null ? String(minute) : '0';
+    let card = minutesMap.get(minuteKey);
+    const displayScore = scoreText ?? currentScoreText();
+
+    if (!card) {
+        card = document.createElement('div');
+        card.className = 'minute-card list-group mb-3 shadow-sm border border-light rounded';
+        card.dataset.minute = minuteKey;
+
+        const header = document.createElement('div');
+        header.className = 'minute-header d-flex justify-content-between align-items-center';
+
+        const label = document.createElement('strong');
+        label.className = 'minute-label';
+        label.textContent = minuteKey + "'";
+
+        const scoreEl = document.createElement('span');
+        scoreEl.className = 'minute-score';
+        scoreEl.textContent = displayScore;
+
+        header.append(label, scoreEl);
+        header.addEventListener('click', () => toggleMinuteCard(minuteKey));
+
+        const body = document.createElement('div');
+        body.className = 'minute-body list-group';
+
+        card.append(header, body);
+        const existingCards = Array.from(eventsBox.querySelectorAll('.minute-card'));
+        const newValue = getComparableMinute(minuteKey);
+        let inserted = false;
+        for (const existing of existingCards) {
+            const existingValue = getComparableMinute(existing.dataset.minute);
+            if (newValue > existingValue) {
+                eventsBox.insertBefore(card, existing);
+                inserted = true;
+                break;
+            }
+        }
+        if (!inserted) {
+            eventsBox.appendChild(card);
+        }
+        minutesMap.set(minuteKey, card);
+        collapseCard(card);
+    } else if (displayScore && scoreText !== undefined && scoreText !== null) {
+        const scoreEl = card.querySelector('.minute-score');
+        if (scoreEl) scoreEl.textContent = displayScore;
     }
 
-    const eventQueue = [];
+    return card;
+}
+
+function appendEventToMinute(minute, evt, scoreText) {
+    const key = eventKey(evt);
+    if (key && seenEventIds.has(key)) {
+        return false;
+    }
+    const card = ensureMinuteCard(minute, scoreText);
+    if (!card) return false;
+    const body = card.querySelector('.minute-body');
+    if (!body) return false;
+
+    if (key) seenEventIds.add(key);
+
+    const item = document.createElement('div');
+    item.className = 'list-group-item event-row';
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'd-flex align-items-start';
+
+    const minuteEl = document.createElement('div');
+    minuteEl.className = 'flex-shrink-0 me-2 text-muted fw-semibold';
+    const minuteLabel = evt.minute !== undefined && evt.minute !== null ? String(evt.minute) : '';
+    minuteEl.textContent = minuteLabel
+        ? (/\d$/.test(minuteLabel) ? `${minuteLabel}'` : minuteLabel)
+        : '';
+
+    const content = document.createElement('div');
+    content.className = 'flex-grow-1';
+
+    const row = document.createElement('div');
+    row.className = 'd-flex align-items-center mb-1';
+
+    const iconEl = document.createElement('span');
+    iconEl.className = 'event-icon me-2';
+    iconEl.textContent = eventIconMap[evt.event_type] || 'M';
+
+    const descEl = document.createElement('span');
+    descEl.className = 'event-description';
+    descEl.textContent = evt.description || '';
+
+    row.append(iconEl, descEl);
+    content.append(row);
+
+    if (evt.player_name) {
+        const playersEl = document.createElement('div');
+        playersEl.className = 'text-muted small';
+        playersEl.textContent = '(' + evt.player_name + (evt.related_player_name ? ' → ' + evt.related_player_name : '') + ')';
+        content.append(playersEl);
+    }
+
+    if (evt.personality_reason) {
+        const personalityEl = document.createElement('div');
+        personalityEl.className = 'personality-reason mt-1';
+        const small = document.createElement('small');
+        small.className = 'text-secondary fst-italic';
+        small.textContent = '(' + evt.personality_reason + ')';
+        personalityEl.append(small);
+        content.append(personalityEl);
+    }
+
+    wrapper.append(minuteEl, content);
+    item.append(wrapper);
+    body.appendChild(item);
+    return true;
+}
+function normalizeEventPayload(raw) {
+    if (!raw) return null;
+    return {
+        id: raw.id ?? null,
+        minute: raw.minute,
+        event_type: raw.event_type || raw.type || null,
+        description: raw.description,
+        personality_reason: raw.personality_reason,
+        player_name: raw.player_name || (raw.player && raw.player.name) || null,
+        related_player_name: raw.related_player_name || (raw.related_player && raw.related_player.name) || null,
+    };
+}
+function renderFullEventSnapshot(events, payloadState) {
+    if (!eventsBox) return;
+    eventsBox.innerHTML = '';
+    minutesMap.clear();
+    seenEventIds.clear();
+    currentOpenMinuteKey = null;
+
+    if (!Array.isArray(events) || events.length === 0) {
+        eventsBox.innerHTML = '<div class="text-muted small py-3 text-center">Waiting for match events...</div>';
+        return;
+    }
+
+    const grouped = new Map();
+    events.forEach(raw => {
+        const evt = normalizeEventPayload(raw);
+        if (!evt) return;
+        const key = evt.minute !== undefined && evt.minute !== null ? String(evt.minute) : '0';
+        if (!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key).push(evt);
+    });
+
+    const sortedKeys = Array.from(grouped.keys()).sort((a, b) => getComparableMinute(b) - getComparableMinute(a));
+    const scoreHint = scoreFromPayload(payloadState) || currentScoreText();
+
+    sortedKeys.forEach(minuteKey => {
+        ensureMinuteCard(minuteKey, scoreHint);
+        grouped.get(minuteKey).forEach(evt => appendEventToMinute(minuteKey, evt, scoreHint));
+    });
+
+    if (sortedKeys.length > 0) {
+        collapseOldMinutes(sortedKeys[0]);
+    }
+}
+
+
+
+
+    function addEventToList(evt, payload) {
+        if (!eventsBox || !evt) return;
+        const scoreHint = scoreFromPayload(payload) || currentScoreText();
+        const appended = appendEventToMinute(evt.minute, evt, scoreHint);
+        if (appended) {
+            collapseOldMinutes(evt.minute);
+        }
+    }
+
+const eventQueue = [];
     let processingQueue = false;
 
     function processQueue() {
@@ -314,8 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         processingQueue = true;
         const item = eventQueue.shift();
-        addEventToList(item.event);
-        // Добавлено: маппинг и выделение/иконка с учетом possessing_team
+        addEventToList(item.event, item.data);
         if (item.data.current_zone && item.data.possessing_team_id !== undefined) {
             const physical = getPhysicalZone(item.data.current_zone, item.data.possessing_team_id);
             if (physical) {
@@ -326,18 +548,47 @@ document.addEventListener('DOMContentLoaded', () => {
         if (item.event.event_type === 'goal') {
             if (item.data.home_score !== undefined) homeScoreElement.textContent = item.data.home_score;
             if (item.data.away_score !== undefined) awayScoreElement.textContent = item.data.away_score;
+            const minuteKey = item.event.minute !== undefined && item.event.minute !== null ? String(item.event.minute) : null;
+            if (minuteKey) {
+                const card = minutesMap.get(minuteKey);
+                const updated = scoreFromPayload(item.data) || currentScoreText();
+                if (card) {
+                    const scoreEl = card.querySelector('.minute-score');
+                    if (scoreEl && updated) scoreEl.textContent = updated;
+                }
+            }
         }
         setTimeout(processQueue, EVENT_DELAY_MS);
     }
 
-    function enqueueEvents(events, data) {
-        events.forEach(ev => eventQueue.push({event: ev, data: data}));
+function enqueueEvents(events, data) {
+        if (!Array.isArray(events)) return;
+        events.forEach(ev => {
+            const normalized = normalizeEventPayload(ev);
+            if (normalized) {
+                eventQueue.push({ event: normalized, data: data });
+            }
+        });
         if (!processingQueue) processQueue();
     }
+
+
 
     // --- WebSocket -------------------------------------------------------------
     if (!isLive) {
         console.log(`Match ${matchId} is not live (${initialStatus}), WS disabled.`);
+        fetch(`/api/matches/${matchId}/events/`, { credentials: 'include' })
+            .then(resp => resp.ok ? resp.json() : null)
+            .then(payload => {
+                const events = Array.isArray(payload?.events) ? payload.events : [];
+                renderFullEventSnapshot(events, payload);
+                if (!Array.isArray(payload?.events) || payload.events.length === 0) {
+                    minutesMap.clear();
+                }
+            })
+            .catch(err => {
+                console.error('Failed to load match events:', err);
+            });
         return;
     }
 
@@ -366,7 +617,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const d = msg.data;
             console.log('WS data:', d);
             
-            // DEBUG: Детальная проверка событий
+            // DEBUG: ╨Ф╨╡╤В╨░╨╗╤М╨╜╨░╤П ╨┐╤А╨╛╨▓╨╡╤А╨║╨░ ╤Б╨╛╨▒╤Л╤В╨╕╨╣
             if (d.events && Array.isArray(d.events)) {
                 console.log('=== DEBUG: WebSocket Events ===');
                 console.log('Number of events:', d.events.length);
@@ -379,39 +630,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('==============================');
             }
 
-            // Добавлено: выделение зоны при любом обновлении (если есть current_zone и possessing_team_id)
+            // ╨Ф╨╛╨▒╨░╨▓╨╗╨╡╨╜╨╛: ╨▓╤Л╨┤╨╡╨╗╨╡╨╜╨╕╨╡ ╨╖╨╛╨╜╤Л ╨┐╤А╨╕ ╨╗╤О╨▒╨╛╨╝ ╨╛╨▒╨╜╨╛╨▓╨╗╨╡╨╜╨╕╨╕ (╨╡╤Б╨╗╨╕ ╨╡╤Б╤В╤М current_zone ╨╕ possessing_team_id)
             if (d.current_zone && d.possessing_team_id !== undefined) {
                 const physical = getPhysicalZone(d.current_zone, d.possessing_team_id);
                 if (physical) highlight(physical);
             }
 
-            // 1) Первое сообщение: полный стейт + история
+            // 1) ╨Я╨╡╤А╨▓╨╛╨╡ ╤Б╨╛╨╛╨▒╤Й╨╡╨╜╨╕╨╡: ╨┐╨╛╨╗╨╜╤Л╨╣ ╤Б╤В╨╡╨╣╤В + ╨╕╤Б╤В╨╛╤А╨╕╤П
             if (d.partial_update === undefined && Array.isArray(d.events)) {
-                eventsBox.innerHTML = '';
-                d.events.forEach(addEventToList);
+                renderFullEventSnapshot(d.events, d);
                 if (timeElement && d.minute !== undefined)
                     timeElement.textContent = `${d.minute}'`;
                 updateStatistics(d);
                 updateMomentum(d);
             }
 
-            // 2) Любое ЧАСТИЧНОЕ обновление (с событием ИЛИ без него)
+            // 2) ╨Ы╤О╨▒╨╛╨╡ ╨з╨Р╨б╨в╨Ш╨з╨Э╨Ю╨Х ╨╛╨▒╨╜╨╛╨▓╨╗╨╡╨╜╨╕╨╡ (╤Б ╤Б╨╛╨▒╤Л╤В╨╕╨╡╨╝ ╨Ш╨Ы╨Ш ╨▒╨╡╨╖ ╨╜╨╡╨│╨╛)
             else if (d.partial_update === true) {
 
-                // если событие есть — выводим
+                // ╨╡╤Б╨╗╨╕ ╤Б╨╛╨▒╤Л╤В╨╕╨╡ ╨╡╤Б╤В╤М тАФ ╨▓╤Л╨▓╨╛╨┤╨╕╨╝
                 if (d.events && Array.isArray(d.events) && d.events.length > 0) {
                     enqueueEvents(d.events, d);
                 }
 
-                // время
+                if (d.minute !== undefined) {
+                    ensureMinuteCard(d.minute, scoreFromPayload(d) || currentScoreText());
+                    collapseOldMinutes(d.minute);
+                }
+
                 if (timeElement && d.minute !== undefined)
                     timeElement.textContent = `${d.minute}'`;
 
                 updateStatistics(d);
-                updateMomentum(d);   // ← вызывается ВСЕГДА
+                updateMomentum(d);   // тЖР ╨▓╤Л╨╖╤Л╨▓╨░╨╡╤В╤Б╤П ╨Т╨б╨Х╨У╨Ф╨Р
             }
 
-            // 3) Пакет только с обновлением состояния
+            // 3) ╨Я╨░╨║╨╡╤В ╤В╨╛╨╗╤М╨║╨╛ ╤Б ╨╛╨▒╨╜╨╛╨▓╨╗╨╡╨╜╨╕╨╡╨╝ ╤Б╨╛╤Б╤В╨╛╤П╨╜╨╕╤П
             else if (d.partial_update === undefined && d.events === undefined) {
                 if (timeElement && d.minute !== undefined)
                     timeElement.textContent = `${d.minute}'`;
@@ -419,7 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateMomentum(d);
             }
 
-            // 4) Контроль статуса матча
+            // 4) ╨Ъ╨╛╨╜╤В╤А╨╛╨╗╤М ╤Б╤В╨░╤В╤Г╤Б╨░ ╨╝╨░╤В╤З╨░
             if (d.status && d.status !== currentStatus) {
                 currentStatus = d.status;
                 if (['finished', 'cancelled', 'error'].includes(currentStatus)) {

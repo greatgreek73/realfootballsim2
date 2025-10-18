@@ -451,41 +451,83 @@ export default function MatchLivePage() {
     }
   };
 
+  // --------- ИЗМЕНЕНО: группируем события по минутам и рисуем 1 карточку на минуту ----------
   const eventItems = useMemo(() => {
     if (!events.length) {
       return null;
     }
-    return events.map((event) => (
-      <Box
-        key={event.id}
-        sx={{
-          border: 1,
-          borderColor: "divider",
-          borderRadius: 2,
-          p: 2,
-        }}
-      >
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1} justifyContent="space-between">
-          <Typography variant="subtitle2">
-            {event.minute}'
-            {event.type_label ? ` - ${event.type_label}` : ""}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {formatTimestamp(event.timestamp)}
-          </Typography>
-        </Stack>
-        {event.description && (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            {event.description}
-          </Typography>
-        )}
-        <Typography variant="caption" color="text.secondary">
-          {event.player?.name ?? "-"}
-          {event.related_player?.name ? ` -> ${event.related_player.name}` : ""}
-        </Typography>
-      </Box>
-    ));
+
+    // Группировка по минутам
+    const byMinute = new Map<number, MatchEvent[]>();
+    for (const ev of events) {
+      const m = Number(ev.minute ?? 0);
+      if (!byMinute.has(m)) byMinute.set(m, []);
+      byMinute.get(m)!.push(ev);
+    }
+
+    // Порядок минут: как и прежде — по возрастанию (чтобы не ломать остальную страницу).
+    const minutes = Array.from(byMinute.keys()).sort((a, b) => a - b);
+
+    return minutes.map((minute) => {
+      const list = byMinute.get(minute)!;
+
+      return (
+        <Box
+          key={`minute-${minute}`}
+          sx={{
+            border: 1,
+            borderColor: "divider",
+            borderRadius: 2,
+            overflow: "hidden",
+          }}
+        >
+          {/* Заголовок карточки минуты */}
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1}
+            justifyContent="space-between"
+            sx={{ p: 2, pb: 1, backgroundColor: "action.hover" }}
+          >
+            <Typography variant="subtitle2">{minute}'</Typography>
+            <Typography variant="caption" color="text.secondary">
+              {list.length} {list.length === 1 ? "event" : "events"}
+            </Typography>
+          </Stack>
+          <Divider />
+
+          {/* События этой минуты */}
+          <Stack spacing={1.5} sx={{ p: 2 }}>
+            {list.map((event) => (
+              <Box key={event.id}>
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  spacing={1}
+                  justifyContent="space-between"
+                >
+                  <Typography variant="subtitle2">
+                    {event.type_label ? `${event.type_label}` : "Event"}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {formatTimestamp(event.timestamp)}
+                  </Typography>
+                </Stack>
+                {event.description && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    {event.description}
+                  </Typography>
+                )}
+                <Typography variant="caption" color="text.secondary">
+                  {event.player?.name ?? "-"}
+                  {event.related_player?.name ? ` -> ${event.related_player.name}` : ""}
+                </Typography>
+              </Box>
+            ))}
+          </Stack>
+        </Box>
+      );
+    });
   }, [events]);
+  // --------- КОНЕЦ ИЗМЕНЕНИЙ ---------------------------------------------------
 
   return (
     <Box sx={{ p: { xs: 2, sm: 4 } }}>
@@ -561,7 +603,7 @@ export default function MatchLivePage() {
                       onClick={() => handleSimulate("step")}
                       disabled={simulateLoading || !matchInProgress}
                     >
-                      Simulate Minute
+                      Simulate Action
                     </Button>
                     <Button
                       variant="contained"

@@ -2,31 +2,31 @@
 {% load static %}
 
 {% block content %}
-<div class="container mt-4"> {# Добавлен отступ сверху #}
+<div class="container mt-4"> {# ╨Ф╨╛╨▒╨░╨▓╨╗╨╡╨╜ ╨╛╤В╤Б╤В╤Г╨┐ ╤Б╨▓╨╡╤А╤Е╤Г #}
     <div class="row">
         <div class="col-12">
 
             <!-- 1) MATCH CENTER -->
-            <div class="card mb-4 shadow-sm" {# Добавлены тени для красоты #}
+            <div class="card mb-4 shadow-sm" {# ╨Ф╨╛╨▒╨░╨▓╨╗╨╡╨╜╤Л ╤В╨╡╨╜╨╕ ╨┤╨╗╤П ╨║╤А╨░╤Б╨╛╤В╤Л #}
                  id="matchInfoArea"
                  data-match-id="{{ match.id }}"
                  data-match-status="{{ match.status }}"
                  data-home-team-id="{{ match.home_team.id }}"
                  data-away-team-id="{{ match.away_team.id }}"
                  data-minute-seconds="{{ match_minute_seconds }}">
-                <div class="card-header bg-light"> {# Светлый фон заголовка #}
-                    <div class="d-flex justify-content-between align-items-center flex-wrap"> {# flex-wrap для мобильных #}
-                        <h2 class="h4 mb-0 me-3"> {# Уменьшен заголовок #}
+                <div class="card-header bg-light"> {# ╨б╨▓╨╡╤В╨╗╤Л╨╣ ╤Д╨╛╨╜ ╨╖╨░╨│╨╛╨╗╨╛╨▓╨║╨░ #}
+                    <div class="d-flex justify-content-between align-items-center flex-wrap"> {# flex-wrap ╨┤╨╗╤П ╨╝╨╛╨▒╨╕╨╗╤М╨╜╤Л╤Е #}
+                        <h2 class="h4 mb-0 me-3"> {# ╨г╨╝╨╡╨╜╤М╤И╨╡╨╜ ╨╖╨░╨│╨╛╨╗╨╛╨▓╨╛╨║ #}
                             <a href="{% url 'clubs:club_detail' match.home_team.id %}" class="text-decoration-none text-dark">{{ match.home_team.name }}</a>
                             vs
                             <a href="{% url 'clubs:club_detail' match.away_team.id %}" class="text-decoration-none text-dark">{{ match.away_team.name }}</a>
                         </h2>
-                        <div class="text-muted small"> {# Уменьшен шрифт даты #}
+                        <div class="text-muted small"> {# ╨г╨╝╨╡╨╜╤М╤И╨╡╨╜ ╤И╤А╨╕╤Д╤В ╨┤╨░╤В╤Л #}
                             {{ match.datetime|date:"d M Y H:i" }}
                         </div>
                     </div>
-                    <div class="text-muted small mt-1"> {# Уменьшен шрифт и добавлен отступ #}
-                        {% if match.championshipmatch_set.first.championship.league %} {# Более надежный способ получить лигу #}
+                    <div class="text-muted small mt-1"> {# ╨г╨╝╨╡╨╜╤М╤И╨╡╨╜ ╤И╤А╨╕╤Д╤В ╨╕ ╨┤╨╛╨▒╨░╨▓╨╗╨╡╨╜ ╨╛╤В╤Б╤В╤Г╨┐ #}
+                        {% if match.championshipmatch_set.first.championship.league %} {# ╨С╨╛╨╗╨╡╨╡ ╨╜╨░╨┤╨╡╨╢╨╜╤Л╨╣ ╤Б╨┐╨╛╤Б╨╛╨▒ ╨┐╨╛╨╗╤Г╤З╨╕╤В╤М ╨╗╨╕╨│╤Г #}
                             {{ match.championshipmatch_set.first.championship.league.name }}
                         {% endif %}
                         {% with match.championshipmatch_set.first as cm %}
@@ -34,33 +34,33 @@
                                 - Round {{ cm.round }}
                             {% endif %}
                         {% endwith %}
-                         | 
-                        Status: <span id="matchStatusDisplay">{{ match.get_status_display }}</span> {# ID для возможного обновления статуса #}
+                        ┬а|┬а
+                        Status: <span id="matchStatusDisplay">{{ match.get_status_display }}</span> {# ID ╨┤╨╗╤П ╨▓╨╛╨╖╨╝╨╛╨╢╨╜╨╛╨│╨╛ ╨╛╨▒╨╜╨╛╨▓╨╗╨╡╨╜╨╕╤П ╤Б╤В╨░╤В╤Г╤Б╨░ #}
                     </div>
                 </div>
 
                 <div class="card-body">
-                    <!-- Верхняя часть: названия команд и счёт -->
+                    <!-- ╨Т╨╡╤А╤Е╨╜╤П╤П ╤З╨░╤Б╤В╤М: ╨╜╨░╨╖╨▓╨░╨╜╨╕╤П ╨║╨╛╨╝╨░╨╜╨┤ ╨╕ ╤Б╤З╤С╤В -->
                     <div class="text-center mb-4">
                         <div class="row align-items-center">
-                            <div class="col-5"> {# Используем col-5 для симметрии #}
+                            <div class="col-5"> {# ╨Ш╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╨╝ col-5 ╨┤╨╗╤П ╤Б╨╕╨╝╨╝╨╡╤В╤А╨╕╨╕ #}
                                 <a href="{% url 'clubs:club_detail' match.home_team.id %}" class="text-decoration-none">
-                                    <h4 class="h5 mb-1">{{ match.home_team.name }}</h4> {# Уменьшен заголовок #}
+                                    <h4 class="h5 mb-1">{{ match.home_team.name }}</h4> {# ╨г╨╝╨╡╨╜╤М╤И╨╡╨╜ ╨╖╨░╨│╨╛╨╗╨╛╨▓╨╛╨║ #}
                                     {% if match.home_team.is_bot %}
-                                        <span class="badge bg-secondary">Bot</span> {# Бейдж для бота #}
+                                        <span class="badge bg-secondary">Bot</span> {# ╨С╨╡╨╣╨┤╨╢ ╨┤╨╗╤П ╨▒╨╛╤В╨░ #}
                                     {% endif %}
                                 </a>
                             </div>
 
                             <div class="col-2">
-                                <!-- Счёт -->
+                                <!-- ╨б╤З╤С╤В -->
                                 <h3 class="score mb-0" id="score">
-                                    <span class="score-box home-score">{{ match.home_score }}</span> {# Используем span и класс #}
+                                    <span class="score-box home-score">{{ match.home_score }}</span> {# ╨Ш╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╨╝ span ╨╕ ╨║╨╗╨░╤Б╤Б #}
                                     <span class="score-separator">-</span>
-                                    <span class="score-box away-score">{{ match.away_score }}</span> {# Используем span и класс #}
+                                    <span class="score-box away-score">{{ match.away_score }}</span> {# ╨Ш╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╨╝ span ╨╕ ╨║╨╗╨░╤Б╤Б #}
                                 </h3>
-                                <!-- Минуты -->
-                                <div class="match-time small text-muted mt-1" id="matchTime"> {# Класс и отступ #}
+                                <!-- ╨Ь╨╕╨╜╤Г╤В╤Л -->
+                                <div class="match-time small text-muted mt-1" id="matchTime"> {# ╨Ъ╨╗╨░╤Б╤Б ╨╕ ╨╛╤В╤Б╤В╤Г╨┐ #}
                                     {% if match.status == 'in_progress' %}
                                         {{ match.current_minute }}'
                                     {% elif match.status == 'finished' %}
@@ -73,30 +73,30 @@
                                 <button id="nextMinuteBtn" class="btn btn-sm btn-success mt-2" style="display:none;" type="button">Next Minute</button>
                             </div>
 
-                            <div class="col-5"> {# Используем col-5 для симметрии #}
+                            <div class="col-5"> {# ╨Ш╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╨╝ col-5 ╨┤╨╗╤П ╤Б╨╕╨╝╨╝╨╡╤В╤А╨╕╨╕ #}
                                 <a href="{% url 'clubs:club_detail' match.away_team.id %}" class="text-decoration-none">
-                                    <h4 class="h5 mb-1">{{ match.away_team.name }}</h4> {# Уменьшен заголовок #}
+                                    <h4 class="h5 mb-1">{{ match.away_team.name }}</h4> {# ╨г╨╝╨╡╨╜╤М╤И╨╡╨╜ ╨╖╨░╨│╨╛╨╗╨╛╨▓╨╛╨║ #}
                                     {% if match.away_team.is_bot %}
-                                         <span class="badge bg-secondary">Bot</span> {# Бейдж для бота #}
+                                         <span class="badge bg-secondary">Bot</span> {# ╨С╨╡╨╣╨┤╨╢ ╨┤╨╗╤П ╨▒╨╛╤В╨░ #}
                                     {% endif %}
                                 </a>
                             </div>
                         </div>
                         <div class="row mt-2">
                             <div class="col-5 text-start">
-                                <span id="homeMomentumIcon" class="momentum-icon momentum-neutral">😐</span>
+                                <span id="homeMomentumIcon" class="momentum-icon momentum-neutral">ЁЯШР</span>
                                 <span id="homeMomentumValue" class="momentum-value">{{ match.home_momentum }}</span>
                             </div>
                             <div class="col-2"></div>
                             <div class="col-5 text-end">
-                                <span id="awayMomentumIcon" class="momentum-icon momentum-neutral">😐</span>
+                                <span id="awayMomentumIcon" class="momentum-icon momentum-neutral">ЁЯШР</span>
                                 <span id="awayMomentumValue" class="momentum-value">{{ match.away_momentum }}</span>
                             </div>
                         </div>
                     </div>
 
                     <div id="pitch" class="pitch" style="display: grid !important; grid-template-columns: repeat(8, 1fr) !important; grid-template-rows: repeat(3, 60px) !important; background-color: #28a745 !important; min-height: 200px !important; border: 2px solid #fff !important; padding: 10px !important;">
-                        <!-- Левая цель (Home GK / Away FWD area) -->
+                        <!-- ╨Ы╨╡╨▓╨░╤П ╤Ж╨╡╨╗╤М (Home GK / Away FWD area) -->
                         <div class="zone goal goal-left" data-zone="goal-left"></div>
 
                         <!-- Left def (home DEF / away FWD) -->
@@ -129,35 +129,35 @@
                         <div class="zone right-def-middle" data-zone="right-def-middle"></div>
                         <div class="zone right-def-bottom" data-zone="right-def-bottom"></div>
 
-                        <!-- Правая цель (Away GK / Home FWD area) -->
+                        <!-- ╨Я╤А╨░╨▓╨░╤П ╤Ж╨╡╨╗╤М (Away GK / Home FWD area) -->
                         <div class="zone goal goal-right" data-zone="goal-right"></div>
                     </div>
 
-                    <!-- Кнопка Replay, если матч завершён -->
+                    <!-- ╨Ъ╨╜╨╛╨┐╨║╨░ Replay, ╨╡╤Б╨╗╨╕ ╨╝╨░╤В╤З ╨╖╨░╨▓╨╡╤А╤И╤С╨╜ -->
                     {% if match.status == 'finished' %}
-                    <div class="text-center mb-3"> {# Центрируем кнопку #}
-                        <button id="startReplayBtn" class="btn btn-sm btn-outline-primary"> {# Уменьшена кнопка #}
-                            <i class="fas fa-play me-1"></i> Watch Replay {# Добавлена иконка (требует Font Awesome) #}
+                    <div class="text-center mb-3"> {# ╨ж╨╡╨╜╤В╤А╨╕╤А╤Г╨╡╨╝ ╨║╨╜╨╛╨┐╨║╤Г #}
+                        <button id="startReplayBtn" class="btn btn-sm btn-outline-primary"> {# ╨г╨╝╨╡╨╜╤М╤И╨╡╨╜╨░ ╨║╨╜╨╛╨┐╨║╨░ #}
+                            <i class="fas fa-play me-1"></i> Watch Replay {# ╨Ф╨╛╨▒╨░╨▓╨╗╨╡╨╜╨░ ╨╕╨║╨╛╨╜╨║╨░ (╤В╤А╨╡╨▒╤Г╨╡╤В Font Awesome) #}
                         </button>
                     </div>
                     {% endif %}
                 </div>
             </div>
 
-            <!-- 2) ОБЛАСТЬ СОБЫТИЙ И СТАТИСТИКИ -->
+            <!-- 2) ╨Ю╨С╨Ы╨Р╨б╨в╨м ╨б╨Ю╨С╨л╨в╨Ш╨Щ ╨Ш ╨б╨в╨Р╨в╨Ш╨б╨в╨Ш╨Ъ╨Ш -->
             <div class="card mb-4 shadow-sm">
                 <div class="card-header bg-light">
                      <h3 class="h5 mb-0">Match Log & Stats</h3>
                 </div>
                  <div class="card-body">
                     <div class="row">
-                        <!-- Лог событий (Левая колонка) -->
-                        <div class="col-md-7 mb-3 mb-md-0"> {# Больше места для лога #}
+                        <!-- ╨Ы╨╛╨│ ╤Б╨╛╨▒╤Л╤В╨╕╨╣ (╨Ы╨╡╨▓╨░╤П ╨║╨╛╨╗╨╛╨╜╨║╨░) -->
+                        <div class="col-md-7 mb-3 mb-md-0"> {# ╨С╨╛╨╗╤М╤И╨╡ ╨╝╨╡╤Б╤В╨░ ╨┤╨╗╤П ╨╗╨╛╨│╨░ #}
                             <h4 class="h6 mb-3">Events</h4>
-                            <div id="originalEvents" class="event-log"> {# Контейнер для лога #}
-                                <div class="list-group events-box"> {# Сюда JS будет добавлять события #}
+                            <div id="originalEvents" class="event-log"> {# ╨Ъ╨╛╨╜╤В╨╡╨╣╨╜╨╡╤А ╨┤╨╗╤П ╨╗╨╛╨│╨░ #}
+                                <div class="list-group events-box"> {# ╨б╤О╨┤╨░ JS ╨▒╤Г╨┤╨╡╤В ╨┤╨╛╨▒╨░╨▓╨╗╤П╤В╤М ╤Б╨╛╨▒╤Л╤В╨╕╤П #}
                                     {% if match.status != 'in_progress' %}
-                                        {# Выводим события только для завершенных матчей с нарративным контекстом #}
+                                        {# ╨Т╤Л╨▓╨╛╨┤╨╕╨╝ ╤Б╨╛╨▒╤Л╤В╨╕╤П ╤В╨╛╨╗╤М╨║╨╛ ╨┤╨╗╤П ╨╖╨░╨▓╨╡╤А╤И╨╡╨╜╨╜╤Л╤Е ╨╝╨░╤В╤З╨╡╨╣ ╤Б ╨╜╨░╤А╤А╨░╤В╨╕╨▓╨╜╤Л╨╝ ╨║╨╛╨╜╤В╨╡╨║╤Б╤В╨╛╨╝ #}
                                         {% for enriched_event in enriched_match_events %}
                                         <div class="list-group-item narrative-event-item 
                                              {% if enriched_event.narrative_context.overall_importance == 'legendary' %}narrative-legendary
@@ -171,41 +171,41 @@
                                              title="{{ enriched_event.narrative_context.narrative_event.title }}: {{ enriched_event.narrative_context.narrative_event.description }}"
                                              {% endif %}>
                                             
-                                            {# Нарративные иконки #}
+                                            {# ╨Э╨░╤А╤А╨░╤В╨╕╨▓╨╜╤Л╨╡ ╨╕╨║╨╛╨╜╨║╨╕ #}
                                             <div class="narrative-indicators">
                                                 {% if enriched_event.narrative_context.has_rivalry %}
-                                                    <span class="narrative-icon rivalry-icon" title="Rivalry: {{ enriched_event.narrative_context.rivalry.get_rivalry_type_display }} ({{ enriched_event.narrative_context.rivalry_intensity }})">⚔️</span>
+                                                    <span class="narrative-icon rivalry-icon" title="Rivalry: {{ enriched_event.narrative_context.rivalry.get_rivalry_type_display }} ({{ enriched_event.narrative_context.rivalry_intensity }})">тЪФя╕П</span>
                                                 {% endif %}
                                                 {% if enriched_event.narrative_context.has_chemistry %}
-                                                    <span class="narrative-icon chemistry-icon" title="Team Chemistry: {{ enriched_event.narrative_context.chemistry.get_chemistry_type_display }} ({{ enriched_event.narrative_context.chemistry_strength|floatformat:1 }})">🤝</span>
+                                                    <span class="narrative-icon chemistry-icon" title="Team Chemistry: {{ enriched_event.narrative_context.chemistry.get_chemistry_type_display }} ({{ enriched_event.narrative_context.chemistry_strength|floatformat:1 }})">ЁЯдЭ</span>
                                                 {% endif %}
                                                 {% if enriched_event.narrative_context.has_character_growth %}
-                                                    <span class="narrative-icon growth-icon" title="Character Development">📈</span>
+                                                    <span class="narrative-icon growth-icon" title="Character Development">ЁЯУИ</span>
                                                 {% endif %}
                                                 {% if enriched_event.narrative_context.has_narrative %}
-                                                    <span class="narrative-icon story-icon" title="Story Moment">📖</span>
+                                                    <span class="narrative-icon story-icon" title="Story Moment">ЁЯУЦ</span>
                                                 {% endif %}
                                             </div>
                                             
-                                            {# Основное содержимое события #}
+                                            {# ╨Ю╤Б╨╜╨╛╨▓╨╜╨╛╨╡ ╤Б╨╛╨┤╨╡╤А╨╢╨╕╨╝╨╛╨╡ ╤Б╨╛╨▒╤Л╤В╨╕╤П #}
                                             <div class="event-content">
                                                 <strong>{{ enriched_event.minute }}'</strong>
-                                                {% if enriched_event.event_type == 'goal' %}⚽{% elif enriched_event.event_type == 'counterattack' %}⚡{% elif enriched_event.event_type == 'interception' %}🔄{% elif enriched_event.event_type == 'shot_miss' %}❌{% elif enriched_event.event_type == 'pass' %}➡️{% elif enriched_event.event_type == 'foul' %}⚠️{% elif enriched_event.event_type == 'injury_concern' %}✚{% else %} M {% endif %}
+                                                {% if enriched_event.event_type == 'goal' %}тЪ╜{% elif enriched_event.event_type == 'counterattack' %}тЪб{% elif enriched_event.event_type == 'interception' %}ЁЯФД{% elif enriched_event.event_type == 'shot_miss' %}тЭМ{% elif enriched_event.event_type == 'pass' %}тЮбя╕П{% elif enriched_event.event_type == 'foul' %}тЪая╕П{% elif enriched_event.event_type == 'injury_concern' %}тЬЪ{% else %} M {% endif %}
                                                 {{ enriched_event.description }}
                                                 
-                                                {# Отображение игроков #}
+                                                {# ╨Ю╤В╨╛╨▒╤А╨░╨╢╨╡╨╜╨╕╨╡ ╨╕╨│╤А╨╛╨║╨╛╨▓ #}
                                                 {% if enriched_event.player %}
                                                 <small class="text-muted">({{ enriched_event.player.last_name }}{% if enriched_event.related_player %} -> {{ enriched_event.related_player.last_name }}{% endif %})</small>
                                                 {% endif %}
                                                 
-                                                {# Отображение влияния черты характера #}
+                                                {# ╨Ю╤В╨╛╨▒╤А╨░╨╢╨╡╨╜╨╕╨╡ ╨▓╨╗╨╕╤П╨╜╨╕╤П ╤З╨╡╤А╤В╤Л ╤Е╨░╤А╨░╨║╤В╨╡╤А╨░ #}
                                                 {% if enriched_event.personality_reason %}
                                                 <div class="personality-reason mt-1">
                                                     <small class="text-secondary fst-italic">({{ enriched_event.personality_reason }})</small>
                                                 </div>
                                                 {% endif %}
                                                 
-                                                {# Нарративное описание события если есть #}
+                                                {# ╨Э╨░╤А╤А╨░╤В╨╕╨▓╨╜╨╛╨╡ ╨╛╨┐╨╕╤Б╨░╨╜╨╕╨╡ ╤Б╨╛╨▒╤Л╤В╨╕╤П ╨╡╤Б╨╗╨╕ ╨╡╤Б╤В╤М #}
                                                 {% if enriched_event.narrative_context.has_narrative %}
                                                 <div class="narrative-description mt-2">
                                                     <small class="text-primary"><em>{{ enriched_event.narrative_context.narrative_event.description }}</em></small>
@@ -217,14 +217,14 @@
                                          <div class="list-group-item text-muted">No events found for this match yet.</div>
                                         {% endfor %}
                                     {% else %}
-                                        {# Для live-матчей события придут через WebSocket #}
+                                        {# ╨Ф╨╗╤П live-╨╝╨░╤В╤З╨╡╨╣ ╤Б╨╛╨▒╤Л╤В╨╕╤П ╨┐╤А╨╕╨┤╤Г╤В ╤З╨╡╤А╨╡╨╖ WebSocket #}
                                         <div class="list-group-item text-muted">Waiting for match events...</div>
                                     {% endif %}
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Статистика (Правая колонка) -->
+                        <!-- ╨б╤В╨░╤В╨╕╤Б╤В╨╕╨║╨░ (╨Я╤А╨░╨▓╨░╤П ╨║╨╛╨╗╨╛╨╜╨║╨░) -->
                         <div class="col-md-5">
                             <!-- Narrative Summary Section -->
                             {% if narrative_summary.total_events > 0 %}
@@ -252,7 +252,7 @@
                                                 <div class="d-flex align-items-center">
                                                     <span class="badge bg-secondary me-2">{{ narrative_event.minute }}'</span>
                                                     <small class="text-primary">
-                                                        {% if narrative_event.event_type == 'rivalry_clash' %}⚔️{% elif narrative_event.event_type == 'chemistry_moment' %}🤝{% elif narrative_event.event_type == 'character_growth' %}📈{% else %}📖{% endif %}
+                                                        {% if narrative_event.event_type == 'rivalry_clash' %}тЪФя╕П{% elif narrative_event.event_type == 'chemistry_moment' %}ЁЯдЭ{% elif narrative_event.event_type == 'character_growth' %}ЁЯУИ{% else %}ЁЯУЦ{% endif %}
                                                         {{ narrative_event.title|truncatechars:25 }}
                                                     </small>
                                                 </div>
@@ -268,36 +268,36 @@
                             <h4 class="h6 mb-3">Statistics</h4>
                             <div id="matchStatistics" class="mb-4">
                                 <div class="list-group stat-box">
-                                    {# Начальные значения статистики из контекста #}
+                                    {# ╨Э╨░╤З╨░╨╗╤М╨╜╤Л╨╡ ╨╖╨╜╨░╤З╨╡╨╜╨╕╤П ╤Б╤В╨░╤В╨╕╤Б╤В╨╕╨║╨╕ ╨╕╨╖ ╨║╨╛╨╜╤В╨╡╨║╤Б╤В╨░ #}
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <span>Passes</span>
-                                        <span class="badge bg-primary rounded-pill stat-passes">{{ match.st_passes|default:0 }}</span> {# Добавлен класс #}
+                                        <span class="badge bg-primary rounded-pill stat-passes">{{ match.st_passes|default:0 }}</span> {# ╨Ф╨╛╨▒╨░╨▓╨╗╨╡╨╜ ╨║╨╗╨░╤Б╤Б #}
                                     </div>
                                      <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <span>Shoots</span>
-                                        <span class="badge bg-info rounded-pill stat-shoots">{{ match.st_shoots|default:0 }}</span> {# Добавлен класс #}
+                                        <span class="badge bg-info rounded-pill stat-shoots">{{ match.st_shoots|default:0 }}</span> {# ╨Ф╨╛╨▒╨░╨▓╨╗╨╡╨╜ ╨║╨╗╨░╤Б╤Б #}
                                     </div>
                                      <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <span>Possessions</span>
-                                        <span class="badge bg-secondary rounded-pill stat-possessions">{{ match.st_possessions|default:0 }}</span> {# Добавлен класс #}
+                                        <span class="badge bg-secondary rounded-pill stat-possessions">{{ match.st_possessions|default:0 }}</span> {# ╨Ф╨╛╨▒╨░╨▓╨╗╨╡╨╜ ╨║╨╗╨░╤Б╤Б #}
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <span>Fouls</span>
-                                        <span class="badge bg-warning text-dark rounded-pill stat-fouls">{{ match.st_fouls|default:0 }}</span> {# Добавлен класс #}
+                                        <span class="badge bg-warning text-dark rounded-pill stat-fouls">{{ match.st_fouls|default:0 }}</span> {# ╨Ф╨╛╨▒╨░╨▓╨╗╨╡╨╜ ╨║╨╗╨░╤Б╤Б #}
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <span>Injuries</span>
-                                        <span class="badge bg-danger rounded-pill stat-injuries" id="inj">{{ match.st_injury|default:0 }}</span> {# Добавлен класс #}
+                                        <span class="badge bg-danger rounded-pill stat-injuries" id="inj">{{ match.st_injury|default:0 }}</span> {# ╨Ф╨╛╨▒╨░╨▓╨╗╨╡╨╜ ╨║╨╗╨░╤Б╤Б #}
                                     </div>
                                 </div>
                             </div>
-                             <!-- Форма реакции на травму (скрыта по умолчанию) -->
-                             <div id="matchUserAction-inj" class="matchUserAction card bg-light p-3" style="display: none;"> {# Стилизовано как карточка #}
+                             <!-- ╨д╨╛╤А╨╝╨░ ╤А╨╡╨░╨║╤Ж╨╕╨╕ ╨╜╨░ ╤В╤А╨░╨▓╨╝╤Г (╤Б╨║╤А╤Л╤В╨░ ╨┐╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О) -->
+                             <div id="matchUserAction-inj" class="matchUserAction card bg-light p-3" style="display: none;"> {# ╨б╤В╨╕╨╗╨╕╨╖╨╛╨▓╨░╨╜╨╛ ╨║╨░╨║ ╨║╨░╤А╤В╨╛╤З╨║╨░ #}
                                 <h5 class="h6 mb-2 text-danger">Injury Detected!</h5>
-                                <p class="small mb-2">Select player to substitute:</p> {# Уточнено сообщение #}
+                                <p class="small mb-2">Select player to substitute:</p> {# ╨г╤В╨╛╤З╨╜╨╡╨╜╨╛ ╤Б╨╛╨╛╨▒╤Й╨╡╨╜╨╕╨╡ #}
                                 <div class="mb-2">
-                                    {# Выпадающий список игроков команды ПОЛЬЗОВАТЕЛЯ (если применимо) #}
-                                    {# ПРЕДПОЛОЖЕНИЕ: user_club и user_players передаются в контекст #}
+                                    {# ╨Т╤Л╨┐╨░╨┤╨░╤О╤Й╨╕╨╣ ╤Б╨┐╨╕╤Б╨╛╨║ ╨╕╨│╤А╨╛╨║╨╛╨▓ ╨║╨╛╨╝╨░╨╜╨┤╤Л ╨Я╨Ю╨Ы╨м╨Ч╨Ю╨Т╨Р╨в╨Х╨Ы╨п (╨╡╤Б╨╗╨╕ ╨┐╤А╨╕╨╝╨╡╨╜╨╕╨╝╨╛) #}
+                                    {# ╨Я╨а╨Х╨Ф╨Я╨Ю╨Ы╨Ю╨Ц╨Х╨Э╨Ш╨Х: user_club ╨╕ user_players ╨┐╨╡╤А╨╡╨┤╨░╤О╤В╤Б╤П ╨▓ ╨║╨╛╨╜╤В╨╡╨║╤Б╤В #}
                                     <select name="playerToReplace" id="playerToReplaceSelect" class="form-select form-select-sm">
                                         <option value="">-- Select Player --</option>
                                         {% with user_club_id=request.user.club.id|default:None %}
@@ -305,7 +305,7 @@
                                                 {% for slot, p_data in match.home_lineup.items %}
                                                     {% if p_data.playerId %}
                                                         <option value="{{ p_data.playerId }}">
-                                                            {{ p_data.slotLabel }}: {{ p_data.playerName|default:p_data.playerId }} {# Используем имя, если есть #}
+                                                            {{ p_data.slotLabel }}: {{ p_data.playerName|default:p_data.playerId }} {# ╨Ш╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╨╝ ╨╕╨╝╤П, ╨╡╤Б╨╗╨╕ ╨╡╤Б╤В╤М #}
                                                         </option>
                                                     {% endif %}
                                                 {% endfor %}
@@ -322,8 +322,8 @@
                                     </select>
                                 </div>
                                 <div class="text-end">
-                                    <button type="button" class="btn btn-sm btn-danger" id="replace-player">Replace</button> {# Кнопка замены #}
-                                    <button type="button" class="btn btn-sm btn-secondary ms-1" onclick="this.closest('.matchUserAction').style.display='none'">Ignore</button> {# Кнопка игнорирования #}
+                                    <button type="button" class="btn btn-sm btn-danger" id="replace-player">Replace</button> {# ╨Ъ╨╜╨╛╨┐╨║╨░ ╨╖╨░╨╝╨╡╨╜╤Л #}
+                                    <button type="button" class="btn btn-sm btn-secondary ms-1" onclick="this.closest('.matchUserAction').style.display='none'">Ignore</button> {# ╨Ъ╨╜╨╛╨┐╨║╨░ ╨╕╨│╨╜╨╛╤А╨╕╤А╨╛╨▓╨░╨╜╨╕╤П #}
                                 </div>
                              </div>
                         </div>
@@ -333,7 +333,7 @@
             </div>
 
 
-            <!-- 3) СОСТАВЫ МАТЧА (если матч идет или завершен) -->
+            <!-- 3) ╨б╨Ю╨б╨в╨Р╨Т╨л ╨Ь╨Р╨в╨з╨Р (╨╡╤Б╨╗╨╕ ╨╝╨░╤В╤З ╨╕╨┤╨╡╤В ╨╕╨╗╨╕ ╨╖╨░╨▓╨╡╤А╤И╨╡╨╜) -->
             {% if match.status == 'in_progress' or match.status == 'finished' %}
             <div class="card mb-4 shadow-sm">
                 <div class="card-header bg-light">
@@ -341,11 +341,11 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <!-- Домашняя команда -->
+                        <!-- ╨Ф╨╛╨╝╨░╤И╨╜╤П╤П ╨║╨╛╨╝╨░╨╜╨┤╨░ -->
                         <div class="col-md-6 mb-4">
                             <h6 class="mb-2">{{ match.home_team.name }} <small class="text-muted">({{ match.home_tactic|default:'balanced' }})</small></h6>
                             <div class="table-responsive">
-                                <table class="table table-sm table-striped table-hover"> {# Добавлены классы для таблицы #}
+                                <table class="table table-sm table-striped table-hover"> {# ╨Ф╨╛╨▒╨░╨▓╨╗╨╡╨╜╤Л ╨║╨╗╨░╤Б╤Б╤Л ╨┤╨╗╤П ╤В╨░╨▒╨╗╨╕╤Ж╤Л #}
                                     <thead>
                                         <tr>
                                             <th style="width: 20%;">Slot</th>
@@ -362,7 +362,7 @@
                                                         {{ player.first_name }} {{ player.last_name }}
                                                         <small class="text-muted">({{ player.position }})</small>
                                                     {% else %}
-                                                        <em class="text-danger">No player</em> {# Выделяем отсутствие игрока #}
+                                                        <em class="text-danger">No player</em> {# ╨Т╤Л╨┤╨╡╨╗╤П╨╡╨╝ ╨╛╤В╤Б╤Г╤В╤Б╤В╨▓╨╕╨╡ ╨╕╨│╤А╨╛╨║╨░ #}
                                                     {% endif %}
                                                 </td>
                                             </tr>
@@ -377,11 +377,11 @@
                             </div>
                         </div>
 
-                        <!-- Гостевая команда -->
+                        <!-- ╨У╨╛╤Б╤В╨╡╨▓╨░╤П ╨║╨╛╨╝╨░╨╜╨┤╨░ -->
                         <div class="col-md-6 mb-4">
                              <h6 class="mb-2">{{ match.away_team.name }} <small class="text-muted">({{ match.away_tactic|default:'balanced' }})</small></h6>
                             <div class="table-responsive">
-                                <table class="table table-sm table-striped table-hover"> {# Добавлены классы для таблицы #}
+                                <table class="table table-sm table-striped table-hover"> {# ╨Ф╨╛╨▒╨░╨▓╨╗╨╡╨╜╤Л ╨║╨╗╨░╤Б╤Б╤Л ╨┤╨╗╤П ╤В╨░╨▒╨╗╨╕╤Ж╤Л #}
                                     <thead>
                                         <tr>
                                             <th style="width: 20%;">Slot</th>
@@ -398,7 +398,7 @@
                                                         {{ player.first_name }} {{ player.last_name }}
                                                         <small class="text-muted">({{ player.position }})</small>
                                                     {% else %}
-                                                         <em class="text-danger">No player</em> {# Выделяем отсутствие игрока #}
+                                                         <em class="text-danger">No player</em> {# ╨Т╤Л╨┤╨╡╨╗╤П╨╡╨╝ ╨╛╤В╤Б╤Г╤В╤Б╤В╨▓╨╕╨╡ ╨╕╨│╤А╨╛╨║╨░ #}
                                                     {% endif %}
                                                 </td>
                                             </tr>
@@ -415,17 +415,17 @@
                     </div><!-- /.row -->
                 </div>
             </div>
-            {% endif %} {# Конец блока для составов матча #}
+            {% endif %} {# ╨Ъ╨╛╨╜╨╡╤Ж ╨▒╨╗╨╛╨║╨░ ╨┤╨╗╤П ╤Б╨╛╤Б╤В╨░╨▓╨╛╨▓ ╨╝╨░╤В╤З╨░ #}
 
-             <!-- Область реплея (если нужна) -->
+             <!-- ╨Ю╨▒╨╗╨░╤Б╤В╤М ╤А╨╡╨┐╨╗╨╡╤П (╨╡╤Б╨╗╨╕ ╨╜╤Г╨╢╨╜╨░) -->
              <div id="replayArea" style="display: none;">
-                 {# Сюда можно добавить элементы управления реплеем #}
+                 {# ╨б╤О╨┤╨░ ╨╝╨╛╨╢╨╜╨╛ ╨┤╨╛╨▒╨░╨▓╨╕╤В╤М ╤Н╨╗╨╡╨╝╨╡╨╜╤В╤Л ╤Г╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╤П ╤А╨╡╨┐╨╗╨╡╨╡╨╝ #}
              </div>
 
-            <!-- Кнопка "Back to Matches" -->
-            <div class="text-center mb-5"> {# Увеличен нижний отступ #}
-                <a href="{% url 'matches:match_list' %}" class="btn btn-outline-secondary"> {# Изменен цвет кнопки #}
-                    <i class="fas fa-arrow-left me-1"></i> Back to Matches {# Добавлена иконка (требует Font Awesome) #}
+            <!-- ╨Ъ╨╜╨╛╨┐╨║╨░ "Back to Matches" -->
+            <div class="text-center mb-5"> {# ╨г╨▓╨╡╨╗╨╕╤З╨╡╨╜ ╨╜╨╕╨╢╨╜╨╕╨╣ ╨╛╤В╤Б╤В╤Г╨┐ #}
+                <a href="{% url 'matches:match_list' %}" class="btn btn-outline-secondary"> {# ╨Ш╨╖╨╝╨╡╨╜╨╡╨╜ ╤Ж╨▓╨╡╤В ╨║╨╜╨╛╨┐╨║╨╕ #}
+                    <i class="fas fa-arrow-left me-1"></i> Back to Matches {# ╨Ф╨╛╨▒╨░╨▓╨╗╨╡╨╜╨░ ╨╕╨║╨╛╨╜╨║╨░ (╤В╤А╨╡╨▒╤Г╨╡╤В Font Awesome) #}
                 </a>
             </div>
 
@@ -435,23 +435,23 @@
 {% endblock %}
 
 {% block extra_js %}
-{# Подключаем внешние скрипты #}
-<script src="{% static 'matches/js/match_replay.js' %}"></script> {# Если есть скрипт реплея #}
-{# Подключаем основной скрипт для незавершенных матчей #}
+{# ╨Я╨╛╨┤╨║╨╗╤О╤З╨░╨╡╨╝ ╨▓╨╜╨╡╤И╨╜╨╕╨╡ ╤Б╨║╤А╨╕╨┐╤В╤Л #}
+<script src="{% static 'matches/js/match_replay.js' %}"></script> {# ╨Х╤Б╨╗╨╕ ╨╡╤Б╤В╤М ╤Б╨║╤А╨╕╨┐╤В ╤А╨╡╨┐╨╗╨╡╤П #}
+{# ╨Я╨╛╨┤╨║╨╗╤О╤З╨░╨╡╨╝ ╨╛╤Б╨╜╨╛╨▓╨╜╨╛╨╣ ╤Б╨║╤А╨╕╨┐╤В ╨┤╨╗╤П ╨╜╨╡╨╖╨░╨▓╨╡╤А╤И╨╡╨╜╨╜╤Л╤Е ╨╝╨░╤В╤З╨╡╨╣ #}
 {% if match.status != 'finished' and match.status != 'cancelled' and match.status != 'error' %}
     <script src="{% static 'matches/js/live_match.js' %}"></script>
 {% endif %}
 
-{# Инициализация нарративных элементов #}
+{# ╨Ш╨╜╨╕╤Ж╨╕╨░╨╗╨╕╨╖╨░╤Ж╨╕╤П ╨╜╨░╤А╤А╨░╤В╨╕╨▓╨╜╤Л╤Е ╤Н╨╗╨╡╨╝╨╡╨╜╤В╨╛╨▓ #}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Инициализация Bootstrap tooltips для нарративных иконок
+    // ╨Ш╨╜╨╕╤Ж╨╕╨░╨╗╨╕╨╖╨░╤Ж╨╕╤П Bootstrap tooltips ╨┤╨╗╤П ╨╜╨░╤А╤А╨░╤В╨╕╨▓╨╜╤Л╤Е ╨╕╨║╨╛╨╜╨╛╨║
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"], .narrative-icon[title]'));
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
     
-    // Добавляем hover эффекты для нарративных событий
+    // ╨Ф╨╛╨▒╨░╨▓╨╗╤П╨╡╨╝ hover ╤Н╤Д╤Д╨╡╨║╤В╤Л ╨┤╨╗╤П ╨╜╨░╤А╤А╨░╤В╨╕╨▓╨╜╤Л╤Е ╤Б╨╛╨▒╤Л╤В╨╕╨╣
     document.querySelectorAll('.narrative-event-item').forEach(function(element) {
         element.addEventListener('mouseenter', function() {
             this.style.transform = 'translateX(2px)';

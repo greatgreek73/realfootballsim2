@@ -22,8 +22,8 @@ class MatchConsumer(AsyncWebsocketConsumer):
             await self.accept()
 
             logger.info(
-                f'[WebSocket] Подключение установлено: матч ID={self.match_id}, '
-                f'канал {self.channel_name}'
+                f'[WebSocket] ╨Я╨╛╨┤╨║╨╗╤О╤З╨╡╨╜╨╕╨╡ ╤Г╤Б╤В╨░╨╜╨╛╨▓╨╗╨╡╨╜╨╛: ╨╝╨░╤В╤З ID={self.match_id}, '
+                f'╨║╨░╨╜╨░╨╗ {self.channel_name}'
             )
             print(f"WebSocket accepted for match {self.match_id}")
 
@@ -36,8 +36,8 @@ class MatchConsumer(AsyncWebsocketConsumer):
                 print("Initial match data sent")
             else:
                 logger.warning(
-                    f'[WebSocket] Матч ID={self.match_id} не найден — '
-                    f'отправка ошибки клиенту и закрытие соединения'
+                    f'[WebSocket] ╨Ь╨░╤В╤З ID={self.match_id} ╨╜╨╡ ╨╜╨░╨╣╨┤╨╡╨╜ тАФ '
+                    f'╨╛╤В╨┐╤А╨░╨▓╨║╨░ ╨╛╤И╨╕╨▒╨║╨╕ ╨║╨╗╨╕╨╡╨╜╤В╤Г ╨╕ ╨╖╨░╨║╤А╤Л╤В╨╕╨╡ ╤Б╨╛╨╡╨┤╨╕╨╜╨╡╨╜╨╕╤П'
                 )
                 print(f"No match data found for ID: {self.match_id}")
                 await self.send(text_data=json.dumps({
@@ -47,23 +47,23 @@ class MatchConsumer(AsyncWebsocketConsumer):
                 await self.close()
 
         except Exception as e:
-            logger.error(f'[WebSocket] Ошибка в connect для матча ID={self.match_id}: {e}')
+            logger.error(f'[WebSocket] ╨Ю╤И╨╕╨▒╨║╨░ ╨▓ connect ╨┤╨╗╤П ╨╝╨░╤В╤З╨░ ID={self.match_id}: {e}')
             print(f"Error in connect for match {self.match_id}: {e}")
             traceback.print_exc()
             await self.close(code=1011)
 
     async def disconnect(self, close_code):
         logger.info(
-            f'[WebSocket] Отключение: матч ID={self.match_id}, '
-            f'код={close_code}, канал={self.channel_name}'
+            f'[WebSocket] ╨Ю╤В╨║╨╗╤О╤З╨╡╨╜╨╕╨╡: ╨╝╨░╤В╤З ID={self.match_id}, '
+            f'╨║╨╛╨┤={close_code}, ╨║╨░╨╜╨░╨╗={self.channel_name}'
         )
         print(f"WebSocket disconnecting from match {self.match_id} (code {close_code})")
         try:
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
-            logger.info(f'[WebSocket] Клиент удалён из группы {self.group_name}')
+            logger.info(f'[WebSocket] ╨Ъ╨╗╨╕╨╡╨╜╤В ╤Г╨┤╨░╨╗╤С╨╜ ╨╕╨╖ ╨│╤А╤Г╨┐╨┐╤Л {self.group_name}')
             print(f"Removed from group {self.group_name}")
         except Exception as e:
-            logger.error(f'[WebSocket] Ошибка в disconnect для матча ID={self.match_id}: {e}')
+            logger.error(f'[WebSocket] ╨Ю╤И╨╕╨▒╨║╨░ ╨▓ disconnect ╨┤╨╗╤П ╨╝╨░╤В╤З╨░ ID={self.match_id}: {e}')
             print(f"Error in disconnect for match {self.match_id}: {e}")
 
     async def receive_json(self, content, **kwargs):
@@ -77,13 +77,13 @@ class MatchConsumer(AsyncWebsocketConsumer):
             logger.error(f"Error processing incoming message for match {self.match_id}: {e}")
 
     # ------------------------------------------------------------------
-    # ДОБАВЛЕНО: вспомогательная функция для быстрого получения momentuma
+    # ╨Ф╨Ю╨С╨Р╨Т╨Ы╨Х╨Э╨Ю: ╨▓╤Б╨┐╨╛╨╝╨╛╨│╨░╤В╨╡╨╗╤М╨╜╨░╤П ╤Д╤Г╨╜╨║╤Ж╨╕╤П ╨┤╨╗╤П ╨▒╤Л╤Б╤В╤А╨╛╨│╨╛ ╨┐╨╛╨╗╤Г╤З╨╡╨╜╨╕╤П momentuma
     # ------------------------------------------------------------------
     @database_sync_to_async
     def _get_current_momentum(self) -> dict:
         """
-        Возвращает актуальные значения momentuma для обеих команд матча.
-        Гарантирует, что словарь содержит оба ключа.
+        ╨Т╨╛╨╖╨▓╤А╨░╤Й╨░╨╡╤В ╨░╨║╤В╤Г╨░╨╗╤М╨╜╤Л╨╡ ╨╖╨╜╨░╤З╨╡╨╜╨╕╤П momentuma ╨┤╨╗╤П ╨╛╨▒╨╡╨╕╤Е ╨║╨╛╨╝╨░╨╜╨┤ ╨╝╨░╤В╤З╨░.
+        ╨У╨░╤А╨░╨╜╤В╨╕╤А╤Г╨╡╤В, ╤З╤В╨╛ ╤Б╨╗╨╛╨▓╨░╤А╤М ╤Б╨╛╨┤╨╡╤А╨╢╨╕╤В ╨╛╨▒╨░ ╨║╨╗╤О╤З╨░.
         """
         try:
             m = Match.objects.only("home_momentum", "away_momentum").get(id=self.match_id)
@@ -99,11 +99,11 @@ class MatchConsumer(AsyncWebsocketConsumer):
             data = event.get('data', {})
 
             # -----------------------------------------------------------
-            # Исправление: обеспечиваем наличие momentuma даже для
-            # "частичных" сообщений с событием
+            # ╨Ш╤Б╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡: ╨╛╨▒╨╡╤Б╨┐╨╡╤З╨╕╨▓╨░╨╡╨╝ ╨╜╨░╨╗╨╕╤З╨╕╨╡ momentuma ╨┤╨░╨╢╨╡ ╨┤╨╗╤П
+            # "╤З╨░╤Б╤В╨╕╤З╨╜╤Л╤Е" ╤Б╨╛╨╛╨▒╤Й╨╡╨╜╨╕╨╣ ╤Б ╤Б╨╛╨▒╤Л╤В╨╕╨╡╨╝
             # -----------------------------------------------------------
             if data.get('partial_update') and 'events' in data:
-                # Подмешиваем momentum, если он отсутствует
+                # ╨Я╨╛╨┤╨╝╨╡╤И╨╕╨▓╨░╨╡╨╝ momentum, ╨╡╤Б╨╗╨╕ ╨╛╨╜ ╨╛╤В╤Б╤Г╤В╤Б╤В╨▓╤Г╨╡╤В
                 if 'home_momentum' not in data or 'away_momentum' not in data:
                     momentum = await self._get_current_momentum()
                     data.update(momentum)
@@ -117,7 +117,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
                     f"to client for match {self.match_id}"
                 )
             else:
-                # Для обычных или полных обновлений
+                # ╨Ф╨╗╤П ╨╛╨▒╤Л╤З╨╜╤Л╤Е ╨╕╨╗╨╕ ╨┐╨╛╨╗╨╜╤Л╤Е ╨╛╨▒╨╜╨╛╨▓╨╗╨╡╨╜╨╕╨╣
                 is_partial = 'minute' not in data or 'status' not in data
 
                 if is_partial:
@@ -126,7 +126,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
                     if not full:
                         print(f"Unable to fetch full match data for {self.match_id}")
                         return
-                    full.update(data)  # обновляем только пришедшие поля
+                    full.update(data)  # ╨╛╨▒╨╜╨╛╨▓╨╗╤П╨╡╨╝ ╤В╨╛╨╗╤М╨║╨╛ ╨┐╤А╨╕╤И╨╡╨┤╤И╨╕╨╡ ╨┐╨╛╨╗╤П
                     if 'events' in data:
                         full['events'] = data['events']
                     payload = full
@@ -145,7 +145,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
             traceback.print_exc()
 
     # ------------------------------------------------------------------
-    # ДАЛЬШЕ КОД БЕЗ ИЗМЕНЕНИЙ
+    # ╨Ф╨Р╨Ы╨м╨и╨Х ╨Ъ╨Ю╨Ф ╨С╨Х╨Ч ╨Ш╨Ч╨Ь╨Х╨Э╨Х╨Э╨Ш╨Щ
     # ------------------------------------------------------------------
     @database_sync_to_async
     def get_match_data(self):
@@ -156,7 +156,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
                 'current_player_with_ball',
             ).get(id=self.match_id)
 
-            # Не загружаем события текущей минуты для live‑матча
+            # ╨Э╨╡ ╨╖╨░╨│╤А╤Г╨╢╨░╨╡╨╝ ╤Б╨╛╨▒╤Л╤В╨╕╤П ╤В╨╡╨║╤Г╤Й╨╡╨╣ ╨╝╨╕╨╜╤Г╤В╤Л ╨┤╨╗╤П liveтАС╨╝╨░╤В╤З╨░
             if match.status == 'in_progress':
                 all_events = (
                     MatchEvent.objects
@@ -199,7 +199,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
                 "st_passes": match.st_passes,
                 "st_possessions": match.st_possessions,
                 "st_fouls": match.st_fouls,
-                "st_injury": [] if match.st_injury == 0 else [{"message": f"Травм: {match.st_injury}"}],
+                "st_injury": [] if match.st_injury == 0 else [{"message": f"╨в╤А╨░╨▓╨╝: {match.st_injury}"}],
                 "events": events_list,
                 "status": match.status,
                 "current_player": (
