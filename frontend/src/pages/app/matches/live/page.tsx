@@ -465,8 +465,8 @@ export default function MatchLivePage() {
       byMinute.get(m)!.push(ev);
     }
 
-    // Порядок минут: как и прежде — по возрастанию (чтобы не ломать остальную страницу).
-    const minutes = Array.from(byMinute.keys()).sort((a, b) => a - b);
+    // Последняя (текущая) минута сверху, чтобы новые события сразу были видны.
+    const minutes = Array.from(byMinute.keys()).sort((a, b) => b - a);
 
     return minutes.map((minute) => {
       const list = byMinute.get(minute)!;
