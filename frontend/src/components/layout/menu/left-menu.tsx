@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -118,7 +118,6 @@ export default function LeftMenu() {
     const hasChildrenVisible = hasVisibleChildren(item);
     const isSameItem = activeItem?.id === item.id;
 
-
     setActiveItem(item);
 
     if (hasChildrenVisible) {
@@ -142,7 +141,36 @@ export default function LeftMenu() {
     }
   }, [activeItem, hideLeftSecondary, leftSecondaryCurrent]);
 
+  const handleSecondaryLeafClick = useCallback(
+    (_item: MenuItem) => {
+      setOpenedAccordions([]);
+      hideLeftSecondary();
+    },
+    [hideLeftSecondary],
+  );
+
   const leftSecondaryDefaultWidth = useMemo(() => DEFAULTS.leftMenuWidth[leftMenuType].secondary, [leftMenuType]);
+
+  // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ИЗМЕНЕНИЕ (1) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  // Если активен раздел "Matches" и мы уже на маршруте /matches…, правую панель прячем.
+  const shouldHideSecondaryForMatches = useMemo(() => {
+    const isMatchesSection = String(activeItem?.id ?? "").toLowerCase() === "matches";
+    const isMatchesRoute = pathname.startsWith("/matches");
+    return isMatchesSection && isMatchesRoute;
+  }, [activeItem?.id, pathname]);
+  // Принудительно перевести глобальное состояние Secondary в Hide,
+  // чтобы основной контент растягивался (как в Players).
+  useEffect(() => {
+    if (shouldHideSecondaryForMatches) {
+      if (leftSecondaryCurrent !== MenuShowState.Hide) {
+        hideLeftSecondary();
+      }
+      // для однослойного меню дополнительно закрываем аккордеон "matches"
+      setOpenedAccordions((prev) => prev.filter((a) => a.id !== "matches"));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldHideSecondaryForMatches, leftSecondaryCurrent]);
+  // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> КОНЕЦ ИЗМЕНЕНИЯ (1) <<<<<<<<<<<<<<<<<<<<<<<<<<
 
   return (
     <nav className="bg-background-paper shadow-darker-xs fixed z-10 mt-20 flex h-[calc(100%-5rem)] flex-row rounded-r-3xl">
@@ -184,6 +212,7 @@ export default function LeftMenu() {
                     indent={0}
                     openedAccordions={openedAccordions}
                     setOpenedAccordions={setOpenedAccordions}
+                    onLeafClick={handleSecondaryLeafClick}
                   />
                 ),
               )}
@@ -209,6 +238,7 @@ export default function LeftMenu() {
                     indent={0}
                     openedAccordions={openedAccordions}
                     setOpenedAccordions={setOpenedAccordions}
+                    onLeafClick={handleSecondaryLeafClick}
                   />
                 ),
               )}
@@ -226,7 +256,9 @@ export default function LeftMenu() {
               activeItem?.children &&
               activeItem?.children.filter((x) => !x.hideInMenu).length > 0 &&
               leftSecondaryCurrent !== MenuShowState.Hide &&
-              leftMenuWidth.secondary > 0
+              leftMenuWidth.secondary > 0 &&
+              // визуальный дубль: если должны скрыть Secondary, ширина 0
+              !shouldHideSecondaryForMatches
                 ? `calc(${leftMenuWidth.secondary}px`
                 : 0,
           }}
@@ -258,6 +290,7 @@ export default function LeftMenu() {
                               indent={0}
                               openedAccordions={openedAccordions}
                               setOpenedAccordions={setOpenedAccordions}
+                              onLeafClick={handleSecondaryLeafClick}
                             />
                           ))}
                     </Box>

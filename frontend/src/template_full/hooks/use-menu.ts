@@ -119,7 +119,7 @@ export function useMenu(config: Props) {
   }, [primaryCurrent]);
 
   const hideSecondary = useCallback(() => {
-    if (secondaryCurrent === MenuShowState.TemporaryShow) {
+    if (secondaryCurrent !== MenuShowState.Hide) {
       setSecondaryCurrent(MenuShowState.Hide);
     }
   }, [secondaryCurrent]);

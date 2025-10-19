@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -108,6 +108,14 @@ export default function LeftMenu() {
     }
   }, [activeItem, hideLeftSecondary, leftSecondaryCurrent]);
 
+  const handleSecondaryLeafClick = useCallback(
+    (_item: MenuItem) => {
+      setOpenedAccordions([]);
+      hideLeftSecondary();
+    },
+    [hideLeftSecondary],
+  );
+
   const leftSecondaryDefaultWidth = useMemo(() => DEFAULTS.leftMenuWidth[leftMenuType].secondary, [leftMenuType]);
 
   return (
@@ -150,6 +158,7 @@ export default function LeftMenu() {
                     indent={0}
                     openedAccordions={openedAccordions}
                     setOpenedAccordions={setOpenedAccordions}
+                    onLeafClick={handleSecondaryLeafClick}
                   />
                 ),
               )}
@@ -175,6 +184,7 @@ export default function LeftMenu() {
                     indent={0}
                     openedAccordions={openedAccordions}
                     setOpenedAccordions={setOpenedAccordions}
+                    onLeafClick={handleSecondaryLeafClick}
                   />
                 ),
               )}
@@ -224,6 +234,7 @@ export default function LeftMenu() {
                               indent={0}
                               openedAccordions={openedAccordions}
                               setOpenedAccordions={setOpenedAccordions}
+                              onLeafClick={handleSecondaryLeafClick}
                             />
                           ))}
                     </Box>

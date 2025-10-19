@@ -15,10 +15,18 @@ type Props = {
   indent: number;
   openedAccordions: OpenedAccordion[];
   setOpenedAccordions: Dispatch<React.SetStateAction<OpenedAccordion[]>>;
+  onLeafClick?: (item: MenuItem) => void;
   className?: string;
 };
 
-export function SecondaryItem({ item, indent = 0, openedAccordions, setOpenedAccordions, className }: Props) {
+export function SecondaryItem({
+  item,
+  indent = 0,
+  openedAccordions,
+  setOpenedAccordions,
+  onLeafClick,
+  className,
+}: Props) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
 
@@ -105,6 +113,7 @@ export function SecondaryItem({ item, indent = 0, openedAccordions, setOpenedAcc
         aria-label={t(item.label)}
         component={Link}
         to={item.href}
+        onClick={() => onLeafClick?.(item)}
       >
         {t(item.label)}
       </Button>
@@ -155,6 +164,7 @@ export function SecondaryItem({ item, indent = 0, openedAccordions, setOpenedAcc
             indent={indent + 1}
             openedAccordions={openedAccordions}
             setOpenedAccordions={setOpenedAccordions}
+            onLeafClick={onLeafClick}
           />
         ))}
       </AccordionDetails>
