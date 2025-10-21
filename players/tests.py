@@ -4,6 +4,8 @@ from django.urls import reverse
 from accounts.models import CustomUser  # Импортируем пользовательскую модель
 from clubs.models import Club
 from players.models import Player
+from players.training_logic import conduct_player_training
+from players.training import TrainingSettings
 
 class PlayerTests(TestCase):
     def setUp(self):
@@ -54,3 +56,25 @@ class PlayerTests(TestCase):
         self.assertContains(response, 'Strength: 80')
         self.assertContains(response, 'Stamina: 75')
         self.assertContains(response, 'Pace: 70')
+
+    def test_simple_player_training(self):
+        """Проверяем базовую тренировку полевого игрока."""
+        player = Player.objects.create(
+            club=self.club,
+            first_name='Train',
+            last_name='Me',
+            age=17,  # до возраста начала расцвета
+            position='Central Midfielder'
+        )
+
+        result = conduct_player_training(player)
+
+        # настройки тренировок должны быть созданы
+        self.assertTrue(TrainingSettings.objects.filter(player=player).exists())
+
+        # хотя бы одна характеристика должна измениться
+        self.assertGreater(result['attributes_improved'], 0)
+        self.assertTrue(result['changes'])
+        for attr, (old, new) in result['changes'].items():
+            self.assertEqual(getattr(player, attr), new)
+            self.assertGreaterEqual(new, old)
