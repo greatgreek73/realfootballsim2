@@ -2,6 +2,7 @@ from django import forms
 from django_countries.widgets import CountrySelectWidget
 from .models import Club
 
+
 AVAILABLE_COUNTRIES = [
     ('GB', 'Great Britain'),
     ('ES', 'Spain'),

@@ -10,7 +10,7 @@ def extract_player_id(slot_val):
             player_id = slot_val.get("playerId")
             # ╨Я╤А╨╛╨▓╨╡╤А╤П╨╡╨╝ ╤З╤В╨╛ ╤Н╤В╨╛ ╨┤╨╡╨╣╤Б╤В╨▓╨╕╤В╨╡╨╗╤М╨╜╨╛ ╤Б╤В╤А╨╛╨║╨░ ╨╕╨╗╨╕ ╤З╨╕╤Б╨╗╨╛
             return str(player_id) if player_id is not None else None
-        elif slot_val is not None:
+        if isinstance(slot_val, (str, int)):
             # ╨б╤В╨░╤А╤Л╨╣ ╤Д╨╛╤А╨╝╨░╤В (╨┐╤А╨╛╤Б╤В╨╛ ╤Б╤В╤А╨╛╨║╨░ ╨╕╨╗╨╕ ╤З╨╕╤Б╨╗╨╛)
             return str(slot_val)
         return None

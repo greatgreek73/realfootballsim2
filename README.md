@@ -44,3 +44,12 @@ pytest
 ```
 
 Tests cover championships, season transitions and basic Celery task behaviour.
+
+To re-run tests automatically while you edit Python files, start the watcher script (PowerShell):
+```powershell
+pwsh .\scripts\watch_tests.ps1
+```
+You can pass extra pytest arguments, for example to focus on a single test:
+```powershell
+pwsh .\scripts\watch_tests.ps1 --PytestArgs tests\test_utils.py::test_extract_player_id_handles_supported_inputs
+```
