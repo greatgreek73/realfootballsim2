@@ -49,6 +49,13 @@ echo [%date% %time%] Starting Frontend Dev Server...
 start "Frontend Dev" cmd /k ^
  "chcp 65001>nul && color 0F && cd /d %~dp0frontend && (if not exist node_modules npm install) && npm run dev"
 
+timeout /t 2 > nul
+
+:: 6) Test watcher (cyan)
+echo [%date% %time%] Starting Test Watcher...
+start "Test Watcher" pwsh -NoExit -Command ^
+ "Set-Location -Path %~dp0; pwsh .\scripts\watch_tests.ps1"
+
 echo.
 echo [%date% %time%] All processes started!
 echo.
@@ -58,6 +65,7 @@ echo - Blue  : Celery Worker
 echo - Red   : Celery Beat
 echo - Yellow: Flower (UI http://127.0.0.1:5555)
 echo - White : Frontend Dev Server (http://localhost:5173)
+echo - Cyan  : Test Watcher (pytest auto-runner)
 echo.
 echo Press any key to stop all processes...
 echo =====================================
@@ -71,6 +79,7 @@ taskkill /F /FI "WindowTitle eq Celery Worker*" /T
 taskkill /F /FI "WindowTitle eq Celery Beat*"   /T
 taskkill /F /FI "WindowTitle eq Flower*"        /T
 taskkill /F /FI "WindowTitle eq Frontend Dev*"  /T
+taskkill /F /FI "WindowTitle eq Test Watcher*"  /T
 
 echo.
 echo [%date% %time%] All processes stopped.

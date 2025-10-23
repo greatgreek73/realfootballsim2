@@ -23,7 +23,7 @@ def _get_user_club(user):
                 return club
         except Exception:
             pass
-    return _first(Club.objects.all())
+    return None
 
 
 def _as_text(v):
