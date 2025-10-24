@@ -64,7 +64,7 @@ export default function CreateClubPage() {
   });
 
   return (
-    <Box className="flex min-h-screen items-start lg:items-center justify-center bg-background-default p-4 pt-16">
+    <Box className="flex min-h-screen items-start justify-center bg-background-default p-4">
       <Paper elevation={3} className="w-full max-w-xl rounded-4xl p-8">
         <Stack spacing={3}>
           <Box>
