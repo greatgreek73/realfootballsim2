@@ -1,9 +1,16 @@
 # clubs/api_views.py
+import json
+
 from django.http import JsonResponse, Http404
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
+from django.views.decorators.http import require_POST
 
 from clubs.models import Club
+from clubs.forms import ClubForm
+from clubs.services import generate_initial_players
 from players.models import Player
+from tournaments.models import League
 
 
 def _first(qs):
@@ -54,6 +61,35 @@ def _auth_required_json(request):
     if not getattr(request, "user", None) or not request.user.is_authenticated:
         return JsonResponse({"detail": "Authentication required"}, status=401)
     return None
+
+
+@require_POST
+@login_required
+def create_club(request):
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except Exception:
+        payload = {}
+
+    form = ClubForm(payload)
+    if not form.is_valid():
+        return JsonResponse({"detail": "invalid", "errors": form.errors}, status=400)
+
+    with transaction.atomic():
+        club = form.save(commit=False)
+        club.owner = request.user
+        club.is_bot = False
+        club._skip_clean = True
+
+        league = League.objects.filter(country=club.country, level=1).first()
+        if not league:
+            return JsonResponse({"detail": "league_not_found"}, status=400)
+
+        club.league = league
+        club.save()
+        generate_initial_players(club)
+
+    return JsonResponse({"detail": "ok", "club": {"id": club.id, "name": club.name}})
 
 
 def my_club(request):

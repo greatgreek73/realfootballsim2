@@ -9,7 +9,7 @@ class SignUpView(CreateView):
     model = get_user_model()
     form_class = CustomUserCreationForm
     template_name = 'auth/sign-up.html'
-    success_url = reverse_lazy('core:home')
+    success_url = reverse_lazy('clubs:create_club')
     
     def form_valid(self, form):
         """Log in the user after successful registration"""

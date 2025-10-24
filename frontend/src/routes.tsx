@@ -71,6 +71,7 @@ const AppRoutes = () => (
     <Route element={<AppLayout />}>
       {/* Core pages */}
       <Route key="my-club" path="/my-club" element={lazyLoad("/my-club")} />
+      <Route key="my-club-create" path="/my-club/create" element={lazyLoad("/my-club/create")} />
       <Route key="my-club-players" path="/my-club/players" element={lazyLoad("/my-club/players")} />
       <Route key="player-overview" path="/player/overview" element={lazyLoad("/player/overview")} />
       <Route key="matches" path="/matches" element={lazyLoad("/matches")} />

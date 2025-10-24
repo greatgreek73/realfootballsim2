@@ -15,7 +15,7 @@ from faker import Faker
 
 from .models import Club
 from .forms import ClubForm
-from .country_locales import country_locales
+from .services import generate_initial_players, get_locale_from_country_code
 from players.models import Player
 from players.utils import generate_player_stats
 from players.constants import PLAYER_PRICES
@@ -27,12 +27,6 @@ from players.services.avatar import generate_and_save_avatar
 # --- /ADDED ---
 
 logger = logging.getLogger(__name__)
-
-def get_locale_from_country_code(country_code):
-    """
-    Возвращает строку локали (например, 'en_GB') для заданного кода страны.
-    """
-    return country_locales.get(country_code, 'en_US')
 
 class CreateClubView(CreateView):
     """
@@ -65,7 +59,7 @@ class CreateClubView(CreateView):
                 club.save()
 
                 # Generate initial 16 players for the new club
-                self.generate_initial_players(club)
+                generate_initial_players(club)
 
                 if not club.id:
                     messages.error(
@@ -106,72 +100,12 @@ class CreateClubView(CreateView):
             logger.error(f'Error creating club: {str(e)}')
             messages.error(self.request, f'Error creating club: {str(e)}')
             return self.form_invalid(form)
-
-    def generate_initial_players(self, club):
-        """
-        Генерирует начальный состав из 16 игроков для новой команды пользователя:
-        - 11 игроков основы
-        - 5 запасных
-        """
-        positions = [
-            # Основной состав (11)
-            {"position": "Goalkeeper",         "class": 4},  # 1  Вратарь
-            {"position": "Right Back",         "class": 4},  # 2
-            {"position": "Center Back",        "class": 4},  # 3
-            {"position": "Center Back",        "class": 4},  # 4
-            {"position": "Left Back",          "class": 4},  # 5
-            {"position": "Left Midfielder",    "class": 4},  # 6 
-            {"position": "Central Midfielder", "class": 4},  # 7
-            {"position": "Central Midfielder", "class": 4},  # 8 
-            {"position": "Right Midfielder",   "class": 4},  # 9
-            {"position": "Center Forward",     "class": 4},  # 10
-            {"position": "Center Forward",     "class": 4},  # 11
-
-            # Запас (5)
-            {"position": "Goalkeeper",         "class": 4},  # 12
-            {"position": "Center Back",        "class": 4},  # 13
-            {"position": "Central Midfielder", "class": 4},  # 14
-            {"position": "Central Midfielder", "class": 4},  # 15
-            {"position": "Center Forward",     "class": 4},  # 16
-        ]
-
-        country_code = club.country.code
-        locale = get_locale_from_country_code(country_code)
-        fake = Faker(locale)
-
-        for player_info in positions:
-            # Генерируем уникальное имя
-            while True:
-                first_name = fake.first_name_male()
-                last_name = (
-                    fake.last_name_male()
-                    if hasattr(fake, 'last_name_male')
-                    else fake.last_name()
-                )
-                if not Player.objects.filter(first_name=first_name, last_name=last_name).exists():
-                    break
-
-            # Генерируем характеристики игрока
-            stats = generate_player_stats(player_info["position"], player_info["class"])
-
-            # Создаем игрока
-            Player.objects.create(
-                club=club,
-                first_name=first_name,
-                last_name=last_name,
-                nationality=club.country,
-                # Новые игроки начального состава всегда 17 лет
-                age=17,
-                position=player_info["position"],
-                player_class=player_info["class"],
-                **stats
-            )
-
     def form_invalid(self, form):
         messages.error(
             self.request,
             'Error creating club. Please check your input.'
         )
+        return super().form_invalid(form)
         return super().form_invalid(form)
 
 

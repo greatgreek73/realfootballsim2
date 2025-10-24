@@ -5,6 +5,9 @@ from django.contrib.auth import get_user_model
 from django.test import Client, override_settings
 from django.urls import reverse
 
+from clubs.models import Club
+from tournaments.models import League
+
 
 @pytest.mark.django_db
 @override_settings(ALLOWED_HOSTS=["testserver", "localhost", "127.0.0.1"])
@@ -67,3 +70,25 @@ def test_api_signup_creates_user_via_json():
     created_user = user_model.objects.get(username=username)
     assert created_user.email == email
     assert "_auth_user_id" in client.session
+
+
+@pytest.mark.django_db
+def test_api_create_club_generates_club():
+    client = Client()
+    user = get_user_model().objects.create_user(
+        username="club_creator", email="club@example.com", password="StrongPass123!"
+    )
+    client.force_login(user)
+
+    League.objects.create(name="Test League", country="GB", level=1)
+
+    response = client.post(
+        "/api/clubs/create/",
+        data=json.dumps({"name": "Test FC", "country": "GB"}),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    club = Club.objects.get(owner=user)
+    assert club.name == "Test FC"
+    assert club.player_set.count() == 16

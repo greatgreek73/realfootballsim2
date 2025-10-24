@@ -19,7 +19,6 @@ import {
 } from "@mui/material";
 
 import Logo from "@/components/logo/logo";
-import { DEFAULTS } from "@/config";
 import NiCheck from "@/icons/nexture/ni-check";
 import NiCross from "@/icons/nexture/ni-cross";
 import NiCrossSquare from "@/icons/nexture/ni-cross-square";
@@ -88,7 +87,7 @@ export default function Page() {
           password1: values.password,
           password2: values.password,
         });
-        navigate(DEFAULTS.appRoot, { replace: true });
+        navigate("/my-club/create", { replace: true });
       } catch (err: any) {
         setServerError(err?.message ?? "Sign up failed");
       } finally {
