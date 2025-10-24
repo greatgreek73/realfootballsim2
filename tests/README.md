@@ -22,3 +22,6 @@
    - `test_generate_player_stats_structure`: проверяет набор полей и диапазон значений для вратаря и нападающего.
    - `test_generate_player_stats_position_modifiers`: сравнивает модификаторы для защитника и нападающего.
    - `test_generate_player_stats_class_modifier`: убеждается, что класс игрока влияет на средний уровень характеристик.
+
+6. [test_player_models.py](test_player_models.py)
+   - `test_get_player_line`: проверяет, что `get_player_line` корректно классифицирует игрока по линии (GK/DEF/MID/FWD) для популярных и fallback‑позиций.
