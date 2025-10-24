@@ -25,3 +25,6 @@
 
 6. [test_player_models.py](test_player_models.py)
    - `test_get_player_line`: проверяет, что `get_player_line` корректно классифицирует игрока по линии (GK/DEF/MID/FWD) для популярных и fallback‑позиций.
+
+7. [test_training_logic.py](test_training_logic.py)
+   - `test_calculate_training_points`: проверяет, как `calculate_training_points` учитывает возрастной модификатор, бонус bloom и нижнюю границу набора очков.
