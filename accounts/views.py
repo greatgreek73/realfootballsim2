@@ -1,27 +1,15 @@
 from django.contrib.auth import get_user_model, login
-from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
-import json
+from .forms import CustomUserCreationForm
 
 # SignUpView using UserCreationForm with CustomUser model
 class SignUpView(CreateView):
     model = get_user_model()
-    form_class = UserCreationForm
+    form_class = CustomUserCreationForm
     template_name = 'auth/sign-up.html'
     success_url = reverse_lazy('core:home')
-    
-    def get_form_class(self):
-        """Override to ensure UserCreationForm uses our custom user model"""
-        from django import forms
-        
-        class CustomModelUserCreationForm(UserCreationForm):
-            class Meta:
-                model = get_user_model()
-                fields = ("username",)
-                
-        return CustomModelUserCreationForm
     
     def form_valid(self, form):
         """Log in the user after successful registration"""

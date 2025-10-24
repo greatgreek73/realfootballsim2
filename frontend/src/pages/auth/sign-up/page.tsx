@@ -24,6 +24,7 @@ import NiCheck from "@/icons/nexture/ni-check";
 import NiCross from "@/icons/nexture/ni-cross";
 import NiCrossSquare from "@/icons/nexture/ni-cross-square";
 import { cn } from "@/lib/utils";
+import { postJSON } from "@/lib/apiClient";
 
 const validationSchema = yup.object({
   name: yup.string().required("The field is required").min(3, "Should be at least 3 characters"),
@@ -66,6 +67,8 @@ const InputErrorTooltip = ({ title }: InputErrorProps) => {
 export default function Page() {
   const navigate = useNavigate();
   const [submitted, setSubmitted] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const formik = useFormik({
     initialValues: {
@@ -75,9 +78,22 @@ export default function Page() {
       password: "",
     },
     validationSchema,
-    onSubmit: (values) => {
-      console.log(JSON.stringify(values, null, 2));
-      navigate(DEFAULTS.appRoot);
+    onSubmit: async (values) => {
+      setServerError(null);
+      setLoading(true);
+      try {
+        await postJSON("/api/auth/signup/", {
+          username: values.name.trim(),
+          email: values.email.trim(),
+          password1: values.password,
+          password2: values.password,
+        });
+        navigate(DEFAULTS.appRoot, { replace: true });
+      } catch (err: any) {
+        setServerError(err?.message ?? "Sign up failed");
+      } finally {
+        setLoading(false);
+      }
     },
     validateOnBlur: false,
     validateOnMount: false,
@@ -167,13 +183,19 @@ export default function Page() {
 
                 <Box
                   component={"form"}
-                  onSubmit={(event) => {
-                    setSubmitted(true);
-                    formik.handleSubmit(event);
-                  }}
-                  className="flex flex-col"
-                >
-                  <FormControl className="outlined" variant="standard" size="small">
+                onSubmit={(event) => {
+                  setSubmitted(true);
+                  formik.handleSubmit(event);
+                }}
+                className="flex flex-col"
+              >
+                {serverError && (
+                  <Alert severity="error" icon={<NiCrossSquare />} className="neutral bg-background-paper/60!">
+                    <AlertTitle>Registration failed</AlertTitle>
+                    {serverError}
+                  </Alert>
+                )}
+                <FormControl className="outlined" variant="standard" size="small">
                     <FormLabel component="label" className="flex flex-row">
                       Name{" "}
                       {formik.touched.name && formik.errors.name && <InputErrorTooltip title={formik.errors.name} />}
@@ -307,9 +329,9 @@ export default function Page() {
                     >
                       Reset Password
                     </Link>
-                    <Button type="submit" variant="contained" className="mb-4">
-                      Continue
-                    </Button>
+                  <Button type="submit" variant="contained" className="mb-4" disabled={loading}>
+                    {loading ? "Working…" : "Continue"}
+                  </Button>
                   </Box>
 
                   <Typography variant="body2" className="text-text-secondary">
