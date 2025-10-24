@@ -17,3 +17,8 @@
      * guarantees every `(first_name, last_name)` pair is unique;
      * matches the position distribution template (2 GK, 3 CB, 4 CM, etc.);
      * verifies each player has class 4 and age 17.
+
+5. [test_player_utils.py](test_player_utils.py)
+   - `test_generate_player_stats_structure`: проверяет набор полей и диапазон значений для вратаря и нападающего.
+   - `test_generate_player_stats_position_modifiers`: сравнивает модификаторы для защитника и нападающего.
+   - `test_generate_player_stats_class_modifier`: убеждается, что класс игрока влияет на средний уровень характеристик.
