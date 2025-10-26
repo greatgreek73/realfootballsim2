@@ -52,3 +52,30 @@
 10. [test_accounts_management.py](test_accounts_management.py)
     - `test_create_test_user_creates_account`: проверяет, что management-команда создаёт тестового пользователя с ожидаемыми полями и паролем.
     - `test_create_test_user_updates_existing_account`: подтверждает, что команда обновляет существующую запись и сбрасывает пароль, tokens и money до дефолтов.
+11. [test_transfers_forms.py](test_transfers_forms.py)
+    - `test_transfer_listing_form_rejects_price_below_player_value`: проверяет, что форма листинга не пропускает цену ниже базовой стоимости игрока.
+    - `test_transfer_listing_form_accepts_valid_payload`: удостоверяется, что корректные данные сохраняются и привязываются к игроку.
+    - `test_transfer_offer_form_requires_listing_and_club`: проверяет, что форма ставки требует контекст аукциона (листинг и клуб).
+    - `test_transfer_offer_form_validates_bid_amount_and_balance`: убеждается, что ставка не может быть ниже запрошенной цены и проходит при достаточном балансе.
+    - `test_transfer_offer_form_flags_insufficient_funds`: фиксирует ошибку при нехватке средств у клуба-покупателя.
+
+12. [test_transfers_models.py](test_transfers_models.py)
+    - `test_transfer_listing_*`: покрывает ключевые сценарии листинга (создание срока, отмена/завершение/истечение, выбор лучшей ставки).
+    - `test_transfer_offer_save_triggers_extend_for_new_pending_offer`: проверяет автопродление аукциона при новой ставке.
+    - `test_transfer_offer_extend_auction_if_needed_extends_when_under_threshold`: убеждается, что срок продлевается только при малом остатке времени.
+    - `test_transfer_offer_accept_success_flow`: проверяет успешный трансфер игрока, движение средств и запись истории.
+    - `test_transfer_offer_accept_fails_when_insufficient_funds` и `test_transfer_offer_reject_and_cancel`: контролируют отказ и отмену ставки.
+
+13. [test_transfers_views.py](test_transfers_views.py)
+    - `test_transfer_market_lists_active_offers`: проверяет фильтрацию активных листингов на рынке.
+    - `test_transfer_listing_detail_*`: покрывает экран деталей как для продавца, так и для покупателя.
+    - `test_create_transfer_listing_get_and_post`: удостоверяется, что форма рендерится и создаёт листинг.
+    - `test_club_transfers_view_context`: контролирует состав данных дашборда клуба.
+    - `test_cancel_transfer_listing_redirects`, `test_cancel_transfer_offer_redirects`, `test_accept_transfer_offer_redirects`: проверяют информационные редиректы.
+    - `test_reject_transfer_offer_requires_seller`: проверяет права и смену статуса при отклонении ставки.
+    - `test_transfer_history_filters`: убеждается, что фильтрация по сезону/клубу отрабатывает без ошибок.
+    - `test_expire_transfer_listing_requires_expired_active_listing`: прогоняет API завершения аукциона с победителем и без него.
+    - `test_get_listing_info_returns_expected_payload`: проверяет выдачу таймера и ставки для активного/неактивного листинга.
+
+14. [test_transfers_template_tags.py](test_transfers_template_tags.py)
+    - `test_get_item_returns_value_or_none`: убеждается, что шаблонный фильтр безопасно достаёт значения из словаря.
