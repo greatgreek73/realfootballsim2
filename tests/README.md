@@ -79,3 +79,15 @@
 
 14. [test_transfers_template_tags.py](test_transfers_template_tags.py)
     - `test_get_item_returns_value_or_none`: убеждается, что шаблонный фильтр безопасно достаёт значения из словаря.
+15. [test_tournaments_season.py](test_tournaments_season.py)
+    - `test_season_clean_requires_first_day_of_month`: проверяет, что дата начала сезона строго первый день месяца.
+    - `test_season_clean_requires_month_end`: убеждается, что дата окончания совпадает с последним числом месяца.
+    - `test_season_clean_passes_for_valid_dates`: подтверждает отсутствие ошибок при корректных границах.
+    - `test_season_february_helpers`: покрывает свойства `is_february` и `needs_double_matchday`.
+    - `test_season_get_double_matchday_dates_returns_expected_values`: проверяет даты двойных туров.
+    - `test_season_save_assigns_name_if_missing`: убеждается, что `save` автогенерирует название.
+    - `test_create_next_season_increments_number_and_uses_date_provider`: тестирует `create_next_season` с заглушкой календаря.
+16. [test_tournaments_tasks.py](test_tournaments_tasks.py)
+    - `test_check_season_end_creates_new_season`: проверяет, что при завершении сезона вызываются переходы и создаётся новый сезон.
+    - `test_check_season_end_skips_if_not_ready`: убеждается, что при несработавших условиях сезон остаётся активным.
+    - `test_check_season_end_creates_initial_if_none`: покрывает ветку с отсутствием активного сезона и автосозданием.
