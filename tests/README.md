@@ -88,6 +88,21 @@
     - `test_season_save_assigns_name_if_missing`: убеждается, что `save` автогенерирует название.
     - `test_create_next_season_increments_number_and_uses_date_provider`: тестирует `create_next_season` с заглушкой календаря.
 16. [test_tournaments_tasks.py](test_tournaments_tasks.py)
-    - `test_check_season_end_creates_new_season`: проверяет, что при завершении сезона вызываются переходы и создаётся новый сезон.
-    - `test_check_season_end_skips_if_not_ready`: убеждается, что при несработавших условиях сезон остаётся активным.
-    - `test_check_season_end_creates_initial_if_none`: покрывает ветку с отсутствием активного сезона и автосозданием.
+    - 	est_check_season_end_creates_new_season: ���������, ��� ��� ���������� ������ ���������� �������� � �������� ����� �����.
+    - 	est_check_season_end_skips_if_not_ready: ����������, ��� ��� ������������� �������� ����� ������� ��������.
+    - 	est_check_season_end_creates_initial_if_none: ��������� ����� � ����������� ��������� ������ � �������������.
+    - 	est_extract_player_ids_from_lineup_handles_values: �������� �������� ID �� ������ ��������.
+    - 	est_complete_lineup_*: �������� ������������� ���������� состава и обработку нехватки игроков.
+17. [test_clubs_lineup.py](test_clubs_lineup.py)
+    - `test_save_team_lineup_persists_lineup`: проверяет успешное сохранение состава через API.
+    - `test_save_team_lineup_rejects_more_than_eleven`: удостоверяется, что сервер не принимает более 11 игроков.
+    - `test_save_team_lineup_requires_goalkeeper`: требует наличие вратаря в составе.
+    - `test_save_team_lineup_rejects_foreign_player`: отклоняет игроков чужих клубов.
+    - `test_get_team_lineup_returns_players`: возвращает сохранённый состав с данными игроков.
+    - `test_get_team_lineup_denies_foreign_user`: запрещает доступ к данным чужого клуба.
+
+18. [test_matches_lineup.py](test_matches_lineup.py)
+    - `test_get_lineup_from_club_returns_full_lineup`: проверяет чтение сохранённого состава клуба.
+    - `test_get_lineup_from_club_returns_none_for_invalid`: удостоверяется, что неполные данные игнорируются.
+    - `test_auto_select_lineup_produces_442`: тестирует автоматическое формирование схемы 4-4-2.
+    - `test_extract_player_id_handles_multiple_formats`: покрывает универсальный извлекатель ID.

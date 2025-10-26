@@ -5,7 +5,8 @@ import pytest
 from django.utils import timezone
 
 from tournaments import tasks as tournament_tasks
-from tournaments.models import Season, Championship, League
+from tournaments.models import Season
+from tournaments.tasks import complete_lineup, extract_player_ids_from_lineup
 
 
 pytestmark = pytest.mark.django_db
@@ -96,3 +97,53 @@ def test_check_season_end_creates_initial_if_none(monkeypatch):
 
     assert Season.objects.filter(is_active=True).count() == 1
     assert "created initial season" in result or "created initial" in result
+
+def test_extract_player_ids_from_lineup_handles_values():
+    lineup = {
+        "0": {"playerId": "10"},
+        "1": {"playerId": 20},
+        "2": {"playerId": None},
+    }
+    assert extract_player_ids_from_lineup(lineup) == {10, 20}
+    assert extract_player_ids_from_lineup("invalid") == set()
+
+
+def test_complete_lineup_fills_missing_slots(monkeypatch, user_with_club, player_factory):
+    _, club = user_with_club(username="lineup-complete", club_name="Auto Complete FC")
+    positions = [
+        "Goalkeeper",
+        "Right Back",
+        "Left Back",
+        "Center Back",
+        "Center Back",
+        "Central Midfielder",
+        "Central Midfielder",
+        "Right Midfielder",
+        "Left Midfielder",
+        "Center Forward",
+        "Center Forward",
+        "Attacking Midfielder",
+        "Defensive Midfielder",
+    ]
+    players = [player_factory(club, position=pos, idx=idx + 1) for idx, pos in enumerate(positions)]
+
+    current_lineup = {
+        "1": {"playerId": str(players[1].id), "playerPosition": players[1].position},
+        "2": {"playerId": str(players[2].id), "playerPosition": players[2].position},
+    }
+
+    monkeypatch.setattr("tournaments.tasks.random.sample", lambda seq, k: list(seq)[:k])
+
+    result = complete_lineup(club, current_lineup)
+    assert result is not None
+    assert len(result) == 11
+    assert result["0"]["playerId"] == str(players[0].id)
+    assert len({slot["playerId"] for slot in result.values()}) == 11
+
+
+def test_complete_lineup_returns_none_when_insufficient_players(user_with_club, player_factory):
+    _, club = user_with_club(username="lineup-short", club_name="Short Squad FC")
+    for idx in range(9):
+        player_factory(club, position="Center Back", idx=idx + 1)
+
+    assert complete_lineup(club, {}) is None
