@@ -88,11 +88,11 @@
     - `test_season_save_assigns_name_if_missing`: убеждается, что `save` автогенерирует название.
     - `test_create_next_season_increments_number_and_uses_date_provider`: тестирует `create_next_season` с заглушкой календаря.
 16. [test_tournaments_tasks.py](test_tournaments_tasks.py)
-    - 	est_check_season_end_creates_new_season: ���������, ��� ��� ���������� ������ ���������� �������� � �������� ����� �����.
-    - 	est_check_season_end_skips_if_not_ready: ����������, ��� ��� ������������� �������� ����� ������� ��������.
-    - 	est_check_season_end_creates_initial_if_none: ��������� ����� � ����������� ��������� ������ � �������������.
-    - 	est_extract_player_ids_from_lineup_handles_values: �������� �������� ID �� ������ ��������.
-    - 	est_complete_lineup_*: �������� ������������� ���������� состава и обработку нехватки игроков.
+    - test_check_season_end_creates_new_season, test_check_season_end_skips_if_not_ready, test_check_season_end_creates_initial_if_none: покрывают Celery-задачу завершения сезона.
+    - test_extract_player_ids_from_lineup_handles_values: извлекает идентификаторы игроков из различных форматов лайнапа.
+    - test_complete_lineup_*: дополняют состав клуба и обрабатывают нехватку игроков.
+    - test_start_scheduled_matches_*: убеждаются, что матчи переходят в in_progress или пропускаются при неполных составах.
+    - test_advance_match_minutes_*: контролируют обновление минуты, создание событий и реакцию при отсутствии матчей.
 17. [test_clubs_lineup.py](test_clubs_lineup.py)
     - `test_save_team_lineup_persists_lineup`: проверяет успешное сохранение состава через API.
     - `test_save_team_lineup_rejects_more_than_eleven`: удостоверяется, что сервер не принимает более 11 игроков.
@@ -106,3 +106,37 @@
     - `test_get_lineup_from_club_returns_none_for_invalid`: удостоверяется, что неполные данные игнорируются.
     - `test_auto_select_lineup_produces_442`: тестирует автоматическое формирование схемы 4-4-2.
     - `test_extract_player_id_handles_multiple_formats`: покрывает универсальный извлекатель ID.
+
+19. [test_match_simulation_utils.py](test_match_simulation_utils.py)
+    - `test_clamp*`: проверяет ограничение значений clamp/clamp_int.
+    - `test_zone_prefix_and_side`, `test_mirror_side`, `test_make_zone_handles_goalkeeper`: фиксируют логику разбора и зеркалирования зон.
+    - `test_random_adjacent_zone_*`, `test_forward_dribble_zone_*`, `test_next_zone`: гарантируют корректные переходы между зонами поля.
+    - `test_mirrored_zone`, `test_zone_conditions_mapping`: проверяют зеркальные зоны и фильтрацию игроков по позициям.
+
+20. [test_match_simulation_probabilities.py](test_match_simulation_probabilities.py)
+    - `test_pass_success_probability_*`: показывает рост шанса паса и особый случай GK->DEF.
+    - `test_shot_success_probability_respects_goalkeeper`, `test_long_shot_probability_lower_than_regular`: сопоставляют эффективность ударов.
+    - `test_foul_probability_*`, `test_dribble_success_probability_*`: фиксируют границы и монотонность фолов и дриблинга.
+
+21. [test_match_simulation_morale.py](test_match_simulation_morale.py)
+    - `test_*_multiplier`, `test_calculate_morale_change_*`: проверяют мультипликаторы времени/счёта/зоны и клампы ±15.
+    - `test_apply_*_morale_change`, `test_recover_morale_gradually_moves_towards_base`: подтверждают корректное изменение и восстановление морали.
+    - `test_apply_team_morale_effect_*`: проверяют применение событий ко всей команде (dict/строка).
+    - `test_update_and_get_team_momentum`: гарантирует обновление моментума.
+
+22. [test_match_simulation_lineups.py](test_match_simulation_lineups.py)
+    - `test_choose_player*`, `test_choose_players_respects_exclude`: покрывают выбор игрока из лайнапа (строка/словарь) с учётом веса positioning.
+    - `test_ensure_match_lineup_set_*`: подтверждают дописывание состава и отказ при невозможности complete_lineup.
+    - `test_auto_select_lineup_*`: документируют работу auto_select_lineup и обработку исключений.
+    - `test_send_update_*`: фиксируют контракт WebSocket (payload, st_possessions, отсутствие channel layer).
+
+23. [test_match_simulation_actions.py](test_match_simulation_actions.py)
+    - `test_simulate_one_action_*`: интеграционные сценарии — старт от GK, гол, промах, пас, перехват, дриблинг, отсутствие получателя, длинный пас, дальний удар.
+    - `test_simulate_active_matches_smoke`: дымовая проверка фоновой задачи simulate_active_matches.
+    - `test_get_opponent_team_returns_home_when_missing`: подтверждает fallback helper-а.
+
+24. [test_tournaments_utils.py](test_tournaments_utils.py)
+    - `test_check_consecutive_matches`, `test_get_team_matches_returns_sorted_rounds`, `test_validate_schedule_balance_counts_home_and_away`: проверяют базовые утилиты расписания.
+    - `test_generate_league_schedule_*`: утверждают структуру двойного круга и ограничение на 16 команд.
+    - `test_create_championship_matches_*`: проверяют генерацию матчей, очистку и сдвиг времени для второго дивизиона.
+    - `test_validate_championship_schedule_*`: покрывают валидатор для корректного и нарушенного расписания.

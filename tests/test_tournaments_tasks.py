@@ -1,12 +1,19 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import pytest
 
+from django.conf import settings
 from django.utils import timezone
 
 from tournaments import tasks as tournament_tasks
 from tournaments.models import Season
-from tournaments.tasks import complete_lineup, extract_player_ids_from_lineup
+from tournaments.tasks import (
+    advance_match_minutes,
+    complete_lineup,
+    extract_player_ids_from_lineup,
+    start_scheduled_matches,
+)
+from matches.models import Match
 
 
 pytestmark = pytest.mark.django_db
@@ -147,3 +154,166 @@ def test_complete_lineup_returns_none_when_insufficient_players(user_with_club, 
         player_factory(club, position="Center Back", idx=idx + 1)
 
     assert complete_lineup(club, {}) is None
+
+
+def _create_players_with_prefix(club, positions, factory, prefix):
+    return [
+        factory(
+            club,
+            position=pos,
+            idx=idx + 1,
+            first_name=f"{prefix}{idx}_{club.id}_",
+        )
+        for idx, pos in enumerate(positions)
+    ]
+
+
+def _build_full_lineup(players):
+    lineup = {}
+    for idx in range(11):
+        player = players[idx]
+        lineup[str(idx)] = {
+            "playerId": str(player.id),
+            "playerPosition": player.position,
+            "slotType": "manual",
+            "slotLabel": f"SLOT_{idx}",
+        }
+    return lineup
+
+
+def test_start_scheduled_matches_promotes_ready_match(user_with_club, player_factory):
+    Match.objects.all().delete()
+    home_user, home_club = user_with_club(username="start-home", club_name="Start FC")
+    away_user, away_club = user_with_club(username="start-away", club_name="Visitors FC")
+
+    positions = [
+        "Goalkeeper",
+        "Right Back",
+        "Left Back",
+        "Center Back",
+        "Center Back",
+        "Central Midfielder",
+        "Central Midfielder",
+        "Right Midfielder",
+        "Left Midfielder",
+        "Center Forward",
+        "Center Forward",
+    ]
+    home_players = _create_players_with_prefix(home_club, positions, player_factory, "Home")
+    away_players = _create_players_with_prefix(away_club, positions, player_factory, "Away")
+
+    home_lineup = _build_full_lineup(home_players)
+    away_lineup = _build_full_lineup(away_players)
+    home_club.lineup = {"lineup": home_lineup, "tactic": "attacking"}
+    home_club.save()
+    away_club.lineup = {"lineup": away_lineup, "tactic": "defensive"}
+    away_club.save()
+
+    match = Match.objects.create(
+        home_team=home_club,
+        away_team=away_club,
+        datetime=timezone.now() - timedelta(minutes=5),
+        status="scheduled",
+    )
+
+    result = start_scheduled_matches()
+
+    match.refresh_from_db()
+    assert "1 matches started" in result
+    assert match.status == "in_progress"
+    assert match.home_lineup == home_lineup
+    assert match.away_lineup == away_lineup
+    assert match.home_tactic == "attacking"
+    assert match.away_tactic == "defensive"
+    assert match.started_at is not None
+    assert match.last_minute_update is not None
+    assert match.waiting_for_next_minute is False
+
+
+def test_start_scheduled_matches_skips_when_lineup_incomplete(user_with_club, player_factory):
+    Match.objects.all().delete()
+    home_user, home_club = user_with_club(username="start-home2", club_name="Start FC 2")
+    away_user, away_club = user_with_club(username="start-away2", club_name="Visitors FC 2")
+
+    for idx in range(9):
+        player_factory(
+            home_club,
+            position="Center Back",
+            idx=idx + 1,
+            first_name=f"Incomplete{idx}_{home_club.id}_",
+        )
+
+    positions = [
+        "Goalkeeper",
+        "Center Back",
+        "Center Back",
+        "Center Back",
+        "Center Back",
+        "Central Midfielder",
+        "Central Midfielder",
+        "Right Midfielder",
+        "Left Midfielder",
+        "Center Forward",
+        "Center Forward",
+    ]
+    away_players = _create_players_with_prefix(away_club, positions, player_factory, "Opp")
+    away_club.lineup = {"lineup": _build_full_lineup(away_players), "tactic": "balanced"}
+    away_club.save()
+
+    match = Match.objects.create(
+        home_team=home_club,
+        away_team=away_club,
+        datetime=timezone.now() - timedelta(minutes=5),
+        status="scheduled",
+    )
+
+    result = start_scheduled_matches()
+
+    match.refresh_from_db()
+    assert "0 matches started" in result and "1 skipped" in result
+    assert match.status == "scheduled"
+    assert match.home_lineup is None
+    assert match.away_lineup is None
+
+
+def test_advance_match_minutes_increments_when_ready(monkeypatch, user_with_club):
+    settings.MATCH_MINUTE_REAL_SECONDS = 1
+
+    home_user, home_club = user_with_club(username="advance-home", club_name="Advance Home")
+    away_user, away_club = user_with_club(username="advance-away", club_name="Advance Away")
+    match = Match.objects.create(
+        home_team=home_club,
+        away_team=away_club,
+        datetime=timezone.now(),
+        status="in_progress",
+        current_minute=10,
+        waiting_for_next_minute=True,
+        last_minute_update=timezone.now() - timedelta(seconds=5),
+        possession_indicator=1,
+    )
+
+    class DummyLayer:
+        def __init__(self):
+            self.messages = []
+
+        async def group_send(self, group, message):
+            self.messages.append((group, message))
+
+    dummy_layer = DummyLayer()
+    monkeypatch.setattr("channels.layers.get_channel_layer", lambda: dummy_layer)
+
+    previous_update = match.last_minute_update
+    result = advance_match_minutes()
+
+    match.refresh_from_db()
+    assert result == "Updated 1 matches"
+    assert match.current_minute == 11
+    assert match.waiting_for_next_minute is False
+    assert match.last_minute_update == previous_update + timedelta(seconds=settings.MATCH_MINUTE_REAL_SECONDS)
+    assert match.events.filter(event_type="info", minute=11).exists()
+    assert dummy_layer.messages
+
+
+def test_advance_match_minutes_no_matches_returns_message():
+    Match.objects.all().delete()
+    assert advance_match_minutes() == "No matches to update"
