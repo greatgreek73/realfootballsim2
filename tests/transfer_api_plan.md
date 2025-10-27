@@ -107,6 +107,8 @@
 - `POST /api/transfers/offers/<offer_id>/cancel/`
 - `POST /api/transfers/offers/<offer_id>/reject/`
 - `POST /api/transfers/offers/<offer_id>/accept/`
+- `GET /api/transfers/history/my/`
+- `GET /api/transfers/club/`
   - При `accept` выполняется перевод денег между владельцами, смена клуба у игрока и создание записи `TransferHistory`.
 
 ### 5. История трансферов

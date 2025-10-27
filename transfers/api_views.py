@@ -157,6 +157,69 @@ def _serialize_history(entry: TransferHistory) -> Dict[str, Any]:
     }
 
 
+def _serialize_player_light(player: Player) -> Dict[str, Any]:
+    return {
+        "id": player.id,
+        "full_name": player.full_name,
+        "position": player.position,
+        "age": player.age,
+        "base_value": player.get_purchase_cost(),
+    }
+
+
+def _build_history_response(request: HttpRequest, history_qs: QuerySet) -> JsonResponse:
+    try:
+        season_id = int(request.GET.get("season_id", "") or 0)
+    except ValueError:
+        season_id = None
+    if season_id:
+        history_qs = history_qs.filter(season_id=season_id)
+
+    try:
+        club_id = int(request.GET.get("club_id", "") or 0)
+    except ValueError:
+        club_id = None
+    if club_id:
+        history_qs = history_qs.filter(Q(from_club_id=club_id) | Q(to_club_id=club_id))
+
+    try:
+        player_id = int(request.GET.get("player_id", "") or 0)
+    except ValueError:
+        player_id = None
+    if player_id:
+        history_qs = history_qs.filter(player_id=player_id)
+
+    ordering = request.GET.get("ordering") or "-transfer_date"
+    allowed = {"-transfer_date", "transfer_date"}
+    if ordering not in allowed:
+        ordering = "-transfer_date"
+    history_qs = history_qs.order_by(ordering, "id")
+
+    try:
+        page = max(int(request.GET.get("page", "1") or 1), 1)
+    except ValueError:
+        page = 1
+
+    try:
+        page_size = int(request.GET.get("page_size", "20") or 20)
+    except ValueError:
+        page_size = 20
+    page_size = max(1, min(page_size, 100))
+
+    page_obj, paginator = _paginate_queryset(history_qs, page, page_size)
+    results = [_serialize_history(entry) for entry in page_obj]
+
+    return JsonResponse(
+        {
+            "results": results,
+            "count": paginator.count,
+            "page": page_obj.number,
+            "page_size": page_size,
+            "total_pages": paginator.num_pages,
+        }
+    )
+
+
 def _parse_json_body(request: HttpRequest) -> Dict[str, Any]:
     if not request.body:
         return {}
@@ -490,57 +553,70 @@ def transfer_history_list(request: HttpRequest) -> JsonResponse:
     if unauth:
         return unauth
 
-    history = TransferHistory.objects.select_related("player", "from_club", "to_club", "season").order_by(
-        "-transfer_date"
+    history = TransferHistory.objects.select_related("player", "from_club", "to_club", "season")
+    return _build_history_response(request, history)
+
+
+@require_GET
+def transfer_history_my(request: HttpRequest) -> JsonResponse:
+    unauth = _json_auth_required(request)
+    if unauth:
+        return unauth
+
+    user_club = _get_user_club(request.user)
+    if not user_club:
+        return JsonResponse({"detail": "You must have a club to view transfer history."}, status=404)
+
+    history = TransferHistory.objects.select_related("player", "from_club", "to_club", "season").filter(
+        Q(from_club=user_club) | Q(to_club=user_club)
     )
+    return _build_history_response(request, history)
 
-    try:
-        season_id = int(request.GET.get("season_id", "") or 0)
-    except ValueError:
-        season_id = None
-    if season_id:
-        history = history.filter(season_id=season_id)
 
-    try:
-        club_id = int(request.GET.get("club_id", "") or 0)
-    except ValueError:
-        club_id = None
-    if club_id:
-        history = history.filter(Q(from_club_id=club_id) | Q(to_club_id=club_id))
+@require_GET
+def transfer_club_dashboard(request: HttpRequest) -> JsonResponse:
+    unauth = _json_auth_required(request)
+    if unauth:
+        return unauth
 
-    try:
-        player_id = int(request.GET.get("player_id", "") or 0)
-    except ValueError:
-        player_id = None
-    if player_id:
-        history = history.filter(player_id=player_id)
+    user_club = _get_user_club(request.user)
+    if not user_club:
+        return JsonResponse({"detail": "You must have a club to view transfers."}, status=404)
 
-    ordering = request.GET.get("ordering") or "-transfer_date"
-    allowed = {"-transfer_date", "transfer_date"}
-    if ordering not in allowed:
-        ordering = "-transfer_date"
-    history = history.order_by(ordering, "id")
-
-    try:
-        page = max(int(request.GET.get("page", "1") or 1), 1)
-    except ValueError:
-        page = 1
-
-    try:
-        page_size = int(request.GET.get("page_size", "20") or 20)
-    except ValueError:
-        page_size = 20
-    page_size = max(1, min(page_size, 100))
-
-    page_obj, paginator = _paginate_queryset(history, page, page_size)
-    results = [_serialize_history(entry) for entry in page_obj]
-
-    return JsonResponse(
-        {
-            "results": results,
-            "count": paginator.count,
-            "page": page_obj.number,
-            "page_size": page_size,
-            "total_pages": paginator.num_pages,
-        }
+    active_listings = (
+        TransferListing.objects.select_related("player", "club")
+        .filter(club=user_club, status="active")
+        .order_by("-listed_at")
     )
+    listing_summaries = [_listing_summary(listing, user_club) for listing in active_listings]
+
+    players_not_listed = (
+        Player.objects.filter(club=user_club)
+        .exclude(id__in=active_listings.values_list("player__id", flat=True))
+        .order_by("id")
+    )
+    player_summaries = [_serialize_player_light(player) for player in players_not_listed]
+
+    pending_offers_qs = (
+        TransferOffer.objects.select_related("transfer_listing", "transfer_listing__club", "bidding_club")
+        .filter(
+            transfer_listing__club=user_club,
+            transfer_listing__status="active",
+            status="pending",
+        )
+        .order_by("-created_at")
+    )
+    offers_payload = [_serialize_offer(offer, offer.transfer_listing, user_club) for offer in pending_offers_qs]
+
+    history_qs = TransferHistory.objects.select_related("player", "from_club", "to_club", "season").filter(
+        Q(from_club=user_club) | Q(to_club=user_club)
+    ).order_by("-transfer_date")[:20]
+
+    payload = {
+        "club": _serialize_club(user_club),
+        "active_listings": listing_summaries,
+        "players_not_listed": player_summaries,
+        "pending_offers": offers_payload,
+        "history": [_serialize_history(entry) for entry in history_qs],
+    }
+    return JsonResponse(payload)

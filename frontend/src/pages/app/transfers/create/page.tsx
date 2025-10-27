@@ -131,7 +131,26 @@ export default function CreateTransferListingPage() {
         navigate("/transfers");
       }
     } catch (err: any) {
-      setError(err?.message ?? "Failed to create listing.");
+      let message = err?.message ?? "Failed to create listing.";
+      const jsonPart = message.match(/-\s({.+})$/);
+      if (jsonPart) {
+        try {
+          const body = JSON.parse(jsonPart[1]);
+          if (body?.errors) {
+            const flattened = Object.values(body.errors)
+              .flat()
+              .join(" ");
+            if (flattened) {
+              message = flattened;
+            }
+          } else if (body?.detail) {
+            message = body.detail;
+          }
+        } catch {
+          /* ignore parse errors */
+        }
+      }
+      setError(message);
     } finally {
       setSubmitting(false);
     }
@@ -210,11 +229,16 @@ export default function CreateTransferListingPage() {
                 <TextField
                   label="Asking Price"
                   type="number"
-                  inputProps={{ min: 0, step: 1 }}
+                  inputProps={{ min: selectedPlayer?.base_value ?? 0, step: 1 }}
                   value={askingPrice}
                   onChange={(event) => setAskingPrice(event.target.value)}
                   required
                   fullWidth
+                  helperText={
+                    selectedPlayer && typeof selectedPlayer.base_value === "number"
+                      ? `Minimum: ${formatCurrency(selectedPlayer.base_value)}`
+                      : undefined
+                  }
                 />
 
                 <TextField

@@ -19,6 +19,14 @@ export interface TransferPlayerSummary {
   club_id?: number | null;
 }
 
+export interface TransferPlayerLight {
+  id: number;
+  full_name: string;
+  position: string;
+  age: number;
+  base_value: number;
+}
+
 export interface TransferListingSummaryInfo {
   offers_count: number;
   is_owner: boolean;
@@ -143,4 +151,12 @@ export interface TransferHistoryParams {
   seasonId?: number;
   clubId?: number;
   playerId?: number;
+}
+
+export interface TransferClubDashboard {
+  club: TransferClubSummary;
+  active_listings: TransferListingSummary[];
+  players_not_listed: TransferPlayerLight[];
+  pending_offers: TransferOfferSummary[];
+  history: TransferHistoryEntry[];
 }

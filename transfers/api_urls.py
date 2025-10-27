@@ -15,4 +15,6 @@ urlpatterns = [
     path("offers/<int:offer_id>/reject/", api_views.transfer_offer_reject, name="offers-reject"),
     path("offers/<int:offer_id>/accept/", api_views.transfer_offer_accept, name="offers-accept"),
     path("history/", api_views.transfer_history_list, name="history-list"),
+    path("history/my/", api_views.transfer_history_my, name="history-my"),
+    path("club/", api_views.transfer_club_dashboard, name="club-dashboard"),
 ]

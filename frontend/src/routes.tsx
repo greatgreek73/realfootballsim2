@@ -80,6 +80,7 @@ const AppRoutes = () => (
       <Route key="match-live" path="/matches/:matchId/live" element={lazyLoad("/matches/live")} />
       <Route key="transfers" path="/transfers" element={lazyLoad("/transfers")} />
       <Route key="transfers-create" path="/transfers/create" element={lazyLoad("/transfers/create")} />
+      <Route key="transfers-my" path="/transfers/my" element={lazyLoad("/transfers/my")} />
       <Route key="transfers-history" path="/transfers/history" element={lazyLoad("/transfers/history")} />
       <Route key="transfers-detail" path="/transfers/:listingId" element={lazyLoad("/transfers/detail")} />
 

@@ -10,6 +10,7 @@ import {
   TransferListingListResponse,
   TransferOfferActionResponse,
   TransferOfferCreatePayload,
+  TransferClubDashboard,
 } from "@/types/transfers";
 
 const DEFAULT_LIST_PARAMS: Required<Pick<TransferListingListParams, "page" | "pageSize" | "ordering">> = {
@@ -156,3 +157,17 @@ export async function fetchTransferHistory(
     credentials: "include",
   });
 }
+
+export async function fetchMyTransferHistory(
+  params: TransferHistoryParams = {},
+): Promise<TransferHistoryListResponse> {
+  const query = buildHistoryQuery(params);
+  return fetchJson<TransferHistoryListResponse>(`/api/transfers/history/my/${query}`, {
+    credentials: "include",
+  });
+}
+
+export async function fetchMyTransfersDashboard(): Promise<TransferClubDashboard> {
+  return fetchJson<TransferClubDashboard>("/api/transfers/club/", { credentials: "include" });
+}
+

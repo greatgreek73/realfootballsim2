@@ -40,6 +40,7 @@ export const leftMenuItems: MenuItem[] = [
     children: [
       { id: "transfers-market", label: "Market", href: "/transfers" },
       { id: "transfers-create", label: "Create Listing", href: "/transfers/create" },
+      { id: "transfers-my", label: "My Deals", href: "/transfers/my" },
       { id: "transfers-history", label: "History", href: "/transfers/history" },
     ],
   },
