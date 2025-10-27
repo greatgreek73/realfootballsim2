@@ -32,6 +32,18 @@ export const leftMenuItems: MenuItem[] = [
     ],
   },
   {
+    id: "transfers",
+    icon: "NiStructure",
+    label: "Transfers",
+    color: "text-primary",
+    href: "/transfers",
+    children: [
+      { id: "transfers-market", label: "Market", href: "/transfers" },
+      { id: "transfers-create", label: "Create Listing", href: "/transfers/create" },
+      { id: "transfers-history", label: "History", href: "/transfers/history" },
+    ],
+  },
+  {
     id: "single-menu",
     icon: "NiDocumentFull",
     label: "menu-single-menu",

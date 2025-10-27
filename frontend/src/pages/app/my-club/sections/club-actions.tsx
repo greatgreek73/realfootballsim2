@@ -1,4 +1,5 @@
 import { Button, Card, CardContent, Stack, Tooltip } from "@mui/material";
+import { Link as RouterLink } from "react-router-dom";
 
 export type ClubActionsProps = {
   club: {
@@ -28,13 +29,9 @@ export default function ClubActions({ club, loading }: ClubActionsProps) {
               </Button>
             </span>
           </Tooltip>
-          <Tooltip title="Feature in development" placement="top-start">
-            <span>
-              <Button variant="outlined" size="medium" fullWidth disabled>
-                Transfers (soon)
-              </Button>
-            </span>
-          </Tooltip>
+          <Button component={RouterLink} to="/transfers" variant="outlined" size="medium" fullWidth disabled={disabled}>
+            Transfer Market
+          </Button>
         </Stack>
       </CardContent>
     </Card>

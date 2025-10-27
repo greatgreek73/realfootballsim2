@@ -66,6 +66,7 @@ urlpatterns = [
     path('transfers/', include(('transfers.urls', 'transfers'), namespace='transfers')),
     path('narrative/', include(('narrative.urls', 'narrative'), namespace='narrative')),
     path("api/auth/", include(("accounts.api_urls", "api-auth"), namespace="api-auth")),
+    path("api/transfers/", include(("transfers.api_urls", "transfers_api"), namespace="transfers_api")),
     path("api/", include("clubs.api_urls")),  # API клуба
     path("api/players/<int:pk>/", player_detail_api, name="api_player_detail"),
     path("api/players/<int:pk>/avatar/", player_generate_avatar_api, name="api_player_generate_avatar"),
