@@ -26,7 +26,7 @@ export function HistoryFilters({ value, onChange, onApply, onClear, loading }: H
       <TextField label="Season ID" type="number" value={value.seasonId} onChange={handleField("seasonId")} />
       <TextField label="Club ID" type="number" value={value.clubId} onChange={handleField("clubId")} />
       <TextField label="Player ID" type="number" value={value.playerId} onChange={handleField("playerId")} />
-      <Stack direction="row" spacing={1} alignItems="center">
+      <Stack direction="row" spacing={1} alignItems="flex-start" sx={{ alignSelf: "flex-start" }}>
         <Button variant="outlined" onClick={onClear} disabled={loading}>
           Clear
         </Button>
