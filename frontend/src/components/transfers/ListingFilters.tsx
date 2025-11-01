@@ -49,81 +49,81 @@ export function ListingFilters({ value, onChange, onApply, onClear, loading }: L
     };
 
   return (
-    <Grid container spacing={2}>
-      <Grid item xs={12} sm={6} md={3}>
-        <TextField select label="Position" value={value.position} onChange={handleFieldChange("position")} fullWidth>
-          {POSITION_OPTIONS.map((option) => (
-            <MenuItem key={option.value || "all"} value={option.value}>
-              {option.label}
-            </MenuItem>
-          ))}
-        </TextField>
+    <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ xs: "stretch", md: "flex-start" }}>
+      <Grid container spacing={2} flex={1}>
+        <Grid item xs={12} sm={6} md={3}>
+          <TextField select label="Position" value={value.position} onChange={handleFieldChange("position")} fullWidth>
+            {POSITION_OPTIONS.map((option) => (
+              <MenuItem key={option.value || "all"} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Grid>
+        <Grid item xs={6} sm={3} md={2}>
+          <TextField
+            label="Min Age"
+            type="number"
+            inputProps={{ min: 16, max: 45 }}
+            value={value.minAge}
+            onChange={handleFieldChange("minAge")}
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={6} sm={3} md={2}>
+          <TextField
+            label="Max Age"
+            type="number"
+            inputProps={{ min: 16, max: 45 }}
+            value={value.maxAge}
+            onChange={handleFieldChange("maxAge")}
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={6} sm={3} md={2}>
+          <TextField
+            label="Min Price"
+            type="number"
+            inputProps={{ min: 0 }}
+            value={value.minPrice}
+            onChange={handleFieldChange("minPrice")}
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={6} sm={3} md={2}>
+          <TextField
+            label="Max Price"
+            type="number"
+            inputProps={{ min: 0 }}
+            value={value.maxPrice}
+            onChange={handleFieldChange("maxPrice")}
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <TextField
+            select
+            label="Status"
+            value={value.status}
+            onChange={handleFieldChange("status")}
+            fullWidth
+          >
+            {STATUS_OPTIONS.map((option) => (
+              <MenuItem key={option.value || "all"} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Grid>
       </Grid>
-      <Grid item xs={6} sm={3} md={2}>
-        <TextField
-          label="Min Age"
-          type="number"
-          inputProps={{ min: 16, max: 45 }}
-          value={value.minAge}
-          onChange={handleFieldChange("minAge")}
-          fullWidth
-        />
-      </Grid>
-      <Grid item xs={6} sm={3} md={2}>
-        <TextField
-          label="Max Age"
-          type="number"
-          inputProps={{ min: 16, max: 45 }}
-          value={value.maxAge}
-          onChange={handleFieldChange("maxAge")}
-          fullWidth
-        />
-      </Grid>
-      <Grid item xs={6} sm={3} md={2}>
-        <TextField
-          label="Min Price"
-          type="number"
-          inputProps={{ min: 0 }}
-          value={value.minPrice}
-          onChange={handleFieldChange("minPrice")}
-          fullWidth
-        />
-      </Grid>
-      <Grid item xs={6} sm={3} md={2}>
-        <TextField
-          label="Max Price"
-          type="number"
-          inputProps={{ min: 0 }}
-          value={value.maxPrice}
-          onChange={handleFieldChange("maxPrice")}
-          fullWidth
-        />
-      </Grid>
-      <Grid item xs={12} sm={6} md={3}>
-        <TextField
-          select
-          label="Status"
-          value={value.status}
-          onChange={handleFieldChange("status")}
-          fullWidth
-        >
-          {STATUS_OPTIONS.map((option) => (
-            <MenuItem key={option.value || "all"} value={option.value}>
-              {option.label}
-            </MenuItem>
-          ))}
-        </TextField>
-      </Grid>
-      <Grid item xs={12} md={3}>
-        <Stack direction="row" spacing={1.5} className="h-full items-end">
-          <Button variant="outlined" onClick={onClear} disabled={loading}>
-            Clear
-          </Button>
-          <Button variant="contained" onClick={onApply} disabled={loading}>
-            Apply
-          </Button>
-        </Stack>
-      </Grid>
-    </Grid>
+      <Stack direction="row" spacing={1.5} alignItems="flex-start" sx={{ alignSelf: { xs: "flex-start", md: "flex-start" } }}>
+        <Button variant="outlined" onClick={onClear} disabled={loading} sx={{ height: 44 }}>
+          Clear
+        </Button>
+        <Button variant="contained" onClick={onApply} disabled={loading} sx={{ height: 44 }}>
+          Apply
+        </Button>
+      </Stack>
+    </Stack>
   );
 }
