@@ -24,9 +24,30 @@ export function HistoryFilters({ value, onChange, onApply, onClear, loading }: H
   return (
     <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
       <Stack direction={{ xs: "column", md: "row" }} sx={{ gap: { xs: 1, md: 2 } }} flex={1}>
-        <TextField label="Season ID" type="number" value={value.seasonId} onChange={handleField("seasonId")} />
-        <TextField label="Club ID" type="number" value={value.clubId} onChange={handleField("clubId")} />
-        <TextField label="Player ID" type="number" value={value.playerId} onChange={handleField("playerId")} />
+        <TextField
+          label="Season ID"
+          type="number"
+          value={value.seasonId}
+          onChange={handleField("seasonId")}
+          variant="outlined"
+          InputLabelProps={{ shrink: true }}
+        />
+        <TextField
+          label="Club ID"
+          type="number"
+          value={value.clubId}
+          onChange={handleField("clubId")}
+          variant="outlined"
+          InputLabelProps={{ shrink: true }}
+        />
+        <TextField
+          label="Player ID"
+          type="number"
+          value={value.playerId}
+          onChange={handleField("playerId")}
+          variant="outlined"
+          InputLabelProps={{ shrink: true }}
+        />
       </Stack>
       <Stack direction="row" spacing={1} alignItems="flex-start" sx={{ alignSelf: { xs: "flex-start", md: "flex-start" } }}>
         <Button variant="outlined" onClick={onClear} disabled={loading} sx={{ height: 44 }}>

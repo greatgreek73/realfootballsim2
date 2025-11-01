@@ -159,9 +159,6 @@ export default function TransfersMarketPage() {
           </Typography>
         </Box>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-          <Button variant="outlined" onClick={handleClearFilters} disabled={loading}>
-            Clear Filters
-          </Button>
           <Button variant="contained" onClick={() => navigate("/transfers/create")}>
             List a Player
           </Button>
