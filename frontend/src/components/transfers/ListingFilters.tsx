@@ -59,6 +59,8 @@ export function ListingFilters({ value, onChange, onApply, onClear, loading }: L
             onChange={handleFieldChange("position")}
             fullWidth
             sx={{ minWidth: { md: 260 } }}
+            variant="outlined"
+            InputLabelProps={{ shrink: true }}
           >
             {POSITION_OPTIONS.map((option) => (
               <MenuItem key={option.value || "all"} value={option.value}>
@@ -67,7 +69,13 @@ export function ListingFilters({ value, onChange, onApply, onClear, loading }: L
             ))}
           </TextField>
         </Grid>
-        <Grid item xs={6} sm={3} md={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md="auto"
+          sx={{ width: { md: 100 }, maxWidth: { md: 100 }, flexBasis: { md: 100 } }}
+        >
           <TextField
             label="Min Age"
             type="number"
@@ -75,9 +83,17 @@ export function ListingFilters({ value, onChange, onApply, onClear, loading }: L
             value={value.minAge}
             onChange={handleFieldChange("minAge")}
             fullWidth
+            variant="outlined"
+            InputLabelProps={{ shrink: true }}
           />
         </Grid>
-        <Grid item xs={6} sm={3} md={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md="auto"
+          sx={{ width: { md: 100 }, maxWidth: { md: 100 }, flexBasis: { md: 100 } }}
+        >
           <TextField
             label="Max Age"
             type="number"
@@ -85,6 +101,8 @@ export function ListingFilters({ value, onChange, onApply, onClear, loading }: L
             value={value.maxAge}
             onChange={handleFieldChange("maxAge")}
             fullWidth
+            variant="outlined"
+            InputLabelProps={{ shrink: true }}
           />
         </Grid>
         <Grid item xs={6} sm={3} md={2} sx={{ maxWidth: { md: 180 } }}>
@@ -95,6 +113,8 @@ export function ListingFilters({ value, onChange, onApply, onClear, loading }: L
             value={value.minPrice}
             onChange={handleFieldChange("minPrice")}
             fullWidth
+            variant="outlined"
+            InputLabelProps={{ shrink: true }}
           />
         </Grid>
         <Grid item xs={6} sm={3} md={2} sx={{ maxWidth: { md: 180 } }}>
@@ -105,6 +125,8 @@ export function ListingFilters({ value, onChange, onApply, onClear, loading }: L
             value={value.maxPrice}
             onChange={handleFieldChange("maxPrice")}
             fullWidth
+            variant="outlined"
+            InputLabelProps={{ shrink: true }}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -115,6 +137,8 @@ export function ListingFilters({ value, onChange, onApply, onClear, loading }: L
             onChange={handleFieldChange("status")}
             fullWidth
             sx={{ minWidth: { md: 200 } }}
+            variant="outlined"
+            InputLabelProps={{ shrink: true }}
           >
             {STATUS_OPTIONS.map((option) => (
               <MenuItem key={option.value || "all"} value={option.value}>
