@@ -45,7 +45,7 @@ export default function MyClubTransfersPage() {
       const response = await fetchMyTransfersDashboard();
       setDashboard(response);
     } catch (err: any) {
-      setError(err?.message ?? "Не удалось загрузить данные по трансферам клуба.");
+      setError(err?.message ?? "Failed to load transfers dashboard.");
       setDashboard(null);
     } finally {
       setLoading(false);
@@ -84,38 +84,38 @@ export default function MyClubTransfersPage() {
       await load();
       setFeedback({ severity: "success", message });
     } catch (err: any) {
-      setFeedback({ severity: "error", message: err?.message ?? "Не удалось выполнить действие." });
+      setFeedback({ severity: "error", message: err?.message ?? "Failed to perform the requested action." });
     } finally {
       setBusyKey(null);
     }
   };
 
   const handleCancelOffer = (offer: TransferOfferSummary) =>
-    runOfferAction(`cancel-${offer.id}`, () => cancelTransferOffer(offer.id), "Ставка отменена.");
+    runOfferAction(`cancel-${offer.id}`, () => cancelTransferOffer(offer.id), "Offer cancelled.");
 
   const handleAcceptOffer = (offer: TransferOfferSummary) =>
-    runOfferAction(`accept-${offer.id}`, () => acceptTransferOffer(offer.id), "Ставка принята.");
+    runOfferAction(`accept-${offer.id}`, () => acceptTransferOffer(offer.id), "Offer accepted.");
 
   const handleRejectOffer = (offer: TransferOfferSummary) =>
-    runOfferAction(`reject-${offer.id}`, () => rejectTransferOffer(offer.id), "Ставка отклонена.");
+    runOfferAction(`reject-${offer.id}`, () => rejectTransferOffer(offer.id), "Offer rejected.");
 
   return (
     <Box className="p-2 sm:p-4">
       <Stack direction={{ xs: "column", md: "row" }} spacing={2} justifyContent="space-between" alignItems="flex-start">
         <Box>
           <Typography variant="h1" component="h1" className="mb-0">
-            Мои трансферы
+            My Transfers Dashboard
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Управляйте активными листингами клуба, проверяйте входящие ставки и историю сделок.
+            Track your listings, incoming offers, and recent transfer history.
           </Typography>
         </Box>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
           <Button variant="outlined" onClick={load} disabled={loading}>
-            Обновить
+            Refresh
           </Button>
           <Button variant="contained" onClick={() => navigate("/transfers/create")}>
-            Выставить игрока
+            Create Listing
           </Button>
         </Stack>
       </Stack>
@@ -138,7 +138,7 @@ export default function MyClubTransfersPage() {
         </Box>
       ) : !dashboard ? (
         <Alert severity="info" className="mt-3">
-          Данные клуба недоступны.
+          No transfer data available.
         </Alert>
       ) : (
         <Grid container spacing={3} className="mt-2">
@@ -147,10 +147,10 @@ export default function MyClubTransfersPage() {
               <CardContent>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" className="mb-3">
                   <Typography variant="h5" component="h2">
-                    Активные листинги
+                    Active Listings
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Всего: {dashboard.active_listings.length}
+                    Total: {dashboard.active_listings.length}
                   </Typography>
                 </Stack>
                 <ListingTable
@@ -168,10 +168,10 @@ export default function MyClubTransfersPage() {
               <CardContent>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" className="mb-3">
                   <Typography variant="h5" component="h2">
-                    Входящие ставки
+                    Pending Offers
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Всего: {dashboard.pending_offers.length}
+                    Total: {dashboard.pending_offers.length}
                   </Typography>
                 </Stack>
                 <OffersTable
@@ -188,17 +188,17 @@ export default function MyClubTransfersPage() {
             <Card>
               <CardContent>
                 <Typography variant="h5" component="h2" className="mb-3">
-                  Игроки вне рынка
+                  Players You Can List
                 </Typography>
                 {dashboard.players_not_listed.length === 0 ? (
-                  <Alert severity="info">Все игроки уже выставлены или недоступны.</Alert>
+                  <Alert severity="info">All players are already listed or unavailable.</Alert>
                 ) : (
                   <List dense>
                     {dashboard.players_not_listed.map((player) => (
                       <ListItem key={player.id} disableGutters>
                         <ListItemText
-                          primary={`${player.full_name} — ${player.position}, ${player.age} лет`}
-                          secondary={`Базовая стоимость: ${formatCurrency(player.base_value)}`}
+                          primary={`${player.full_name} - ${player.position}, ${player.age} y.o.`}
+                          secondary={`Estimated value: ${formatCurrency(player.base_value)}`}
                         />
                       </ListItem>
                     ))}
@@ -212,18 +212,13 @@ export default function MyClubTransfersPage() {
               <CardContent>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" className="mb-3">
                   <Typography variant="h5" component="h2">
-                    История сделок клуба
+                    Club Transfer History
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Последние: {dashboard.history.length}
+                    Entries: {dashboard.history.length}
                   </Typography>
                 </Stack>
-                <HistoryTable
-                  entries={dashboard.history}
-                  loading={loading}
-                  pageMeta={historyMeta}
-                  onChangePage={() => undefined}
-                />
+                <HistoryTable entries={dashboard.history} loading={loading} pageMeta={historyMeta} onChangePage={() => undefined} />
               </CardContent>
             </Card>
           </Grid>

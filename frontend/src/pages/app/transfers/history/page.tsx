@@ -74,7 +74,7 @@ export default function TransferHistoryPage() {
         }
       } catch (err: any) {
         if (!controller.signal.aborted) {
-          setError(err?.message ?? "Не удалось загрузить историю трансферов.");
+          setError(err?.message ?? "Failed to load transfer history.");
           setRecords([]);
         }
       } finally {
@@ -121,19 +121,12 @@ export default function TransferHistoryPage() {
 
   return (
     <Box className="p-2 sm:p-4">
-      <Stack direction={{ xs: "column", md: "row" }} spacing={2} justifyContent="space-between" alignItems="flex-start">
-        <Box>
-          <Typography variant="h1" component="h1" className="mb-0">
-            История трансферов
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Просматривайте завершённые переходы и фильтруйте их по сезону, клубу и игроку.
-          </Typography>
-        </Box>
-        <Button variant="outlined" onClick={handleClearFilters} disabled={loading}>
-          Сбросить фильтры
-        </Button>
-      </Stack>
+      <Typography variant="h1" component="h1" className="mb-2">
+        Transfer History
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        Review completed transfers and filter them by season, club, or player.
+      </Typography>
 
       {error && (
         <Alert severity="error" className="mt-3">
@@ -151,10 +144,10 @@ export default function TransferHistoryPage() {
         <CardContent>
           <Stack direction="row" justifyContent="space-between" alignItems="center" className="mb-3">
             <Typography variant="h5" component="h2">
-              Завершённые сделки
+              Completed Deals
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Всего: {pageMeta.count}
+              Total: {pageMeta.count}
             </Typography>
           </Stack>
 
