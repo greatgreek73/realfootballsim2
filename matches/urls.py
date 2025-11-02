@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from . import views_markov_demo
+from . import views_markov_minute
 
 app_name = 'matches'
 
@@ -12,5 +13,6 @@ urlpatterns = [
     path('championship/<int:championship_id>/matches/', views.MatchListView.as_view(), name='championship_matches'),
     path('<int:match_id>/events-json/', views.get_match_events, name='match_events_json'),
     path("markov-demo/", views_markov_demo.markov_demo, name="markov_demo"),
+    path("markov-minute/", views_markov_minute.markov_minute, name="markov_minute"),
     path('<int:match_id>/substitute/', views.substitute_player, name='substitute_player'),
 ]
