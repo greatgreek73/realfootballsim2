@@ -7,6 +7,8 @@ import random
 import yaml
 from django.http import JsonResponse
 
+TICKS_PER_MINUTE = 6
+
 def _load_spec() -> Dict[str, Any]:
     spec_path = Path(__file__).resolve().parent / "engines" / "markov_spec_v0.yaml"
     return yaml.safe_load(spec_path.read_text(encoding="utf-8"))
@@ -26,15 +28,15 @@ def _apply_possession(owner: str, directive: str) -> str:
 def _zone_from_state(state: str) -> str:
     if state in ("OPEN_PLAY_DEF", "GK"):
         return "DEF"
-    if state == "OPEN_PLAY_MID" or state == "KICKOFF":
+    if state in ("OPEN_PLAY_MID", "KICKOFF"):
         return "MID"
     if state == "OPEN_PLAY_FINAL":
         return "FINAL"
     return "MID"
 
-def _rng_from(seed: int, start_state: str, start_possession: str, start_zone: str) -> random.Random:
-    """Детерминированный RNG на основе seed + стартового контекста."""
-    key = f"{seed}|{start_state}|{start_possession}|{start_zone}"
+def _rng_from(seed: int, minute_index: int, start_state: str, start_possession: str, start_zone: str) -> random.Random:
+    """Разные минуты → разный RNG, но детерминировано и воспроизводимо."""
+    key = f"{seed}|m={minute_index}|{start_state}|{start_possession}|{start_zone}"
     h = int.from_bytes(hashlib.sha256(key.encode("utf-8")).digest()[:8], "big")
     return random.Random(h)
 
@@ -57,7 +59,7 @@ def _simulate_minute(
     entries_final = {"home": 0, "away": 0}
     events: List[Dict[str, Any]] = []
 
-    for tick in range(1, 6 + 1):  # 6 тиков = 1 минута
+    for tick in range(1, TICKS_PER_MINUTE + 1):
         possession_ticks[possession] += 1
 
         if state == "SHOT":
@@ -84,9 +86,7 @@ def _simulate_minute(
             new_state = choice.get("to")
             new_pos = _apply_possession(possession, choice.get("possession", "same"))
             new_zone = _zone_from_state(new_state)
-            events.append({
-                "tick": tick, "from": "OUT", "to": new_state, "subtype": choice.get("subtype")
-            })
+            events.append({"tick": tick, "from": "OUT", "to": new_state, "subtype": choice.get("subtype")})
             if new_state == "OPEN_PLAY_FINAL" and state != "OPEN_PLAY_FINAL":
                 entries_final[new_pos] += 1
             state, possession, zone = new_state, new_pos, new_zone
@@ -117,7 +117,6 @@ def _simulate_minute(
             state, possession, zone = new_state, new_pos, new_zone
             continue
 
-        # OPEN_PLAY_* и KICKOFF
         tr = _choose_weighted(rng, states[state]["transitions"])
         new_state = tr.get("to")
         new_pos = _apply_possession(possession, tr.get("possession", "same"))
@@ -134,8 +133,8 @@ def _simulate_minute(
         state, possession, zone = new_state, new_pos, new_zone
 
     possession_pct = {
-        "home": round(100.0 * possession_ticks["home"] / 6.0, 1),
-        "away": round(100.0 * possession_ticks["away"] / 6.0, 1),
+        "home": round(100.0 * possession_ticks["home"] / float(TICKS_PER_MINUTE), 1),
+        "away": round(100.0 * possession_ticks["away"] / float(TICKS_PER_MINUTE), 1),
     }
 
     return {
@@ -143,27 +142,28 @@ def _simulate_minute(
         "end_state": state,
         "possession_end": possession,
         "zone_end": zone,
-        "score": score,
+        "score": score,  # дельта за минуту
         "counts": counts,
         "events": events,
         "possession_pct": possession_pct,
         "entries_final_third": entries_final,
-        "token": {"state": state, "possession": possession, "zone": zone},
     }
 
 def markov_minute(request):
     """
-    Возвращает сводку за одну минуту (6 тиков) по YAML-спеке.
-    Параметры:
+    Сводка за 1 минуту (6 тиков). Параметры:
       - seed: int (по умолчанию 73)
-      - token: JSON-строка {"state": "...", "possession": "home|away", "zone": "DEF|MID|FINAL"}
+      - token: JSON {"state","possession","zone","minute","total_score"}
     """
     spec = _load_spec()
     seed_value = int(request.GET.get("seed", "73"))
+
     # начальные условия
     start_state = "KICKOFF"
     start_pos = "home"
     start_zone = _zone_from_state(start_state)
+    minute_index = 1
+    total_score = {"home": 0, "away": 0}
 
     token_param = request.GET.get("token")
     if token_param:
@@ -172,13 +172,34 @@ def markov_minute(request):
             start_state = t.get("state", start_state)
             start_pos = t.get("possession", start_pos)
             start_zone = t.get("zone", start_zone)
+            minute_index = int(t.get("minute", minute_index))
+            ts = t.get("total_score")
+            if isinstance(ts, dict):
+                total_score["home"] = int(ts.get("home", 0))
+                total_score["away"] = int(ts.get("away", 0))
         except Exception:
-            pass  # игнорируем битый token
+            pass
 
-    rng = _rng_from(seed_value, start_state, start_pos, start_zone)
+    rng = _rng_from(seed_value, minute_index, start_state, start_pos, start_zone)
     minute_summary = _simulate_minute(
         spec, rng, start_state=start_state, start_possession=start_pos, start_zone=start_zone
     )
+
+    # накопительный счёт
+    new_total = {
+        "home": total_score["home"] + minute_summary["score"]["home"],
+        "away": total_score["away"] + minute_summary["score"]["away"],
+    }
+
+    minute_summary["minute"] = minute_index
+    minute_summary["score_total"] = new_total
+    minute_summary["token"] = {
+        "state": minute_summary["end_state"],
+        "possession": minute_summary["possession_end"],
+        "zone": minute_summary["zone_end"],
+        "minute": minute_index + 1,
+        "total_score": new_total,
+    }
 
     result = {
         "spec_version": spec.get("version"),
@@ -186,7 +207,7 @@ def markov_minute(request):
         "seed": seed_value,
         "minute_summary": minute_summary,
     }
-    # Локальный CORS для dev (Vite 5173)
+    # локальный CORS на dev
     resp = JsonResponse(result)
     origin = request.headers.get("Origin")
     if origin in ("http://127.0.0.1:5173", "http://localhost:5173"):
