@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include, re_path
+from matches import views_markov_demo
 from django.views.generic import TemplateView
 from django.contrib.auth import views as auth_views
 from django.views.generic import RedirectView
@@ -72,6 +73,7 @@ urlpatterns = [
     path("api/players/<int:pk>/avatar/", player_generate_avatar_api, name="api_player_generate_avatar"),
     path("api/players/<int:pk>/extra-training/", player_extra_training_api, name="api_player_extra_training"),
     path("api/matches/", match_list_api, name="api_matches_list"),
+    path("markov-demo/", views_markov_demo.markov_demo, name="markov_demo"),
     path("api/matches/create/", match_create_api, name="api_match_create"),
     path("api/matches/<int:pk>/", match_detail_api, name="api_match_detail"),
     path("api/matches/<int:pk>/events/", match_events_api, name="api_match_events"),
