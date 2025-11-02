@@ -156,4 +156,10 @@ def markov_minute(request):
         "seed": seed_value,
         "minute_summary": minute_summary,
     }
-    return JsonResponse(result)
+    resp = JsonResponse(result)
+    origin = request.headers.get("Origin")
+    if origin in ("http://127.0.0.1:5173", "http://localhost:5173"):
+        resp["Access-Control-Allow-Origin"] = origin
+        resp["Vary"] = "Origin"
+    return resp
+

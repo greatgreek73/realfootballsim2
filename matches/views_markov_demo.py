@@ -47,4 +47,10 @@ def markov_demo(request):
             "meta": {k: v for k, v in chosen.items() if k not in ("to", "possession", "p")},
         },
     }
-    return JsonResponse(result)
+    resp = JsonResponse(result)
+    origin = request.headers.get("Origin")
+    if origin in ("http://127.0.0.1:5173", "http://localhost:5173"):
+        resp["Access-Control-Allow-Origin"] = origin
+        resp["Vary"] = "Origin"
+    return resp
+
