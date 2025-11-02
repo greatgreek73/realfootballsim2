@@ -1,0 +1,91 @@
+version: 0.1
+time:
+  tick_seconds: 10
+  regulation_minutes: 90
+  stoppage_time_model: fixed
+  stoppage_time_per_half_seconds: 0
+
+states:
+  - name: KICKOFF
+    transitions:
+      - { to: OPEN_PLAY_MID, possession: same, p: 0.88 }
+      - { to: OPEN_PLAY_DEF, possession: same, p: 0.08 }
+      - { to: OUT, subtype: throw_in, zone: MID, possession: same, p: 0.02 }
+      - { to: FOUL, zone: MID, possession: same, p: 0.02 }
+
+  - name: OPEN_PLAY_DEF
+    transitions:
+      - { to: OPEN_PLAY_DEF, possession: same, p: 0.20 }
+      - { to: OPEN_PLAY_MID, possession: same, p: 0.40 }
+      - { to: OPEN_PLAY_MID, possession: opponent, kind: turnover, p: 0.18 }
+      - { to: OUT, subtype: throw_in, zone: DEF, possession: same, p: 0.12 }
+      - { to: FOUL, zone: DEF, possession: same, p: 0.08 }
+      - { to: SHOT, possession: same, p: 0.02 }
+
+  - name: OPEN_PLAY_MID
+    transitions:
+      - { to: OPEN_PLAY_MID, possession: same, p: 0.25 }
+      - { to: OPEN_PLAY_FINAL, possession: same, p: 0.30 }
+      - { to: OPEN_PLAY_DEF, possession: same, p: 0.10 }
+      - { to: OPEN_PLAY_MID, possession: opponent, kind: turnover, p: 0.20 }
+      - { to: OUT, subtype: throw_in, zone: MID, possession: same, p: 0.10 }
+      - { to: FOUL, zone: MID, possession: same, p: 0.03 }
+      - { to: SHOT, possession: same, p: 0.02 }
+
+  - name: OPEN_PLAY_FINAL
+    transitions:
+      - { to: OPEN_PLAY_FINAL, possession: same, p: 0.25 }
+      - { to: OPEN_PLAY_MID, possession: same, p: 0.05 }
+      - { to: OPEN_PLAY_DEF, possession: opponent, kind: turnover, p: 0.25 }
+      - { to: OUT, subtype: mixed, zone: FINAL, possession: same, p: 0.20 }
+      - { to: FOUL, zone: FINAL, possession: same, p: 0.08 }
+      - { to: SHOT, possession: same, p: 0.17 }
+
+  - name: SHOT
+    outcomes:
+      - result: goal
+        p: 0.11
+        next: { to: KICKOFF, possession: opponent }
+      - result: saved
+        p: 0.27
+        next: { to: GK, possession: opponent }
+      - result: off_target
+        p: 0.52
+        next: { to: GK, possession: opponent }
+      - result: deflected_corner
+        p: 0.10
+        next: { to: OUT, subtype: corner, zone: FINAL, possession: same }
+
+  - name: OUT
+    by_zone:
+      FINAL:
+        distribution:
+          - { to: OPEN_PLAY_FINAL, subtype: corner, possession: same, p: 0.40 }
+          - { to: GK, subtype: goal_kick, possession: opponent, p: 0.45 }
+          - { to: OPEN_PLAY_FINAL, subtype: throw_in, possession: same, p: 0.15 }
+      MID:
+        distribution:
+          - { to: OPEN_PLAY_MID, subtype: throw_in, possession: same, p: 1.0 }
+      DEF:
+        distribution:
+          - { to: OPEN_PLAY_DEF, subtype: throw_in, possession: same, p: 0.95 }
+          - { to: OPEN_PLAY_FINAL, subtype: corner, possession: opponent, p: 0.05 }
+
+  - name: FOUL
+    by_zone:
+      DEF:   { to: OPEN_PLAY_DEF,   possession: same }
+      MID:   { to: OPEN_PLAY_MID,   possession: same }
+      FINAL: { to: OPEN_PLAY_FINAL, possession: same }
+
+  - name: GK
+    transitions:
+      - { to: OPEN_PLAY_DEF, possession: same, p: 1.0 }
+
+validation:
+  sum_to_one: true
+  forbid_deadlocks: true
+  allow_continued_possession_over_minute_boundary: true
+
+notes:
+  - "Baseline neutral probabilities for MVP. No context modifiers yet."
+  - "Tick = 10s (6 ticks/min). 90 minutes. No stoppage-time yet."
