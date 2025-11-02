@@ -1,11 +1,12 @@
 from __future__ import annotations
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
+import json
+import hashlib
 import random
 import yaml
 from django.http import JsonResponse
 
-# ---------- helpers ----------
 def _load_spec() -> Dict[str, Any]:
     spec_path = Path(__file__).resolve().parent / "engines" / "markov_spec_v0.yaml"
     return yaml.safe_load(spec_path.read_text(encoding="utf-8"))
@@ -17,61 +18,62 @@ def _choose_weighted(rng: random.Random, items: List[dict]) -> dict:
         acc += float(item.get("p", 0.0))
         if r <= acc:
             return item
-    return items[-1]  # на случай округления
+    return items[-1]  # на случай округлений
 
 def _apply_possession(owner: str, directive: str) -> str:
-    if directive == "same":
-        return owner
-    return "away" if owner == "home" else "home"
+    return owner if directive == "same" else ("away" if owner == "home" else "home")
 
 def _zone_from_state(state: str) -> str:
     if state in ("OPEN_PLAY_DEF", "GK"):
         return "DEF"
-    if state == "OPEN_PLAY_MID":
+    if state == "OPEN_PLAY_MID" or state == "KICKOFF":
         return "MID"
     if state == "OPEN_PLAY_FINAL":
         return "FINAL"
-    if state == "KICKOFF":
-        return "MID"
     return "MID"
 
-# ---------- core minute simulation (MVP) ----------
-def _simulate_minute(spec: Dict[str, Any], rng: random.Random,
-                     start_state: str = "KICKOFF",
-                     start_possession: str = "home") -> Dict[str, Any]:
+def _rng_from(seed: int, start_state: str, start_possession: str, start_zone: str) -> random.Random:
+    """Детерминированный RNG на основе seed + стартового контекста."""
+    key = f"{seed}|{start_state}|{start_possession}|{start_zone}"
+    h = int.from_bytes(hashlib.sha256(key.encode("utf-8")).digest()[:8], "big")
+    return random.Random(h)
+
+def _simulate_minute(
+    spec: Dict[str, Any],
+    rng: random.Random,
+    *,
+    start_state: str = "KICKOFF",
+    start_possession: str = "home",
+    start_zone: str | None = None,
+) -> Dict[str, Any]:
     states = {s["name"]: s for s in spec.get("states", [])}
     state = start_state
     possession = start_possession
-    zone = _zone_from_state(state)
+    zone = start_zone or _zone_from_state(state)
 
     score = {"home": 0, "away": 0}
     counts = {"shot": 0, "foul": 0, "out": 0, "gk": 0}
+    possession_ticks = {"home": 0, "away": 0}
+    entries_final = {"home": 0, "away": 0}
     events: List[Dict[str, Any]] = []
 
     for tick in range(1, 6 + 1):  # 6 тиков = 1 минута
+        possession_ticks[possession] += 1
+
         if state == "SHOT":
             oc = _choose_weighted(rng, states["SHOT"]["outcomes"])
             result = oc.get("result")
             nxt = oc.get("next") or {}
-            # фиксируем гол
+            counts["shot"] += 1
             if result == "goal":
-                counts["shot"] += 1
-                if possession == "home":
-                    score["home"] += 1
-                else:
-                    score["away"] += 1
-            else:
-                counts["shot"] += 1
-            # переход после выстрела
+                score[possession] += 1
             new_state = nxt.get("to")
-            possession = _apply_possession(possession, nxt.get("possession", "same"))
-            # зона может приехать из next (например, corner: zone FINAL)
-            zone = nxt.get("zone", _zone_from_state(new_state))
-            events.append({
-                "tick": tick, "from": "SHOT", "to": new_state,
-                "label": f"SHOT:{result}"
-            })
-            state = new_state
+            new_pos = _apply_possession(possession, nxt.get("possession", "same"))
+            new_zone = nxt.get("zone", _zone_from_state(new_state))
+            events.append({"tick": tick, "from": "SHOT", "to": new_state, "label": f"SHOT:{result}"})
+            if new_state == "OPEN_PLAY_FINAL" and state != "OPEN_PLAY_FINAL":
+                entries_final[new_pos] += 1
+            state, possession, zone = new_state, new_pos, new_zone
             continue
 
         if state == "OUT":
@@ -80,13 +82,14 @@ def _simulate_minute(spec: Dict[str, Any], rng: random.Random,
             choice = _choose_weighted(rng, dist)
             counts["out"] += 1
             new_state = choice.get("to")
-            possession = _apply_possession(possession, choice.get("possession", "same"))
-            zone = _zone_from_state(new_state)
+            new_pos = _apply_possession(possession, choice.get("possession", "same"))
+            new_zone = _zone_from_state(new_state)
             events.append({
-                "tick": tick, "from": "OUT", "to": new_state,
-                "subtype": choice.get("subtype")
+                "tick": tick, "from": "OUT", "to": new_state, "subtype": choice.get("subtype")
             })
-            state = new_state
+            if new_state == "OPEN_PLAY_FINAL" and state != "OPEN_PLAY_FINAL":
+                entries_final[new_pos] += 1
+            state, possession, zone = new_state, new_pos, new_zone
             continue
 
         if state == "FOUL":
@@ -94,72 +97,99 @@ def _simulate_minute(spec: Dict[str, Any], rng: random.Random,
             nxt = by_zone.get(zone) or by_zone["MID"]
             counts["foul"] += 1
             new_state = nxt.get("to")
-            possession = _apply_possession(possession, nxt.get("possession", "same"))
-            zone = _zone_from_state(new_state)
+            new_pos = _apply_possession(possession, nxt.get("possession", "same"))
+            new_zone = _zone_from_state(new_state)
             events.append({"tick": tick, "from": "FOUL", "to": new_state})
-            state = new_state
+            if new_state == "OPEN_PLAY_FINAL" and state != "OPEN_PLAY_FINAL":
+                entries_final[new_pos] += 1
+            state, possession, zone = new_state, new_pos, new_zone
             continue
 
         if state == "GK":
             tr = states["GK"]["transitions"][0]  # p=1.0
             counts["gk"] += 1
             new_state = tr.get("to")
-            possession = _apply_possession(possession, tr.get("possession", "same"))
-            zone = _zone_from_state(new_state)
+            new_pos = _apply_possession(possession, tr.get("possession", "same"))
+            new_zone = _zone_from_state(new_state)
             events.append({"tick": tick, "from": "GK", "to": new_state})
-            state = new_state
+            if new_state == "OPEN_PLAY_FINAL" and state != "OPEN_PLAY_FINAL":
+                entries_final[new_pos] += 1
+            state, possession, zone = new_state, new_pos, new_zone
             continue
 
-        # OPEN_PLAY_* и KICKOFF идут по transitions
+        # OPEN_PLAY_* и KICKOFF
         tr = _choose_weighted(rng, states[state]["transitions"])
         new_state = tr.get("to")
-        possession = _apply_possession(possession, tr.get("possession", "same"))
-        # зона из перехода (если есть) или из нового состояния
-        zone = tr.get("zone", _zone_from_state(new_state))
+        new_pos = _apply_possession(possession, tr.get("possession", "same"))
+        new_zone = tr.get("zone", _zone_from_state(new_state))
         label = None
-        if new_state == "SHOT":
-            label = "→SHOT"
-        elif new_state == "OUT":
-            label = "→OUT"
-        elif new_state == "FOUL":
-            label = "→FOUL"
-        elif new_state == "GK":
-            label = "→GK"
+        if new_state in ("SHOT", "OUT", "FOUL", "GK"):
+            label = f"→{new_state}"
         events.append({
             "tick": tick, "from": state, "to": new_state,
-            "p": tr.get("p"), "zone": zone, "possession": possession, "label": label
+            "p": tr.get("p"), "zone": new_zone, "possession": new_pos, "label": label
         })
-        state = new_state
+        if new_state == "OPEN_PLAY_FINAL" and state != "OPEN_PLAY_FINAL":
+            entries_final[new_pos] += 1
+        state, possession, zone = new_state, new_pos, new_zone
+
+    possession_pct = {
+        "home": round(100.0 * possession_ticks["home"] / 6.0, 1),
+        "away": round(100.0 * possession_ticks["away"] / 6.0, 1),
+    }
 
     return {
         "start_state": start_state,
         "end_state": state,
         "possession_end": possession,
+        "zone_end": zone,
         "score": score,
         "counts": counts,
         "events": events,
+        "possession_pct": possession_pct,
+        "entries_final_third": entries_final,
+        "token": {"state": state, "possession": possession, "zone": zone},
     }
 
-# ---------- Django view ----------
 def markov_minute(request):
     """
     Возвращает сводку за одну минуту (6 тиков) по YAML-спеке.
-    Параметры: ?seed=<int> (по умолчанию 73)
+    Параметры:
+      - seed: int (по умолчанию 73)
+      - token: JSON-строка {"state": "...", "possession": "home|away", "zone": "DEF|MID|FINAL"}
     """
     spec = _load_spec()
     seed_value = int(request.GET.get("seed", "73"))
-    rng = random.Random(seed_value)
-    minute_summary = _simulate_minute(spec, rng, start_state="KICKOFF", start_possession="home")
+    # начальные условия
+    start_state = "KICKOFF"
+    start_pos = "home"
+    start_zone = _zone_from_state(start_state)
+
+    token_param = request.GET.get("token")
+    if token_param:
+        try:
+            t = json.loads(token_param)
+            start_state = t.get("state", start_state)
+            start_pos = t.get("possession", start_pos)
+            start_zone = t.get("zone", start_zone)
+        except Exception:
+            pass  # игнорируем битый token
+
+    rng = _rng_from(seed_value, start_state, start_pos, start_zone)
+    minute_summary = _simulate_minute(
+        spec, rng, start_state=start_state, start_possession=start_pos, start_zone=start_zone
+    )
+
     result = {
         "spec_version": spec.get("version"),
         "tick_seconds": spec["time"]["tick_seconds"],
         "seed": seed_value,
         "minute_summary": minute_summary,
     }
+    # Локальный CORS для dev (Vite 5173)
     resp = JsonResponse(result)
     origin = request.headers.get("Origin")
     if origin in ("http://127.0.0.1:5173", "http://localhost:5173"):
         resp["Access-Control-Allow-Origin"] = origin
         resp["Vary"] = "Origin"
     return resp
-
