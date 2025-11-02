@@ -15,7 +15,7 @@ from django.views.decorators.http import require_http_methods
 
 from clubs.models import Club
 from matches.match_preparation import PreMatchPreparation
-from matches.match_simulation import simulate_one_action
+from matches.engines.markov_v1 import engine_stub as simulate_one_action
 from players.models import Player
 from .models import Match, MatchEvent
 
