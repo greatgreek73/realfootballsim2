@@ -17,3 +17,13 @@ class MatchSimulation:
         self.kwargs = kwargs
     def run(self) -> None:
         raise NotImplementedError("Markov engine WIP: MatchSimulation not implemented yet")
+
+def __getattr__(name: str):
+    """
+    Fallback for any other legacy symbols imported from matches.match_simulation.
+    This makes `from matches.match_simulation import some_old_func` succeed,
+    but raises when called.
+    """
+    def _stub(*args: Any, **kwargs: Any):
+        raise NotImplementedError(f"Markov engine WIP: '{name}' is not implemented yet")
+    return _stub
