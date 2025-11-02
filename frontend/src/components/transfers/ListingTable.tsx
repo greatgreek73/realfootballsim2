@@ -14,7 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 import type { TransferListingSummary } from "@/types/transfers";
-import { formatCurrency, formatDateTime, formatListingStatus, formatTimeRemaining } from "@/utils/transfers";
+import { formatCurrency, formatDateTime, formatListingStatus, formatTimeRemaining, resolveListingStatus } from "@/utils/transfers";
 
 export type ListingsPageMeta = {
   page: number;
@@ -63,7 +63,8 @@ export function ListingTable({ listings, loading, pageMeta, onChangePage, onView
                 </TableRow>
               ) : (
                 listings.map((listing) => {
-                  const statusLabel = formatListingStatus(listing.status);
+                  const effectiveStatus = resolveListingStatus(listing.status, listing.time_remaining);
+                  const statusLabel = formatListingStatus(effectiveStatus);
                   return (
                     <TableRow key={listing.id} hover>
                       <TableCell>
@@ -93,11 +94,11 @@ export function ListingTable({ listings, loading, pageMeta, onChangePage, onView
                         <Chip
                           label={statusLabel}
                           color={
-                            listing.status === "active"
+                            effectiveStatus === "active"
                               ? "info"
-                              : listing.status === "completed"
+                              : effectiveStatus === "completed"
                               ? "success"
-                              : listing.status === "cancelled"
+                              : effectiveStatus === "cancelled"
                               ? "default"
                               : "warning"
                           }
@@ -108,7 +109,7 @@ export function ListingTable({ listings, loading, pageMeta, onChangePage, onView
                       <TableCell>
                         <Stack spacing={0.25}>
                           <Typography variant="body2">{formatDateTime(listing.expires_at)}</Typography>
-                          {listing.status === "active" && (
+                          {effectiveStatus === "active" && (
                             <Typography variant="caption" color="text.secondary">
                               {formatTimeRemaining(listing.time_remaining)}
                             </Typography>

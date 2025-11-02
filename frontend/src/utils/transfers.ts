@@ -11,6 +11,16 @@ export function formatListingStatus(status: TransferListingStatus): string {
   return STATUS_LABELS[status] ?? status;
 }
 
+export function resolveListingStatus(
+  status: TransferListingStatus,
+  timeRemaining: number | null | undefined
+): TransferListingStatus {
+  if (status === "active" && typeof timeRemaining === "number" && timeRemaining <= 0) {
+    return "expired";
+  }
+  return status;
+}
+
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat(undefined, {
     style: "currency",

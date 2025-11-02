@@ -7,6 +7,7 @@ import { fetchTransferListings } from "@/api/transfers";
 import { ListingFilters, ListingFiltersState } from "@/components/transfers/ListingFilters";
 import { ListingTable, ListingsPageMeta } from "@/components/transfers/ListingTable";
 import type { TransferListingListParams, TransferListingSummary } from "@/types/transfers";
+import { resolveListingStatus } from "@/utils/transfers";
 
 const DEFAULT_FILTERS: ListingFiltersState = {
   position: "",
@@ -65,11 +66,17 @@ export default function TransfersMarketPage() {
       setLoading(true);
       setError(null);
       try {
+        const rawStatus = searchParams.get("status");
+        const statusForRequest =
+          rawStatus && rawStatus !== "expired"
+            ? (rawStatus as TransferListingListParams["status"])
+            : undefined;
+
         const params: TransferListingListParams = {
           page,
           ordering: (searchParams.get("ordering") as TransferListingListParams["ordering"]) ?? undefined,
           position: searchParams.get("position") || undefined,
-          status: (searchParams.get("status") as TransferListingListParams["status"]) ?? undefined,
+          status: statusForRequest,
         };
 
         const minAge = searchParams.get("min_age");
@@ -84,11 +91,31 @@ export default function TransfersMarketPage() {
 
         const response = await fetchTransferListings(params);
         if (!controller.signal.aborted) {
-          setListings(response.results);
+          const selectedStatus = searchParams.get("status");
+          const filteredResults =
+            selectedStatus && ["active", "completed", "cancelled", "expired"].includes(selectedStatus)
+              ? response.results.filter(
+                  (item) => resolveListingStatus(item.status, item.time_remaining) === selectedStatus
+                )
+              : response.results;
+
+          if (import.meta.env.DEV) {
+            console.debug(
+              "[TransferMarket] listings snapshot",
+              filteredResults.map((item) => ({
+                id: item.id,
+                status: item.status,
+                effectiveStatus: resolveListingStatus(item.status, item.time_remaining),
+                expires_at: item.expires_at,
+                time_remaining: item.time_remaining,
+              }))
+            );
+          }
+          setListings(filteredResults);
           setPageMeta({
             page: response.page,
             totalPages: Math.max(response.total_pages, 1),
-            count: response.count,
+            count: selectedStatus ? filteredResults.length : response.count,
             pageSize: response.page_size,
           });
         }
@@ -129,7 +156,7 @@ export default function TransfersMarketPage() {
       max_age: filters.maxAge || null,
       min_price: filters.minPrice || null,
       max_price: filters.maxPrice || null,
-      status: filters.status || DEFAULT_STATUS_PARAM,
+      status: filters.status || null,
       page: "1",
     });
   };

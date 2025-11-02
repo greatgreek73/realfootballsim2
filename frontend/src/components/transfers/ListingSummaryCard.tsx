@@ -1,6 +1,6 @@
 import { Button, Card, CardContent, Chip, Stack, Typography, Box } from "@mui/material";
 import type { TransferListingDetail } from "@/types/transfers";
-import { formatCurrency, formatDateTime, formatListingStatus, formatTimeRemaining } from "@/utils/transfers";
+import { formatCurrency, formatDateTime, formatListingStatus, formatTimeRemaining, resolveListingStatus } from "@/utils/transfers";
 
 type SummaryCardProps = {
   detail: TransferListingDetail;
@@ -12,6 +12,8 @@ type SummaryCardProps = {
 export function ListingSummaryCard({ detail, busyKey, onMakeOffer, onForceComplete }: SummaryCardProps) {
   const { listing, permissions } = detail;
 
+  const effectiveStatus = resolveListingStatus(listing.status, listing.time_remaining);
+
   return (
     <Card>
       <CardContent>
@@ -21,13 +23,13 @@ export function ListingSummaryCard({ detail, busyKey, onMakeOffer, onForceComple
               Player
             </Typography>
             <Chip
-              label={formatListingStatus(listing.status)}
+              label={formatListingStatus(effectiveStatus)}
               color={
-                listing.status === "active"
+                effectiveStatus === "active"
                   ? "info"
-                  : listing.status === "completed"
+                  : effectiveStatus === "completed"
                   ? "success"
-                  : listing.status === "cancelled"
+                  : effectiveStatus === "cancelled"
                   ? "default"
                   : "warning"
               }
@@ -67,12 +69,12 @@ export function ListingSummaryCard({ detail, busyKey, onMakeOffer, onForceComple
             </Box>
           )}
           <Stack direction="row" spacing={1}>
-            {listing.status === "active" && permissions.can_bid && (
+            {effectiveStatus === "active" && permissions.can_bid && (
               <Button variant="contained" onClick={onMakeOffer}>
                 Make Offer
               </Button>
             )}
-            {listing.status === "active" && permissions.can_accept_offers && (
+            {effectiveStatus === "active" && permissions.can_accept_offers && (
               <Button
                 variant="outlined"
                 color="secondary"

@@ -45,7 +45,9 @@ export function ListingFilters({ value, onChange, onApply, onClear, loading }: L
   const handleFieldChange =
     (field: keyof ListingFiltersState) =>
     (event: ChangeEvent<HTMLInputElement>) => {
-      onChange({ ...value, [field]: event.target.value });
+      const raw = event.target.value;
+      const next = field === "status" && raw === "" ? "" : raw;
+      onChange({ ...value, [field]: next });
     };
 
   return (
@@ -139,6 +141,17 @@ export function ListingFilters({ value, onChange, onApply, onClear, loading }: L
             sx={{ minWidth: { md: 200 } }}
             variant="outlined"
             InputLabelProps={{ shrink: true }}
+            SelectProps={{
+              displayEmpty: true,
+              renderValue: (selected) => {
+                const current = typeof selected === "string" ? selected : "";
+                if (!current) {
+                  return "All Statuses";
+                }
+                const option = STATUS_OPTIONS.find((opt) => opt.value === current);
+                return option?.label ?? current;
+              },
+            }}
           >
             {STATUS_OPTIONS.map((option) => (
               <MenuItem key={option.value || "all"} value={option.value}>
