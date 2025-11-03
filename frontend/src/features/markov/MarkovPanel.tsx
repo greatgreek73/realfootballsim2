@@ -15,10 +15,12 @@ export function MarkovPanel({
   matchId,
   homeName,
   awayName,
+  onMinute,
 }: {
   matchId: number;
   homeName: string;
   awayName: string;
+  onMinute?: (summary: any) => void;
 }) {
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -46,15 +48,17 @@ export function MarkovPanel({
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
 
+      const minuteSummary = data.minute_summary;
       setRegMinutes(Number(data.regulation_minutes ?? 90));
-      setSummary(data.minute_summary);
-      tokenRef.current = data.minute_summary?.token ?? null;
+      setSummary(minuteSummary);
+      onMinute?.(minuteSummary);
+      tokenRef.current = minuteSummary?.token ?? null;
     } catch (e: any) {
       setError(e?.message ?? String(e));
     } finally {
       setLoading(false);
     }
-  }, [API_BASE, matchId, homeName, awayName]);
+  }, [API_BASE, matchId, homeName, awayName, onMinute]);
 
   useEffect(() => {
     tokenRef.current = null;
@@ -119,6 +123,8 @@ export function MarkovPanel({
             end_state: summary?.end_state,
             possession_end: summary?.possession_end,
             possession_pct: p,
+            possession_seconds: summary?.possession_seconds,
+            possession_swings: summary?.possession_swings,
             entries_final_third: ef,
             score_delta: summary?.score,
             score_total: summary?.score_total,

@@ -13,7 +13,6 @@ import {
   Grid,
   IconButton,
   Link,
-  Chip,
   Stack,
   Switch,
   TextField,
@@ -83,7 +82,6 @@ export default function MatchLivePage() {
 
   const [match, setMatch] = useState<MatchDetail | null>(null);
   const [events, setEvents] = useState<MatchEvent[]>([]);
-  const [markov, setMarkov] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,10 +99,6 @@ export default function MatchLivePage() {
   const autoRefreshManualRef = useRef(false);
   const wsAdjustedAutoRef = useRef(false);
   const wsSupported = useMemo(() => typeof window !== "undefined" && "WebSocket" in window, []);
-
-  useEffect(() => {
-    setMarkov(null);
-  }, [matchId]);
 
   const mapWebSocketEvent = useCallback((event: any): MatchEvent => {
     const minuteValue = Number(event?.minute);
@@ -522,28 +516,6 @@ export default function MatchLivePage() {
                   </Grid>
                 </Grid>
 
-                {markov && (
-                  <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: "wrap" }}>
-                    <Chip
-                      size="small"
-                      label={`Possession: ${markov?.possession_pct?.home ?? 0}% / ${markov?.possession_pct?.away ?? 0}% (${markov?.possession_seconds?.home ?? 0}s–${markov?.possession_seconds?.away ?? 0}s)`}
-                    />
-                    <Chip size="small" label={`Turnovers: ${markov?.possession_swings ?? 0}`} />
-                    <Chip
-                      size="small"
-                      label={`Final 3rd entries: ${markov?.entries_final_third?.home ?? 0}–${markov?.entries_final_third?.away ?? 0}`}
-                    />
-                    <Chip
-                      size="small"
-                      label={`Δscore: ${markov?.score?.home ?? 0}:${markov?.score?.away ?? 0}`}
-                    />
-                    <Chip
-                      size="small"
-                      label={`End: ${markov?.end_state_label ?? String(markov?.end_state ?? "-")} (ball: ${markov?.possession_end ?? "-"})`}
-                    />
-                  </Stack>
-                )}
-
                 <Stack
                   direction={{ xs: "column", md: "row" }}
                   justifyContent="space-between"
@@ -637,7 +609,6 @@ export default function MatchLivePage() {
               matchId={Number(match?.id ?? matchId)}
               homeName={match.home.name}
               awayName={match.away.name}
-              onMinute={setMarkov}
             />
 
             <Grid container spacing={3}>
@@ -729,5 +700,4 @@ export default function MatchLivePage() {
     </Box>
   );
 }
-
 
