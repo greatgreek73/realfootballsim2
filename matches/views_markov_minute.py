@@ -58,12 +58,25 @@ def _event_phrase(e: dict, home_name: str, away_name: str) -> str | None:
     label = e.get("label")
     subtype = e.get("subtype")
     pos = e.get("possession")
+    prev_pos = e.get("prev_possession")
     zone = e.get("zone")
     who = _side_name(pos, home_name, away_name)
     z = _zone_label(zone)
+    turnover = (prev_pos is not None) and (pos is not None) and (prev_pos != pos)
 
     # OPEN_PLAY → OPEN_PLAY
     if frm.startswith("OPEN_PLAY_") and to.startswith("OPEN_PLAY_"):
+        # если смена владения — проговариваем явно
+        if turnover:
+            if to == "OPEN_PLAY_DEF":
+                return f"Turnover! {who} win the ball and drop into defensive third"
+            if to == "OPEN_PLAY_MID":
+                return f"Turnover! {who} win the ball in midfield"
+            if to == "OPEN_PLAY_FINAL":
+                return f"Turnover! {who} win the ball in the final third"
+            return f"Turnover! {who} win the ball"
+
+        # без перехвата — позиционные формулировки
         if label in ("→FOUL", "→OUT", "→SHOT"):
             return None
         if frm == "OPEN_PLAY_DEF" and to == "OPEN_PLAY_MID":
@@ -145,7 +158,7 @@ def _simulate_minute(
             new_zone = nxt.get("zone", _zone_from_state(new_state))
             events.append({
                 "tick": tick, "from": "SHOT", "to": new_state,
-                "label": f"SHOT:{result}", "possession": new_pos, "zone": new_zone
+                "label": f"SHOT:{result}", "possession": new_pos, "zone": new_zone, "prev_possession": possession
             })
             if new_state == "OPEN_PLAY_FINAL" and state != "OPEN_PLAY_FINAL":
                 entries_final[new_pos] += 1
@@ -162,7 +175,7 @@ def _simulate_minute(
             new_zone = _zone_from_state(new_state)
             events.append({
                 "tick": tick, "from": "OUT", "to": new_state,
-                "subtype": choice.get("subtype"), "possession": new_pos, "zone": new_zone
+                "subtype": choice.get("subtype"), "possession": new_pos, "zone": new_zone, "prev_possession": possession
             })
             if new_state == "OPEN_PLAY_FINAL" and state != "OPEN_PLAY_FINAL":
                 entries_final[new_pos] += 1
@@ -176,7 +189,7 @@ def _simulate_minute(
             new_state = nxt.get("to")
             new_pos = _apply_possession(possession, nxt.get("possession", "same"))
             new_zone = _zone_from_state(new_state)
-            events.append({"tick": tick, "from": "FOUL", "to": new_state, "possession": new_pos, "zone": new_zone})
+            events.append({"tick": tick, "from": "FOUL", "to": new_state, "possession": new_pos, "zone": new_zone, "prev_possession": possession})
             if new_state == "OPEN_PLAY_FINAL" and state != "OPEN_PLAY_FINAL":
                 entries_final[new_pos] += 1
             state, possession, zone = new_state, new_pos, new_zone
@@ -188,7 +201,7 @@ def _simulate_minute(
             new_state = tr.get("to")
             new_pos = _apply_possession(possession, tr.get("possession", "same"))
             new_zone = _zone_from_state(new_state)
-            events.append({"tick": tick, "from": "GK", "to": new_state, "possession": new_pos, "zone": new_zone})
+            events.append({"tick": tick, "from": "GK", "to": new_state, "possession": new_pos, "zone": new_zone, "prev_possession": possession})
             if new_state == "OPEN_PLAY_FINAL" and state != "OPEN_PLAY_FINAL":
                 entries_final[new_pos] += 1
             state, possession, zone = new_state, new_pos, new_zone
@@ -204,7 +217,11 @@ def _simulate_minute(
             label = f"→{new_state}"
         events.append({
             "tick": tick, "from": state, "to": new_state,
-            "p": tr.get("p"), "zone": new_zone, "possession": new_pos, "label": label
+            "p": tr.get("p"),
+            "zone": new_zone,
+            "possession": new_pos,
+            "label": label,
+            "prev_possession": possession,  # <— ДОБАВЛЕНО: кто владел мячом в начале тика
         })
         if new_state == "OPEN_PLAY_FINAL" and state != "OPEN_PLAY_FINAL":
             entries_final[new_pos] += 1
@@ -311,3 +328,9 @@ def markov_minute(request):
         resp["Access-Control-Allow-Origin"] = origin
         resp["Vary"] = "Origin"
     return resp
+
+
+
+
+
+
