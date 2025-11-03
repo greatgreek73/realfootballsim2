@@ -13,9 +13,6 @@ import {
   Grid,
   IconButton,
   Link,
-  List,
-  ListItem,
-  ListItemText,
   Stack,
   Switch,
   TextField,
@@ -32,6 +29,8 @@ import {
   simulateMatch,
   substitutePlayer,
 } from "@/api/matches";
+import { MarkovPanel } from "@/features/markov/MarkovPanel";
+import { EventMinutes } from "@/features/markov/EventMinutes";
 
 const TIME_FORMATTER = new Intl.DateTimeFormat(undefined, {
   hour: "2-digit",
@@ -69,135 +68,6 @@ const generateEventId = () => {
   }
   return `ws-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 };
-
-function MarkovPanel({ matchId, homeName, awayName }: { matchId: number; homeName: string; awayName: string; }) {
-  const [summary, setSummary] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [autoPlay, setAutoPlay] = useState(true);
-  const [regMinutes, setRegMinutes] = useState<number>(90);
-  const tokenRef = useRef<any>(null);
-
-  const PLAY_INTERVAL_MS = 2000;
-  const API_BASE = (import.meta as any)?.env?.VITE_API_BASE || "http://127.0.0.1:8000";
-
-  const fetchMinute = useCallback(async () => {
-    if (!Number.isFinite(matchId) || matchId <= 0) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const url = new URL(`${API_BASE}/matches/markov-minute/`);
-      url.searchParams.set("home", homeName);
-      url.searchParams.set("away", awayName);
-      url.searchParams.set("seed", String(matchId));
-      if (tokenRef.current) {
-        url.searchParams.set("token", JSON.stringify(tokenRef.current));
-      }
-      const response = await fetch(url.toString(), { headers: { Accept: "application/json" } });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-
-      setRegMinutes(Number(data.regulation_minutes ?? 90));
-      setSummary(data.minute_summary);
-      tokenRef.current = data.minute_summary?.token ?? null;
-    } catch (e: any) {
-      setError(e?.message ?? String(e));
-    } finally {
-      setLoading(false);
-    }
-  }, [API_BASE, matchId]);
-
-  useEffect(() => {
-    tokenRef.current = null;
-    void fetchMinute();
-  }, [fetchMinute, matchId]);
-
-  useEffect(() => {
-    if (!autoPlay) return;
-    if (!Number.isFinite(matchId) || matchId <= 0) return;
-
-    const id = window.setInterval(() => {
-      const currentMinute = Number(summary?.minute ?? 0);
-      if (currentMinute >= regMinutes) {
-        setAutoPlay(false);
-        return;
-      }
-      if (!loading) {
-        void fetchMinute();
-      }
-    }, PLAY_INTERVAL_MS);
-
-    return () => window.clearInterval(id);
-  }, [autoPlay, fetchMinute, loading, matchId, regMinutes, summary?.minute]);
-
-  const p = summary?.possession_pct ?? { home: 0, away: 0 };
-  const ef = summary?.entries_final_third ?? { home: 0, away: 0 };
-
-  return (
-    <Box sx={{ border: 1, borderColor: "divider", borderRadius: 2, p: 2, mt: 2 }}>
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems="center">
-        <Typography variant="subtitle1">Markov v0 (1-minute stream)</Typography>
-
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => fetchMinute()}
-          disabled={loading || !Number.isFinite(matchId)}
-        >
-          {loading ? "Loading..." : "Next minute"}
-        </Button>
-
-        <FormControlLabel
-          sx={{ ml: 1 }}
-          control={
-            <Switch size="small" checked={autoPlay} onChange={(e) => setAutoPlay(e.target.checked)} />
-          }
-          label="Auto"
-        />
-
-        <Typography variant="caption" color={error ? "error" : "text.secondary"}>
-          {error
-            ? `Error: ${error}`
-            : loading
-            ? "Fetching data..."
-            : `Minute: ${summary?.minute ?? 0} / ${regMinutes}`}
-        </Typography>
-      </Stack>
-
-      <Box component="pre" sx={{ mt: 2, backgroundColor: "grey.100", p: 2, borderRadius: 1, fontSize: 12, overflowX: "auto" }}>
-        {JSON.stringify(
-          {
-            minute: summary?.minute,
-            start_state: summary?.start_state,
-            end_state: summary?.end_state,
-            possession_end: summary?.possession_end,
-            possession_pct: p,
-            entries_final_third: ef,
-            score_delta: summary?.score,
-            score_total: summary?.score_total,
-          },
-          null,
-          2
-        )}
-      </Box>
-
-      <Box component="pre" sx={{ mt: 2, backgroundColor: "grey.100", p: 2, borderRadius: 1, fontSize: 12, height: 180, overflow: "auto" }}>
-        {JSON.stringify(summary?.events ?? [], null, 2)}
-      </Box>
-      <Typography variant="subtitle2" sx={{ mt: 2 }}>
-        Narrative (server)
-      </Typography>
-      <List dense>
-        {(summary?.narrative ?? []).map((line: string, i: number) => (
-          <ListItem key={i} disableGutters sx={{ py: 0.25 }}>
-            <ListItemText primary={line} />
-          </ListItem>
-        ))}
-      </List>
-
-    </Box>
-  );
-}
 
 function formatTimestamp(value: string | null) {
   if (!value) return "";
@@ -584,82 +454,7 @@ export default function MatchLivePage() {
   };
 
   // --------- ИЗМЕНЕНО: группируем события по минутам и рисуем 1 карточку на минуту ----------
-  const eventItems = useMemo(() => {
-    if (!events.length) {
-      return null;
-    }
-
-    // Группировка по минутам
-    const byMinute = new Map<number, MatchEvent[]>();
-    for (const ev of events) {
-      const m = Number(ev.minute ?? 0);
-      if (!byMinute.has(m)) byMinute.set(m, []);
-      byMinute.get(m)!.push(ev);
-    }
-
-    // Последняя (текущая) минута сверху, чтобы новые события сразу были видны.
-    const minutes = Array.from(byMinute.keys()).sort((a, b) => b - a);
-
-    return minutes.map((minute) => {
-      const list = byMinute.get(minute)!;
-
-      return (
-        <Box
-          key={`minute-${minute}`}
-          sx={{
-            border: 1,
-            borderColor: "divider",
-            borderRadius: 2,
-            overflow: "hidden",
-          }}
-        >
-          {/* Заголовок карточки минуты */}
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={1}
-            justifyContent="space-between"
-            sx={{ p: 2, pb: 1, backgroundColor: "action.hover" }}
-          >
-            <Typography variant="subtitle2">{minute}'</Typography>
-            <Typography variant="caption" color="text.secondary">
-              {list.length} {list.length === 1 ? "event" : "events"}
-            </Typography>
-          </Stack>
-          <Divider />
-
-          {/* События этой минуты */}
-          <Stack spacing={1.5} sx={{ p: 2 }}>
-            {list.map((event) => (
-              <Box key={event.id}>
-                <Stack
-                  direction={{ xs: "column", sm: "row" }}
-                  spacing={1}
-                  justifyContent="space-between"
-                >
-                  <Typography variant="subtitle2">
-                    {event.type_label ? `${event.type_label}` : "Event"}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {formatTimestamp(event.timestamp)}
-                  </Typography>
-                </Stack>
-                {event.description && (
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                    {event.description}
-                  </Typography>
-                )}
-                <Typography variant="caption" color="text.secondary">
-                  {event.player?.name ?? "-"}
-                  {event.related_player?.name ? ` -> ${event.related_player.name}` : ""}
-                </Typography>
-              </Box>
-            ))}
-          </Stack>
-        </Box>
-      );
-    });
-  }, [events]);
-  // --------- КОНЕЦ ИЗМЕНЕНИЙ ---------------------------------------------------
+    // --------- КОНЕЦ ИЗМЕНЕНИЙ ---------------------------------------------------
 
   return (
     <Box sx={{ p: { xs: 2, sm: 4 } }}>
@@ -894,13 +689,7 @@ export default function MatchLivePage() {
                 <Typography variant="h6" className="mb-2">
                   Events
                 </Typography>
-                {!events.length ? (
-                  <Typography variant="body2" color="text.secondary">
-                    No events recorded yet.
-                  </Typography>
-                ) : (
-                  <Stack spacing={1.5}>{eventItems}</Stack>
-                )}
+                <EventMinutes events={events} />
               </CardContent>
             </Card>
           </>
