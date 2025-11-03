@@ -52,7 +52,7 @@ def _side_name(side: str | None, home_name: str, away_name: str) -> str:
 def _zone_label(z: str | None) -> str:
     return {"DEF": "defensive third", "MID": "midfield", "FINAL": "final third"}.get(z or "", "midfield")
 
-def _event_phrase(e: dict, home_name: str, away_name: str) -> str | None:
+def _event_phrase(e: dict, home_name: str, away_name: str, minute_index: int | None = None) -> str | None:
     frm = str(e.get("from", ""))
     to = str(e.get("to", ""))
     label = e.get("label")
@@ -64,12 +64,22 @@ def _event_phrase(e: dict, home_name: str, away_name: str) -> str | None:
     z = _zone_label(zone)
     turnover = bool(e.get("turnover"))
 
+    # KICKOFF
+    if frm == "KICKOFF":
+        if minute_index and minute_index >= 46:
+            return f"Second-half kick-off by {who}"
+        return f"Kick-off by {who}"
+
     # OPEN_PLAY → OPEN_PLAY
     if frm.startswith("OPEN_PLAY_") and to.startswith("OPEN_PLAY_"):
         if turnover:
             if to == "OPEN_PLAY_DEF":
                 return f"Turnover! {who} win the ball and drop into defensive third"
-        # без перехвата — позиционные формулировки
+            if to == "OPEN_PLAY_MID":
+                return f"Turnover! {who} win the ball in midfield"
+            if to == "OPEN_PLAY_FINAL":
+                return f"Turnover! {who} win the ball in the final third"
+            return f"Turnover! {who} win the ball"
         if label in ("→FOUL", "→OUT", "→SHOT"):
             return None
         if frm == "OPEN_PLAY_DEF" and to == "OPEN_PLAY_MID":
@@ -115,19 +125,11 @@ def _event_phrase(e: dict, home_name: str, away_name: str) -> str | None:
 
     return None
 
-# -------------------- Small helper to append events consistently --------------------
+# -------------------- Consistent event append --------------------
 def _push_event(
     events: List[Dict[str, Any]],
-    *,
-    tick: int,
-    frm: str,
-    to: str,
-    new_pos: str,
-    new_zone: str,
-    prev_pos: str,
-    label: str | None = None,
-    subtype: str | None = None,
-    p: float | None = None,
+    *, tick: int, frm: str, to: str, new_pos: str, new_zone: str, prev_pos: str,
+    label: str | None = None, subtype: str | None = None, p: float | None = None,
 ) -> None:
     ev: Dict[str, Any] = {
         "tick": tick,
@@ -151,8 +153,7 @@ def _push_event(
 def _simulate_minute(
     spec: Dict[str, Any],
     rng: random.Random,
-    *,
-    start_state: str = "KICKOFF",
+    *, start_state: str = "KICKOFF",
     start_possession: str = "home",
     start_zone: str | None = None,
 ) -> Dict[str, Any]:
@@ -239,7 +240,7 @@ def _simulate_minute(
             state, possession, zone = new_state, new_pos, new_zone
             continue
 
-        # обычные переходы из OPEN_PLAY_*
+        # обычные переходы из OPEN_PLAY_* и KICKOFF
         tr = _choose_weighted(rng, states[state]["transitions"])
         new_state = tr.get("to")
         new_pos = _apply_possession(possession, tr.get("possession", "same"))
@@ -256,16 +257,18 @@ def _simulate_minute(
             entries_final[new_pos] += 1
         state, possession, zone = new_state, new_pos, new_zone
 
-    # время на тик возьмем из спеки
     tick_seconds = int(spec.get("time", {}).get("tick_seconds", 10))
 
-    possession_pct = {
-        "home": round(100.0 * possession_ticks["home"] / float(TICKS_PER_MINUTE), 1),
-        "away": round(100.0 * possession_ticks["away"] / float(TICKS_PER_MINUTE), 1),
-    }
+    # Владение в процентах — гарантированно до 100%
+    h_ticks = possession_ticks["home"]
+    a_ticks = TICKS_PER_MINUTE - h_ticks
+    h_pct = round(100.0 * h_ticks / float(TICKS_PER_MINUTE), 1)
+    a_pct = round(100.0 - h_pct, 1)
+
+    possession_pct = {"home": h_pct, "away": a_pct}
     possession_seconds = {
-        "home": possession_ticks["home"] * tick_seconds,
-        "away": possession_ticks["away"] * tick_seconds,
+        "home": h_ticks * tick_seconds,
+        "away": a_ticks * tick_seconds,
     }
     possession_swings = sum(1 for e in events if e.get("turnover"))
 
@@ -295,7 +298,7 @@ def markov_minute(request):
     spec = _load_spec()
     seed_value = int(request.GET.get("seed", "73"))
 
-    # имена команд для Narrative (если не передали — используем простые метки)
+    # имена команд для Narrative
     home_name = request.GET.get("home") or "Home"
     away_name = request.GET.get("away") or "Away"
 
@@ -321,6 +324,12 @@ def markov_minute(request):
         except Exception:
             pass
 
+    # Принудительные кик‑оффы
+    if minute_index == 1:
+        start_state, start_pos, start_zone = "KICKOFF", "home", "MID"
+    elif minute_index == 46:
+        start_state, start_pos, start_zone = "KICKOFF", "away", "MID"
+
     rng = _rng_from(seed_value, minute_index, start_state, start_pos, start_zone)
     minute_summary = _simulate_minute(
         spec, rng, start_state=start_state, start_possession=start_pos, start_zone=start_zone
@@ -335,7 +344,7 @@ def markov_minute(request):
     # Narrative (server‑side)
     narrative: List[str] = []
     for e in minute_summary.get("events", []):
-        text = _event_phrase(e, home_name, away_name)
+        text = _event_phrase(e, home_name, away_name, minute_index)
         if text:
             narrative.append(text)
     if not narrative:
