@@ -62,20 +62,13 @@ def _event_phrase(e: dict, home_name: str, away_name: str) -> str | None:
     zone = e.get("zone")
     who = _side_name(pos, home_name, away_name)
     z = _zone_label(zone)
-    turnover = (prev_pos is not None) and (pos is not None) and (prev_pos != pos)
+    turnover = bool(e.get("turnover"))
 
     # OPEN_PLAY → OPEN_PLAY
     if frm.startswith("OPEN_PLAY_") and to.startswith("OPEN_PLAY_"):
-        # если смена владения — проговариваем явно
         if turnover:
             if to == "OPEN_PLAY_DEF":
                 return f"Turnover! {who} win the ball and drop into defensive third"
-            if to == "OPEN_PLAY_MID":
-                return f"Turnover! {who} win the ball in midfield"
-            if to == "OPEN_PLAY_FINAL":
-                return f"Turnover! {who} win the ball in the final third"
-            return f"Turnover! {who} win the ball"
-
         # без перехвата — позиционные формулировки
         if label in ("→FOUL", "→OUT", "→SHOT"):
             return None
@@ -122,6 +115,37 @@ def _event_phrase(e: dict, home_name: str, away_name: str) -> str | None:
 
     return None
 
+# -------------------- Small helper to append events consistently --------------------
+def _push_event(
+    events: List[Dict[str, Any]],
+    *,
+    tick: int,
+    frm: str,
+    to: str,
+    new_pos: str,
+    new_zone: str,
+    prev_pos: str,
+    label: str | None = None,
+    subtype: str | None = None,
+    p: float | None = None,
+) -> None:
+    ev: Dict[str, Any] = {
+        "tick": tick,
+        "from": frm,
+        "to": to,
+        "possession": new_pos,
+        "zone": new_zone,
+        "prev_possession": prev_pos,
+        "turnover": (prev_pos is not None and new_pos is not None and new_pos != prev_pos),
+    }
+    if label is not None:
+        ev["label"] = label
+    if subtype is not None:
+        ev["subtype"] = subtype
+    if p is not None:
+        ev["p"] = p
+    events.append(ev)
+
 # -----------------------------------------------------------
 
 def _simulate_minute(
@@ -156,10 +180,11 @@ def _simulate_minute(
             new_state = nxt.get("to")
             new_pos = _apply_possession(possession, nxt.get("possession", "same"))
             new_zone = nxt.get("zone", _zone_from_state(new_state))
-            events.append({
-                "tick": tick, "from": "SHOT", "to": new_state,
-                "label": f"SHOT:{result}", "possession": new_pos, "zone": new_zone, "prev_possession": possession
-            })
+            _push_event(
+                events, tick=tick, frm="SHOT", to=new_state,
+                new_pos=new_pos, new_zone=new_zone, prev_pos=possession,
+                label=f"SHOT:{result}"
+            )
             if new_state == "OPEN_PLAY_FINAL" and state != "OPEN_PLAY_FINAL":
                 entries_final[new_pos] += 1
             state, possession, zone = new_state, new_pos, new_zone
@@ -173,10 +198,11 @@ def _simulate_minute(
             new_state = choice.get("to")
             new_pos = _apply_possession(possession, choice.get("possession", "same"))
             new_zone = _zone_from_state(new_state)
-            events.append({
-                "tick": tick, "from": "OUT", "to": new_state,
-                "subtype": choice.get("subtype"), "possession": new_pos, "zone": new_zone, "prev_possession": possession
-            })
+            _push_event(
+                events, tick=tick, frm="OUT", to=new_state,
+                new_pos=new_pos, new_zone=new_zone, prev_pos=possession,
+                subtype=choice.get("subtype")
+            )
             if new_state == "OPEN_PLAY_FINAL" and state != "OPEN_PLAY_FINAL":
                 entries_final[new_pos] += 1
             state, possession, zone = new_state, new_pos, new_zone
@@ -189,7 +215,10 @@ def _simulate_minute(
             new_state = nxt.get("to")
             new_pos = _apply_possession(possession, nxt.get("possession", "same"))
             new_zone = _zone_from_state(new_state)
-            events.append({"tick": tick, "from": "FOUL", "to": new_state, "possession": new_pos, "zone": new_zone, "prev_possession": possession})
+            _push_event(
+                events, tick=tick, frm="FOUL", to=new_state,
+                new_pos=new_pos, new_zone=new_zone, prev_pos=possession
+            )
             if new_state == "OPEN_PLAY_FINAL" and state != "OPEN_PLAY_FINAL":
                 entries_final[new_pos] += 1
             state, possession, zone = new_state, new_pos, new_zone
@@ -201,7 +230,10 @@ def _simulate_minute(
             new_state = tr.get("to")
             new_pos = _apply_possession(possession, tr.get("possession", "same"))
             new_zone = _zone_from_state(new_state)
-            events.append({"tick": tick, "from": "GK", "to": new_state, "possession": new_pos, "zone": new_zone, "prev_possession": possession})
+            _push_event(
+                events, tick=tick, frm="GK", to=new_state,
+                new_pos=new_pos, new_zone=new_zone, prev_pos=possession
+            )
             if new_state == "OPEN_PLAY_FINAL" and state != "OPEN_PLAY_FINAL":
                 entries_final[new_pos] += 1
             state, possession, zone = new_state, new_pos, new_zone
@@ -215,22 +247,27 @@ def _simulate_minute(
         label = None
         if new_state in ("SHOT", "OUT", "FOUL", "GK"):
             label = f"→{new_state}"
-        events.append({
-            "tick": tick, "from": state, "to": new_state,
-            "p": tr.get("p"),
-            "zone": new_zone,
-            "possession": new_pos,
-            "label": label,
-            "prev_possession": possession,  # <— ДОБАВЛЕНО: кто владел мячом в начале тика
-        })
+        _push_event(
+            events, tick=tick, frm=state, to=new_state,
+            new_pos=new_pos, new_zone=new_zone, prev_pos=possession,
+            label=label, p=tr.get("p")
+        )
         if new_state == "OPEN_PLAY_FINAL" and state != "OPEN_PLAY_FINAL":
             entries_final[new_pos] += 1
         state, possession, zone = new_state, new_pos, new_zone
+
+    # время на тик возьмем из спеки
+    tick_seconds = int(spec.get("time", {}).get("tick_seconds", 10))
 
     possession_pct = {
         "home": round(100.0 * possession_ticks["home"] / float(TICKS_PER_MINUTE), 1),
         "away": round(100.0 * possession_ticks["away"] / float(TICKS_PER_MINUTE), 1),
     }
+    possession_seconds = {
+        "home": possession_ticks["home"] * tick_seconds,
+        "away": possession_ticks["away"] * tick_seconds,
+    }
+    possession_swings = sum(1 for e in events if e.get("turnover"))
 
     return {
         "start_state": start_state,
@@ -241,6 +278,8 @@ def _simulate_minute(
         "counts": counts,
         "events": events,
         "possession_pct": possession_pct,
+        "possession_seconds": possession_seconds,
+        "possession_swings": possession_swings,
         "entries_final_third": entries_final,
     }
 
@@ -328,9 +367,3 @@ def markov_minute(request):
         resp["Access-Control-Allow-Origin"] = origin
         resp["Vary"] = "Origin"
     return resp
-
-
-
-
-
-
