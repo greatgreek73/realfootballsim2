@@ -62,8 +62,16 @@ export function MarkovPanel({
 
   useEffect(() => {
     tokenRef.current = null;
+    onMinute?.(null);
     void fetchMinute();
-  }, [fetchMinute, matchId]);
+  }, [fetchMinute, matchId, onMinute]);
+
+  useEffect(
+    () => () => {
+      onMinute?.(null);
+    },
+    [onMinute],
+  );
 
   useEffect(() => {
     if (!autoPlay) return;

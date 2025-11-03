@@ -83,7 +83,7 @@ export default function MatchLivePage() {
 
   const [match, setMatch] = useState<MatchDetail | null>(null);
   const [events, setEvents] = useState<MatchEvent[]>([]);
-  const [markov, setMarkov] = useState<any>(null);
+  const [markovSummary, setMarkovSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,7 +103,7 @@ export default function MatchLivePage() {
   const wsSupported = useMemo(() => typeof window !== "undefined" && "WebSocket" in window, []);
 
   useEffect(() => {
-    setMarkov(null);
+    setMarkovSummary(null);
   }, [matchId]);
 
   const mapWebSocketEvent = useCallback((event: any): MatchEvent => {
@@ -522,24 +522,24 @@ export default function MatchLivePage() {
                   </Grid>
                 </Grid>
 
-                {markov && (
+                {markovSummary && (
                   <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: "wrap" }}>
                     <Chip
                       size="small"
-                      label={`Possession: ${markov?.possession_pct?.home ?? 0}% / ${markov?.possession_pct?.away ?? 0}% (${markov?.possession_seconds?.home ?? 0}s–${markov?.possession_seconds?.away ?? 0}s)`}
+                      label={`Possession: ${markovSummary?.possession_pct?.home ?? "-"}% / ${markovSummary?.possession_pct?.away ?? "-"}% (${markovSummary?.possession_seconds?.home ?? "-"}s–${markovSummary?.possession_seconds?.away ?? "-"}s)`}
                     />
-                    <Chip size="small" label={`Turnovers: ${markov?.possession_swings ?? 0}`} />
+                    <Chip size="small" label={`Turnovers: ${markovSummary?.possession_swings ?? "-"}`} />
                     <Chip
                       size="small"
-                      label={`Final 3rd entries: ${markov?.entries_final_third?.home ?? 0}–${markov?.entries_final_third?.away ?? 0}`}
-                    />
-                    <Chip
-                      size="small"
-                      label={`Δscore: ${markov?.score?.home ?? 0}:${markov?.score?.away ?? 0}`}
+                      label={`Final 3rd entries: ${markovSummary?.entries_final_third?.home ?? "-"}–${markovSummary?.entries_final_third?.away ?? "-"}`}
                     />
                     <Chip
                       size="small"
-                      label={`End: ${markov?.end_state_label ?? String(markov?.end_state ?? "-")} (ball: ${markov?.possession_end ?? "-"})`}
+                      label={`Δscore: ${markovSummary?.score?.home ?? "-"}:${markovSummary?.score?.away ?? "-"}`}
+                    />
+                    <Chip
+                      size="small"
+                      label={`End: ${markovSummary?.end_state ?? "-"} (ball: ${markovSummary?.possession_end ?? "-"})`}
                     />
                   </Stack>
                 )}
@@ -637,7 +637,7 @@ export default function MatchLivePage() {
               matchId={Number(match?.id ?? matchId)}
               homeName={match.home.name}
               awayName={match.away.name}
-              onMinute={setMarkov}
+              onMinute={setMarkovSummary}
             />
 
             <Grid container spacing={3}>
