@@ -2,7 +2,6 @@ import json
 from datetime import datetime
 from typing import Any, Optional
 
-from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
@@ -18,8 +17,6 @@ from matches.match_preparation import PreMatchPreparation
 from matches.engines.markov_v1 import engine_stub as simulate_one_action
 from players.models import Player
 from .models import Match, MatchEvent
-
-MAX_SIMULATION_ACTIONS = getattr(settings, "MATCH_SIMULATION_MAX_ACTIONS", 1000)
 
 
 def _serialize_datetime(dt: Optional[datetime]) -> Optional[str]:
@@ -128,27 +125,6 @@ def _store_event(match: Match, event_payload: Optional[dict[str, Any]]) -> Optio
     data = {key: value for key, value in event_payload.items() if key in allowed_fields}
     data.setdefault("match", match)
     return MatchEvent.objects.create(**data)
-
-
-def _simulate_single_step(match: Match) -> list[MatchEvent]:
-    result = simulate_one_action(match)
-    created_events: list[MatchEvent] = []
-
-    for key in ("event", "additional_event", "second_additional_event", "third_additional_event"):
-        stored = _store_event(match, result.get(key))
-        if stored:
-            created_events.append(stored)
-
-    if not result.get("continue", True):
-        match.current_minute = min(match.current_minute + 1, 90)
-
-    if match.current_minute >= 90 and match.status != "finished":
-        match.status = "finished"
-        match.waiting_for_next_minute = False
-
-    match.save()
-    match.refresh_from_db()
-    return created_events
 
 
 def _coerce_int(value: Any, default: Optional[int] = None) -> Optional[int]:
@@ -326,56 +302,6 @@ def match_create_api(request):
             match.save()
 
     return JsonResponse({"match": _serialize_match(match)}, status=201, json_dumps_params={"ensure_ascii": False})
-
-
-@login_required
-@require_http_methods(["POST"])
-def match_simulate_api(request, pk: int):
-    """
-    Progress a match simulation.
-    JSON payload:
-      - mode: "step" (default) or "full"
-    """
-    match = get_object_or_404(
-        Match.objects.select_related(
-            "home_team",
-            "away_team",
-            "championshipmatch__championship__league",
-            "championshipmatch__championship__season",
-        ),
-        pk=pk,
-    )
-
-    try:
-        payload = json.loads(request.body or "{}")
-    except json.JSONDecodeError:
-        payload = {}
-
-    mode = payload.get("mode", "step")
-    created_events: list[MatchEvent] = []
-    steps = 0
-
-    if mode == "full":
-        while match.status != "finished" and match.current_minute < 90 and steps < MAX_SIMULATION_ACTIONS:
-            created_events.extend(_simulate_single_step(match))
-            steps += 1
-        if steps >= MAX_SIMULATION_ACTIONS:
-            match.status = "error"
-            match.save()
-    else:
-        created_events.extend(_simulate_single_step(match))
-        steps = 1
-
-    match.refresh_from_db()
-    return JsonResponse(
-        {
-            "match": _serialize_match(match),
-            "events": [_serialize_event(event) for event in created_events],
-            "mode": mode,
-            "steps": steps,
-        },
-        json_dumps_params={"ensure_ascii": False},
-    )
 
 
 @login_required

@@ -25,7 +25,6 @@ import {
   MatchDetail,
   MatchEvent,
   MatchStatus,
-  simulateMatch,
   substitutePlayer,
 } from "@/api/matches";
 import { MarkovPanel } from "@/features/markov/MarkovPanel";
@@ -85,7 +84,6 @@ export default function MatchLivePage() {
   const [error, setError] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [simulateLoading, setSimulateLoading] = useState(false);
   const [substituting, setSubstituting] = useState(false);
   const [outPlayerId, setOutPlayerId] = useState("");
   const [inPlayerId, setInPlayerId] = useState("");
@@ -514,36 +512,6 @@ export default function MatchLivePage() {
     }
   }, [matchFinished]);
 
-  const handleSimulate = async (mode: "step" | "full") => {
-    if (!Number.isFinite(matchId)) return;
-    if (!matchInProgress) {
-      setActionError("Match is not currently in progress.");
-      return;
-    }
-    try {
-      setSimulateLoading(true);
-      setActionError(null);
-      const response = await simulateMatch(matchId, { mode });
-      setMatch(response.match);
-
-      if (response.events.length) {
-        setEvents((prev) => {
-          const merged = [...prev, ...response.events];
-          return merged.sort((a, b) => (a.minute === b.minute ? a.id - b.id : a.minute - b.minute));
-        });
-      } else {
-        const eventsResponse = await fetchMatchEvents(matchId);
-        setEvents(eventsResponse.events);
-      }
-
-      setActionMessage(mode === "full" ? "Match simulated to the end." : "Simulated one action.");
-    } catch (e: any) {
-      setActionError(e?.message ?? "Simulation failed");
-    } finally {
-      setSimulateLoading(false);
-    }
-  };
-
   const handleSubstitute = async () => {
     if (!Number.isFinite(matchId)) return;
     if (!matchInProgress) {
@@ -677,29 +645,11 @@ export default function MatchLivePage() {
 
                 <Stack
                   direction={{ xs: "column", md: "row" }}
-                  justifyContent="space-between"
+                  justifyContent="flex-end"
                   alignItems={{ xs: "flex-start", md: "center" }}
                   spacing={2}
                   sx={{ mt: 2 }}
                 >
-                  <Stack direction="row" spacing={1}>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={() => handleSimulate("step")}
-                      disabled={simulateLoading || !matchInProgress}
-                    >
-                      Simulate Action
-                    </Button>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      onClick={() => handleSimulate("full")}
-                      disabled={simulateLoading || !matchInProgress}
-                    >
-                      Simulate To End
-                    </Button>
-                  </Stack>
                   <Stack spacing={1} alignItems={{ xs: "flex-start", sm: "center" }}>
                     <Stack direction="row" spacing={1} alignItems="center">
                       <Button

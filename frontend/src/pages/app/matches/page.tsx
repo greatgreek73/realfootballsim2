@@ -21,7 +21,7 @@ import {
   Paper,
 } from "@mui/material";
 
-import { createMatch, fetchMatches, MatchStatus, MatchSummary, simulateMatch } from "@/api/matches";
+import { createMatch, fetchMatches, MatchStatus, MatchSummary } from "@/api/matches";
 
 const STATUS_COLOR: Record<MatchStatus, "default" | "info" | "warning" | "success" | "error"> = {
   scheduled: "info",
@@ -39,11 +39,6 @@ const DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
   hour: "2-digit",
   minute: "2-digit",
 });
-
-const SHOULD_AUTO_SIMULATE_FRIENDLY =
-  typeof import.meta.env.VITE_AUTO_SIMULATE_FRIENDLY === "string"
-    ? import.meta.env.VITE_AUTO_SIMULATE_FRIENDLY.toLowerCase() === "true"
-    : false;
 
 function formatDate(value: string | null) {
   if (!value) return "TBD";
@@ -111,20 +106,7 @@ export default function MatchesPage() {
     try {
       setCreating(true);
       setActionError(null);
-      let match = await createMatch({ autoStart: true, autoOpponent: true });
-
-      if (SHOULD_AUTO_SIMULATE_FRIENDLY) {
-        try {
-          const simulation = await simulateMatch(match.id, { mode: "full" });
-          match = simulation.match;
-        } catch (simulationError: any) {
-          // Log the failure but let the user continue with manual controls.
-          console.warn("Auto simulation fallback failed", simulationError);
-          setActionError(
-            simulationError?.message ?? "Failed to auto-simulate match; you may need to use the live controls."
-          );
-        }
-      }
+      const match = await createMatch({ autoStart: true, autoOpponent: true });
 
       navigate(`/matches/${match.id}/live`);
     } catch (e: any) {

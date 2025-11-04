@@ -2,7 +2,6 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import CreateView, DetailView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages
 from django.urls import reverse
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
@@ -17,7 +16,6 @@ from django.conf import settings
 from .utils import extract_player_id
 from tournaments.models import Championship, League
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from .match_preparation import PreMatchPreparation
 from django.views.decorators.http import require_http_methods
 from .narrative_system import NarrativeAIEngine, RivalryManager, ChemistryCalculator
 
@@ -362,87 +360,3 @@ def get_match_events(request, match_id):
         }
     })
 
-
-@login_required
-def simulate_match_view(request, match_id):
-        logger.info(f'Кнопка "Create New Match" нажата пользователем {request.user.username}')
-
-        if match_id == 0:
-            logger.info('Режим создания нового тестового матча (match_id == 0) активирован')
-
-            # Получаем клуб пользователя
-            club = request.user.club
-            logger.info(f'Клуб пользователя: {club.name} (ID={club.id})')
-
-            # Находим случайного бота-соперника
-            opponent = Club.objects.filter(is_bot=True).exclude(id=club.id).order_by('?').first()
-            if not opponent:
-                logger.warning(f'Не удалось найти бота-соперника для клуба {club.name}')
-                return render(request, 'matches/no_opponent.html', {'club': club})
-
-            logger.info(f'Выбран соперник-бот: {opponent.name} (ID={opponent.id})')
-
-            # Создаём матч
-            match = Match.objects.create(
-                home_team=club,
-                away_team=opponent,
-                datetime=timezone.now(),
-                status='scheduled',
-                current_minute=1,
-                home_tactic='balanced',
-                away_tactic='balanced',
-            )
-            logger.info(f'Создан матч ID={match.id} между {club.name} и {opponent.name}')
-
-            # Предматчевая подготовка
-            prep = PreMatchPreparation(match)
-            if not prep.prepare_match():
-                errors = prep.get_validation_errors()
-                logger.error(f'Ошибка подготовки матча ID={match.id}: {errors}')
-                messages.error(request, f"Match preparation failed: {'; '.join(errors)}")
-                match.delete()
-                return redirect('clubs:club_detail', pk=club.id)
-
-            match.status = 'in_progress'
-            match.save()
-            logger.info(f'[VIEW] Match ID={match.id} set to in_progress')
-            logger.info(f'Матч ID={match.id} успешно подготовлен и переведён в статус "in_progress"')
-
-            match_id = match.id
-
-        # Завершающее перенаправление на страницу матча
-        logger.info(f'Перенаправление пользователя на страницу матча ID={match_id}')
-        return redirect('matches:match_detail', pk=match_id)
-
-
-@login_required
-@require_http_methods(["POST"])
-def substitute_player(request, match_id):
-    """Handle a simple substitution triggered from the live match page."""
-    match = get_object_or_404(Match, pk=match_id)
-    if match.status != 'in_progress':
-        return JsonResponse({"success": False, "error": "Match not running"}, status=400)
-
-    try:
-        payload = json.loads(request.body)
-        out_player_id = int(payload.get('out_player_id', 0))
-    except (ValueError, TypeError, json.JSONDecodeError):
-        return JsonResponse({"success": False, "error": "Invalid data"}, status=400)
-
-    player = Player.objects.filter(id=out_player_id).first()
-    if not player:
-        return JsonResponse({"success": False, "error": "Player not found"}, status=404)
-
-    MatchEvent.objects.create(
-        match=match,
-        minute=match.current_minute,
-        event_type='substitution',
-        player=player,
-        description=f"Substitution: {player.full_name} leaves the pitch"
-    )
-
-    if match.st_injury > 0:
-        match.st_injury -= 1
-    match.save(update_fields=["st_injury"])
-
-    return JsonResponse({"success": True})

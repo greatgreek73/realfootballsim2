@@ -15,7 +15,6 @@ from matches.api_views import (
     match_detail_api,
     match_events_api,
     match_create_api,
-    match_simulate_api,
     match_substitute_api,
 )
 
@@ -77,7 +76,6 @@ urlpatterns = [
     path("api/matches/create/", match_create_api, name="api_match_create"),
     path("api/matches/<int:pk>/", match_detail_api, name="api_match_detail"),
     path("api/matches/<int:pk>/events/", match_events_api, name="api_match_events"),
-    path("api/matches/<int:pk>/simulate/", match_simulate_api, name="api_match_simulate"),
     path("api/matches/<int:pk>/substitute/", match_substitute_api, name="api_match_substitute"),
 ]
 

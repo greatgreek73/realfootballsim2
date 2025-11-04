@@ -191,35 +191,6 @@ export async function createMatch(payload: CreateMatchPayload = {}): Promise<Mat
   return json.match;
 }
 
-export interface SimulateMatchOptions {
-  mode?: "step" | "full";
-}
-
-export interface SimulateMatchResponse {
-  match: MatchDetail;
-  events: MatchEvent[];
-  mode: string;
-  steps: number;
-}
-
-export async function simulateMatch(matchId: number, options: SimulateMatchOptions = {}): Promise<SimulateMatchResponse> {
-  const csrftoken = await getCsrfToken();
-  const res = await fetch(`/api/matches/${matchId}/simulate/`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrftoken,
-    },
-    credentials: "include",
-    body: JSON.stringify({ mode: options.mode ?? "step" }),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to simulate match ${matchId}: ${res.status} ${res.statusText} - ${text}`);
-  }
-  return (await res.json()) as SimulateMatchResponse;
-}
-
 export interface SubstitutePlayerPayload {
   outPlayerId: number;
   inPlayerId?: number;
