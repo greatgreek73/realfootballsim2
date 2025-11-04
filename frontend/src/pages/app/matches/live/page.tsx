@@ -155,9 +155,15 @@ export default function MatchLivePage() {
       ? markovSummary.narrative
       : [];
 
+    const baseId = minute * 1000;
+    let nextOffset = 1;
+    const makeEvent = (event: Omit<MatchEvent, "id">): MatchEvent => ({
+      id: -(baseId + nextOffset++),
+      ...event,
+    });
+
     const markovEvents: MatchEvent[] = [
-      {
-        id: -(minute * 1000 + 1),
+      makeEvent({
         minute,
         type: "markov_summary",
         type_label: "Markov Minute",
@@ -166,17 +172,42 @@ export default function MatchLivePage() {
         timestamp: null,
         player: null,
         related_player: null,
-      },
-      ...narrativeLines.map((line, idx) => {
-        const lower = line.toLowerCase();
-        const type = lower.includes("goal")
-          ? "markov_goal"
-          : lower.includes("turnover")
-          ? "markov_turnover"
-          : "markov_narrative";
-        const typeLabel = lower.includes("goal") ? "Markov Goal" : "Markov";
-        return {
-          id: -(minute * 1000 + 2 + idx),
+      }),
+    ];
+
+    const homeName = match?.home?.name ?? "Home";
+    const awayName = match?.away?.name ?? "Away";
+
+    const pushGoalEvent = (teamName: string, count: number) => {
+      if (!count || count <= 0) return;
+      const label = count > 1 ? `GOAL x${count}` : "GOAL";
+      markovEvents.push(
+        makeEvent({
+          minute,
+          type: "markov_goal",
+          type_label: count > 1 ? "Goals" : "Goal",
+        description: `${label} — ${teamName}`,
+          personality_reason: null,
+          timestamp: null,
+          player: null,
+          related_player: null,
+        }),
+      );
+    };
+
+    pushGoalEvent(homeName, deltaHome);
+    pushGoalEvent(awayName, deltaAway);
+
+    narrativeLines.forEach((line) => {
+      const lower = line.toLowerCase();
+      const type = lower.includes("goal")
+        ? "markov_goal"
+        : lower.includes("turnover")
+        ? "markov_turnover"
+        : "markov_narrative";
+      const typeLabel = lower.includes("goal") ? "Markov Goal" : "Markov";
+      markovEvents.push(
+        makeEvent({
           minute,
           type,
           type_label: typeLabel,
@@ -185,9 +216,9 @@ export default function MatchLivePage() {
           timestamp: null,
           player: null,
           related_player: null,
-        };
-      }),
-    ];
+        }),
+      );
+    });
 
     setEvents((prev) => {
       const filtered = prev.filter(
@@ -197,6 +228,16 @@ export default function MatchLivePage() {
       merged.sort((a, b) => {
         if (a.minute !== b.minute) {
           return a.minute - b.minute;
+        }
+        const priority = (type: string) => {
+          if (type === "markov_summary") return 0;
+          if (type === "markov_goal") return 1;
+          if (type.startsWith("markov_")) return 2;
+          return 3;
+        };
+        const diff = priority(a.type) - priority(b.type);
+        if (diff !== 0) {
+          return diff;
         }
         return a.id - b.id;
       });
@@ -223,7 +264,7 @@ export default function MatchLivePage() {
         current_minute: nextMinute,
       };
     });
-  }, [markovSummary]);
+  }, [markovSummary, match?.home?.name, match?.away?.name]);
 
   const mapWebSocketEvent = useCallback((event: any): MatchEvent => {
     const minuteValue = Number(event?.minute);

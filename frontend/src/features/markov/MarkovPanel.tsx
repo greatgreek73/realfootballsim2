@@ -133,6 +133,35 @@ export function MarkovPanel({
   const foulsCount = typeof counts.foul === "number" ? counts.foul : 0;
   const outsCount = typeof counts.out === "number" ? counts.out : 0;
   const gkCount = typeof counts.gk === "number" ? counts.gk : 0;
+  const validation = summary?.validation;
+  const secondsStatus = validation?.seconds_total;
+  const secondsOk = secondsStatus?.ok !== false;
+  const secondsLabel = secondsStatus
+    ? `Seconds ${secondsStatus.actual ?? "-"} / ${secondsStatus.expected ?? "-"}`
+    : "Seconds: n/a";
+  const pctStatus = validation?.possession_pct;
+  const pctOk = pctStatus?.ok !== false;
+  const pctLabel = pctStatus
+    ? `Pct diff ±${pctStatus.home_diff ?? "-"} / ±${pctStatus.away_diff ?? "-"}`
+    : "Pct: n/a";
+  const swingsValidationStatus = validation?.swings;
+  const swingsValidationOk = swingsValidationStatus?.ok !== false;
+  const swingsValidationLabel = swingsValidationStatus
+    ? `Swings ${swingsValidationStatus.actual ?? "-"} = ${swingsValidationStatus.expected ?? "-"}`
+    : "Swings: n/a";
+  const entriesStatus = validation?.entries_final_third;
+  const entriesHomeOk = entriesStatus?.home?.ok !== false;
+  const entriesAwayOk = entriesStatus?.away?.ok !== false;
+  const entriesValidationOk = entriesHomeOk && entriesAwayOk;
+  const entriesValidationLabel = entriesStatus
+    ? `Entries H ${entriesStatus.home?.actual ?? "-"} / ${entriesStatus.home?.expected ?? "-"} • A ${entriesStatus.away?.actual ?? "-"} / ${entriesStatus.away?.expected ?? "-"}`
+    : "Entries: n/a";
+  const validationIssues: string[] = [];
+  if (!secondsOk) validationIssues.push("Seconds sum deviates from 60.");
+  if (!pctOk) validationIssues.push("Possession % mismatch seconds.");
+  if (!swingsValidationOk) validationIssues.push("Turnover count mismatch.");
+  if (!entriesValidationOk) validationIssues.push("Final-third entries mismatched.");
+  const showMinuteStats = true;
   const minuteStatsLabel = `Minute stats: S${shotsCount} / F${foulsCount} / O${outsCount} / GK${gkCount}`;
 
   const narrativeItems = useMemo(() => {
@@ -205,7 +234,7 @@ export function MarkovPanel({
               variant={speed === option ? "contained" : "outlined"}
               onClick={() => setSpeed(option as 1 | 2 | 4)}
             >
-              {option}×
+              {`${option}×`}
             </Button>
           ))}
         </ButtonGroup>
@@ -233,7 +262,7 @@ export function MarkovPanel({
           color={autoPlay ? "success.main" : "text.secondary"}
           sx={{ ml: 1 }}
         >
-          {autoPlay ? `Auto running… ×${speed}` : "Paused"}
+          {autoPlay ? `Auto running ×${speed}` : "Paused"}
         </Typography>
 
         <Typography variant="caption" color={error ? "error" : "text.secondary"}>
@@ -288,32 +317,83 @@ export function MarkovPanel({
               variant="outlined"
               label={`End: ${summary?.end_state ?? "-"} (ball: ${summary?.possession_end ?? "-"})`}
             />
-            <Chip
-              size="small"
-              variant="outlined"
-              icon={<MilitaryTechIcon fontSize="small" />}
-              label={minuteStatsLabel}
-            />
-            {goalTeam && (
-              <Chip
-                size="small"
-                color="success"
-                variant="filled"
-                icon={<SportsSoccerIcon fontSize="small" />}
-                label={`GOAL! ${goalTeam}`}
-              />
-            )}
           </Stack>
-          {summary.minute >= 45 && summary.minute <= 46 ? (
+          {(showMinuteStats || goalTeam) && (
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={1}
+              sx={{ mt: 1, flexWrap: "wrap" }}
+              useFlexGap
+            >
+              {showMinuteStats && (
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  icon={<MilitaryTechIcon fontSize="small" />}
+                  label={minuteStatsLabel}
+                />
+              )}
+              {goalTeam && (
+                <Chip
+                  size="small"
+                  color="success"
+                  variant="filled"
+                  icon={<SportsSoccerIcon fontSize="small" />}
+                  label={`GOAL! ${goalTeam}`}
+                />
+              )}
+            </Stack>
+          )}
+          {(summary.minute === Math.floor(regMinutes / 2) || summary.minute === Math.floor(regMinutes / 2) + 1) && (
             <Alert severity="info" sx={{ mt: 2 }}>
               Half-time reached.
             </Alert>
-          ) : null}
-          {summary.minute >= 90 ? (
-            <Alert severity="success" sx={{ mt: summary.minute === 90 ? 2 : 1 }}>
+          )}
+          {summary.minute >= regMinutes && summary.minute < regMinutes + 5 && (
+            <Alert severity="success" sx={{ mt: summary.minute === regMinutes ? 2 : 1 }}>
               Full-time reached ({summary.minute}')
             </Alert>
-          ) : null}
+          )}
+          {validation && (
+            <>
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={1}
+                sx={{ mt: 1, flexWrap: "wrap" }}
+                useFlexGap
+              >
+                <Chip
+                  size="small"
+                  variant={secondsOk ? "outlined" : "filled"}
+                  color={secondsOk ? "success" : "error"}
+                  label={secondsLabel}
+                />
+                <Chip
+                  size="small"
+                  variant={pctOk ? "outlined" : "filled"}
+                  color={pctOk ? "success" : "error"}
+                  label={pctLabel}
+                />
+                <Chip
+                  size="small"
+                  variant={swingsValidationOk ? "outlined" : "filled"}
+                  color={swingsValidationOk ? "success" : "error"}
+                  label={swingsValidationLabel}
+                />
+                <Chip
+                  size="small"
+                  variant={entriesValidationOk ? "outlined" : "filled"}
+                  color={entriesValidationOk ? "success" : "error"}
+                  label={entriesValidationLabel}
+                />
+              </Stack>
+              {validationIssues.length > 0 && (
+                <Alert severity="warning" sx={{ mt: 1 }}>
+                  Data checks: {validationIssues.join(" ")}
+                </Alert>
+              )}
+            </>
+          )}
         </>
       ) : (
         <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
