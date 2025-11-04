@@ -101,10 +101,129 @@ export default function MatchLivePage() {
   const autoRefreshManualRef = useRef(false);
   const wsAdjustedAutoRef = useRef(false);
   const wsSupported = useMemo(() => typeof window !== "undefined" && "WebSocket" in window, []);
+  const markovCacheRef = useRef<Map<number, string>>(new Map());
 
   useEffect(() => {
     setMarkovSummary(null);
   }, [matchId]);
+
+  useEffect(() => {
+    if (!markovSummary) {
+      return;
+    }
+    const minute = Number(markovSummary.minute ?? 0);
+    if (!Number.isFinite(minute) || minute <= 0) {
+      return;
+    }
+
+    const cacheKey = [
+      minute,
+      markovSummary.token?.state ?? "",
+      markovSummary.token?.possession ?? "",
+      markovSummary.score_total?.home ?? "",
+      markovSummary.score_total?.away ?? "",
+    ].join("|");
+
+    if (markovCacheRef.current.get(minute) === cacheKey) {
+      return;
+    }
+    markovCacheRef.current.set(minute, cacheKey);
+
+    const possPct = markovSummary.possession_pct ?? {};
+    const possSeconds = markovSummary.possession_seconds ?? {};
+    const swingsValue =
+      typeof markovSummary.possession_swings === "number" ? markovSummary.possession_swings : "-";
+    const entries = markovSummary.entries_final_third ?? {};
+    const deltaScore = markovSummary.score ?? {};
+
+    const possHomePct =
+      typeof possPct.home === "number" ? Math.round(possPct.home) : "-";
+    const possAwayPct =
+      typeof possPct.away === "number" ? Math.round(possPct.away) : "-";
+    const secondsHome =
+      typeof possSeconds.home === "number" ? `${possSeconds.home}s` : "-";
+    const secondsAway =
+      typeof possSeconds.away === "number" ? `${possSeconds.away}s` : "-";
+    const entriesHome = typeof entries.home === "number" ? entries.home : 0;
+    const entriesAway = typeof entries.away === "number" ? entries.away : 0;
+    const deltaHome = typeof deltaScore.home === "number" ? deltaScore.home : 0;
+    const deltaAway = typeof deltaScore.away === "number" ? deltaScore.away : 0;
+
+    const summaryLine = `Markov minute ${minute}: Poss ${possHomePct}|${possAwayPct} (${secondsHome}-${secondsAway}), Swings ${swingsValue}, Final 3rd ${entriesHome}-${entriesAway}, Δscore ${deltaHome}:${deltaAway}, End ${markovSummary.end_state ?? "-"} (ball: ${markovSummary.possession_end ?? "-"})`;
+
+    const narrativeLines = Array.isArray(markovSummary.narrative)
+      ? markovSummary.narrative
+      : [];
+
+    const markovEvents: MatchEvent[] = [
+      {
+        id: -(minute * 1000 + 1),
+        minute,
+        type: "markov_summary",
+        type_label: "Markov Minute",
+        description: summaryLine,
+        personality_reason: null,
+        timestamp: null,
+        player: null,
+        related_player: null,
+      },
+      ...narrativeLines.map((line, idx) => {
+        const lower = line.toLowerCase();
+        const type = lower.includes("goal")
+          ? "markov_goal"
+          : lower.includes("turnover")
+          ? "markov_turnover"
+          : "markov_narrative";
+        const typeLabel = lower.includes("goal") ? "Markov Goal" : "Markov";
+        return {
+          id: -(minute * 1000 + 2 + idx),
+          minute,
+          type,
+          type_label: typeLabel,
+          description: line,
+          personality_reason: null,
+          timestamp: null,
+          player: null,
+          related_player: null,
+        };
+      }),
+    ];
+
+    setEvents((prev) => {
+      const filtered = prev.filter(
+        (event) => !(event.minute === minute && event.type.startsWith("markov_")),
+      );
+      const merged = [...filtered, ...markovEvents];
+      merged.sort((a, b) => {
+        if (a.minute !== b.minute) {
+          return a.minute - b.minute;
+        }
+        return a.id - b.id;
+      });
+      return merged;
+    });
+
+    setMatch((prev) => {
+      if (!prev) return prev;
+      const nextScore = {
+        home: markovSummary.score_total?.home ?? prev.score.home,
+        away: markovSummary.score_total?.away ?? prev.score.away,
+      };
+      const nextMinute = Math.max(prev.current_minute ?? 0, minute);
+      if (
+        nextScore.home === prev.score.home &&
+        nextScore.away === prev.score.away &&
+        nextMinute === prev.current_minute
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        score: nextScore,
+        current_minute: nextMinute,
+      };
+    });
+  }, [markovSummary]);
 
   const mapWebSocketEvent = useCallback((event: any): MatchEvent => {
     const minuteValue = Number(event?.minute);
@@ -513,7 +632,7 @@ export default function MatchLivePage() {
                   <Grid size={{ xs: 12, md: 4 }}>
                     <Stack spacing={1} alignItems="flex-end">
                       <Typography variant="h2">
-                        {match.score.home} : {match.score.away}
+                        {markovSummary?.score_total?.home ?? match.score.home} : {markovSummary?.score_total?.away ?? match.score.away}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         Last update: {formatTimestamp(match.last_minute_update)}

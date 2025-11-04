@@ -34,12 +34,12 @@ states:
 
   - name: OPEN_PLAY_FINAL
     transitions:
-      - { to: OPEN_PLAY_FINAL, possession: same, p: 0.25 }
+      - { to: OPEN_PLAY_FINAL, possession: same, p: 0.20 }
       - { to: OPEN_PLAY_MID, possession: same, p: 0.05 }
-      - { to: OPEN_PLAY_DEF, possession: opponent, kind: turnover, p: 0.25 }
-      - { to: OUT, subtype: mixed, zone: FINAL, possession: same, p: 0.20 }
-      - { to: FOUL, zone: FINAL, possession: same, p: 0.08 }
-      - { to: SHOT, possession: same, p: 0.17 }
+      - { to: OPEN_PLAY_DEF, possession: opponent, kind: turnover, p: 0.20 }
+      - { to: OUT, subtype: mixed, zone: FINAL, possession: same, p: 0.18 }
+      - { to: FOUL, zone: FINAL, possession: same, p: 0.07 }
+      - { to: SHOT, possession: same, p: 0.30 }
 
   - name: SHOT
     outcomes:

@@ -40,6 +40,63 @@ def _rng_from(seed: int, minute_index: int, start_state: str, start_possession: 
     h = int.from_bytes(hashlib.sha256(key.encode("utf-8")).digest()[:8], "big")
     return random.Random(h)
 
+
+def _adjust_advancing_transitions(
+    transitions: List[dict],
+    *,
+    state: str,
+    possession: str,
+    attack_coeffs: Dict[str, float],
+    defense_coeffs: Dict[str, float],
+) -> List[dict]:
+    if state not in ("OPEN_PLAY_MID", "OPEN_PLAY_FINAL"):
+        return transitions
+
+    adjusted: List[dict] = []
+    weights: List[float] = []
+    total = 0.0
+
+    for tr in transitions:
+        base_p = float(tr.get("p", 0.0))
+        if base_p <= 0.0:
+            continue
+
+        multiplier = 1.0
+        to_state = tr.get("to")
+        possession_directive = tr.get("possession", "same")
+        advancing = (
+            state == "OPEN_PLAY_MID"
+            and to_state == "OPEN_PLAY_FINAL"
+            and possession_directive == "same"
+        ) or (
+            state == "OPEN_PLAY_FINAL"
+            and to_state == "SHOT"
+            and possession_directive == "same"
+        )
+
+        if advancing and possession in ("home", "away"):
+            team = possession
+            opponent = "away" if team == "home" else "home"
+            attack = attack_coeffs.get(team, 1.0)
+            defense = defense_coeffs.get(opponent, 1.0)
+            multiplier *= max(attack, 0.01)
+            multiplier /= max(defense, 0.01)
+
+        new_p = base_p * multiplier
+        adjusted.append(tr)
+        weights.append(new_p)
+        total += new_p
+
+    if total <= 0.0:
+        return transitions
+
+    normalized: List[dict] = []
+    for tr, new_p in zip(adjusted, weights):
+        tr_copy = dict(tr)
+        tr_copy["p"] = new_p / total
+        normalized.append(tr_copy)
+    return normalized
+
 # -------------------- Narrative helpers --------------------
 
 def _side_name(side: str | None, home_name: str, away_name: str) -> str:
@@ -161,7 +218,14 @@ def _simulate_minute(
     start_state: str = "KICKOFF",
     start_possession: str = "home",
     start_zone: str | None = None,
+    attack_coeffs: Dict[str, float] | None = None,
+    defense_coeffs: Dict[str, float] | None = None,
 ) -> Dict[str, Any]:
+    if attack_coeffs is None:
+        attack_coeffs = {"home": 1.0, "away": 1.0}
+    if defense_coeffs is None:
+        defense_coeffs = {"home": 1.0, "away": 1.0}
+
     states = {s["name"]: s for s in spec.get("states", [])}
     state = start_state
     possession = start_possession
@@ -246,7 +310,15 @@ def _simulate_minute(
             continue
 
         # обычные переходы из OPEN_PLAY_*
-        tr = _choose_weighted(rng, states[state]["transitions"])
+        transitions = states[state]["transitions"]
+        transitions = _adjust_advancing_transitions(
+            transitions,
+            state=state,
+            possession=possession,
+            attack_coeffs=attack_coeffs,
+            defense_coeffs=defense_coeffs,
+        )
+        tr = _choose_weighted(rng, transitions)
         new_state = tr.get("to")
         new_pos = _apply_possession(possession, tr.get("possession", "same"))
         new_zone = tr.get("zone", _zone_from_state(new_state))
@@ -275,6 +347,59 @@ def _simulate_minute(
     }
     possession_swings = sum(1 for e in events if e.get("turnover"))
 
+    expected_seconds_total = TICKS_PER_MINUTE * tick_seconds
+    actual_seconds_total = possession_seconds["home"] + possession_seconds["away"]
+    pct_from_seconds_home = round(100.0 * possession_seconds["home"] / float(expected_seconds_total), 1)
+    pct_from_seconds_away = round(100.0 * possession_seconds["away"] / float(expected_seconds_total), 1)
+    pct_diff_home = abs(pct_from_seconds_home - possession_pct["home"])
+    pct_diff_away = abs(pct_from_seconds_away - possession_pct["away"])
+    swings_expected = sum(1 for e in events if e.get("turnover"))
+
+    entries_recount = {"home": 0, "away": 0}
+    prev_state_for_entry = start_state
+    prev_pos_for_entry = start_possession
+    for ev in events:
+        to_state = ev.get("to")
+        new_pos = ev.get("possession")
+        if (
+            to_state == "OPEN_PLAY_FINAL"
+            and prev_state_for_entry != "OPEN_PLAY_FINAL"
+            and new_pos in entries_recount
+        ):
+            entries_recount[new_pos] += 1
+        prev_state_for_entry = to_state
+        prev_pos_for_entry = new_pos
+
+    validation = {
+        "seconds_total": {
+            "expected": expected_seconds_total,
+            "actual": actual_seconds_total,
+            "ok": actual_seconds_total == expected_seconds_total,
+        },
+        "possession_pct": {
+            "home_diff": pct_diff_home,
+            "away_diff": pct_diff_away,
+            "ok": pct_diff_home <= 0.1 and pct_diff_away <= 0.1,
+        },
+        "swings": {
+            "expected": swings_expected,
+            "actual": possession_swings,
+            "ok": swings_expected == possession_swings,
+        },
+        "entries_final_third": {
+            "home": {
+                "expected": entries_recount["home"],
+                "actual": entries_final.get("home", 0),
+                "ok": entries_recount["home"] == entries_final.get("home", 0),
+            },
+            "away": {
+                "expected": entries_recount["away"],
+                "actual": entries_final.get("away", 0),
+                "ok": entries_recount["away"] == entries_final.get("away", 0),
+            },
+        },
+    }
+
     return {
         "start_state": start_state,
         "end_state": state,
@@ -287,6 +412,7 @@ def _simulate_minute(
         "possession_seconds": possession_seconds,
         "possession_swings": possession_swings,
         "entries_final_third": entries_final,
+        "validation": validation,
     }
 
 def markov_minute(request):
@@ -311,6 +437,21 @@ def markov_minute(request):
     start_zone = _zone_from_state(start_state)
     minute_index = 1
     total_score = {"home": 0, "away": 0}
+    coefficients = {
+        "attack": {"home": 1.0, "away": 1.0},
+        "defense": {"home": 1.0, "away": 1.0},
+    }
+
+    def _parse_coeff(value: str | None, default: float) -> float:
+        if value is None:
+            return default
+        try:
+            parsed = float(value)
+            if not (parsed > 0.0 and parsed < 10.0):
+                return default
+            return parsed
+        except Exception:
+            return default
 
     token_param = request.GET.get("token")
     if token_param:
@@ -324,12 +465,33 @@ def markov_minute(request):
             if isinstance(ts, dict):
                 total_score["home"] = int(ts.get("home", 0))
                 total_score["away"] = int(ts.get("away", 0))
+            coeff_token = t.get("coefficients")
+            if isinstance(coeff_token, dict):
+                attack_token = coeff_token.get("attack")
+                defense_token = coeff_token.get("defense")
+                if isinstance(attack_token, dict):
+                    coefficients["attack"]["home"] = _parse_coeff(attack_token.get("home"), coefficients["attack"]["home"])
+                    coefficients["attack"]["away"] = _parse_coeff(attack_token.get("away"), coefficients["attack"]["away"])
+                if isinstance(defense_token, dict):
+                    coefficients["defense"]["home"] = _parse_coeff(defense_token.get("home"), coefficients["defense"]["home"])
+                    coefficients["defense"]["away"] = _parse_coeff(defense_token.get("away"), coefficients["defense"]["away"])
         except Exception:
             pass
 
+    coefficients["attack"]["home"] = _parse_coeff(request.GET.get("attack_home"), coefficients["attack"]["home"])
+    coefficients["attack"]["away"] = _parse_coeff(request.GET.get("attack_away"), coefficients["attack"]["away"])
+    coefficients["defense"]["home"] = _parse_coeff(request.GET.get("defense_home"), coefficients["defense"]["home"])
+    coefficients["defense"]["away"] = _parse_coeff(request.GET.get("defense_away"), coefficients["defense"]["away"])
+
     rng = _rng_from(seed_value, minute_index, start_state, start_pos, start_zone)
     minute_summary = _simulate_minute(
-        spec, rng, start_state=start_state, start_possession=start_pos, start_zone=start_zone
+        spec,
+        rng,
+        start_state=start_state,
+        start_possession=start_pos,
+        start_zone=start_zone,
+        attack_coeffs=coefficients["attack"],
+        defense_coeffs=coefficients["defense"],
     )
 
     # накопительный счёт
@@ -357,12 +519,14 @@ def markov_minute(request):
     minute_summary["minute"] = minute_index
     minute_summary["score_total"] = new_total
     minute_summary["narrative"] = narrative
+    minute_summary["coefficients"] = coefficients
     minute_summary["token"] = {
         "state": minute_summary["end_state"],
         "possession": minute_summary["possession_end"],
         "zone": minute_summary["zone_end"],
         "minute": minute_index + 1,
         "total_score": new_total,
+        "coefficients": coefficients,
     }
 
     result = {
