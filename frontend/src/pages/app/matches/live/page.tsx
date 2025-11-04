@@ -9,13 +9,11 @@ import {
   CardContent,
   CircularProgress,
   Divider,
-  FormControlLabel,
   Grid,
   IconButton,
   Link,
   Chip,
   Stack,
-  Switch,
   TextField,
   Typography,
 } from "@mui/material";
@@ -38,8 +36,6 @@ const TIME_FORMATTER = new Intl.DateTimeFormat(undefined, {
   minute: "2-digit",
   second: "2-digit",
 });
-
-const AUTO_REFRESH_MS = 15000;
 
 const WS_BASE_URL =
   typeof import.meta.env.VITE_WS_BASE_URL === "string"
@@ -94,12 +90,9 @@ export default function MatchLivePage() {
   const [outPlayerId, setOutPlayerId] = useState("");
   const [inPlayerId, setInPlayerId] = useState("");
   const [subDescription, setSubDescription] = useState("");
-  const [autoRefresh, setAutoRefresh] = useState(true);
   const [wsConnected, setWsConnected] = useState(false);
   const [wsError, setWsError] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
-  const autoRefreshManualRef = useRef(false);
-  const wsAdjustedAutoRef = useRef(false);
   const wsSupported = useMemo(() => typeof window !== "undefined" && "WebSocket" in window, []);
   const markovCacheRef = useRef<Map<number, string>>(new Map());
 
@@ -476,10 +469,6 @@ export default function MatchLivePage() {
       if (cancelled) return;
       setWsConnected(true);
       setWsError(null);
-      if (!autoRefreshManualRef.current) {
-        wsAdjustedAutoRef.current = true;
-        setAutoRefresh(false);
-      }
     };
 
     socket.onmessage = (event) => {
@@ -504,10 +493,6 @@ export default function MatchLivePage() {
     socket.onclose = () => {
       if (cancelled) return;
       setWsConnected(false);
-      if (!autoRefreshManualRef.current && wsAdjustedAutoRef.current) {
-        setAutoRefresh(true);
-      }
-      wsAdjustedAutoRef.current = false;
     };
 
     return () => {
@@ -521,23 +506,9 @@ export default function MatchLivePage() {
   }, [matchId, applyMatchUpdate, wsSupported]);
 
   useEffect(() => {
-    if (!autoRefresh || !Number.isFinite(matchId)) {
-      return undefined;
-    }
-    const interval = window.setInterval(() => {
-      loadData(false);
-    }, AUTO_REFRESH_MS);
-    return () => window.clearInterval(interval);
-  }, [autoRefresh, loadData, matchId]);
-
-  useEffect(() => {
     if (!matchFinished) {
       return;
     }
-    if (!autoRefreshManualRef.current) {
-      setAutoRefresh(false);
-    }
-    wsAdjustedAutoRef.current = false;
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.close();
     }
@@ -801,37 +772,7 @@ export default function MatchLivePage() {
             />
 
             <Grid container spacing={3}>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <Card>
-                  <CardContent>
-                    <Stack
-                      direction={{ xs: "column", sm: "row" }}
-                      justifyContent="space-between"
-                      alignItems={{ xs: "flex-start", sm: "center" }}
-                      spacing={1.5}
-                    >
-                      <Typography variant="h6">Live Controls</Typography>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            size="small"
-                            checked={autoRefresh}
-                            onChange={(event) => {
-                              autoRefreshManualRef.current = true;
-                              setAutoRefresh(event.target.checked);
-                            }}
-                          />
-                        }
-                        label="Auto refresh"
-                      />
-                    </Stack>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                      Auto refresh polls every {AUTO_REFRESH_MS / 1000} seconds while the match is in progress.
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
+              <Grid size={{ xs: 12 }}>
                 <Card>
                   <CardContent>
                     <Typography variant="h6" className="mb-2">
