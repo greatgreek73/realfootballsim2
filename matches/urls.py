@@ -15,5 +15,4 @@ urlpatterns = [
     path("markov-demo/", views_markov_demo.markov_demo, name="markov_demo"),
     path("markov-minute/", views_markov_minute.markov_minute, name="markov_minute"),
     path("markov-ui/", views_markov_ui.markov_ui, name="markov_ui"),
-    path('<int:match_id>/substitute/', views.substitute_player, name='substitute_player'),
 ]
