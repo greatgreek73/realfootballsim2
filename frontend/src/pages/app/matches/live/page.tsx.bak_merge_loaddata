@@ -414,30 +414,12 @@ const typeLabel = isGoal ? "Markov Goal" : "Markov";
             return mergedEvents;
           }
 
-          const mergedByKey = new Map(prevEvents.map((e) => [
-  `${e.minute}|${e.type}|${e.description}|${e.player?.name ?? ""}|${e.related_player?.name ?? ""}`,
-  e,
-]));
-for (const e of mapped) {
-  mergedByKey.set(
-    `${e.minute}|${e.type}|${e.description}|${e.player?.name ?? ""}|${e.related_player?.name ?? ""}`,
-    e
-  );
-}
-const mergedAll = Array.from(mergedByKey.values());
-mergedAll.sort((a, b) => {
-  if (a.minute !== b.minute) return a.minute - b.minute;
-  const priority = (t: string) => {
-    if (t === "markov_summary") return 0;
-    if (t === "markov_goal") return 1;
-    if (t.startsWith("markov_")) return 2;
-    return 3;
-  };
-  const diff = priority(a.type) - priority(b.type);
-  if (diff !== 0) return diff;
-  return (a.description ?? "").localeCompare(b.description ?? "");
-});
-return mergedAll;
+          return mapped.sort((a, b) => {
+            if (a.minute !== b.minute) {
+              return a.minute - b.minute;
+            }
+            return (a.description ?? "").localeCompare(b.description ?? "");
+          });
         });
       }
     },
@@ -464,19 +446,7 @@ return mergedAll;
       try {
         const [detail, eventsResponse] = await Promise.all([fetchMatchDetail(matchId), fetchMatchEvents(matchId)]);
         setMatch(detail);
-        setEvents((prev) => {
-  const mapped = eventsResponse.events;
-  const eventKey = (evt: MatchEvent) =>
-    `${evt.minute}|${evt.type}|${evt.description}|${evt.player?.name ?? ""}|${evt.related_player?.name ?? ""}`;
-  const map = new Map(prev.map((e) => [eventKey(e), e]));
-  for (const e of mapped) map.set(eventKey(e), e);
-  const merged = Array.from(map.values());
-  merged.sort((a, b) => {
-    if (a.minute !== b.minute) return a.minute - b.minute;
-    return (a.description ?? "").localeCompare(b.description ?? "");
-  });
-  return merged;
-});
+        setEvents(eventsResponse.events);
         setError(null);
       } catch (e: any) {
         setError(e?.message ?? "Failed to load live data");
@@ -858,8 +828,6 @@ return mergedAll;
     </Box>
   );
 }
-
-
 
 
 

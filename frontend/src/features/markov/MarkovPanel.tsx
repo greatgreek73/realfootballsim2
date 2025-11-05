@@ -42,15 +42,25 @@ export function MarkovPanel({
   const [speed, setSpeed] = useState<1 | 2 | 4>(1);
   const [regMinutes, setRegMinutes] = useState<number>(90);
   const tokenRef = useRef<any>(null);
+  const autoTimeoutRef = useRef<number | null>(null);
+  const autoPlayRef = useRef(autoPlay);
+  const lastFetchAtRef = useRef<number | null>(null);
   const theme = useTheme();
 
   const SPEED_INTERVALS: Record<1 | 2 | 4, number> = {
-    1: 2000,
-    2: 1000,
-    4: 500,
+    1: 60000,
+    2: 30000,
+    4: 15000,
   };
   const intervalMs = SPEED_INTERVALS[speed];
   const API_BASE = (import.meta as any)?.env?.VITE_API_BASE || "http://127.0.0.1:8000";
+
+  const clearAutoTimeout = useCallback(() => {
+    if (autoTimeoutRef.current !== null) {
+      window.clearTimeout(autoTimeoutRef.current);
+      autoTimeoutRef.current = null;
+    }
+  }, []);
 
   const fetchMinute = useCallback(async () => {
     if (!Number.isFinite(matchId) || matchId <= 0) return;
@@ -73,18 +83,44 @@ export function MarkovPanel({
       setSummary(minuteSummary);
       onMinute?.(minuteSummary);
       tokenRef.current = minuteSummary?.token ?? null;
+      lastFetchAtRef.current = Date.now();
+      if (!autoPlayRef.current) {
+        clearAutoTimeout();
+      }
     } catch (e: any) {
       setError(e?.message ?? String(e));
     } finally {
       setLoading(false);
     }
-  }, [API_BASE, matchId, homeName, awayName, onMinute]);
+  }, [API_BASE, clearAutoTimeout, matchId, homeName, awayName, onMinute]);
 
+  const scheduleAutoFetch = useCallback(() => {
+    if (!autoPlayRef.current) return;
+    const currentMinute =
+      typeof summary?.minute === "number" ? summary.minute : 0;
+    if (currentMinute >= regMinutes) {
+      return;
+    }
+    const elapsed = lastFetchAtRef.current ? Date.now() - lastFetchAtRef.current : 0;
+    const delay = Math.max(0, intervalMs - elapsed);
+    clearAutoTimeout();
+    if (delay === 0) {
+      void fetchMinute();
+      return;
+    }
+    autoTimeoutRef.current = window.setTimeout(() => {
+      autoTimeoutRef.current = null;
+      if (!autoPlayRef.current) return;
+      void fetchMinute();
+    }, delay);
+  }, [clearAutoTimeout, fetchMinute, intervalMs, regMinutes, summary?.minute]);
   useEffect(() => {
+    clearAutoTimeout();
     tokenRef.current = null;
+    lastFetchAtRef.current = null;
     onMinute?.(null);
     void fetchMinute();
-  }, [fetchMinute, matchId, onMinute]);
+  }, [clearAutoTimeout, fetchMinute, matchId, onMinute]);
 
   useEffect(
     () => () => {
@@ -94,21 +130,29 @@ export function MarkovPanel({
   );
 
   useEffect(() => {
-    if (!autoPlay) return;
-    if (!Number.isFinite(matchId) || matchId <= 0) return;
-    const id = window.setInterval(() => {
-      const currentMinute = Number(summary?.minute ?? 0);
-      if (currentMinute >= regMinutes) {
-        setAutoPlay(false);
-        return;
+    autoPlayRef.current = autoPlay;
+    if (!autoPlay) {
+      if (autoTimeoutRef.current !== null) {
+        window.clearTimeout(autoTimeoutRef.current);
+        autoTimeoutRef.current = null;
       }
-      if (!loading) {
-        void fetchMinute();
-      }
-    }, intervalMs);
+    }
+  }, [autoPlay]);
 
-    return () => window.clearInterval(id);
-  }, [autoPlay, fetchMinute, intervalMs, loading, matchId, regMinutes, summary?.minute]);
+  useEffect(() => {
+    if (!autoPlay || !summary) {
+      return;
+    }
+    scheduleAutoFetch();
+    return () => clearAutoTimeout();
+  }, [autoPlay, clearAutoTimeout, scheduleAutoFetch, summary]);
+
+  useEffect(
+    () => () => {
+      clearAutoTimeout();
+    },
+    [clearAutoTimeout],
+  );
 
   const p = summary?.possession_pct ?? { home: undefined, away: undefined };
   const ef = summary?.entries_final_third ?? { home: undefined, away: undefined };
@@ -216,7 +260,10 @@ export function MarkovPanel({
         <Button
           variant="outlined"
           size="small"
-          onClick={() => fetchMinute()}
+          onClick={() => {
+            clearAutoTimeout();
+            void fetchMinute();
+          }}
           disabled={loading || !Number.isFinite(matchId)}
         >
           {loading ? "Loading..." : "Next minute"}
@@ -247,8 +294,14 @@ export function MarkovPanel({
           onClick={() => {
             setAutoPlay((prev) => {
               const next = !prev;
-              if (next && !loading) {
-                void fetchMinute();
+              if (next) {
+                if (!summary && !loading) {
+                  void fetchMinute();
+                } else {
+                  scheduleAutoFetch();
+                }
+              } else {
+                clearAutoTimeout();
               }
               return next;
             });

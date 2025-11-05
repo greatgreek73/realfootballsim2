@@ -50,7 +50,7 @@ export function EventMinutes({ events }: { events: MatchEvent[] }) {
           </Stack>
           <Divider />
           <List dense disablePadding sx={{ p: 2 }}>
-            {list.map((event, index) => {
+            {list.map((event) => {
               const line = event.description ?? "";
               const lower = line.toLowerCase();
 
@@ -88,7 +88,7 @@ export function EventMinutes({ events }: { events: MatchEvent[] }) {
 
               return (
                 <ListItem
-                  key={event.id ?? `${event.minute}-${event.type}-${index}` }
+                  key={event.id}
                   disableGutters
                   sx={{
                     alignItems: "flex-start",
@@ -120,5 +120,4 @@ export function EventMinutes({ events }: { events: MatchEvent[] }) {
     </Stack>
   );
 }
-
 
