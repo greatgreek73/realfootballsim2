@@ -8,6 +8,10 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   Grid,
   IconButton,
@@ -88,6 +92,26 @@ export default function MatchLivePage() {
   const [outPlayerId, setOutPlayerId] = useState("");
   const [inPlayerId, setInPlayerId] = useState("");
   const [subDescription, setSubDescription] = useState("");
+  const [subDialogOpen, setSubDialogOpen] = useState(false);
+  const [dialogOutPlayer, setDialogOutPlayer] = useState("");
+  const [dialogInPlayer, setDialogInPlayer] = useState("");
+  const [dialogComment, setDialogComment] = useState("");
+
+  const handleOpenSubDialog = () => {
+    setDialogOutPlayer("");
+    setDialogInPlayer("");
+    setDialogComment("");
+    setSubDialogOpen(true);
+  };
+
+  const handleDialogSubmit = async () => {
+    await handleSubstitute({
+      outId: dialogOutPlayer,
+      inId: dialogInPlayer,
+      description: dialogComment,
+    });
+  };
+
   const [wsConnected, setWsConnected] = useState(false);
   const [wsError, setWsError] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -512,23 +536,27 @@ export default function MatchLivePage() {
     }
   }, [matchFinished]);
 
-  const handleSubstitute = async () => {
+  const handleSubstitute = async (overrides?: { outId: string; inId: string; description: string }) => {
     if (!Number.isFinite(matchId)) return;
     if (!matchInProgress) {
       setActionError("Match is not currently in progress.");
       return;
     }
-    const outId = Number(outPlayerId);
+    const outValue = overrides ? overrides.outId : outPlayerId;
+    const inValue = overrides ? overrides.inId : inPlayerId;
+    const descriptionValue = overrides ? overrides.description ?? "" : subDescription ?? "";
+
+    const outId = Number(outValue);
     if (!Number.isFinite(outId) || outId <= 0) {
       setActionError("Enter a valid outgoing player ID");
       return;
     }
 
-    const inId = Number(inPlayerId);
+    const inId = Number(inValue);
     const payload = {
       outPlayerId: outId,
       inPlayerId: Number.isFinite(inId) && inId > 0 ? inId : undefined,
-      description: subDescription.trim() || undefined,
+      description: descriptionValue.trim() || undefined,
     };
 
     try {
@@ -551,6 +579,12 @@ export default function MatchLivePage() {
       setOutPlayerId("");
       setInPlayerId("");
       setSubDescription("");
+      if (overrides) {
+        setDialogOutPlayer("");
+        setDialogInPlayer("");
+        setDialogComment("");
+        setSubDialogOpen(false);
+      }
     } catch (e: any) {
       setActionError(e?.message ?? "Substitution failed");
     } finally {
@@ -650,37 +684,43 @@ export default function MatchLivePage() {
                   spacing={2}
                   sx={{ mt: 2 }}
                 >
-                  <Stack spacing={1} alignItems={{ xs: "flex-start", sm: "center" }}>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Button
-                        variant="text"
-                        size="small"
-                        onClick={() => loadData(false)}
-                        disabled={refreshing}
-                      >
-                        {refreshing ? "Refreshing..." : "Refresh"}
-                      </Button>
-                      <Button
-                        component={RouterLink}
-                        to={`/matches/${match.id}`}
-                        size="small"
-                        variant="text"
-                      >
-                        Open match details
-                      </Button>
-                      {matchFinished && (
-                        <Button component={RouterLink} to="/matches" size="small" variant="text">
-                          Back to matches
-                        </Button>
-                      )}
-                    </Stack>
-                    <Typography
-                      variant="caption"
-                      color={wsConnected ? "success.main" : "text.secondary"}
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Button
+                      variant="text"
+                      size="small"
+                      onClick={() => loadData(false)}
+                      disabled={refreshing}
                     >
-                      {wsConnected ? "Live updates connected" : "Polling mode active"}
-                    </Typography>
+                      {refreshing ? "Refreshing..." : "Refresh"}
+                    </Button>
+                    <Button
+                      component={RouterLink}
+                      to={`/matches/${match.id}`}
+                      size="small"
+                      variant="text"
+                    >
+                      Open match details
+                    </Button>
+                    {matchFinished && (
+                      <Button component={RouterLink} to="/matches" size="small" variant="text">
+                        Back to matches
+                      </Button>
+                    )}
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={handleOpenSubDialog}
+                      disabled={!matchInProgress}
+                    >
+                      Open Substitution
+                    </Button>
                   </Stack>
+                  <Typography
+                    variant="caption"
+                    color={wsConnected ? "success.main" : "text.secondary"}
+                  >
+                    {wsConnected ? "Live updates connected" : "Polling mode active"}
+                  </Typography>
                 </Stack>
 
                 {matchFinished && (
@@ -691,26 +731,30 @@ export default function MatchLivePage() {
 
                 <Divider sx={{ my: 3 }} />
 
-                <Grid container spacing={3}>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <Typography variant="subtitle1">Home</Typography>
-                    <Typography variant="body1" fontWeight={600}>
-                      {match.home.name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Tactic: {match.home.tactic ?? "-"}
-                    </Typography>
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <Typography variant="subtitle1">Away</Typography>
-                    <Typography variant="body1" fontWeight={600}>
-                      {match.away.name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Tactic: {match.away.tactic ?? "-"}
-                    </Typography>
-                  </Grid>
-                </Grid>
+                <Card>
+                  <CardContent>
+                    <Grid container spacing={3}>
+                      <Grid size={{ xs: 12, md: 6 }}>
+                        <Typography variant="subtitle1">Home</Typography>
+                        <Typography variant="body1" fontWeight={600}>
+                          {match.home.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Tactic: {match.home.tactic ?? "-"}
+                        </Typography>
+                      </Grid>
+                      <Grid size={{ xs: 12, md: 6 }}>
+                        <Typography variant="subtitle1">Away</Typography>
+                        <Typography variant="body1" fontWeight={600}>
+                          {match.away.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Tactic: {match.away.tactic ?? "-"}
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
               </CardContent>
             </Card>
 
@@ -721,48 +765,6 @@ export default function MatchLivePage() {
               onMinute={setMarkovSummary}
             />
 
-            <Grid container spacing={3}>
-              <Grid size={{ xs: 12 }}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6" className="mb-2">
-                      Substitution
-                    </Typography>
-                    <Stack spacing={2}>
-                      <TextField
-                        label="Player out (ID)"
-                        value={outPlayerId}
-                        type="number"
-                        onChange={(event) => setOutPlayerId(event.target.value)}
-                        size="small"
-                      />
-                      <TextField
-                        label="Player in (ID)"
-                        value={inPlayerId}
-                        type="number"
-                        onChange={(event) => setInPlayerId(event.target.value)}
-                        size="small"
-                      />
-                      <TextField
-                        label="Comment (optional)"
-                        value={subDescription}
-                        onChange={(event) => setSubDescription(event.target.value)}
-                        size="small"
-                        multiline
-                        minRows={2}
-                      />
-                      <Button
-                        variant="contained"
-                        onClick={handleSubstitute}
-                        disabled={substituting || !matchInProgress}
-                      >
-                        {substituting ? "Submitting..." : "Apply Substitution"}
-                      </Button>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
 
             <Card>
               <CardContent>
@@ -777,6 +779,44 @@ export default function MatchLivePage() {
           <Alert severity="warning">Match not found.</Alert>
         )}
       </Stack>
+      <Dialog open={subDialogOpen} onClose={() => setSubDialogOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Apply Substitution</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label="Player out (ID)"
+              value={dialogOutPlayer}
+              onChange={(event) => setDialogOutPlayer(event.target.value)}
+              size="small"
+              type="number"
+              fullWidth
+            />
+            <TextField
+              label="Player in (ID)"
+              value={dialogInPlayer}
+              onChange={(event) => setDialogInPlayer(event.target.value)}
+              size="small"
+              type="number"
+              fullWidth
+            />
+            <TextField
+              label="Comment (optional)"
+              value={dialogComment}
+              onChange={(event) => setDialogComment(event.target.value)}
+              size="small"
+              multiline
+              minRows={2}
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSubDialogOpen(false)} disabled={substituting}>Cancel</Button>
+          <Button onClick={handleDialogSubmit} variant="contained" disabled={substituting}>
+            {substituting ? "Submitting..." : "Apply"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
