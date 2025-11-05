@@ -34,7 +34,26 @@ import {
 import { MarkovPanel } from "@/features/markov/MarkovPanel";
 import { EventMinutes } from "@/features/markov/EventMinutes";
   
-
+// === Helper: emoji for Markov events (no UI duplication) ===
+const getMarkovEmoji = (line: string): string => {
+  const s = line.toLowerCase();
+  if (/\b(goal|scores?)\b(?!\s*(keeper|kick))/.test(s) || /\bpenalty\b/.test(s)) return "⚽";
+  if (/\bred card\b|\bsent off\b/.test(s)) return "🟥";
+  if (/\byellow card\b/.test(s)) return "🟨";
+  if (/\b(save|saved)\b|\bshot saved\b/.test(s)) return "🧤";
+  if (/\bshot\b.*\b(off target|wide|miss(ed)?)\b|\bhits?\s+(the\s+)?post\b/.test(s)) return "❌";
+  if (/\bcorner\b/.test(s)) return "⛳";
+  if (/\bfree\s*kick\b/.test(s)) return "🎯";
+  if (/\bthrow[- ]in\b/.test(s)) return "🤾";
+  if (/\bgoal\s*kick\b/.test(s)) return "🦵";
+  if (/\boffside\b/.test(s)) return "🚩";
+  if (/\bfoul(ed)?\b/.test(s)) return "⛔";
+  if (/\bsubstitution\b|\bsubbed\b/.test(s)) return "🔁";
+  if (/\binjury\b|\binjured\b|\btreatment\b/.test(s)) return "��";
+  if (/\bturnover\b|\bintercept(ed)?\b|\blose(s)?\s+possession\b/.test(s)) return "↩";
+  if (/\badvance into the final third\b|\bbuild from the back\b|\bprogress(es|)\b/.test(s)) return "➡";
+  return "•";
+};
 
 
 const TIME_FORMATTER = new Intl.DateTimeFormat(undefined, {
@@ -219,7 +238,7 @@ const typeLabel = isGoal ? "Markov Goal" : "Markov";
           minute,
           type,
           type_label: typeLabel,
-          description: line,
+          description: `${getMarkovEmoji(line)} ${line}`,
           personality_reason: null,
           timestamp: null,
           player: null,
@@ -813,7 +832,6 @@ const typeLabel = isGoal ? "Markov Goal" : "Markov";
     </Box>
   );
 }
-
 
 
 

@@ -26,7 +26,7 @@ export function EventMinutes({ events }: { events: MatchEvent[] }) {
       list.push(ev);
       map.set(ev.minute, list);
     }
-    const minutes = Array.from(map.keys()).sort((a, b) => b - a);
+    const minutes = Array.from(map.keys()).sort((a, b) => a - b);
     return minutes.map((minute) => ({ minute, list: map.get(minute)! }));
   }, [events]);
 
@@ -120,4 +120,3 @@ export function EventMinutes({ events }: { events: MatchEvent[] }) {
     </Stack>
   );
 }
-
