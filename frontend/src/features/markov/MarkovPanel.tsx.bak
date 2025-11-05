@@ -401,10 +401,47 @@ export function MarkovPanel({
         </Typography>
       )}
 
-      
-      {/* Server narrative block removed (duplicate of Events) */}
+      <Divider sx={{ my: 2 }} />
 
+      <Typography variant="subtitle2" sx={{ mt: 2 }}>
+        Narrative (server)
+      </Typography>
+      <List dense disablePadding>
+        {narrativeItems.length === 0 ? (
+          <ListItem disableGutters>
+            <ListItemText
+              primary="Narrative недоступен для этой минуты."
+              primaryTypographyProps={{ variant: "body2", color: "text.secondary" }}
+            />
+          </ListItem>
+        ) : (
+          narrativeItems.map(({ key, line, icon, backgroundColor, borderColor, textColor }) => (
+            <ListItem
+              key={key}
+              disableGutters
+              sx={{
+                py: 0.75,
+                px: icon ? 1 : 1.5,
+                borderRadius: 1,
+                alignItems: "flex-start",
+                backgroundColor,
+                borderLeft: borderColor ? `3px solid ${borderColor}` : undefined,
+                "&:not(:last-of-type)": { mb: 0.5 },
+              }}
+            >
+              {icon && (
+                <ListItemIcon sx={{ minWidth: 28, mt: 0.2 }}>
+                  {icon}
+                </ListItemIcon>
+              )}
+              <ListItemText
+                primary={line}
+                primaryTypographyProps={{ variant: "body2", color: textColor ?? "text.primary" }}
+              />
+            </ListItem>
+          ))
+        )}
+      </List>
     </Box>
   );
 }
-
