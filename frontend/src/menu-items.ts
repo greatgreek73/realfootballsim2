@@ -32,6 +32,17 @@ export const leftMenuItems: MenuItem[] = [
     ],
   },
   {
+    id: "championships",
+    icon: "NiStructure",
+    label: "Championships",
+    color: "text-primary",
+    href: "/championships",
+    children: [
+      { id: "championships-list", label: "All Championships", href: "/championships" },
+      { id: "championships-my", label: "My Championship", href: "/championships/my" },
+    ],
+  },
+  {
     id: "transfers",
     icon: "NiStructure",
     label: "Transfers",

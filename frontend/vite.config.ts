@@ -24,6 +24,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/tournaments': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        secure: false,
+      },
       // Новый игрок создаётся через /clubs/<id>/create_player/ — обязательно проксируем
       '/clubs': {
         target: 'http://127.0.0.1:8000',

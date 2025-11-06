@@ -78,6 +78,13 @@ const AppRoutes = () => (
       <Route key="match-create" path="/matches/create" element={lazyLoad("/matches/create")} />
       <Route key="match-detail" path="/matches/:matchId" element={lazyLoad("/matches/detail")} />
       <Route key="match-live" path="/matches/:matchId/live" element={lazyLoad("/matches/live")} />
+      <Route key="championships" path="/championships" element={lazyLoad("/championships")} />
+      <Route key="championships-my" path="/championships/my" element={lazyLoad("/championships/my")} />
+      <Route
+        key="championship-detail"
+        path="/championships/:championshipId"
+        element={lazyLoad("/championships/[championshipId]")}
+      />
       <Route key="transfers" path="/transfers" element={lazyLoad("/transfers")} />
       <Route key="transfers-create" path="/transfers/create" element={lazyLoad("/transfers/create")} />
       <Route key="transfers-my" path="/transfers/my" element={lazyLoad("/transfers/my")} />
