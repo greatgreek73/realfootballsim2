@@ -763,24 +763,41 @@ return mergedAll;
 
                 <Divider sx={{ my: 3 }} />
 
-                <Grid container spacing={3}>
+                <Grid container spacing={3} alignItems="stretch">
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <Typography variant="subtitle1">Home</Typography>
-                    <Typography variant="body1" fontWeight={600}>
-                      {match.home.name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Tactic: {match.home.tactic ?? "-"}
-                    </Typography>
+                    <Stack
+                      direction={{ xs: "column", sm: "row" }}
+                      spacing={3}
+                      divider={<Divider orientation="vertical" flexItem />}
+                      sx={{ height: "100%" }}
+                    >
+                      <Box>
+                        <Typography variant="subtitle1">Home</Typography>
+                        <Typography variant="body1" fontWeight={600}>
+                          {match.home.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Tactic: {match.home.tactic ?? "-"}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="subtitle1">Away</Typography>
+                        <Typography variant="body1" fontWeight={600}>
+                          {match.away.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Tactic: {match.away.tactic ?? "-"}
+                        </Typography>
+                      </Box>
+                    </Stack>
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <Typography variant="subtitle1">Away</Typography>
-                    <Typography variant="body1" fontWeight={600}>
-                      {match.away.name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Tactic: {match.away.tactic ?? "-"}
-                    </Typography>
+                    <MarkovPanel
+                      matchId={Number(match?.id ?? matchId)}
+                      homeName={match.home.name}
+                      awayName={match.away.name}
+                      onMinute={setMarkovSummary}
+                    />
                   </Grid>
                 </Grid>
               </CardContent>
@@ -798,15 +815,7 @@ return mergedAll;
                 </Card>
               </Grid>
               <Grid size={{ xs: 12, md: 5 }}>
-                <Stack spacing={3}>
-                  <StatsTimingGrid match={match} />
-                  <MarkovPanel
-                    matchId={Number(match?.id ?? matchId)}
-                    homeName={match.home.name}
-                    awayName={match.away.name}
-                    onMinute={setMarkovSummary}
-                  />
-                </Stack>
+                <StatsTimingGrid match={match} />
               </Grid>
             </Grid>
           </>
