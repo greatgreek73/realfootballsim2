@@ -32,7 +32,8 @@ import {
   substitutePlayer,
 } from "@/api/matches";
 import { MarkovPanel } from "@/features/markov/MarkovPanel";
-import { EventMinutes } from "@/features/markov/EventMinutes";
+import { EventMinutes } from "@/features/markov/EventMinutes";
+import { StatsTimingGrid } from "@/features/matches/StatsTimingGrid";
   
 
 
@@ -660,19 +661,7 @@ return mergedAll;
             <CircularProgress />
           </Box>
         ) : match ? (
-          <Grid container spacing={3} alignItems="flex-start">
-  <Grid size={{ xs: 12, md: 7 }}>
-    <Card>
-              <CardContent>
-                <Typography variant="h6" className="mb-2">
-                  Events
-                </Typography>
-                <EventMinutes events={events} />
-              </CardContent>
-            </Card>
-  </Grid>
-  <Grid size={{ xs: 12, md: 5 }}>
-    <Stack spacing={3}>
+          <>
             <Card>
               <CardContent>
                 <Grid container spacing={3} alignItems="center">
@@ -702,12 +691,12 @@ return mergedAll;
                   <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: "wrap" }}>
                     <Chip
                       size="small"
-                      label={`Possession: ${markovSummary?.possession_pct?.home ?? "-"}% / ${markovSummary?.possession_pct?.away ?? "-"}% (${markovSummary?.possession_seconds?.home ?? "-"}s–${markovSummary?.possession_seconds?.away ?? "-"}s)`}
+                      label={`Possession: ${markovSummary?.possession_pct?.home ?? "-"}% / ${markovSummary?.possession_pct?.away ?? "-"}% (${markovSummary?.possession_seconds?.home ?? "-"}s-${markovSummary?.possession_seconds?.away ?? "-"}s)`}
                     />
                     <Chip size="small" label={`Turnovers: ${markovSummary?.possession_swings ?? "-"}`} />
                     <Chip
                       size="small"
-                      label={`Final 3rd entries: ${markovSummary?.entries_final_third?.home ?? "-"}–${markovSummary?.entries_final_third?.away ?? "-"}`}
+                      label={`Final 3rd entries: ${markovSummary?.entries_final_third?.home ?? "-"}-${markovSummary?.entries_final_third?.away ?? "-"}`}
                     />
                     <Chip
                       size="small"
@@ -774,45 +763,53 @@ return mergedAll;
 
                 <Divider sx={{ my: 3 }} />
 
-                <Card>
-                  <CardContent>
-                    <Grid container spacing={3}>
-                      <Grid size={{ xs: 12, md: 6 }}>
-                        <Typography variant="subtitle1">Home</Typography>
-                        <Typography variant="body1" fontWeight={600}>
-                          {match.home.name}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Tactic: {match.home.tactic ?? "-"}
-                        </Typography>
-                      </Grid>
-                      <Grid size={{ xs: 12, md: 6 }}>
-                        <Typography variant="subtitle1">Away</Typography>
-                        <Typography variant="body1" fontWeight={600}>
-                          {match.away.name}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Tactic: {match.away.tactic ?? "-"}
-                        </Typography>
-                      </Grid>
-                    </Grid>
-                  </CardContent>
-                </Card>
+                <Grid container spacing={3}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Typography variant="subtitle1">Home</Typography>
+                    <Typography variant="body1" fontWeight={600}>
+                      {match.home.name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Tactic: {match.home.tactic ?? "-"}
+                    </Typography>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Typography variant="subtitle1">Away</Typography>
+                    <Typography variant="body1" fontWeight={600}>
+                      {match.away.name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Tactic: {match.away.tactic ?? "-"}
+                    </Typography>
+                  </Grid>
+                </Grid>
               </CardContent>
             </Card>
 
-            <MarkovPanel
-              matchId={Number(match?.id ?? matchId)}
-              homeName={match.home.name}
-              awayName={match.away.name}
-              onMinute={setMarkovSummary}
-            />
-
-
-            
-    </Stack>
-  </Grid>
-</Grid>
+            <Grid container spacing={3} alignItems="flex-start">
+              <Grid size={{ xs: 12, md: 7 }}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" className="mb-2">
+                      Events
+                    </Typography>
+                    <EventMinutes events={events} />
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid size={{ xs: 12, md: 5 }}>
+                <Stack spacing={3}>
+                  <StatsTimingGrid match={match} />
+                  <MarkovPanel
+                    matchId={Number(match?.id ?? matchId)}
+                    homeName={match.home.name}
+                    awayName={match.away.name}
+                    onMinute={setMarkovSummary}
+                  />
+                </Stack>
+              </Grid>
+            </Grid>
+          </>
         ) : (
           <Alert severity="warning">Match not found.</Alert>
         )}
@@ -858,6 +855,7 @@ return mergedAll;
     </Box>
   );
 }
+
 
 
 

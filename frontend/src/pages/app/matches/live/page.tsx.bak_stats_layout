@@ -1,0 +1,870 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link as RouterLink, useParams } from "react-router-dom";
+
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  Grid,
+  IconButton,
+  Link,
+  Chip,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+
+import {
+  fetchMatchDetail,
+  fetchMatchEvents,
+  MatchDetail,
+  MatchEvent,
+  MatchStatus,
+  substitutePlayer,
+} from "@/api/matches";
+import { MarkovPanel } from "@/features/markov/MarkovPanel";
+import { EventMinutes } from "@/features/markov/EventMinutes";
+  
+
+
+
+const TIME_FORMATTER = new Intl.DateTimeFormat(undefined, {
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+});
+
+const WS_BASE_URL =
+  typeof import.meta.env.VITE_WS_BASE_URL === "string"
+    ? import.meta.env.VITE_WS_BASE_URL.replace(/\/$/, "")
+    : undefined;
+
+const STATUS_LABELS: Record<MatchStatus, string> = {
+  scheduled: "Scheduled",
+  in_progress: "In Progress",
+  paused: "Paused",
+  finished: "Finished",
+  cancelled: "Cancelled",
+  error: "Error",
+};
+
+const fallbackStatusLabel = (status?: string, previous?: string) => {
+  if (!status) return previous ?? "";
+  const mapped = STATUS_LABELS[status as MatchStatus];
+  if (mapped) return mapped;
+  const parts = status.split("_").map((part) => part.charAt(0).toUpperCase() + part.slice(1));
+  return parts.join(" ");
+};
+
+const generateEventId = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `ws-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
+
+function formatTimestamp(value: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return TIME_FORMATTER.format(date);
+}
+
+export default function MatchLivePage() {
+  const { matchId: matchIdParam } = useParams<{ matchId: string }>();
+  const matchId = Number(matchIdParam);
+
+  const [match, setMatch] = useState<MatchDetail | null>(null);
+  const [events, setEvents] = useState<MatchEvent[]>([]);
+  const [markovSummary, setMarkovSummary] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [substituting, setSubstituting] = useState(false);
+  const [outPlayerId, setOutPlayerId] = useState("");
+  const [inPlayerId, setInPlayerId] = useState("");
+  const [subDescription, setSubDescription] = useState("");
+  const [subDialogOpen, setSubDialogOpen] = useState(false);
+  const [dialogOutPlayer, setDialogOutPlayer] = useState("");
+  const [dialogInPlayer, setDialogInPlayer] = useState("");
+  const [dialogComment, setDialogComment] = useState("");
+
+  const handleOpenSubDialog = () => {
+    setDialogOutPlayer("");
+    setDialogInPlayer("");
+    setDialogComment("");
+    setSubDialogOpen(true);
+  };
+
+  const handleDialogSubmit = async () => {
+    await handleSubstitute({
+      outId: dialogOutPlayer,
+      inId: dialogInPlayer,
+      description: dialogComment,
+    });
+  };
+
+  const [wsConnected, setWsConnected] = useState(false);
+  const [wsError, setWsError] = useState<string | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const wsSupported = useMemo(() => typeof window !== "undefined" && "WebSocket" in window, []);
+  const markovCacheRef = useRef<Map<number, string>>(new Map());
+
+  useEffect(() => {
+    setMarkovSummary(null);
+  }, [matchId]);
+
+  useEffect(() => {
+    if (!markovSummary) {
+      return;
+    }
+    const minute = Number(markovSummary.minute ?? 0);
+    if (!Number.isFinite(minute) || minute <= 0) {
+      return;
+    }
+
+    const cacheKey = [
+      minute,
+      markovSummary.token?.state ?? "",
+      markovSummary.token?.possession ?? "",
+      markovSummary.score_total?.home ?? "",
+      markovSummary.score_total?.away ?? "",
+    ].join("|");
+
+    if (markovCacheRef.current.get(minute) === cacheKey) {
+      return;
+    }
+    markovCacheRef.current.set(minute, cacheKey);
+
+    const possPct = markovSummary.possession_pct ?? {};
+    const possSeconds = markovSummary.possession_seconds ?? {};
+    const swingsValue =
+      typeof markovSummary.possession_swings === "number" ? markovSummary.possession_swings : "-";
+    const entries = markovSummary.entries_final_third ?? {};
+    const deltaScore = markovSummary.score ?? {};
+
+    const possHomePct =
+      typeof possPct.home === "number" ? Math.round(possPct.home) : "-";
+    const possAwayPct =
+      typeof possPct.away === "number" ? Math.round(possPct.away) : "-";
+    const secondsHome =
+      typeof possSeconds.home === "number" ? `${possSeconds.home}s` : "-";
+    const secondsAway =
+      typeof possSeconds.away === "number" ? `${possSeconds.away}s` : "-";
+    const entriesHome = typeof entries.home === "number" ? entries.home : 0;
+    const entriesAway = typeof entries.away === "number" ? entries.away : 0;
+    const deltaHome = typeof deltaScore.home === "number" ? deltaScore.home : 0;
+    const deltaAway = typeof deltaScore.away === "number" ? deltaScore.away : 0;
+
+    const summaryLine = `Markov minute ${minute}: Poss ${possHomePct}|${possAwayPct} (${secondsHome}-${secondsAway}), Swings ${swingsValue}, Final 3rd ${entriesHome}-${entriesAway}, Δscore ${deltaHome}:${deltaAway}, End ${markovSummary.end_state ?? "-"} (ball: ${markovSummary.possession_end ?? "-"})`;
+
+    const narrativeLines = Array.isArray(markovSummary.narrative)
+      ? markovSummary.narrative
+      : [];
+
+    const baseId = minute * 1000;
+    let nextOffset = 1;
+    const makeEvent = (event: Omit<MatchEvent, "id">): MatchEvent => ({
+      id: -(baseId + nextOffset++),
+      ...event,
+    });
+
+    const markovEvents: MatchEvent[] = [
+  makeEvent({
+    minute,
+    type: "markov_summary",
+    type_label: "Markov Minute",
+    description: summaryLine,
+    timestamp: new Date().toISOString(),
+  }),
+];
+
+    const homeName = match?.home?.name ?? "Home";
+    const awayName = match?.away?.name ?? "Away";
+
+    const pushGoalEvent = (teamName: string, count: number) => {
+      if (!count || count <= 0) return;
+      const label = count > 1 ? `GOAL x${count}` : "GOAL";
+      markovEvents.push(
+        makeEvent({
+          minute,
+          type: "markov_goal",
+          type_label: count > 1 ? "Goals" : "Goal",
+        description: `${label} — ${teamName}`,
+          personality_reason: null,
+          timestamp: null,
+          player: null,
+          related_player: null,
+        }),
+      );
+    };
+
+    pushGoalEvent(homeName, deltaHome);
+    pushGoalEvent(awayName, deltaAway);
+
+    narrativeLines.forEach((line) => {
+      const lower = line.toLowerCase();
+      const isGoal = /\bgoal\b(?!\s*(keeper|kick))/i.test(line) || /\bscore[sd]?\b/i.test(line);
+const type = isGoal
+  ? "markov_goal"
+  : lower.includes("turnover")
+  ? "markov_turnover"
+  : "markov_narrative";
+const typeLabel = isGoal ? "Markov Goal" : "Markov";
+      markovEvents.push(
+        makeEvent({
+          minute,
+          type,
+          type_label: typeLabel,
+          description: line,
+          personality_reason: null,
+          timestamp: null,
+          player: null,
+          related_player: null,
+        }),
+      );
+    });
+
+    setEvents((prev) => {
+      const filtered = prev.filter(
+        (event) => !(event.minute === minute && event.type.startsWith("markov_")),
+      );
+      const merged = [...filtered, ...markovEvents];
+      merged.sort((a, b) => {
+        if (a.minute !== b.minute) {
+          return a.minute - b.minute;
+        }
+        const priority = (type: string) => {
+          if (type === "markov_summary") return 0;
+          if (type === "markov_goal") return 1;
+          if (type.startsWith("markov_")) return 2;
+          return 3;
+        };
+        const diff = priority(a.type) - priority(b.type);
+        if (diff !== 0) {
+          return diff;
+        }
+        return a.id - b.id;
+      });
+      return merged;
+    });
+
+    setMatch((prev) => {
+      if (!prev) return prev;
+      const nextScore = {
+        home: markovSummary.score_total?.home ?? prev.score.home,
+        away: markovSummary.score_total?.away ?? prev.score.away,
+      };
+      const nextMinute = Math.max(prev.current_minute ?? 0, minute);
+      if (
+        nextScore.home === prev.score.home &&
+        nextScore.away === prev.score.away &&
+        nextMinute === prev.current_minute
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        score: nextScore,
+        current_minute: nextMinute,
+      };
+    });
+  }, [markovSummary, match?.home?.name, match?.away?.name]);
+
+  const mapWebSocketEvent = useCallback((event: any): MatchEvent => {
+    const minuteValue = Number(event?.minute);
+    return {
+      id: event?.id ?? generateEventId(),
+      minute: Number.isFinite(minuteValue) ? minuteValue : 0,
+      type: event?.type ?? event?.event_type ?? "update",
+      type_label: event?.type_label ?? event?.event_type ?? "Event",
+      description: event?.description ?? "",
+      personality_reason: event?.personality_reason ?? null,
+      timestamp: event?.timestamp ?? null,
+      player: event?.player_name || event?.player?.name
+        ? {
+            id: event?.player?.id ?? null,
+            name: event?.player?.name ?? event?.player_name ?? null,
+            position: event?.player?.position ?? null,
+          }
+        : null,
+      related_player: event?.related_player_name || event?.related_player?.name
+        ? {
+            id: event?.related_player?.id ?? null,
+            name: event?.related_player?.name ?? event?.related_player_name ?? null,
+            position: event?.related_player?.position ?? null,
+          }
+        : null,
+    };
+  }, []);
+
+  const applyMatchUpdate = useCallback(
+    (payload: any) => {
+      if (!payload) return;
+
+      setMatch((previous) => {
+        if (!previous) return previous;
+
+        const next: MatchDetail = {
+          ...previous,
+          current_minute:
+            payload.minute !== undefined && payload.minute !== null
+              ? Number(payload.minute)
+              : previous.current_minute,
+          waiting_for_next_minute:
+            payload.waiting_for_next_minute ?? previous.waiting_for_next_minute,
+          processed: payload.processed ?? previous.processed,
+          score: {
+            home:
+              payload.home_score !== undefined && payload.home_score !== null
+                ? Number(payload.home_score)
+                : previous.score.home,
+            away:
+              payload.away_score !== undefined && payload.away_score !== null
+                ? Number(payload.away_score)
+                : previous.score.away,
+          },
+          stats: {
+            ...previous.stats,
+            shoots:
+              payload.st_shoots !== undefined && payload.st_shoots !== null
+                ? Number(payload.st_shoots)
+                : previous.stats.shoots,
+            passes:
+              payload.st_passes !== undefined && payload.st_passes !== null
+                ? Number(payload.st_passes)
+                : previous.stats.passes,
+            possessions:
+              payload.st_possessions !== undefined && payload.st_possessions !== null
+                ? Number(payload.st_possessions)
+                : previous.stats.possessions,
+            fouls:
+              payload.st_fouls !== undefined && payload.st_fouls !== null
+                ? Number(payload.st_fouls)
+                : previous.stats.fouls,
+            injuries:
+              typeof payload.st_injury === "number"
+                ? payload.st_injury
+                : Array.isArray(payload.st_injury)
+                ? payload.st_injury.length
+                : previous.stats.injuries,
+            home_momentum:
+              payload.home_momentum !== undefined && payload.home_momentum !== null
+                ? Number(payload.home_momentum)
+                : previous.stats.home_momentum,
+            away_momentum:
+              payload.away_momentum !== undefined && payload.away_momentum !== null
+                ? Number(payload.away_momentum)
+                : previous.stats.away_momentum,
+            home_pass_streak: previous.stats.home_pass_streak,
+            away_pass_streak: previous.stats.away_pass_streak,
+          },
+        };
+
+        if (payload.status) {
+          next.status = payload.status;
+          next.status_label = fallbackStatusLabel(payload.status, previous.status_label);
+        }
+
+        if (payload.last_minute_update) {
+          next.last_minute_update = payload.last_minute_update;
+        }
+        if (payload.started_at) {
+          next.started_at = payload.started_at;
+        }
+        if (payload.datetime) {
+          next.datetime = payload.datetime;
+        }
+
+        return next;
+      });
+
+      if (Array.isArray(payload.events)) {
+        setEvents((prevEvents) => {
+          const mapped = payload.events.map(mapWebSocketEvent);
+          const eventKey = (evt: MatchEvent) =>
+            `${evt.minute}|${evt.type}|${evt.description}|${evt.player?.name ?? ""}|${
+              evt.related_player?.name ?? ""
+            }`;
+
+          if (payload.partial_update) {
+            const existing = new Set(prevEvents.map(eventKey));
+            const unique = mapped.filter((evt) => !existing.has(eventKey(evt)));
+            if (unique.length === 0) {
+              return prevEvents;
+            }
+            const mergedEvents = [...prevEvents, ...unique];
+            mergedEvents.sort((a, b) => {
+              if (a.minute !== b.minute) {
+                return a.minute - b.minute;
+              }
+              return (a.description ?? "").localeCompare(b.description ?? "");
+            });
+            return mergedEvents;
+          }
+
+          const mergedByKey = new Map(prevEvents.map((e) => [
+  `${e.minute}|${e.type}|${e.description}|${e.player?.name ?? ""}|${e.related_player?.name ?? ""}`,
+  e,
+]));
+for (const e of mapped) {
+  mergedByKey.set(
+    `${e.minute}|${e.type}|${e.description}|${e.player?.name ?? ""}|${e.related_player?.name ?? ""}`,
+    e
+  );
+}
+const mergedAll = Array.from(mergedByKey.values());
+mergedAll.sort((a, b) => {
+  if (a.minute !== b.minute) return a.minute - b.minute;
+  const priority = (t: string) => {
+    if (t === "markov_summary") return 0;
+    if (t === "markov_goal") return 1;
+    if (t.startsWith("markov_")) return 2;
+    return 3;
+  };
+  const diff = priority(a.type) - priority(b.type);
+  if (diff !== 0) return diff;
+  return (a.description ?? "").localeCompare(b.description ?? "");
+});
+return mergedAll;
+        });
+      }
+    },
+    [mapWebSocketEvent]
+  );
+
+  const matchInProgress = match?.status === "in_progress";
+  const matchFinished = match?.status === "finished";
+
+  const loadData = useCallback(
+    async (showSpinner = false) => {
+      if (!Number.isFinite(matchId)) {
+        setError("Invalid match id");
+        setLoading(false);
+        return;
+      }
+
+      if (showSpinner) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
+
+      try {
+        const [detail, eventsResponse] = await Promise.all([fetchMatchDetail(matchId), fetchMatchEvents(matchId)]);
+        setMatch(detail);
+        setEvents((prev) => {
+  const mapped = eventsResponse.events;
+  const eventKey = (evt: MatchEvent) =>
+    `${evt.minute}|${evt.type}|${evt.description}|${evt.player?.name ?? ""}|${evt.related_player?.name ?? ""}`;
+  const map = new Map(prev.map((e) => [eventKey(e), e]));
+  for (const e of mapped) map.set(eventKey(e), e);
+  const merged = Array.from(map.values());
+  merged.sort((a, b) => {
+    if (a.minute !== b.minute) return a.minute - b.minute;
+    return (a.description ?? "").localeCompare(b.description ?? "");
+  });
+  return merged;
+});
+        setError(null);
+      } catch (e: any) {
+        setError(e?.message ?? "Failed to load live data");
+      } finally {
+        if (showSpinner) {
+          setLoading(false);
+        }
+        setRefreshing(false);
+      }
+    },
+    [matchId],
+  );
+
+  useEffect(() => {
+    loadData(true);
+  }, [loadData]);
+
+  useEffect(() => {
+    if (!Number.isFinite(matchId) || !wsSupported || typeof window === "undefined") {
+      if (!wsSupported) {
+        setWsError("WebSocket not supported. Falling back to polling mode.");
+      }
+      return;
+    }
+
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const base = WS_BASE_URL ?? `${protocol}://${window.location.host}`;
+    const socketUrl = `${base}/ws/match/${matchId}/`;
+
+    let cancelled = false;
+    let socket: WebSocket | null;
+
+    try {
+      socket = new WebSocket(socketUrl);
+    } catch (err) {
+      setWsError("Failed to establish live connection.");
+      return;
+    }
+
+    wsRef.current = socket;
+
+    socket.onopen = () => {
+      if (cancelled) return;
+      setWsConnected(true);
+      setWsError(null);
+    };
+
+    socket.onmessage = (event) => {
+      if (cancelled) return;
+      try {
+        const message = JSON.parse(event.data);
+        if (message?.type === "match_update") {
+          applyMatchUpdate(message.data);
+        } else if (message?.type === "error") {
+          setWsError(message.message ?? "Live updates unavailable.");
+        }
+      } catch (err) {
+        console.warn("Failed to parse live match update:", err);
+      }
+    };
+
+    socket.onerror = () => {
+      if (cancelled) return;
+      setWsError("WebSocket connection error. Polling will continue.");
+    };
+
+    socket.onclose = () => {
+      if (cancelled) return;
+      setWsConnected(false);
+    };
+
+    return () => {
+      cancelled = true;
+      setWsConnected(false);
+      if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+        socket.close();
+      }
+      wsRef.current = null;
+    };
+  }, [matchId, applyMatchUpdate, wsSupported]);
+
+  useEffect(() => {
+    if (!matchFinished) {
+      return;
+    }
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.close();
+    }
+  }, [matchFinished]);
+
+  const handleSubstitute = async (overrides?: { outId: string; inId: string; description: string }) => {
+    if (!Number.isFinite(matchId)) return;
+    if (!matchInProgress) {
+      setActionError("Match is not currently in progress.");
+      return;
+    }
+    const outValue = overrides ? overrides.outId : outPlayerId;
+    const inValue = overrides ? overrides.inId : inPlayerId;
+    const descriptionValue = overrides ? overrides.description ?? "" : subDescription ?? "";
+
+    const outId = Number(outValue);
+    if (!Number.isFinite(outId) || outId <= 0) {
+      setActionError("Enter a valid outgoing player ID");
+      return;
+    }
+
+    const inId = Number(inValue);
+    const payload = {
+      outPlayerId: outId,
+      inPlayerId: Number.isFinite(inId) && inId > 0 ? inId : undefined,
+      description: descriptionValue.trim() || undefined,
+    };
+
+    try {
+      setSubstituting(true);
+      setActionError(null);
+      const response = await substitutePlayer(matchId, payload);
+
+      setMatch(response.match);
+      setEvents((prev) => {
+        const merged = [...prev, response.event];
+        return merged.sort((a, b) => (a.minute === b.minute ? a.id - b.id : a.minute - b.minute));
+      });
+
+      const outName = response.event.player?.name ?? `#${outId}`;
+      const inName = response.event.related_player?.name;
+      setActionMessage(
+        inName ? `${outName} replaced by ${inName}.` : `${outName} substituted.`,
+      );
+
+      setOutPlayerId("");
+      setInPlayerId("");
+      setSubDescription("");
+      if (overrides) {
+        setDialogOutPlayer("");
+        setDialogInPlayer("");
+        setDialogComment("");
+        setSubDialogOpen(false);
+      }
+    } catch (e: any) {
+      setActionError(e?.message ?? "Substitution failed");
+    } finally {
+      setSubstituting(false);
+    }
+  };
+
+  // --------- ИЗМЕНЕНО: группируем события по минутам и рисуем 1 карточку на минуту ----------
+    // --------- КОНЕЦ ИЗМЕНЕНИЙ ---------------------------------------------------
+
+  return (
+    <Box sx={{ p: { xs: 2, sm: 4 } }}>
+      <Stack spacing={3}>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <IconButton component={RouterLink} to="/matches" color="primary">
+            <ArrowBackIcon />
+          </IconButton>
+          <Typography variant="h1" component="h1" className="mb-0">
+            Live Match
+          </Typography>
+        </Stack>
+
+        {error && <Alert severity="error">{error}</Alert>}
+        {actionMessage && (
+          <Alert severity="success" onClose={() => setActionMessage(null)}>
+            {actionMessage}
+          </Alert>
+        )}
+        {actionError && (
+          <Alert severity="warning" onClose={() => setActionError(null)}>
+            {actionError}
+          </Alert>
+        )}
+        {wsError && (
+          <Alert severity="info" onClose={() => setWsError(null)}>
+            {wsError}
+          </Alert>
+        )}
+
+        {loading ? (
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", p: 8 }}>
+            <CircularProgress />
+          </Box>
+        ) : match ? (
+          <Grid container spacing={3} alignItems="flex-start">
+  <Grid size={{ xs: 12, md: 7 }}>
+    <Card>
+              <CardContent>
+                <Typography variant="h6" className="mb-2">
+                  Events
+                </Typography>
+                <EventMinutes events={events} />
+              </CardContent>
+            </Card>
+  </Grid>
+  <Grid size={{ xs: 12, md: 5 }}>
+    <Stack spacing={3}>
+            <Card>
+              <CardContent>
+                <Grid container spacing={3} alignItems="center">
+                  <Grid size={{ xs: 12, md: "grow" }}>
+                    <Stack spacing={1}>
+                      <Typography variant="h4">
+                        {match.home.name} vs {match.away.name}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Status: {match.status_label} | Minute: {match.current_minute}
+                      </Typography>
+                    </Stack>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <Stack spacing={1} alignItems="flex-end">
+                      <Typography variant="h2">
+                        {markovSummary?.score_total?.home ?? match.score.home} : {markovSummary?.score_total?.away ?? match.score.away}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Last update: {formatTimestamp(match.last_minute_update)}
+                      </Typography>
+                    </Stack>
+                  </Grid>
+                </Grid>
+
+                {markovSummary && (
+                  <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: "wrap" }}>
+                    <Chip
+                      size="small"
+                      label={`Possession: ${markovSummary?.possession_pct?.home ?? "-"}% / ${markovSummary?.possession_pct?.away ?? "-"}% (${markovSummary?.possession_seconds?.home ?? "-"}s–${markovSummary?.possession_seconds?.away ?? "-"}s)`}
+                    />
+                    <Chip size="small" label={`Turnovers: ${markovSummary?.possession_swings ?? "-"}`} />
+                    <Chip
+                      size="small"
+                      label={`Final 3rd entries: ${markovSummary?.entries_final_third?.home ?? "-"}–${markovSummary?.entries_final_third?.away ?? "-"}`}
+                    />
+                    <Chip
+                      size="small"
+                      label={`Δscore: ${markovSummary?.score?.home ?? "-"}:${markovSummary?.score?.away ?? "-"}`}
+                    />
+                    <Chip
+                      size="small"
+                      label={`End: ${markovSummary?.end_state ?? "-"} (ball: ${markovSummary?.possession_end ?? "-"})`}
+                    />
+                  </Stack>
+                )}
+
+                <Stack
+                  direction={{ xs: "column", md: "row" }}
+                  justifyContent="flex-end"
+                  alignItems={{ xs: "flex-start", md: "center" }}
+                  spacing={2}
+                  sx={{ mt: 2 }}
+                >
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Button
+                      variant="text"
+                      size="small"
+                      onClick={() => loadData(false)}
+                      disabled={refreshing}
+                    >
+                      {refreshing ? "Refreshing..." : "Refresh"}
+                    </Button>
+                    <Button
+                      component={RouterLink}
+                      to={`/matches/${match.id}`}
+                      size="small"
+                      variant="text"
+                    >
+                      Open match details
+                    </Button>
+                    {matchFinished && (
+                      <Button component={RouterLink} to="/matches" size="small" variant="text">
+                        Back to matches
+                      </Button>
+                    )}
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={handleOpenSubDialog}
+                      disabled={!matchInProgress}
+                    >
+                      Open Substitution
+                    </Button>
+                  </Stack>
+                  <Typography
+                    variant="caption"
+                    color={wsConnected ? "success.main" : "text.secondary"}
+                  >
+                    {wsConnected ? "Live updates connected" : "Polling mode active"}
+                  </Typography>
+                </Stack>
+
+                {matchFinished && (
+                  <Alert severity="info" sx={{ mt: 2 }}>
+                    Match finished. Review the summary or return to the matches list.
+                  </Alert>
+                )}
+
+                <Divider sx={{ my: 3 }} />
+
+                <Card>
+                  <CardContent>
+                    <Grid container spacing={3}>
+                      <Grid size={{ xs: 12, md: 6 }}>
+                        <Typography variant="subtitle1">Home</Typography>
+                        <Typography variant="body1" fontWeight={600}>
+                          {match.home.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Tactic: {match.home.tactic ?? "-"}
+                        </Typography>
+                      </Grid>
+                      <Grid size={{ xs: 12, md: 6 }}>
+                        <Typography variant="subtitle1">Away</Typography>
+                        <Typography variant="body1" fontWeight={600}>
+                          {match.away.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Tactic: {match.away.tactic ?? "-"}
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
+              </CardContent>
+            </Card>
+
+            <MarkovPanel
+              matchId={Number(match?.id ?? matchId)}
+              homeName={match.home.name}
+              awayName={match.away.name}
+              onMinute={setMarkovSummary}
+            />
+
+
+            
+    </Stack>
+  </Grid>
+</Grid>
+        ) : (
+          <Alert severity="warning">Match not found.</Alert>
+        )}
+      </Stack>
+      <Dialog open={subDialogOpen} onClose={() => setSubDialogOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Apply Substitution</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label="Player out (ID)"
+              value={dialogOutPlayer}
+              onChange={(event) => setDialogOutPlayer(event.target.value)}
+              size="small"
+              type="number"
+              fullWidth
+            />
+            <TextField
+              label="Player in (ID)"
+              value={dialogInPlayer}
+              onChange={(event) => setDialogInPlayer(event.target.value)}
+              size="small"
+              type="number"
+              fullWidth
+            />
+            <TextField
+              label="Comment (optional)"
+              value={dialogComment}
+              onChange={(event) => setDialogComment(event.target.value)}
+              size="small"
+              multiline
+              minRows={2}
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSubDialogOpen(false)} disabled={substituting}>Cancel</Button>
+          <Button onClick={handleDialogSubmit} variant="contained" disabled={substituting}>
+            {substituting ? "Submitting..." : "Apply"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+}
+
+
+
+
+
+
+
+
+
+
