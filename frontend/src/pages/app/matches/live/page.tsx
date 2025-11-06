@@ -152,10 +152,11 @@ export default function MatchLivePage() {
         return a.minute - b.minute;
       }
       const priority = (type: string) => {
-        if (type === "markov_summary") return 0;
-        if (type === "markov_goal") return 1;
-        if (type.startsWith("markov_")) return 2;
-        return 3;
+        if (type === "markov_goal") return 0;
+        if (type === "markov_turnover") return 1;
+        if (type === "markov_narrative") return 2;
+        if (type === "markov_summary") return 3;
+        return 4;
       };
       const diff = priority(a.type) - priority(b.type);
       if (diff !== 0) {
@@ -232,8 +233,6 @@ export default function MatchLivePage() {
     const deltaHome = typeof deltaScore.home === "number" ? deltaScore.home : 0;
     const deltaAway = typeof deltaScore.away === "number" ? deltaScore.away : 0;
 
-    const summaryLine = `Markov minute ${minute}: Poss ${possHomePct}|${possAwayPct} (${secondsHome}-${secondsAway}), Swings ${swingsValue}, Final 3rd ${entriesHome}-${entriesAway}, Δscore ${deltaHome}:${deltaAway}, End ${markovSummary.end_state ?? "-"} (ball: ${markovSummary.possession_end ?? "-"})`;
-
     const narrativeLines = Array.isArray(markovSummary.narrative)
       ? markovSummary.narrative
       : [];
@@ -250,13 +249,72 @@ export default function MatchLivePage() {
         minute,
         type: "markov_summary",
         type_label: "Markov Minute",
-        description: summaryLine,
+        description: "", // placeholder, will replace below
         timestamp: new Date().toISOString(),
       }),
     ];
 
     const homeName = match?.home?.name ?? "Home";
     const awayName = match?.away?.name ?? "Away";
+
+    const startStateRaw =
+      (markovSummary.start_state as string | undefined) ??
+      (Array.isArray(markovSummary.events) && markovSummary.events.length > 0
+        ? (markovSummary.events[0]?.from as string | undefined)
+        : undefined) ??
+      "OPEN_PLAY_MID";
+    const startStateLabel = startStateRaw.replace(/_/g, " ").toLowerCase();
+    const firstEvent = Array.isArray(markovSummary.events) ? markovSummary.events[0] : undefined;
+    const startPossession =
+      (firstEvent?.prev_possession as "home" | "away" | undefined) ??
+      (markovSummary.token?.possession as "home" | "away" | undefined) ??
+      "home";
+    const startTeamName = startPossession === "away" ? awayName : homeName;
+    const startZoneDescriptionMap: Record<string, string> = {
+      "open play def": "their own half",
+      "open play mid": "the midfield",
+      "open play final": "the final third",
+      "kickoff": "the center circle",
+      "gk": "the six-yard box",
+      "out": "the touchline",
+      "foul": "a set-piece spot",
+      "shot": "shooting range",
+    };
+    const fallbackZonePhrase = startStateLabel.includes(" ")
+      ? `the ${startStateLabel}`
+      : startStateLabel;
+    const zonePhrase =
+      startZoneDescriptionMap[startStateLabel] ??
+      fallbackZonePhrase;
+    const introTemplates: Array<(m: number, team: string, zone: string) => string> = [
+      (m, team, zone) =>
+        `Minute ${m}: ${team} keep the ball in ${zone}. Everything is just warming up.`,
+      (m, team, zone) =>
+        `Minute ${m} opens with ${team} feeling out ${zone}.`,
+      (m, team, zone) =>
+        `Minute ${m} starts gently—${team} circulating possession through ${zone}.`,
+      (m, team, zone) =>
+        `Minute ${m}: ${team} take their time in ${zone}, looking for an opening.`,
+      (m, team, zone) =>
+        `Minute ${m} dawns and ${team} tap the ball around ${zone}.`,
+      (m, team, zone) =>
+        `Minute ${m}: ${team} settle in ${zone}, steadying the tempo.`,
+      (m, team, zone) =>
+        `Minute ${m} kicks off with ${team} nudging forward via ${zone}.`,
+      (m, team, zone) =>
+        `Minute ${m}: ${team} enjoy a calm spell in ${zone}.`,
+      (m, team, zone) =>
+        `Minute ${m} begins—${team} steering play across ${zone}.`,
+      (m, team, zone) =>
+        `Minute ${m}: ${team} stroke passes in ${zone}, plotting the next move.`,
+    ];
+    const summaryTemplate =
+      introTemplates[Math.floor(Math.random() * introTemplates.length)];
+    const summaryLine = summaryTemplate(minute, startTeamName, zonePhrase);
+    markovEvents[0] = {
+      ...markovEvents[0],
+      description: summaryLine,
+    };
 
     const pushGoalEvent = (teamName: string, count: number) => {
       if (!count || count <= 0) return;
