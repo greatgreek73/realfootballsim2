@@ -121,10 +121,74 @@ export default function MatchLivePage() {
   const wsRef = useRef<WebSocket | null>(null);
   const wsSupported = useMemo(() => typeof window !== "undefined" && "WebSocket" in window, []);
   const markovCacheRef = useRef<Map<number, string>>(new Map());
+  const markovEventQueueRef = useRef<MatchEvent[]>([]);
+  const markovPlaybackTimerRef = useRef<number | null>(null);
+  const markovTickMsRef = useRef<number>(10000);
+
+  const clearMarkovPlayback = useCallback(() => {
+    if (markovPlaybackTimerRef.current !== null) {
+      window.clearTimeout(markovPlaybackTimerRef.current);
+      markovPlaybackTimerRef.current = null;
+    }
+    markovEventQueueRef.current = [];
+  }, []);
 
   useEffect(() => {
+    clearMarkovPlayback();
     setMarkovSummary(null);
-  }, [matchId]);
+  }, [matchId, clearMarkovPlayback]);
+
+  useEffect(
+    () => () => {
+      clearMarkovPlayback();
+    },
+    [clearMarkovPlayback],
+  );
+
+  const sortEvents = useCallback((list: MatchEvent[]) => {
+    const copy = [...list];
+    copy.sort((a, b) => {
+      if (a.minute !== b.minute) {
+        return a.minute - b.minute;
+      }
+      const priority = (type: string) => {
+        if (type === "markov_summary") return 0;
+        if (type === "markov_goal") return 1;
+        if (type.startsWith("markov_")) return 2;
+        return 3;
+      };
+      const diff = priority(a.type) - priority(b.type);
+      if (diff !== 0) {
+        return diff;
+      }
+      const numericIdDiff =
+        typeof a.id === "number" && typeof b.id === "number" ? a.id - b.id : Number(a.id) - Number(b.id);
+      if (!Number.isNaN(numericIdDiff) && numericIdDiff !== 0) {
+        return numericIdDiff;
+      }
+      return String(a.id).localeCompare(String(b.id));
+    });
+    return copy;
+  }, []);
+
+  const playNextMarkovEvent = useCallback(() => {
+    if (markovEventQueueRef.current.length === 0) {
+      markovPlaybackTimerRef.current = null;
+      return;
+    }
+    const nextEvent = markovEventQueueRef.current.shift()!;
+    setEvents((prev) => sortEvents([...prev, nextEvent]));
+    if (markovEventQueueRef.current.length > 0) {
+      markovPlaybackTimerRef.current = window.setTimeout(
+        () => {
+          playNextMarkovEvent();
+        },
+        markovTickMsRef.current,
+      );
+    } else {
+      markovPlaybackTimerRef.current = null;
+    }
+  }, [sortEvents]);
 
   useEffect(() => {
     if (!markovSummary) {
@@ -182,14 +246,14 @@ export default function MatchLivePage() {
     });
 
     const markovEvents: MatchEvent[] = [
-  makeEvent({
-    minute,
-    type: "markov_summary",
-    type_label: "Markov Minute",
-    description: summaryLine,
-    timestamp: new Date().toISOString(),
-  }),
-];
+      makeEvent({
+        minute,
+        type: "markov_summary",
+        type_label: "Markov Minute",
+        description: summaryLine,
+        timestamp: new Date().toISOString(),
+      }),
+    ];
 
     const homeName = match?.home?.name ?? "Home";
     const awayName = match?.away?.name ?? "Away";
@@ -237,29 +301,18 @@ const typeLabel = isGoal ? "Markov Goal" : "Markov";
       );
     });
 
-    setEvents((prev) => {
-      const filtered = prev.filter(
-        (event) => !(event.minute === minute && event.type.startsWith("markov_")),
-      );
-      const merged = [...filtered, ...markovEvents];
-      merged.sort((a, b) => {
-        if (a.minute !== b.minute) {
-          return a.minute - b.minute;
-        }
-        const priority = (type: string) => {
-          if (type === "markov_summary") return 0;
-          if (type === "markov_goal") return 1;
-          if (type.startsWith("markov_")) return 2;
-          return 3;
-        };
-        const diff = priority(a.type) - priority(b.type);
-        if (diff !== 0) {
-          return diff;
-        }
-        return a.id - b.id;
-      });
-      return merged;
-    });
+    clearMarkovPlayback();
+    setEvents((prev) =>
+      prev.filter((event) => !(event.minute === minute && event.type.startsWith("markov_"))),
+    );
+    const tickSecondsRaw = Number(markovSummary.tick_seconds ?? 10);
+    const tickSeconds =
+      Number.isFinite(tickSecondsRaw) && tickSecondsRaw > 0 ? tickSecondsRaw : 10;
+    markovTickMsRef.current = Math.max(1, Math.round(tickSeconds)) * 1000;
+    markovEventQueueRef.current = markovEvents;
+    markovPlaybackTimerRef.current = window.setTimeout(() => {
+      playNextMarkovEvent();
+    }, 0);
 
     setMatch((prev) => {
       if (!prev) return prev;
@@ -281,7 +334,13 @@ const typeLabel = isGoal ? "Markov Goal" : "Markov";
         current_minute: nextMinute,
       };
     });
-  }, [markovSummary, match?.home?.name, match?.away?.name]);
+  }, [
+    markovSummary,
+    match?.home?.name,
+    match?.away?.name,
+    clearMarkovPlayback,
+    playNextMarkovEvent,
+  ]);
 
   const mapWebSocketEvent = useCallback((event: any): MatchEvent => {
     const minuteValue = Number(event?.minute);

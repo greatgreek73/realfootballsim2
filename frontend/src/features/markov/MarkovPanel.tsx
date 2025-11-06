@@ -78,7 +78,13 @@ export function MarkovPanel({
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
 
-      const minuteSummary = data.minute_summary;
+      const minuteSummary = {
+        ...data.minute_summary,
+        tick_seconds:
+          (data.minute_summary && data.minute_summary.tick_seconds) ??
+          data.tick_seconds ??
+          10,
+      };
       setRegMinutes(Number(data.regulation_minutes ?? 90));
       setSummary(minuteSummary);
       onMinute?.(minuteSummary);
