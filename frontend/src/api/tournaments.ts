@@ -59,7 +59,7 @@ function withCredentials(input: RequestInfo | URL, init: RequestInit = {}) {
 export async function fetchChampionships(params: Record<string, string | number> = {}) {
   const query = buildQuery(params);
   const response = await withCredentials(
-    buildUrl("/tournaments/api/championships", query),
+    buildUrl("/tournaments/api/championships/", query),
   );
   return handleResponse<ChampionshipSummary[]>(response);
 }
@@ -93,7 +93,7 @@ export async function fetchSeasons() {
 export async function fetchLeagues(params: Record<string, string | number> = {}) {
   const query = buildQuery(params);
   const response = await withCredentials(
-    buildUrl(`/tournaments/api/leagues`, query),
+    buildUrl(`/tournaments/api/leagues/`, query),
   );
   return handleResponse<LeagueSummary[]>(response);
 }
