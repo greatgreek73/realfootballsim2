@@ -36,7 +36,7 @@ export default function MyChampionshipPage() {
   }
 
   return (
-    <Stack spacing={3}>
+    <Stack spacing={3} sx={{ width: "100%" }}>
       <Card>
         <CardContent>
           <Typography variant="h4" sx={{ mb: 1 }}>
@@ -49,27 +49,35 @@ export default function MyChampionshipPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            Standings
-          </Typography>
-          <ChampionshipStandingsTable standings={data.standings} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            Season schedule
-          </Typography>
-          {schedule.length === 0 ? (
-            <Typography variant="body2">No fixtures available.</Typography>
-          ) : (
-            <ChampionshipMatchesList matches={schedule} />
-          )}
-        </CardContent>
-      </Card>
+      <Box
+        sx={{
+          display: "grid",
+          gap: 3,
+          alignItems: "stretch",
+          gridTemplateColumns: { xs: "1fr", md: "2fr 1fr", lg: "3fr 1fr" },
+        }}
+      >
+        <Card sx={{ height: "100%", minWidth: 0 }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Standings
+            </Typography>
+            <ChampionshipStandingsTable standings={data.standings} />
+          </CardContent>
+        </Card>
+        <Card sx={{ height: "100%", minWidth: 0 }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ mb: 2, textAlign: { md: "right" } }}>
+              Season schedule
+            </Typography>
+            {schedule.length === 0 ? (
+              <Typography variant="body2">No fixtures available.</Typography>
+            ) : (
+              <ChampionshipMatchesList matches={schedule} />
+            )}
+          </CardContent>
+        </Card>
+      </Box>
     </Stack>
   );
 }

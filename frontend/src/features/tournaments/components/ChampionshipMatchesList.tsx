@@ -59,18 +59,19 @@ export function ChampionshipMatchesList({
               <Typography variant="caption" color="text.secondary">
                 {match.date}
               </Typography>
-            </Stack>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Chip size="small" color={chipColor} label={label} />
-              <Typography width={70} textAlign="right">
-                {match.score ? `${match.score.home}:${match.score.away}` : "—"}
-              </Typography>
+              <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                <Chip size="small" color={chipColor} label={label} />
+                <Typography width={70} textAlign="right">
+                  {match.score ? `${match.score.home}:${match.score.away}` : "-"}
+                </Typography>
+              </Stack>
             </Stack>
             <Button
               component={RouterLink}
               to={`/matches/${match.match_id}`}
               size="small"
               variant="outlined"
+              sx={{ whiteSpace: "nowrap" }}
             >
               View
             </Button>
