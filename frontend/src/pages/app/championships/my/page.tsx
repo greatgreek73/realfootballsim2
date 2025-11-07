@@ -54,7 +54,7 @@ export default function MyChampionshipPage() {
           display: "grid",
           gap: 3,
           alignItems: "stretch",
-          gridTemplateColumns: { xs: "1fr", md: "2fr 1fr", lg: "3fr 1fr" },
+          gridTemplateColumns: { xs: "1fr", md: "2fr 1fr", lg: "2.5fr 1.5fr" },
         }}
       >
         <Card sx={{ height: "100%", minWidth: 0 }}>
