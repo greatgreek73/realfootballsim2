@@ -284,10 +284,12 @@ def my_championship(request):
     matches = list(championship.championshipmatch_set.all())
     upcoming = []
     finished = []
+    schedule = []
     now = timezone.now()
 
     for item in matches:
         match_dict = _match_to_dict(item)
+        schedule.append(match_dict)
         match_datetime = _match_date(item)
         if item.match.status == "finished" or match_datetime < now:
             if item.match.status == "finished":
@@ -299,6 +301,7 @@ def my_championship(request):
         "championship": _championship_to_summary(championship),
         "standings": standings,
         "club_position": club_position,
+        "schedule": schedule,
         "next_matches": upcoming[:5],
         "last_results": finished[-5:],
     }
