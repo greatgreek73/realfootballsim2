@@ -9,15 +9,15 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h2>{{ championship.league.name }}</h2>
+                        <h2 class="mb-1">{{ championship.league.name }}</h2>
                         <p class="text-muted mb-0">
-                            {{ championship.league.country.name }} - Division {{ championship.league.level }}
+                            {{ championship.league.country.name }} · Division {{ championship.league.level }}
                         </p>
-                        <p class="text-muted">
-                            Season: {{ championship.season.name }} | 
-                            Status: {{ championship.get_status_display }} |
-                            Match Time: <span id="match-time" utc-time="{{ championship.match_time|time:'H:i' }}"></span>
-                        </p>
+                        <div class="text-muted small mt-2">
+                            <span class="me-3">Season: {{ championship.season.name }}</span>
+                            <span class="badge bg-secondary me-3">{{ championship.get_status_display }}</span>
+                            <span>Kickoff: <strong>{{ championship.match_time|time:'H:i' }} UTC</strong></span>
+                        </div>
                     </div>
                     <div>
                         <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#timezonesModal">
@@ -31,12 +31,12 @@
 
     <!-- League Table -->
     <div class="col-md-8">
-        <div class="card">
+        <div class="card h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="card-title h5 mb-0">League Table</h3>
-                <a href="{% url 'matches:championship_matches' championship.id %}" class="btn btn-primary btn-sm">
-                    View All Matches
-                </a>
+                <span class="text-muted small">
+                    Updated {{ standings|length }} teams
+                </span>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -56,31 +56,33 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for team in standings %}
+                            {% if has_standings %}
+                            {% for row in standings %}
                             <tr>
-                                <td>{{ forloop.counter }}</td>
+                                <td>{{ row.table_position }}</td>
                                 <td>
-                                    <a href="{% url 'clubs:club_detail' team.team.id %}" class="text-decoration-none">
-                                        {{ team.team.name }}
-                                        {% if team.team.is_bot %}
+                                    <a href="{% url 'clubs:club_detail' row.team.id %}" class="text-decoration-none">
+                                        {{ row.team.name }}
+                                        {% if row.team.is_bot %}
                                             <small class="text-muted">(Bot)</small>
                                         {% endif %}
                                     </a>
                                 </td>
-                                <td>{{ team.matches_played }}</td>
-                                <td>{{ team.wins }}</td>
-                                <td>{{ team.draws }}</td>
-                                <td>{{ team.losses }}</td>
-                                <td>{{ team.goals_for }}</td>
-                                <td>{{ team.goals_against }}</td>
-                                <td>{% if team.goals_diff > 0 %}+{% endif %}{{ team.goals_diff }}</td>
-                                <td><strong>{{ team.points }}</strong></td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="10" class="text-center">No teams in championship</td>
+                                <td>{{ row.matches_played }}</td>
+                                <td>{{ row.wins }}</td>
+                                <td>{{ row.draws }}</td>
+                                <td>{{ row.losses }}</td>
+                                <td>{{ row.goals_for }}</td>
+                                <td>{{ row.goals_against }}</td>
+                                <td>{% if row.goals_diff > 0 %}+{% endif %}{{ row.goals_diff }}</td>
+                                <td><strong>{{ row.points }}</strong></td>
                             </tr>
                             {% endfor %}
+                            {% else %}
+                            <tr>
+                                <td colspan="10" class="text-center py-4 text-muted">No standings available for this championship.</td>
+                            </tr>
+                            {% endif %}
                         </tbody>
                     </table>
                 </div>
@@ -90,55 +92,69 @@
 
     <!-- Matches Section -->
     <div class="col-md-4">
-        <div class="card">
+        <div class="card h-100">
             <div class="card-header">
-                <h3 class="card-title h5 mb-0">Recent Matches</h3>
+                <h3 class="card-title h5 mb-0">Matches</h3>
             </div>
             <div class="card-body">
-                {% if matches %}
-                    {% regroup matches by round as round_list %}
-                    {% for round in round_list %}
-                    <div class="mb-4">
-                        <h4 class="h6">Round {{ round.grouper }}</h4>
-                        <div class="list-group">
-                            {% for match in round.list %}
-                            <a href="{% url 'matches:match_detail' match.match.id %}" class="list-group-item list-group-item-action">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small>{{ match.match.datetime|date:"d M Y H:i" }}</small>
-                                    <span class="badge {% if match.match.status == 'finished' %}bg-success{% elif match.match.status == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}">
-                                        {{ match.match.get_status_display }}
-                                    </span>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center mt-2">
-                                    <span class="{% if match.match.home_team == user.club %}fw-bold{% endif %}">
-                                        {{ match.match.home_team.name }}
-                                        {% if match.match.home_team.is_bot %}
-                                            <small>(Bot)</small>
-                                        {% endif %}
-                                    </span>
-                                    {% if match.match.status == 'finished' %}
-                                        <strong>{{ match.match.home_score }} - {{ match.match.away_score }}</strong>
-                                    {% else %}
-                                        <span>vs</span>
-                                    {% endif %}
-                                    <span class="{% if match.match.away_team == user.club %}fw-bold{% endif %}">
-                                        {{ match.match.away_team.name }}
-                                        {% if match.match.away_team.is_bot %}
-                                            <small>(Bot)</small>
-                                        {% endif %}
-                                    </span>
-                                </div>
-                            </a>
-                            {% endfor %}
-                        </div>
+                {% if has_matches %}
+                <div class="mb-4">
+                    <h4 class="h6 text-muted text-uppercase">Upcoming</h4>
+                    {% if upcoming_matches %}
+                    <div class="list-group list-group-flush">
+                        {% for match in upcoming_matches %}
+                        <a href="{% url 'matches:match_detail' match.match.id %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small>{{ match.scheduled_datetime|date:"d M Y H:i" }}</small>
+                                <span class="badge bg-info text-dark">{{ match.match.get_status_display }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <span>{{ match.match.home_team.name }}</span>
+                                <span>vs</span>
+                                <span>{{ match.match.away_team.name }}</span>
+                            </div>
+                        </a>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted small mb-0">No upcoming fixtures.</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <h4 class="h6 text-muted text-uppercase">Recent</h4>
+                    {% if recent_matches %}
+                    <div class="list-group list-group-flush">
+                        {% for match in recent_matches %}
+                        <a href="{% url 'matches:match_detail' match.match.id %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small>{{ match.scheduled_datetime|date:"d M Y H:i" }}</small>
+                                <span class="badge {% if match.match.status == 'finished' %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {{ match.match.get_status_display }}
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <span>{{ match.match.home_team.name }}</span>
+                                {% if match.match.status == 'finished' %}
+                                <strong>{{ match.match.home_score }} - {{ match.match.away_score }}</strong>
+                                {% else %}
+                                <span>vs</span>
+                                {% endif %}
+                                <span>{{ match.match.away_team.name }}</span>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted small mb-0">No finished matches yet.</p>
+                    {% endif %}
+                </div>
                 {% else %}
-                    <p class="text-center">No matches scheduled</p>
+                <p class="text-center text-muted mb-0">No matches scheduled for this championship.</p>
                 {% endif %}
                 <div class="text-center mt-3">
-                    <a href="{% url 'matches:championship_matches' championship.id %}" class="btn btn-outline-primary">
-                        View All Matches
+                    <a href="{% url 'tournaments:championship_calendar' championship.id %}" class="btn btn-outline-primary btn-sm">
+                        Calendar View
                     </a>
                 </div>
             </div>

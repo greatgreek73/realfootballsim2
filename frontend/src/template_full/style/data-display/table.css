@@ -45,13 +45,13 @@
   }
 
   .MuiTable-root.no-left-padding .MuiTableRow-root {
-    .MuiTableCell-root:first-child {
+    .MuiTableCell-root:first-of-type {
       @apply pl-0;
     }
   }
 
   .MuiTable-root.no-right-padding .MuiTableRow-root {
-    .MuiTableCell-root:last-child {
+    .MuiTableCell-root:last-of-type {
       @apply pr-0;
     }
   }

@@ -97,9 +97,14 @@
                                     <i class="iconsminds-medal"></i> My Club
                                 </a>
                             </li>
-                            <li class="{% if 'tournaments' in request.resolver_match.namespace %}active{% endif %}">
+                            <li class="{% if request.resolver_match.url_name == 'my_championship' %}active{% endif %}">
                                 <a href="{% url 'tournaments:my_championship' %}">
-                                    <i class="iconsminds-trophy"></i> Tournaments
+                                    <i class="iconsminds-trophy"></i> My Championship
+                                </a>
+                            </li>
+                            <li class="{% if request.resolver_match.url_name == 'championship_list' %}active{% endif %}">
+                                <a href="{% url 'tournaments:championship_list' %}">
+                                    <i class="iconsminds-trophy"></i> Championships
                                 </a>
                             </li>
                             <li class="{% if 'transfers' in request.resolver_match.namespace %}active{% endif %}">
@@ -113,12 +118,12 @@
                                     <i class="iconsminds-add"></i> Create Club
                                 </a>
                             </li>
+                            <li class="{% if 'tournaments' in request.resolver_match.namespace %}active{% endif %}">
+                                <a href="{% url 'tournaments:championship_list' %}">
+                                    <i class="iconsminds-trophy"></i> Championships
+                                </a>
+                            </li>
                         {% endif %}
-                        <li class="{% if 'tournaments' in request.resolver_match.namespace and not user.club %}active{% endif %}">
-                            <a href="{% url 'tournaments:championship_list' %}">
-                                <i class="iconsminds-trophy"></i> Championships
-                            </a>
-                        </li>
                     {% endif %}
                 </ul>
             </div>

@@ -58,6 +58,38 @@ export default function ChampionshipDetailPage() {
   const [roundFilter, setRoundFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
+  const standings = useMemo(
+    () => (Array.isArray(detail?.standings) ? detail.standings : []),
+    [detail],
+  );
+  const matchesList = useMemo(
+    () =>
+      Array.isArray(matches)
+        ? matches.filter(
+            (match): match is ChampionshipMatchSummary =>
+              Boolean(match && match.date && match.home_team && match.away_team),
+          )
+        : [],
+    [matches],
+  );
+  const availableRounds = useMemo(() => {
+    const unique = new Set<number>();
+    matchesList.forEach((match) => unique.add(match.round));
+    return Array.from(unique).sort((a, b) => a - b);
+  }, [matchesList]);
+  const availableStatuses = useMemo(() => {
+    const unique = new Set(matchesList.map((match) => match.status));
+    return Array.from(unique);
+  }, [matchesList]);
+  const filteredMatches = useMemo(() => {
+    return matchesList.filter((match) => {
+      const roundPass = roundFilter === "all" || match.round === Number(roundFilter);
+      const statusPass = statusFilter === "all" || match.status === statusFilter;
+      return roundPass && statusPass;
+    });
+  }, [matchesList, roundFilter, statusFilter]);
+  const groupedMatches = useMemo(() => groupMatchesByDate(filteredMatches), [filteredMatches]);
+
   if (!numericId) {
     return <Alert severity="warning">Invalid championship id.</Alert>;
   }
@@ -77,24 +109,6 @@ export default function ChampionshipDetailPage() {
   if (!detail) {
     return <Alert severity="info">Championship not found.</Alert>;
   }
-
-  const matchesList = matches ?? [];
-  const availableRounds = useMemo(() => {
-    const unique = new Set<number>();
-    matchesList.forEach((match) => unique.add(match.round));
-    return Array.from(unique).sort((a, b) => a - b);
-  }, [matchesList]);
-  const availableStatuses = useMemo(() => {
-    const unique = new Set(matchesList.map((match) => match.status));
-    return Array.from(unique);
-  }, [matchesList]);
-  const filteredMatches = matchesList.filter((match) => {
-    const roundPass =
-      roundFilter === "all" || match.round === Number(roundFilter);
-    const statusPass = statusFilter === "all" || match.status === statusFilter;
-    return roundPass && statusPass;
-  });
-  const groupedMatches = useMemo(() => groupMatchesByDate(filteredMatches), [filteredMatches]);
 
   return (
     <Stack spacing={3}>
@@ -171,9 +185,7 @@ export default function ChampionshipDetailPage() {
 
       <Card>
         <CardContent>
-          {tab === "standings" && (
-            <ChampionshipStandingsTable standings={detail.standings} />
-          )}
+          {tab === "standings" && <ChampionshipStandingsTable standings={standings} />}
           {tab === "fixtures" && (
             <Stack spacing={2}>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>

@@ -14,7 +14,23 @@ const HelmetProvider: React.FC<React.PropsWithChildren> = ({ children }) => <>{c
 // Минимальная валидная тема (важно: НЕ undefined)
 const theme = createTheme({
   typography: {
-    fontFamily: 'Mulish, ui-sans-serif',
+    fontFamily: "Mulish, ui-sans-serif",
+  },
+  components: {
+    MuiTypography: {
+      defaultProps: {
+        variantMapping: {
+          body1: "span",
+          body2: "span",
+        },
+      },
+    },
+    MuiListItemText: {
+      defaultProps: {
+        primaryTypographyProps: { component: "span" },
+        secondaryTypographyProps: { component: "span" },
+      },
+    },
   },
 });
 

@@ -3,7 +3,76 @@
 {% block tournament_content %}
 <div class="row">
     <div class="col-12">
-        <h2 class="mb-4">Championships</h2>
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+            <h2 class="mb-0">Championships</h2>
+            <span class="text-muted small">
+                {{ championship_count }} championship{{ championship_count|pluralize }} found
+                {% if has_active_filters %}(filtered){% endif %}
+            </span>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label class="form-label text-muted small mb-1">Season</label>
+                        <select class="form-select form-select-sm" name="season">
+                            <option value="">All seasons</option>
+                            {% for season in seasons %}
+                            <option value="{{ season.id }}" {% if filters.season == season.id %}selected{% endif %}>
+                                {{ season.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label class="form-label text-muted small mb-1">League</label>
+                        <select class="form-select form-select-sm" name="league">
+                            <option value="">All leagues</option>
+                            {% for league in leagues %}
+                            <option value="{{ league.id }}" {% if filters.league == league.id %}selected{% endif %}>
+                                {{ league.country }} · {{ league.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label class="form-label text-muted small mb-1">Country</label>
+                        <select class="form-select form-select-sm" name="country">
+                            <option value="">All countries</option>
+                            {% for country in countries|dictsort:"name" %}
+                            <option value="{{ country.code }}" {% if filters.country == country.code %}selected{% endif %}>
+                                {{ country.name|default:country.code }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-lg-2">
+                        <label class="form-label text-muted small mb-1">Status</label>
+                        <select class="form-select form-select-sm" name="status">
+                            <option value="">Any status</option>
+                            {% for code, label in status_choices %}
+                            <option value="{{ code }}" {% if filters.status == code %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-lg-1 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm flex-grow-1">Apply</button>
+                        {% if has_active_filters %}
+                        <a href="{% url 'tournaments:championship_list' %}" class="btn btn-outline-secondary btn-sm" title="Reset filters">
+                            Reset
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
 
         {% if active_seasons %}
         <div class="mb-5">
@@ -28,7 +97,7 @@
                                     <p class="text-muted small">Division {{ championship.league.level }}</p>
                                     <p class="card-text">
                                         Status: {{ championship.get_status_display }}<br>
-                                        Teams: {{ championship.teams.count }}/{{ championship.league.max_teams }}
+                                        Teams: {{ championship.team_count|default:championship.teams.count }}/{{ championship.league.max_teams }}
                                     </p>
                                     {% if championship.teams.count > 0 %}
                                     <small class="text-muted">Participating teams:</small>
@@ -46,7 +115,7 @@
                                 </div>
                                 <div class="card-footer bg-transparent">
                                     <a href="{% url 'tournaments:championship_detail' championship.pk %}" 
-                                       class="btn btn-primary btn-sm">View Details</a>
+                                       class="btn btn-primary btn-sm">Details</a>
                                 </div>
                             </div>
                         </div>
@@ -80,7 +149,7 @@
                                     <p class="small">Division {{ championship.league.level }}</p>
                                     <p class="card-text">
                                         Status: {{ championship.get_status_display }}<br>
-                                        Teams: {{ championship.teams.count }}/{{ championship.league.max_teams }}
+                                        Teams: {{ championship.team_count|default:championship.teams.count }}/{{ championship.league.max_teams }}
                                     </p>
                                     {% if championship.teams.count > 0 %}
                                     <small class="text-muted">Teams:</small>
@@ -98,7 +167,7 @@
                                 </div>
                                 <div class="card-footer bg-transparent">
                                     <a href="{% url 'tournaments:championship_detail' championship.pk %}" 
-                                       class="btn btn-primary btn-sm">View Details</a>
+                                       class="btn btn-primary btn-sm">Details</a>
                                 </div>
                             </div>
                         </div>
