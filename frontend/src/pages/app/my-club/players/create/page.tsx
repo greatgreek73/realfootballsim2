@@ -5,14 +5,22 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   Divider,
-  Grid,
   MenuItem,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
+import SportsSoccerIcon from "@mui/icons-material/SportsSoccer";
+import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
+import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
+import QueryBuilderIcon from "@mui/icons-material/QueryBuilder";
+import PersonAddAltIcon from "@mui/icons-material/PersonAddAlt";
 import { Link, useNavigate } from "react-router-dom";
+
+import PageShell from "@/components/ui/PageShell";
+import HeroBar from "@/components/ui/HeroBar";
 import { getJSON } from "@/lib/apiClient";
 
 /** Тип ответа списка игроков в вашем API */
@@ -38,7 +46,7 @@ const POSITIONS = [
 
 /** Читаем CSRF cookie (для POST /api/players/<id>/generate-avatar/) */
 function getCsrfToken(): string | undefined {
-  const m = document.cookie.match(/(^|;\s*)csrftoken=([^;]+)/);
+  const m = document.cookie.match(/(^|;\\s*)csrftoken=([^;]+)/);
   return m ? decodeURIComponent(m[2]) : undefined;
 }
 
@@ -48,7 +56,6 @@ async function fetchPlayersRaw(clubId: number): Promise<ApiPlayer[]> {
   const res = await fetch(url, { credentials: "include", cache: "no-store" });
   if (!res.ok) throw new Error(`Players fetch failed: ${res.status}`);
   const data = await res.json();
-  // Поддерживаем два варианта: {count, results} ИЛИ просто массив
   if (Array.isArray(data)) return data as ApiPlayer[];
   if (data && Array.isArray(data.results)) return data.results as ApiPlayer[];
   throw new Error("Unexpected players payload");
@@ -72,12 +79,11 @@ async function pollForNewPlayer(
       const afterIds = after.map((p) => p.id);
       const diff = afterIds.filter((id) => !beforeIds.includes(id));
       if (diff.length) {
-        // Берём самый большой как наиболее новый
         diff.sort((a, b) => b - a);
         return diff[0];
       }
     } catch {
-      // глотать и пробовать дальше
+      // продолжаем попытки
     }
   }
   return null;
@@ -91,14 +97,13 @@ export default function CreatePlayerPage() {
 
   const [position, setPosition] = useState<string>("Center Forward");
   const [playerClass, setPlayerClass] = useState<number>(4);
-  const [autoAvatar, setAutoAvatar] = useState<boolean>(true); // генерировать аватар после создания
+  const [autoAvatar, setAutoAvatar] = useState<boolean>(true);
 
   const [loading, setLoading] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  // Загружаем id моего клуба и «снимок» списка игроков ДО создания
   useEffect(() => {
     let cancelled = false;
 
@@ -106,13 +111,10 @@ export default function CreatePlayerPage() {
       try {
         setLoading(true);
         setError(null);
-
-        // 1) Мой клуб
         const my = await getJSON<{ id: number }>("/api/my/club/");
         if (cancelled) return;
         setClubId(my.id);
 
-        // 2) Текущий список игроков (для диффа)
         const list = await fetchPlayersRaw(my.id);
         if (cancelled) return;
         setBeforeIds(list.map((p) => p.id));
@@ -133,7 +135,6 @@ export default function CreatePlayerPage() {
     [clubId, position, playerClass, submitting]
   );
 
-  /** Сабмит: вызвать бэкенд, найти нового игрока, сгенерить аватар (по желанию), перейти в профиль */
   async function handleSubmit() {
     if (!canSubmit || !clubId) return;
     try {
@@ -141,39 +142,32 @@ export default function CreatePlayerPage() {
       setError(null);
       setNotice("Creating player…");
 
-      // 1) Создание игрока — через Vite proxy (без CORS)
-      const url = `/clubs/${clubId}/create_player/?position=${encodeURIComponent(
-        position
-      )}&player_class=${playerClass}`;
+      const url = `/clubs/${clubId}/create_player/?position=${encodeURIComponent(position)}&player_class=${playerClass}`;
       const res = await fetch(url, { method: "GET", credentials: "include" });
       if (!res.ok && res.status !== 302) {
         throw new Error(`Create request failed: ${res.status}`);
       }
 
-      // 2) Получаем ID нового игрока
       let lastTickText = "";
       const newId = await pollForNewPlayer(clubId, beforeIds, (i, max) => {
-        const t = `Detecting new player… (${i}/${max})`;
+        const t = `Detecting new player (${i}/${max})`;
         if (t !== lastTickText) {
           setNotice(t);
           lastTickText = t;
         }
       });
       if (!newId) {
-        setError(
-          "Не удалось определить ID нового игрока. Проверьте, что списались токены, и обновите список Players."
-        );
+        setError("Не удалось определить ID нового игрока. Проверьте раздел Players вручную.");
         setSubmitting(false);
         setNotice(null);
         return;
       }
 
-      // 3) Генерация аватара (если включено)
       if (autoAvatar) {
         setNotice("Generating avatar…");
         const csrf = getCsrfToken();
         try {
-          const avatarRes = await fetch(`/api/players/${newId}/generate-avatar/`, {
+          await fetch(`/api/players/${newId}/generate-avatar/`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -182,16 +176,11 @@ export default function CreatePlayerPage() {
             body: "{}",
             credentials: "include",
           });
-          // игнорируем статус, если на сервере отключено
-          if (!avatarRes.ok) {
-            // не ломаем поток — просто продолжаем
-          }
         } catch {
-          // тоже не критично
+          // не критично
         }
       }
 
-      // 4) Переход на страницу игрока
       setNotice(null);
       navigate(`/player/overview?id=${newId}`);
     } catch (e: any) {
@@ -201,101 +190,135 @@ export default function CreatePlayerPage() {
     }
   }
 
-  return (
-    <Grid container spacing={5} className="w-full" size={12}>
-      <Grid size={12}>
-        <Typography variant="h1" component="h1" className="mb-0">
-          Create Player
-        </Typography>
-        <Breadcrumbs>
-          <Link to="/my-club">My Club</Link>
-          <Link to="/my-club/players">Players</Link>
-          <Typography variant="body2">Create</Typography>
-        </Breadcrumbs>
-      </Grid>
-
-      <Grid size={{ md: 6, xs: 12 }}>
-        <Card>
-          <CardContent>
-            {error && (
-              <Alert severity="error" className="mb-2">
-                {error}
-              </Alert>
-            )}
-            {notice && (
-              <Alert severity="info" className="mb-2">
-                {notice}
-              </Alert>
-            )}
-
-            <Stack spacing={2}>
-              <TextField
-                select
-                label="Position"
-                value={position}
-                onChange={(e) => setPosition(e.target.value)}
-                disabled={loading || submitting}
-                fullWidth
-              >
-                {POSITIONS.map((p) => (
-                  <MenuItem key={p} value={p}>
-                    {p}
-                  </MenuItem>
-                ))}
-              </TextField>
-
-              <TextField
-                select
-                label="Class"
-                value={playerClass}
-                onChange={(e) => setPlayerClass(Number(e.target.value))}
-                disabled={loading || submitting}
-                fullWidth
-              >
-                {[1, 2, 3, 4, 5].map((c) => (
-                  <MenuItem key={c} value={c}>
-                    Class {c}
-                  </MenuItem>
-                ))}
-              </TextField>
-
-              <Divider />
-
-              <Stack direction="row" spacing={1}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  disableElevation
-                  disabled={!canSubmit}
-                  onClick={handleSubmit}
-                >
-                  {submitting ? "Working…" : "Create"}
-                </Button>
-                <Button
-                  variant={autoAvatar ? "contained" : "outlined"}
-                  color="secondary"
-                  onClick={() => setAutoAvatar((v) => !v)}
-                  disabled={submitting}
-                >
-                  {autoAvatar ? "Auto Avatar: ON" : "Auto Avatar: OFF"}
-                </Button>
-                <Button
-                  variant="outlined"
-                  disabled={submitting}
-                  onClick={() => navigate("/my-club/players")}
-                >
-                  Back to Players
-                </Button>
-              </Stack>
-
-              <Typography variant="body2" color="text.secondary">
-                • Стоимость списывается согласно классу. Если токенов недостаточно — создание не произойдёт. <br />
-                • После создания будет открыт профиль нового игрока; при включённом Auto Avatar запустится генерация аватара.
-              </Typography>
-            </Stack>
-          </CardContent>
-        </Card>
-      </Grid>
-    </Grid>
+  const hero = (
+    <HeroBar
+      title="Create Player"
+      subtitle="My Club · Players"
+      tone="pink"
+      kpis={[
+        { label: "Position", value: position, icon: <SportsSoccerIcon fontSize="small" /> },
+        { label: "Class", value: `Class ${playerClass}`, icon: <MilitaryTechIcon fontSize="small" /> },
+        { label: "Auto avatar", value: autoAvatar ? "ON" : "OFF", icon: <AutoFixHighIcon fontSize="small" /> },
+        { label: "State", value: loading ? "Loading" : submitting ? "Submitting" : "Ready", icon: <QueryBuilderIcon fontSize="small" /> },
+      ]}
+      accent={
+        <Stack direction="row" spacing={1} flexWrap="wrap">
+          <Chip label="Cost зависит от класса" size="small" sx={{ color: "white", bgcolor: "rgba(255,255,255,0.12)" }} />
+          <Chip label="Auto avatar создаёт портрет сразу" size="small" sx={{ color: "white", bgcolor: "rgba(255,255,255,0.12)" }} />
+        </Stack>
+      }
+      actions={
+        <Button variant="contained" color="secondary" startIcon={<PersonAddAltIcon />} onClick={() => navigate("/my-club/players")}>
+          Back to players
+        </Button>
+      }
+    />
   );
+
+  const topSection = (
+    <Card>
+      <CardContent>
+        <Stack spacing={1.5}>
+          <Breadcrumbs>
+            <Link to="/my-club">My Club</Link>
+            <Link to="/my-club/players">Players</Link>
+            <Typography variant="body2">Create</Typography>
+          </Breadcrumbs>
+          <Typography variant="body2" color="text.secondary">
+            Выберите позицию и класс. После успешной генерации мы попробуем обнаружить нового игрока и открыть его профиль автоматически.
+          </Typography>
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+
+  const mainContent = (
+    <Card>
+      <CardContent>
+        {error && (
+          <Alert severity="error" className="mb-2">
+            {error}
+          </Alert>
+        )}
+        {notice && (
+          <Alert severity="info" className="mb-2">
+            {notice}
+          </Alert>
+        )}
+
+        <Stack spacing={2}>
+          <TextField
+            select
+            label="Position"
+            value={position}
+            onChange={(e) => setPosition(e.target.value)}
+            disabled={loading || submitting}
+            fullWidth
+          >
+            {POSITIONS.map((p) => (
+              <MenuItem key={p} value={p}>
+                {p}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <TextField
+            select
+            label="Class"
+            value={playerClass}
+            onChange={(e) => setPlayerClass(Number(e.target.value))}
+            disabled={loading || submitting}
+            fullWidth
+          >
+            {[1, 2, 3, 4, 5].map((c) => (
+              <MenuItem key={c} value={c}>
+                Class {c}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <Divider />
+
+          <Stack direction="row" spacing={1} flexWrap="wrap">
+            <Button variant="contained" color="primary" disableElevation disabled={!canSubmit} onClick={handleSubmit}>
+              {submitting ? "Working…" : "Create"}
+            </Button>
+            <Button variant={autoAvatar ? "contained" : "outlined"} color="secondary" onClick={() => setAutoAvatar((v) => !v)} disabled={submitting}>
+              {autoAvatar ? "Auto Avatar: ON" : "Auto Avatar: OFF"}
+            </Button>
+            <Button variant="outlined" disabled={submitting} onClick={() => navigate("/my-club/players")}>Cancel</Button>
+          </Stack>
+
+          <Typography variant="body2" color="text.secondary">
+            • Стоимость списывается согласно классу. Если токенов не хватает, создание не произойдёт.
+            <br />• После создания мы попытаемся автоматически определить ID и открыть профиль нового игрока.
+          </Typography>
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+
+  const asideContent = (
+    <Card>
+      <CardContent>
+        <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+          Полезно знать
+        </Typography>
+        <Stack spacing={1}>
+          <Typography variant="body2" color="text.secondary">
+            • Class 1 — самый бюджетный вариант, Class 5 — дорогой, но с высоким потолком.
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            • Если ID не найден автоматически, проверьте список Players — там появится последняя запись.
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            • Auto Avatar можно выключить и загрузить портрет вручную позже.
+          </Typography>
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+
+  return <PageShell hero={hero} top={topSection} main={mainContent} aside={asideContent} />;
 }
+

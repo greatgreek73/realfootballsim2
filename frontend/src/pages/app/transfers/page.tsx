@@ -1,8 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { Alert, Box, Button, Card, CardContent, Stack, Typography } from "@mui/material";
+import { Alert, Button, Card, CardContent, Chip, Stack, Typography } from "@mui/material";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import GavelIcon from "@mui/icons-material/Gavel";
+import FilterAltIcon from "@mui/icons-material/FilterAlt";
+import BarChartIcon from "@mui/icons-material/BarChart";
 
+import PageShell from "@/components/ui/PageShell";
+import HeroBar from "@/components/ui/HeroBar";
 import { fetchTransferListings } from "@/api/transfers";
 import { ListingFilters, ListingFiltersState } from "@/components/transfers/ListingFilters";
 import { ListingTable, ListingsPageMeta } from "@/components/transfers/ListingTable";
@@ -121,7 +127,7 @@ export default function TransfersMarketPage() {
         }
       } catch (err: any) {
         if (!controller.signal.aborted) {
-          setError(err?.message ?? "Не удалось загрузить список трансферов.");
+          setError(err?.message ?? "Failed to load transfer listings.");
           setListings([]);
         }
       } finally {
@@ -174,56 +180,143 @@ export default function TransfersMarketPage() {
     });
   };
 
-  return (
-    <Box className="p-2 sm:p-4">
-      <Stack direction={{ xs: "column", lg: "row" }} spacing={2} justifyContent="space-between" alignItems="flex-start">
-        <Box>
-          <Typography variant="h1" component="h1" className="mb-0">
-            Transfer Market
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Browse active transfer listings, place bids, and monitor auction activity.
-          </Typography>
-        </Box>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-          <Button variant="contained" onClick={() => navigate("/transfers/create")}>
-            List a Player
-          </Button>
+  const appliedFilters = [
+    filters.status && `Status: ${filters.status}`,
+    filters.position && `Position: ${filters.position}`,
+    filters.minAge && `Min age: ${filters.minAge}`,
+    filters.maxAge && `Max age: ${filters.maxAge}`,
+    filters.minPrice && `Min price: ${filters.minPrice}`,
+    filters.maxPrice && `Max price: ${filters.maxPrice}`,
+  ].filter(Boolean);
+
+  const hero = (
+    <HeroBar
+      title="Transfer Market"
+      subtitle="Активные объявления клуба и глобальные аукционы"
+      tone="orange"
+      kpis={[
+        { label: "Listings", value: pageMeta.count || "-", icon: <TrendingUpIcon fontSize="small" /> },
+        {
+          label: "Page",
+          value: `${pageMeta.page}/${Math.max(pageMeta.totalPages, 1)}`,
+          icon: <BarChartIcon fontSize="small" />,
+        },
+        {
+          label: "Status",
+          value: loading ? "Loading" : error ? "Error" : "Ready",
+          icon: <GavelIcon fontSize="small" />,
+        },
+        {
+          label: "Filter",
+          value: filters.status || "all",
+          icon: <FilterAltIcon fontSize="small" />,
+        },
+      ]}
+      accent={
+        <Stack direction="row" spacing={1} flexWrap="wrap">
+          {appliedFilters.length === 0 ? (
+            <Chip
+              label="Filters: none"
+              size="small"
+              sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
+            />
+          ) : (
+            appliedFilters.map((item) => (
+              <Chip
+                key={item}
+                label={item}
+                size="small"
+                sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
+              />
+            ))
+          )}
         </Stack>
-      </Stack>
+      }
+      actions={
+        <Button variant="contained" onClick={() => navigate("/transfers/create")}>
+          List a Player
+        </Button>
+      }
+    />
+  );
 
-      {error && (
-        <Alert severity="error" className="mt-3">
-          {error}
-        </Alert>
-      )}
-
-      <Card className="mt-3">
+  const topSection = (
+    <Stack spacing={3}>
+      <Card>
         <CardContent>
-          <ListingFilters value={filters} onChange={setFilters} onApply={handleApplyFilters} onClear={handleClearFilters} loading={loading} />
+          <Typography variant="h5" component="h2">
+            Browse active listings
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Use filters to narrow by position, age, price range or status, then open any row to inspect full details.
+          </Typography>
+          {error && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {error}
+            </Alert>
+          )}
         </CardContent>
       </Card>
 
-      <Card className="mt-3">
+      <Card>
         <CardContent>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" className="mb-3">
-            <Typography variant="h5" component="h2">
-              Listings
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Total: {pageMeta.count}
-            </Typography>
-          </Stack>
-
-          <ListingTable
-            listings={listings}
+          <ListingFilters
+            value={filters}
+            onChange={setFilters}
+            onApply={handleApplyFilters}
+            onClear={handleClearFilters}
             loading={loading}
-            pageMeta={pageMeta}
-            onChangePage={(newPage) => updateSearchParams({ page: String(newPage) })}
-            onView={(id) => navigate(`/transfers/${id}`)}
           />
         </CardContent>
       </Card>
-    </Box>
+    </Stack>
   );
+
+  const mainContent: ReactNode = (
+    <Card>
+      <CardContent>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" className="mb-3">
+          <Typography variant="h5" component="h2">
+            Listings
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Total: {pageMeta.count}
+          </Typography>
+        </Stack>
+
+        <ListingTable
+          listings={listings}
+          loading={loading}
+          pageMeta={pageMeta}
+          onChangePage={(newPage) => updateSearchParams({ page: String(newPage) })}
+          onView={(id) => navigate(`/transfers/${id}`)}
+        />
+      </CardContent>
+    </Card>
+  );
+
+  const asideContent: ReactNode = (
+    <Card>
+      <CardContent>
+        <Typography variant="h6" gutterBottom>
+          Active filters
+        </Typography>
+        {appliedFilters.length === 0 ? (
+          <Typography variant="body2" color="text.secondary">
+            No filters applied.
+          </Typography>
+        ) : (
+          <Stack spacing={0.5}>
+            {appliedFilters.map((item) => (
+              <Typography key={item} variant="body2">
+                {item}
+              </Typography>
+            ))}
+          </Stack>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  return <PageShell hero={hero} top={topSection} main={mainContent} aside={asideContent} />;
 }

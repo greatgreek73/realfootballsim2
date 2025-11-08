@@ -1,8 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { ReactNode, useEffect, useMemo, useState } from "react";
+import { Link as RouterLink, useSearchParams } from "react-router-dom";
 
-import { Alert, Box, Button, Card, CardContent, Stack, Typography } from "@mui/material";
+import { Alert, Button, Card, CardContent, Chip, Stack, Typography } from "@mui/material";
+import HistoryEduIcon from "@mui/icons-material/HistoryEdu";
+import QueryStatsIcon from "@mui/icons-material/QueryStats";
+import FilterAltIcon from "@mui/icons-material/FilterAlt";
+import TimelineIcon from "@mui/icons-material/Timeline";
 
+import PageShell from "@/components/ui/PageShell";
+import HeroBar from "@/components/ui/HeroBar";
 import { fetchTransferHistory } from "@/api/transfers";
 import { HistoryFilters, HistoryFiltersState } from "@/components/transfers/HistoryFilters";
 import { HistoryTable, HistoryPageMeta } from "@/components/transfers/HistoryTable";
@@ -119,46 +125,132 @@ export default function TransferHistoryPage() {
     });
   };
 
-  return (
-    <Box className="p-2 sm:p-4">
-      <Typography variant="h1" component="h1" className="mb-2">
-        Transfer History
-      </Typography>
-      <Typography variant="body2" color="text.secondary">
-        Review completed transfers and filter them by season, club, or player.
-      </Typography>
+  const activeFilters = [
+    filters.seasonId && `Season: ${filters.seasonId}`,
+    filters.clubId && `Club: ${filters.clubId}`,
+    filters.playerId && `Player: ${filters.playerId}`,
+  ].filter(Boolean);
 
-      {error && (
-        <Alert severity="error" className="mt-3">
-          {error}
-        </Alert>
-      )}
+  const hero = (
+    <HeroBar
+      title="Transfer History"
+      subtitle="Завершённые сделки по сезонам, клубам и игрокам"
+      tone="blue"
+      kpis={[
+        { label: "Records", value: pageMeta.count || "-", icon: <HistoryEduIcon fontSize="small" /> },
+        { label: "Page", value: `${pageMeta.page}/${Math.max(pageMeta.totalPages, 1)}`, icon: <TimelineIcon fontSize="small" /> },
+        { label: "Status", value: loading ? "Loading" : error ? "Error" : "Ready", icon: <QueryStatsIcon fontSize="small" /> },
+        { label: "Filters", value: activeFilters.length || "0", icon: <FilterAltIcon fontSize="small" />, hint: activeFilters.join(" · ") || "None" },
+      ]}
+      accent={
+        <Stack direction="row" spacing={1} flexWrap="wrap">
+          {activeFilters.length === 0 ? (
+            <Chip
+              label="Filters: none"
+              size="small"
+              sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
+            />
+          ) : (
+            activeFilters.map((item) => (
+              <Chip
+                key={item}
+                label={item}
+                size="small"
+                sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
+              />
+            ))
+          )}
+        </Stack>
+      }
+      actions={
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+          <Button component={RouterLink} to="/transfers" variant="outlined">
+            Market
+          </Button>
+          <Button component={RouterLink} to="/transfers/my" variant="contained">
+            My Deals
+          </Button>
+        </Stack>
+      }
+    />
+  );
 
-      <Card className="mt-3">
+  const topSection = (
+    <Stack spacing={3}>
+      <Card>
         <CardContent>
-          <HistoryFilters value={filters} onChange={setFilters} onApply={handleApplyFilters} onClear={handleClearFilters} loading={loading} />
+          <Typography variant="h5" component="h2">
+            Review completed deals
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Filter by season, club or player to inspect the transfer market trends across your universe.
+          </Typography>
+          {error && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {error}
+            </Alert>
+          )}
         </CardContent>
       </Card>
 
-      <Card className="mt-3">
+      <Card>
         <CardContent>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" className="mb-3">
-            <Typography variant="h5" component="h2">
-              Completed Deals
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Total: {pageMeta.count}
-            </Typography>
-          </Stack>
-
-          <HistoryTable
-            entries={records}
+          <HistoryFilters
+            value={filters}
+            onChange={setFilters}
+            onApply={handleApplyFilters}
+            onClear={handleClearFilters}
             loading={loading}
-            pageMeta={pageMeta}
-            onChangePage={(newPage) => updateSearchParams({ page: String(newPage) })}
           />
         </CardContent>
       </Card>
-    </Box>
+    </Stack>
   );
+
+  const mainContent: ReactNode = (
+    <Card>
+      <CardContent>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" className="mb-3">
+          <Typography variant="h5" component="h2">
+            Completed Deals
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Total: {pageMeta.count}
+          </Typography>
+        </Stack>
+
+        <HistoryTable
+          entries={records}
+          loading={loading}
+          pageMeta={pageMeta}
+          onChangePage={(newPage) => updateSearchParams({ page: String(newPage) })}
+        />
+      </CardContent>
+    </Card>
+  );
+
+  const asideContent: ReactNode = (
+    <Card>
+      <CardContent>
+        <Typography variant="h6" gutterBottom>
+          Active filters
+        </Typography>
+        {activeFilters.length === 0 ? (
+          <Typography variant="body2" color="text.secondary">
+            Showing all records.
+          </Typography>
+        ) : (
+          <Stack spacing={0.5}>
+            {activeFilters.map((item) => (
+              <Typography key={item} variant="body2">
+                {item}
+              </Typography>
+            ))}
+          </Stack>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  return <PageShell hero={hero} top={topSection} main={mainContent} aside={asideContent} />;
 }

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { Alert, Box, Grid, Typography } from "@mui/material";
+import { Alert, Button, Grid, Stack, Typography } from "@mui/material";
+import PageShell from "@/components/ui/PageShell";
+import HeroBar from "@/components/ui/HeroBar";
 
 import {
   ClubActions,
@@ -11,6 +13,7 @@ import {
   ClubStats,
 } from "./sections";
 import type { ClubActivityItem, ClubFixture } from "./sections";
+import { Link as RouterLink } from "react-router-dom";
 import { fetchMatches, MatchSummary } from "@/api/matches";
 
 type ClubSummary = {
@@ -57,6 +60,15 @@ export default function MyClubPage() {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
     return dateFormatter.format(date);
+  };
+
+  const formatMetric = (value?: number) => {
+    if (typeof value !== "number" || Number.isNaN(value)) return "—";
+    try {
+      return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(value);
+    } catch {
+      return String(value);
+    }
   };
 
   const buildFixture = (match: MatchSummary, clubId: number): ClubFixture => {
@@ -133,56 +145,78 @@ export default function MyClubPage() {
     };
   }, []);
 
-  // TODO: Wire upcoming fixtures, activity feed, and finance trends once the corresponding APIs are available.
-  return (
-    <Box className="p-2 sm:p-4">
-      {error && (
-        <Alert severity="error" className="mb-3">
-          {error}
-        </Alert>
-      )}
+  const heroActions = (
+    <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+      <Button component={RouterLink} to="/my-club/players" size="small" variant="outlined">
+        Squad
+      </Button>
+      <Button component={RouterLink} to="/transfers" size="small" variant="contained">
+        Transfers
+      </Button>
+    </Stack>
+  );
 
-      <Grid container spacing={5}>
-        <Grid container spacing={2.5} className="w-full" size={12}>
-          <Grid size={{ xs: 12, md: "grow" }}>
-            <Typography variant="h1" component="h1" className="mb-0">
-              {club?.name ?? "My Club"}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {club ? [club.country, club.league].filter(Boolean).join(" - ") : "Welcome back!"}
-            </Typography>
-          </Grid>
-        </Grid>
+  const hero = (
+    <HeroBar
+      title={club?.name ?? "My Club"}
+      tone="green"
+      kpis={[
+        { label: "Tokens", value: formatMetric(club?.tokens) },
+        { label: "Funds", value: formatMetric(club?.money) },
+        { label: "Status", value: club?.status ?? "—" },
+        { label: "League", value: club?.league ?? "—" },
+      ]}
+      actions={heroActions}
+    />
+  );
 
-        <Grid container size={12} spacing={2.5}>
-          <Grid size={{ lg: 8, xs: 12 }}>
-            <ClubBanner club={club} loading={loading} />
-          </Grid>
-          <Grid size={{ lg: 4, xs: 12 }}>
-            <ClubActions club={club} loading={loading} />
-          </Grid>
-        </Grid>
+  const alertSection = error ? <Alert severity="error">{error}</Alert> : undefined;
 
-        <Grid container size={12} spacing={2.5}>
-          <Grid size={{ lg: 8, xs: 12 }}>
-            <Grid container size={12} spacing={2.5}>
-              <ClubStats club={club} loading={loading} />
-            </Grid>
-          </Grid>
-          <Grid size={{ lg: 4, xs: 12 }}>
-            <ClubActivity loading={loading || matchesLoading} items={recentActivity} error={matchesError} />
-          </Grid>
-        </Grid>
-
-        <Grid container size={12} spacing={2.5}>
-          <Grid size={{ lg: 6, xs: 12 }}>
-            <ClubSchedule loading={loading || matchesLoading} fixtures={upcomingFixtures} error={matchesError} />
-          </Grid>
-          <Grid size={{ lg: 6, xs: 12 }}>
-            <ClubFinancePlaceholder loading={loading} />
-          </Grid>
+  const mainContent = (
+    <Stack spacing={3}>
+      <Grid container spacing={2.5}>
+        <Grid size={{ xs: 12 }}>
+          <ClubBanner club={club} loading={loading} />
         </Grid>
       </Grid>
-    </Box>
+
+      <Grid container size={12} spacing={2.5}>
+        <ClubStats club={club} loading={loading} />
+      </Grid>
+
+      <Grid container spacing={2.5}>
+        <Grid size={{ xs: 12 }}>
+          <ClubSchedule loading={loading || matchesLoading} fixtures={upcomingFixtures} error={matchesError} />
+        </Grid>
+      </Grid>
+    </Stack>
+  );
+
+  const asideContent = (
+    <Stack spacing={3}>
+      <ClubActions club={club} loading={loading} />
+      <ClubActivity loading={loading || matchesLoading} items={recentActivity} error={matchesError} />
+      <ClubFinancePlaceholder loading={loading} />
+    </Stack>
+  );
+
+  const header = (
+    <Stack spacing={0.5}>
+      <Typography variant="body2" color="text.secondary">
+        {club ? [club.country, club.league].filter(Boolean).join(" • ") : "Welcome back!"}
+      </Typography>
+    </Stack>
+  );
+
+  // TODO: Wire upcoming fixtures, activity feed, and finance trends once the corresponding APIs are available.
+  return (
+    <PageShell
+      hero={hero}
+      header={header}
+      top={alertSection}
+      main={mainContent}
+      aside={asideContent}
+      bottomSplit="67-33"
+    />
   );
 }

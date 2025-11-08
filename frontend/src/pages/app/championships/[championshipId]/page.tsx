@@ -18,6 +18,10 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import TimelineIcon from "@mui/icons-material/Timeline";
+import GroupsIcon from "@mui/icons-material/Groups";
+import ScheduleIcon from "@mui/icons-material/Schedule";
 
 import {
   ChampionshipMatchesList,
@@ -26,6 +30,8 @@ import {
 import { ChampionshipStandingsTable } from "@/features/tournaments/components/ChampionshipStandingsTable";
 import { useChampionshipDetail } from "@/hooks/tournaments/useChampionshipDetail";
 import { ChampionshipMatchSummary } from "@/types/tournaments";
+import PageShell from "@/components/ui/PageShell";
+import HeroBar from "@/components/ui/HeroBar";
 
 type ChampionshipTabs = "standings" | "fixtures" | "calendar";
 
@@ -110,161 +116,228 @@ export default function ChampionshipDetailPage() {
     return <Alert severity="info">Championship not found.</Alert>;
   }
 
-  return (
-    <Stack spacing={3}>
+  const heroActions = (
+    <ButtonGroup variant="outlined" size="small">
+      <Button variant={tab === "standings" ? "contained" : "outlined"} onClick={() => setTab("standings")}>
+        Table
+      </Button>
+      <Button variant={tab === "fixtures" ? "contained" : "outlined"} onClick={() => setTab("fixtures")}>
+        Matches
+      </Button>
+      <Button variant={tab === "calendar" ? "contained" : "outlined"} onClick={() => setTab("calendar")}>
+        Calendar
+      </Button>
+    </ButtonGroup>
+  );
+
+  const statusLabel =
+    detail.championship.status === "pending"
+      ? "Not started"
+      : detail.championship.status === "in_progress"
+      ? "In progress"
+      : "Finished";
+  const roundSummary = roundFilter === "all" ? "All rounds" : `Round ${roundFilter}`;
+  const statusSummary = statusFilter === "all" ? "All statuses" : MATCH_STATUS_LABELS[statusFilter] ?? statusFilter;
+
+  const hero = (
+    <HeroBar
+      title={detail.championship.name}
+      subtitle={`${detail.championship.league.name} · ${detail.championship.season.name}`}
+      tone="orange"
+      kpis={[
+        { label: "Season", value: detail.championship.season.name, icon: <CalendarMonthIcon fontSize="small" /> },
+        {
+          label: "Status",
+          value: statusLabel,
+          icon: <TimelineIcon fontSize="small" />,
+          hint: detail.championship.status === "in_progress" ? "Live competition" : statusSummary,
+        },
+        {
+          label: "Window",
+          value: `${detail.championship.start_date} → ${detail.championship.end_date}`,
+          icon: <ScheduleIcon fontSize="small" />,
+        },
+        {
+          label: "Teams",
+          value: standings.length || detail.championship.league.max_teams,
+          icon: <GroupsIcon fontSize="small" />,
+        },
+      ]}
+      accent={
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1} flexWrap="wrap">
+          <Chip
+            label={`Round filter: ${roundSummary}`}
+            size="small"
+            sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
+          />
+          <Chip
+            label={`Status filter: ${statusSummary}`}
+            size="small"
+            sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
+          />
+        </Stack>
+      }
+      actions={heroActions}
+    />
+  );
+
+  const filtersCard =
+    tab === "fixtures" ? (
       <Card>
         <CardContent>
-          <Stack
-            direction={{ xs: "column", md: "row" }}
-            spacing={2}
-            alignItems={{ xs: "flex-start", md: "center" }}
-            justifyContent="space-between"
-          >
-            <Box>
-              <Typography variant="h4" sx={{ mb: 1 }}>
-                {detail.championship.name}
+          <Stack spacing={2}>
+            <div>
+              <Typography variant="subtitle1" fontWeight={600}>
+                Fixture filters
               </Typography>
-              <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                <Chip
-                  size="small"
-                  color={
-                    detail.championship.status === "finished"
-                      ? "default"
-                      : detail.championship.status === "in_progress"
-                      ? "success"
-                      : "warning"
-                  }
-                  label={
-                    detail.championship.status === "pending"
-                      ? "Not started"
-                      : detail.championship.status === "in_progress"
-                      ? "In progress"
-                      : "Finished"
-                  }
-                />
-                <Typography variant="body2" color="text.secondary">
-                  {detail.championship.league.country} - {detail.championship.league.name}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {detail.championship.season.name}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {detail.championship.start_date} - {detail.championship.end_date}
-                </Typography>
-              </Stack>
-              {detail.championship.match_time && (
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
-                  Default kick-off time: {detail.championship.match_time}
-                </Typography>
-              )}
-            </Box>
+              <Typography variant="body2" color="text.secondary">
+                Ограничьте список по туру и статусу, чтобы быстрее найти нужный матч
+              </Typography>
+            </div>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel id="round-filter-label">Round</InputLabel>
+                <Select
+                  labelId="round-filter-label"
+                  value={roundFilter}
+                  label="Round"
+                  onChange={(event) => setRoundFilter(event.target.value)}
+                >
+                  <MenuItem value="all">All rounds</MenuItem>
+                  {availableRounds.map((round) => (
+                    <MenuItem key={round} value={round}>
+                      Round {round}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
 
-            <ButtonGroup variant="outlined" size="small" sx={{ alignSelf: { xs: "stretch", md: "flex-end" } }}>
-              <Button
-                variant={tab === "standings" ? "contained" : "outlined"}
-                onClick={() => setTab("standings")}
-              >
-                Table
-              </Button>
-              <Button
-                variant={tab === "fixtures" ? "contained" : "outlined"}
-                onClick={() => setTab("fixtures")}
-              >
-                Matches
-              </Button>
-              <Button
-                variant={tab === "calendar" ? "contained" : "outlined"}
-                onClick={() => setTab("calendar")}
-              >
-                Calendar
-              </Button>
-            </ButtonGroup>
+              <FormControl size="small" sx={{ minWidth: 180 }}>
+                <InputLabel id="status-filter-label">Status</InputLabel>
+                <Select
+                  labelId="status-filter-label"
+                  value={statusFilter}
+                  label="Status"
+                  onChange={(event) => setStatusFilter(event.target.value)}
+                >
+                  <MenuItem value="all">All statuses</MenuItem>
+                  {availableStatuses.map((status) => {
+                    const label = MATCH_STATUS_LABELS[status] ?? status;
+                    return (
+                      <MenuItem key={status} value={status}>
+                        {label}
+                      </MenuItem>
+                    );
+                  })}
+                </Select>
+              </FormControl>
+            </Stack>
           </Stack>
+        </CardContent>
+      </Card>
+    ) : null;
+
+  const asideContent = (
+    <Stack spacing={2}>
+      <Card>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            League Details
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            League: {detail.championship.league.name}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Country: {detail.championship.league.country}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Division: {detail.championship.league.level}
+          </Typography>
+          {detail.championship.match_time && (
+            <Typography variant="body2" color="text.secondary">
+              Kick-off (UTC): {detail.championship.match_time}
+            </Typography>
+          )}
         </CardContent>
       </Card>
 
       <Card>
         <CardContent>
-          {tab === "standings" && <ChampionshipStandingsTable standings={standings} />}
-          {tab === "fixtures" && (
-            <Stack spacing={2}>
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <FormControl size="small" sx={{ minWidth: 160 }}>
-                  <InputLabel id="round-filter-label">Round</InputLabel>
-                  <Select
-                    labelId="round-filter-label"
-                    value={roundFilter}
-                    label="Round"
-                    onChange={(event) => setRoundFilter(event.target.value)}
-                  >
-                    <MenuItem value="all">All rounds</MenuItem>
-                    {availableRounds.map((round) => (
-                      <MenuItem key={round} value={round}>
-                        Round {round}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                <FormControl size="small" sx={{ minWidth: 180 }}>
-                  <InputLabel id="status-filter-label">Status</InputLabel>
-                  <Select
-                    labelId="status-filter-label"
-                    value={statusFilter}
-                    label="Status"
-                    onChange={(event) => setStatusFilter(event.target.value)}
-                  >
-                    <MenuItem value="all">All statuses</MenuItem>
-                    {availableStatuses.map((status) => {
-                      const label = MATCH_STATUS_LABELS[status] ?? status;
-                      return (
-                        <MenuItem key={status} value={status}>
-                          {label}
-                        </MenuItem>
-                      );
-                    })}
-                  </Select>
-                </FormControl>
-              </Stack>
-              <ChampionshipMatchesList matches={filteredMatches} />
-            </Stack>
-          )}
-          {tab === "calendar" && (
-            <Stack spacing={2}>
-              {groupedMatches.length === 0 ? (
-                <Typography variant="body2">No fixtures for the selected filters.</Typography>
-              ) : (
-                groupedMatches.map((group) => (
-                  <Stack key={group.date} spacing={1.5}>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      {group.date}
-                    </Typography>
-                    <Stack spacing={1}>
-                      {group.matches.map((match) => (
-                        <Stack
-                          key={match.id}
-                          direction={{ xs: "column", sm: "row" }}
-                          spacing={2}
-                          alignItems={{ xs: "flex-start", sm: "center" }}
-                        >
-                          <Typography flex={1}>
-                            {match.home_team.name} - {match.away_team.name}
-                          </Typography>
-                          <Typography width={120}>{match.status}</Typography>
-                          <Typography width={80} textAlign="right">
-                            {match.score ? `${match.score.home}:${match.score.away}` : "—"}
-                          </Typography>
-                        </Stack>
-                      ))}
-                    </Stack>
-                    <Divider />
-                  </Stack>
-                ))
-              )}
+          <Typography variant="h6" gutterBottom>
+            Upcoming fixtures
+          </Typography>
+          {matchesList.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              No fixtures available.
+            </Typography>
+          ) : (
+            <Stack spacing={1}>
+              {matchesList.slice(0, 4).map((match) => (
+                <Box key={match.id}>
+                  <Typography variant="body2">
+                    {match.home_team.name} vs {match.away_team.name}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {match.date}
+                  </Typography>
+                </Box>
+              ))}
             </Stack>
           )}
         </CardContent>
       </Card>
     </Stack>
+  );
+
+  return (
+    <PageShell
+      hero={hero}
+      top={filtersCard ?? undefined}
+      main={
+        <Card>
+          <CardContent>
+            {tab === "standings" && <ChampionshipStandingsTable standings={standings} />}
+
+            {tab === "fixtures" && <ChampionshipMatchesList matches={filteredMatches} />}
+
+            {tab === "calendar" && (
+              <Stack spacing={2}>
+                {groupedMatches.length === 0 ? (
+                  <Typography variant="body2">No fixtures for the selected filters.</Typography>
+                ) : (
+                  groupedMatches.map((group) => (
+                    <Stack key={group.date} spacing={1.5}>
+                      <Typography variant="subtitle2" color="text.secondary">
+                        {group.date}
+                      </Typography>
+                      <Stack spacing={1}>
+                        {group.matches.map((match) => (
+                          <Stack
+                            key={match.id}
+                            direction={{ xs: "column", sm: "row" }}
+                            spacing={2}
+                            alignItems={{ xs: "flex-start", sm: "center" }}
+                          >
+                            <Typography flex={1}>
+                              {match.home_team.name} - {match.away_team.name}
+                            </Typography>
+                            <Typography width={120}>{match.status}</Typography>
+                            <Typography width={80} textAlign="right">
+                              {match.score ? `${match.score.home}:${match.score.away}` : "-"}
+                            </Typography>
+                          </Stack>
+                        ))}
+                      </Stack>
+                      <Divider />
+                    </Stack>
+                  ))
+                )}
+              </Stack>
+            )}
+          </CardContent>
+        </Card>
+      }
+      aside={asideContent}
+    />
   );
 }

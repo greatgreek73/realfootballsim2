@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -7,15 +7,21 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   CircularProgress,
-  Grid,
   List,
   ListItem,
   ListItemText,
   Stack,
   Typography,
 } from "@mui/material";
+import Inventory2Icon from "@mui/icons-material/Inventory2";
+import HandshakeIcon from "@mui/icons-material/Handshake";
+import HistoryToggleOffIcon from "@mui/icons-material/HistoryToggleOff";
+import PendingActionsIcon from "@mui/icons-material/PendingActions";
 
+import PageShell from "@/components/ui/PageShell";
+import HeroBar from "@/components/ui/HeroBar";
 import {
   acceptTransferOffer,
   cancelTransferOffer,
@@ -99,92 +105,151 @@ export default function MyClubTransfersPage() {
   const handleRejectOffer = (offer: TransferOfferSummary) =>
     runOfferAction(`reject-${offer.id}`, () => rejectTransferOffer(offer.id), "Offer rejected.");
 
-  return (
-    <Box className="p-2 sm:p-4">
-      <Stack direction={{ xs: "column", md: "row" }} spacing={2} justifyContent="space-between" alignItems="flex-start">
-        <Box>
-          <Typography variant="h1" component="h1" className="mb-0">
-            My Transfers Dashboard
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Track your listings, incoming offers, and recent transfer history.
-          </Typography>
-        </Box>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-          <Button variant="outlined" onClick={load} disabled={loading}>
-            Refresh
-          </Button>
-          <Button variant="contained" onClick={() => navigate("/transfers/create")}>
-            Create Listing
-          </Button>
+  const heroActions = (
+    <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+      <Button variant="outlined" onClick={load} disabled={loading}>
+        Refresh
+      </Button>
+      <Button variant="contained" onClick={() => navigate("/transfers/create")}>
+        Create Listing
+      </Button>
+    </Stack>
+  );
+
+  const hero = (
+    <HeroBar
+      title="My Transfers"
+      subtitle="Управляйте объявлениями клуба и входящими предложениями"
+      tone="purple"
+      kpis={[
+        {
+          label: "Listings",
+          value: dashboard ? dashboard.active_listings.length : "—",
+          icon: <Inventory2Icon fontSize="small" />,
+        },
+        {
+          label: "Offers",
+          value: dashboard ? dashboard.pending_offers.length : "—",
+          icon: <HandshakeIcon fontSize="small" />,
+        },
+        {
+          label: "History",
+          value: dashboard ? dashboard.history.length : "—",
+          icon: <HistoryToggleOffIcon fontSize="small" />,
+        },
+        {
+          label: "Status",
+          value: loading ? "Loading" : error ? "Error" : "Ready",
+          icon: <PendingActionsIcon fontSize="small" />,
+        },
+      ]}
+      accent={
+        dashboard ? (
+          <Stack direction="row" spacing={1} flexWrap="wrap">
+            <Chip
+              label={`Players to list: ${dashboard.players_not_listed.length}`}
+              size="small"
+              sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
+            />
+            <Chip
+              label={`Offers pending: ${dashboard.pending_offers.length}`}
+              size="small"
+              sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
+            />
+          </Stack>
+        ) : null
+      }
+      actions={heroActions}
+    />
+  );
+
+  const topSection = (
+    <Card>
+      <CardContent>
+        <Stack spacing={2}>
+          <Box>
+            <Typography variant="h5" component="h1" gutterBottom>
+              My Transfers Dashboard
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Track your listings, incoming offers, and recent transfer history.
+            </Typography>
+          </Box>
+          {feedback && (
+            <Alert severity={feedback.severity} onClose={() => setFeedback(null)}>
+              {feedback.message}
+            </Alert>
+          )}
+          {error && <Alert severity="error">{error}</Alert>}
         </Stack>
+      </CardContent>
+    </Card>
+  );
+
+  let mainContent: ReactNode;
+  if (loading) {
+    mainContent = (
+      <Card>
+        <CardContent>
+          <Box className="flex w-full items-center justify-center p-6">
+            <CircularProgress />
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  } else if (!dashboard) {
+    mainContent = <Alert severity="info">No transfer data available.</Alert>;
+  } else {
+    mainContent = (
+      <Stack spacing={3}>
+        <Card>
+          <CardContent>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" className="mb-3">
+              <Typography variant="h5" component="h2">
+                Active Listings
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Total: {dashboard.active_listings.length}
+              </Typography>
+            </Stack>
+            <ListingTable
+              listings={dashboard.active_listings}
+              loading={loading}
+              pageMeta={listingsMeta}
+              onChangePage={() => undefined}
+              onView={(id) => navigate(`/transfers/${id}`)}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" className="mb-3">
+              <Typography variant="h5" component="h2">
+                Pending Offers
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Total: {dashboard.pending_offers.length}
+              </Typography>
+            </Stack>
+            <OffersTable
+              offers={dashboard.pending_offers}
+              busyKey={busyKey}
+              onCancel={handleCancelOffer}
+              onAccept={handleAcceptOffer}
+              onReject={handleRejectOffer}
+            />
+          </CardContent>
+        </Card>
       </Stack>
+    );
+  }
 
-      {feedback && (
-        <Alert severity={feedback.severity} className="mt-3" onClose={() => setFeedback(null)}>
-          {feedback.message}
-        </Alert>
-      )}
-
-      {error && (
-        <Alert severity="error" className="mt-3">
-          {error}
-        </Alert>
-      )}
-
-      {loading ? (
-        <Box className="flex w-full items-center justify-center p-6">
-          <CircularProgress />
-        </Box>
-      ) : !dashboard ? (
-        <Alert severity="info" className="mt-3">
-          No transfer data available.
-        </Alert>
-      ) : (
-        <Grid container spacing={3} className="mt-2">
-          <Grid item xs={12} lg={6}>
-            <Card>
-              <CardContent>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" className="mb-3">
-                  <Typography variant="h5" component="h2">
-                    Active Listings
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Total: {dashboard.active_listings.length}
-                  </Typography>
-                </Stack>
-                <ListingTable
-                  listings={dashboard.active_listings}
-                  loading={loading}
-                  pageMeta={listingsMeta}
-                  onChangePage={() => undefined}
-                  onView={(id) => navigate(`/transfers/${id}`)}
-                />
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} lg={6}>
-            <Card>
-              <CardContent>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" className="mb-3">
-                  <Typography variant="h5" component="h2">
-                    Pending Offers
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Total: {dashboard.pending_offers.length}
-                  </Typography>
-                </Stack>
-                <OffersTable
-                  offers={dashboard.pending_offers}
-                  busyKey={busyKey}
-                  onCancel={handleCancelOffer}
-                  onAccept={handleAcceptOffer}
-                  onReject={handleRejectOffer}
-                />
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} lg={6}>
+  const asideContent: ReactNode | undefined =
+    loading || !dashboard
+      ? undefined
+      : (
+          <Stack spacing={3}>
             <Card>
               <CardContent>
                 <Typography variant="h5" component="h2" className="mb-3">
@@ -206,8 +271,7 @@ export default function MyClubTransfersPage() {
                 )}
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} lg={6}>
+
             <Card>
               <CardContent>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" className="mb-3">
@@ -218,12 +282,16 @@ export default function MyClubTransfersPage() {
                     Entries: {dashboard.history.length}
                   </Typography>
                 </Stack>
-                <HistoryTable entries={dashboard.history} loading={loading} pageMeta={historyMeta} onChangePage={() => undefined} />
+                <HistoryTable
+                  entries={dashboard.history}
+                  loading={loading}
+                  pageMeta={historyMeta}
+                  onChangePage={() => undefined}
+                />
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
-      )}
-    </Box>
-  );
+          </Stack>
+        );
+
+  return <PageShell hero={hero} top={topSection} main={mainContent} aside={asideContent} />;
 }
