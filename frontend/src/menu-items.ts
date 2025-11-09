@@ -54,6 +54,13 @@ export const leftMenuItems: MenuItem[] = [
       { id: "transfers-history", label: "History", href: "/transfers/history" },
     ],
   },
+  {
+    id: "finance",
+    icon: "NiStructure",
+    label: "Finance",
+    color: "text-primary",
+    href: "/finance",
+  },
 ];
 
 export const leftMenuBottomItems: MenuItem[] = [
