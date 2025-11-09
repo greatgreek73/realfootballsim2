@@ -1,5 +1,4 @@
 import { MenuItem } from "@/types/types";
-import { DEMO_FULL_ITEMS } from "@/menu-demo.generated";
 
 export const leftMenuItems: MenuItem[] = [
   {
@@ -24,30 +23,7 @@ export const leftMenuItems: MenuItem[] = [
     href: "/single-menu",
   },
 
-  // --- ���� ࠧ���: Demo (��࠭��� �㯫������ 蠡����) ---
-  {
-    id: "demo",
-    icon: "NiHome",
-    label: "Demo",
-    color: "text-primary",
-    href: "/dashboards/default",
-    children: [
-      // ������塞 ⮫쪮 ॠ�쭮 �������騥 �����쭮 ��࠭��� ����
-      { id: "demo-dashboard-visual", label: "Dashboards: Visual", href: "/dashboards/visual" },
-      { id: "demo-ui-avatar", label: "UI: Avatar", href: "/ui/data-display/avatar" },
-      { id: "demo-docs-intro", label: "Docs: Introduction", href: "/docs/welcome/introduction" },
-    ],
-  },
-  {
-    id: "demo-full",
-    icon: "NiLayers",
-    label: "Demo (Full)",
-    color: "text-primary",
-    href: "/dashboards/default",
-    children: DEMO_FULL_ITEMS,
-  },
-
-  {
+    {
     id: "external-link",
     icon: "NiArrowUpRightSquare",
     label: "menu-external-link",

@@ -1,5 +1,4 @@
 import { MenuItem } from "@/types/types";
-import { DEMO_FULL_ITEMS } from "@/menu-demo.generated";
 
 export const leftMenuItems: MenuItem[] = [
   {
@@ -61,25 +60,6 @@ export const leftMenuItems: MenuItem[] = [
     label: "menu-single-menu",
     color: "text-primary",
     href: "/single-menu",
-  },
-
-  {
-    id: "demo",
-    icon: "NiHome",
-    label: "Demo",
-    color: "text-primary",
-    children: [
-      { id: "demo-dashboard-visual", label: "Dashboards: Visual", href: "/dashboards/visual" },
-      { id: "demo-ui-avatar", label: "UI: Avatar", href: "/ui/data-display/avatar" },
-      { id: "demo-docs-intro", label: "Docs: Introduction", href: "/docs/welcome/introduction" },
-    ],
-  },
-  {
-    id: "demo-full",
-    icon: "NiStructure",
-    label: "Demo (Full)",
-    color: "text-primary",
-    children: DEMO_FULL_ITEMS,
   },
 
   {

@@ -2,7 +2,6 @@ import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { leftMenuBottomItems, leftMenuItems } from "@/menu-items";
-import DemoRouter from "@/router/DemoRouter";
 import AppLayout from "@/pages/app/layout";
 import AuthLayout from "@/pages/auth/layout";
 import Loading from "@/pages/loading.tsx";
@@ -32,15 +31,9 @@ const lazyLoad = (path: string) => {
   );
 };
 
-// Menu entries that should be handled by the demo router
-const DEMO_PREFIXES = ["/dashboards/", "/ui/", "/apps/", "/forms/", "/tables/", "/charts/", "/docs/"];
-
 const generateRoutesFromMenuItems = (menuItems: MenuItem[]): React.ReactElement[] =>
   menuItems.flatMap((item: MenuItem) => {
     if (item.isExternalLink || !item.href) return [];
-    if (DEMO_PREFIXES.some((prefix) => item.href!.startsWith(prefix))) {
-      return item.children?.length ? generateRoutesFromMenuItems(item.children) : [];
-    }
     const routes: React.ReactElement[] = [
       <Route key={item.id} path={item.href} element={lazyLoad(item.href)} />,
     ];
@@ -95,16 +88,6 @@ const AppRoutes = () => (
       {mainRoutes}
       {bottomRoutes}
 
-      {/* Demo router for template bundles */}
-      <Route path="/dashboards/*" element={<DemoRouter />} />
-      <Route path="/ui/*" element={<DemoRouter />} />
-      <Route path="/apps/*" element={<DemoRouter />} />
-      <Route path="/forms/*" element={<DemoRouter />} />
-      <Route path="/tables/*" element={<DemoRouter />} />
-      <Route path="/charts/*" element={<DemoRouter />} />
-      <Route path="/docs/*" element={<DemoRouter />} />
-      <Route path="/pages/*" element={<DemoRouter />} />
-      <Route path="/menu-levels/*" element={<DemoRouter />} />
     </Route>
 
     {/* Auth */}
