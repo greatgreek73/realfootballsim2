@@ -116,6 +116,22 @@ export default function MyClubTransfersPage() {
     </Stack>
   );
 
+  const heroSummary =
+    dashboard && (
+      <Stack direction="row" spacing={1} flexWrap="wrap">
+        <Chip
+          label={`Players to list: ${dashboard.players_not_listed.length}`}
+          size="small"
+          sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
+        />
+        <Chip
+          label={`Offers pending: ${dashboard.pending_offers.length}`}
+          size="small"
+          sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
+        />
+      </Stack>
+    );
+
   const hero = (
     <HeroBar
       title="My Transfers"
@@ -143,22 +159,6 @@ export default function MyClubTransfersPage() {
           icon: <PendingActionsIcon fontSize="small" />,
         },
       ]}
-      accent={
-        dashboard ? (
-          <Stack direction="row" spacing={1} flexWrap="wrap">
-            <Chip
-              label={`Players to list: ${dashboard.players_not_listed.length}`}
-              size="small"
-              sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
-            />
-            <Chip
-              label={`Offers pending: ${dashboard.pending_offers.length}`}
-              size="small"
-              sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
-            />
-          </Stack>
-        ) : null
-      }
       actions={heroActions}
     />
   );
@@ -174,6 +174,12 @@ export default function MyClubTransfersPage() {
             <Typography variant="body2" color="text.secondary">
               Track your listings, incoming offers, and recent transfer history.
             </Typography>
+            {heroSummary && (
+              <Stack spacing={1} mt={1.5}>
+                <Typography variant="subtitle2">Snapshot</Typography>
+                {heroSummary}
+              </Stack>
+            )}
           </Box>
           {feedback && (
             <Alert severity={feedback.severity} onClose={() => setFeedback(null)}>

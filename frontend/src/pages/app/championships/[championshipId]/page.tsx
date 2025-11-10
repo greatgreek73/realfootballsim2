@@ -138,6 +138,20 @@ export default function ChampionshipDetailPage() {
       : "Finished";
   const roundSummary = roundFilter === "all" ? "All rounds" : `Round ${roundFilter}`;
   const statusSummary = statusFilter === "all" ? "All statuses" : MATCH_STATUS_LABELS[statusFilter] ?? statusFilter;
+  const heroFilterSummary = (
+    <Stack direction={{ xs: "column", sm: "row" }} spacing={1} flexWrap="wrap">
+      <Chip
+        label={`Round filter: ${roundSummary}`}
+        size="small"
+        sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
+      />
+      <Chip
+        label={`Status filter: ${statusSummary}`}
+        size="small"
+        sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
+      />
+    </Stack>
+  );
 
   const hero = (
     <HeroBar
@@ -163,20 +177,6 @@ export default function ChampionshipDetailPage() {
           icon: <GroupsIcon fontSize="small" />,
         },
       ]}
-      accent={
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1} flexWrap="wrap">
-          <Chip
-            label={`Round filter: ${roundSummary}`}
-            size="small"
-            sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
-          />
-          <Chip
-            label={`Status filter: ${statusSummary}`}
-            size="small"
-            sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
-          />
-        </Stack>
-      }
       actions={heroActions}
     />
   );
@@ -237,6 +237,20 @@ export default function ChampionshipDetailPage() {
       </Card>
     ) : null;
 
+  const topSection = (
+    <Stack spacing={3}>
+      <Card>
+        <CardContent>
+          <Stack spacing={1}>
+            <Typography variant="subtitle2">Current filters</Typography>
+            {heroFilterSummary}
+          </Stack>
+        </CardContent>
+      </Card>
+      {filtersCard}
+    </Stack>
+  );
+
   const asideContent = (
     <Stack spacing={2}>
       <Card>
@@ -292,7 +306,7 @@ export default function ChampionshipDetailPage() {
   return (
     <PageShell
       hero={hero}
-      top={filtersCard ?? undefined}
+      top={topSection}
       main={
         <Card>
           <CardContent>

@@ -190,6 +190,13 @@ export default function CreatePlayerPage() {
     }
   }
 
+  const heroBadges = (
+    <Stack direction="row" spacing={1} flexWrap="wrap">
+      <Chip label="Cost зависит от класса" size="small" sx={{ color: "white", bgcolor: "rgba(255,255,255,0.12)" }} />
+      <Chip label="Auto avatar создаёт портрет сразу" size="small" sx={{ color: "white", bgcolor: "rgba(255,255,255,0.12)" }} />
+    </Stack>
+  );
+
   const hero = (
     <HeroBar
       title="Create Player"
@@ -201,12 +208,6 @@ export default function CreatePlayerPage() {
         { label: "Auto avatar", value: autoAvatar ? "ON" : "OFF", icon: <AutoFixHighIcon fontSize="small" /> },
         { label: "State", value: loading ? "Loading" : submitting ? "Submitting" : "Ready", icon: <QueryBuilderIcon fontSize="small" /> },
       ]}
-      accent={
-        <Stack direction="row" spacing={1} flexWrap="wrap">
-          <Chip label="Cost зависит от класса" size="small" sx={{ color: "white", bgcolor: "rgba(255,255,255,0.12)" }} />
-          <Chip label="Auto avatar создаёт портрет сразу" size="small" sx={{ color: "white", bgcolor: "rgba(255,255,255,0.12)" }} />
-        </Stack>
-      }
       actions={
         <Button variant="contained" color="secondary" startIcon={<PersonAddAltIcon />} onClick={() => navigate("/my-club/players")}>
           Back to players
@@ -227,6 +228,10 @@ export default function CreatePlayerPage() {
           <Typography variant="body2" color="text.secondary">
             Выберите позицию и класс. После успешной генерации мы попробуем обнаружить нового игрока и открыть его профиль автоматически.
           </Typography>
+          <Stack spacing={1}>
+            <Typography variant="subtitle2">Советы</Typography>
+            {heroBadges}
+          </Stack>
         </Stack>
       </CardContent>
     </Card>

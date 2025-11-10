@@ -174,6 +174,19 @@ export default function MatchesPage() {
     return upcoming[0]?.match ?? null;
   }, [matches]);
 
+  const heroStatusSummary = (
+    <Stack direction="row" spacing={1} flexWrap="wrap">
+      {STATUS_ORDER.map((status) => (
+        <Chip
+          key={status}
+          label={`${STATUS_LABELS[status]}: ${statusSummary[status] ?? 0}`}
+          size="small"
+          sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
+        />
+      ))}
+    </Stack>
+  );
+
   const hero = (
     <HeroBar
       title="Matches Control"
@@ -185,18 +198,6 @@ export default function MatchesPage() {
         { label: "Page", value: `${page}/${totalPages}`, icon: <LoopIcon fontSize="small" /> },
         { label: "State", value: loading ? "Loading" : error ? "Error" : "Ready", icon: <EventAvailableIcon fontSize="small" /> },
       ]}
-      accent={
-        <Stack direction="row" spacing={1} flexWrap="wrap">
-          {STATUS_ORDER.map((status) => (
-            <Chip
-              key={status}
-              label={`${STATUS_LABELS[status]}: ${statusSummary[status] ?? 0}`}
-              size="small"
-              sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
-            />
-          ))}
-        </Stack>
-      }
       actions={heroActions}
     />
   );
@@ -213,6 +214,10 @@ export default function MatchesPage() {
               Browse upcoming and completed fixtures
             </Typography>
           </Box>
+          <Stack spacing={1}>
+            <Typography variant="subtitle2">Status overview</Typography>
+            {heroStatusSummary}
+          </Stack>
           {error && <Alert severity="error">{error}</Alert>}
           {actionError && <Alert severity="warning">{actionError}</Alert>}
         </Stack>

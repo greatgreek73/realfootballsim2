@@ -131,6 +131,27 @@ export default function TransferHistoryPage() {
     filters.playerId && `Player: ${filters.playerId}`,
   ].filter(Boolean);
 
+  const heroSummary = (
+    <Stack direction="row" spacing={1} flexWrap="wrap">
+      {activeFilters.length === 0 ? (
+        <Chip
+          label="Filters: none"
+          size="small"
+          sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
+        />
+      ) : (
+        activeFilters.map((item) => (
+          <Chip
+            key={item}
+            label={item}
+            size="small"
+            sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
+          />
+        ))
+      )}
+    </Stack>
+  );
+
   const hero = (
     <HeroBar
       title="Transfer History"
@@ -142,26 +163,6 @@ export default function TransferHistoryPage() {
         { label: "Status", value: loading ? "Loading" : error ? "Error" : "Ready", icon: <QueryStatsIcon fontSize="small" /> },
         { label: "Filters", value: activeFilters.length || "0", icon: <FilterAltIcon fontSize="small" />, hint: activeFilters.join(" · ") || "None" },
       ]}
-      accent={
-        <Stack direction="row" spacing={1} flexWrap="wrap">
-          {activeFilters.length === 0 ? (
-            <Chip
-              label="Filters: none"
-              size="small"
-              sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
-            />
-          ) : (
-            activeFilters.map((item) => (
-              <Chip
-                key={item}
-                label={item}
-                size="small"
-                sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
-              />
-            ))
-          )}
-        </Stack>
-      }
       actions={
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
           <Button component={RouterLink} to="/transfers" variant="outlined">
@@ -185,6 +186,10 @@ export default function TransferHistoryPage() {
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             Filter by season, club or player to inspect the transfer market trends across your universe.
           </Typography>
+          <Stack spacing={1.5} mt={2}>
+            <Typography variant="subtitle2">Filters overview</Typography>
+            {heroSummary}
+          </Stack>
           {error && (
             <Alert severity="error" sx={{ mt: 2 }}>
               {error}

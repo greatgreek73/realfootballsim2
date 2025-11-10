@@ -144,6 +144,19 @@ export default function CreateTransferListingPage() {
     }
   };
 
+  const heroDurations = (
+    <Stack direction="row" spacing={1} flexWrap="wrap">
+      {DURATION_OPTIONS.map((option) => (
+        <Chip
+          key={option.value}
+          label={`Duration: ${option.label}`}
+          size="small"
+          sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
+        />
+      ))}
+    </Stack>
+  );
+
   const hero = (
     <HeroBar
       title="Create Transfer Listing"
@@ -155,18 +168,6 @@ export default function CreateTransferListingPage() {
         { label: "Selected", value: selectedPlayer?.name ?? "—", icon: <PersonAddAltIcon fontSize="small" /> },
         { label: "Status", value: loading ? "Loading" : error ? "Error" : "Ready", icon: <QueryStatsIcon fontSize="small" /> },
       ]}
-      accent={
-        <Stack direction="row" spacing={1} flexWrap="wrap">
-          {DURATION_OPTIONS.map((option) => (
-            <Chip
-              key={option.value}
-              label={`Duration: ${option.label}`}
-              size="small"
-              sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
-            />
-          ))}
-        </Stack>
-      }
       actions={
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
           <Button variant="outlined" onClick={() => navigate("/transfers/my")}>
@@ -189,6 +190,10 @@ export default function CreateTransferListingPage() {
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
           Choose a player from your club, set the asking price and pick an auction duration.
         </Typography>
+        <Stack spacing={1.5} mt={2}>
+          <Typography variant="subtitle2">Available durations</Typography>
+          {heroDurations}
+        </Stack>
         {error && (
           <Alert severity="error" sx={{ mt: 2 }} onClose={() => setError(null)}>
             {error}

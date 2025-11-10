@@ -189,6 +189,27 @@ export default function TransfersMarketPage() {
     filters.maxPrice && `Max price: ${filters.maxPrice}`,
   ].filter(Boolean);
 
+  const heroFilterSummary = (
+    <Stack direction="row" spacing={1} flexWrap="wrap">
+      {appliedFilters.length === 0 ? (
+        <Chip
+          label="Filters: none"
+          size="small"
+          sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
+        />
+      ) : (
+        appliedFilters.map((item) => (
+          <Chip
+            key={item}
+            label={item}
+            size="small"
+            sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
+          />
+        ))
+      )}
+    </Stack>
+  );
+
   const hero = (
     <HeroBar
       title="Transfer Market"
@@ -212,30 +233,15 @@ export default function TransfersMarketPage() {
           icon: <FilterAltIcon fontSize="small" />,
         },
       ]}
-      accent={
-        <Stack direction="row" spacing={1} flexWrap="wrap">
-          {appliedFilters.length === 0 ? (
-            <Chip
-              label="Filters: none"
-              size="small"
-              sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
-            />
-          ) : (
-            appliedFilters.map((item) => (
-              <Chip
-                key={item}
-                label={item}
-                size="small"
-                sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
-              />
-            ))
-          )}
-        </Stack>
-      }
       actions={
-        <Button variant="contained" onClick={() => navigate("/transfers/create")}>
-          List a Player
-        </Button>
+        <>
+          <Button variant="outlined" onClick={handleClearFilters}>
+            Reset Filters
+          </Button>
+          <Button variant="contained" onClick={() => navigate("/transfers/create")}>
+            List a Player
+          </Button>
+        </>
       }
     />
   );
@@ -250,6 +256,10 @@ export default function TransfersMarketPage() {
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             Use filters to narrow by position, age, price range or status, then open any row to inspect full details.
           </Typography>
+          <Stack spacing={1.5} mt={2}>
+            <Typography variant="subtitle2">Filters overview</Typography>
+            {heroFilterSummary}
+          </Stack>
           {error && (
             <Alert severity="error" sx={{ mt: 2 }}>
               {error}

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Link as RouterLink } from "react-router-dom";
 
 import {
+  Button,
   Card,
   CardContent,
   Chip,
@@ -64,6 +65,12 @@ export default function FinancePage() {
   const netBalance = totals.income - totals.expense;
   const wageBudgetUsed = 72; // %
   const transferBudget = 38.4;
+  const heroBadges = (
+    <Stack direction="row" spacing={1} flexWrap="wrap">
+      <Chip label={`Wage budget used: ${wageBudgetUsed}%`} size="small" sx={{ color: "white", bgcolor: "rgba(255,255,255,0.12)" }} />
+      <Chip label="Financial fair play: compliant" size="small" sx={{ color: "white", bgcolor: "rgba(255,255,255,0.12)" }} />
+    </Stack>
+  );
 
   const hero = (
     <HeroBar
@@ -76,17 +83,15 @@ export default function FinancePage() {
         { label: "Expenses (30d)", value: `$${totals.expense.toFixed(1)}M`, icon: <TrendingDownIcon fontSize="small" /> },
         { label: "Transfer budget", value: `$${transferBudget.toFixed(1)}M`, icon: <AssessmentIcon fontSize="small" /> },
       ]}
-      accent={
-        <Stack direction="row" spacing={1} flexWrap="wrap">
-          <Chip label={`Wage budget used: ${wageBudgetUsed}%`} size="small" sx={{ color: "white", bgcolor: "rgba(255,255,255,0.12)" }} />
-          <Chip label="Financial fair play: compliant" size="small" sx={{ color: "white", bgcolor: "rgba(255,255,255,0.12)" }} />
-        </Stack>
-      }
       actions={
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-          <Chip component={RouterLink} clickable to="/transfers" label="Go to Transfers" color="secondary" />
-          <Chip component={RouterLink} clickable to="/my-club/players" label="Review Squad Costs" color="secondary" variant="outlined" />
-        </Stack>
+        <>
+          <Button component={RouterLink} to="/my-club/players" variant="outlined" size="small">
+            Review Squad
+          </Button>
+          <Button component={RouterLink} to="/transfers" variant="contained" size="small">
+            Go to Transfers
+          </Button>
+        </>
       }
     />
   );
@@ -102,6 +107,10 @@ export default function FinancePage() {
             All amounts are reported in millions of credits. Net balance reflects the last 30 days of activity and
             automatically syncs with transfer/salary operations.
           </Typography>
+          <Stack spacing={1} direction="column">
+            <Typography variant="subtitle2">Budget status</Typography>
+            {heroBadges}
+          </Stack>
         </Stack>
       </CardContent>
     </Card>

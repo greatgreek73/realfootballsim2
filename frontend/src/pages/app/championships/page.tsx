@@ -48,6 +48,20 @@ export default function ChampionshipsPage() {
       ? leagueOptions.find((league) => league.id === leagueFilter)?.name ?? `League ${leagueFilter}`
       : "All leagues";
   const activeFiltersCount = [seasonFilter, leagueFilter].filter(Boolean).length;
+  const heroFilterSummary = (
+    <Stack direction={{ xs: "column", md: "row" }} spacing={1} flexWrap="wrap">
+      <Chip
+        label={`Season: ${selectedSeasonLabel}`}
+        size="small"
+        sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
+      />
+      <Chip
+        label={`League: ${selectedLeagueLabel}`}
+        size="small"
+        sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
+      />
+    </Stack>
+  );
 
   const hero = (
     <HeroBar
@@ -65,20 +79,6 @@ export default function ChampionshipsPage() {
           hint: `${selectedSeasonLabel} · ${selectedLeagueLabel}`,
         },
       ]}
-      accent={
-        <Stack direction={{ xs: "column", md: "row" }} spacing={1} flexWrap="wrap">
-          <Chip
-            label={`Season: ${selectedSeasonLabel}`}
-            size="small"
-            sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
-          />
-          <Chip
-            label={`League: ${selectedLeagueLabel}`}
-            size="small"
-            sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
-          />
-        </Stack>
-      }
     />
   );
 
@@ -124,6 +124,10 @@ export default function ChampionshipsPage() {
                 </MenuItem>
               ))}
             </Select>
+          </Stack>
+          <Stack spacing={1}>
+            <Typography variant="subtitle2">Current filters</Typography>
+            {heroFilterSummary}
           </Stack>
         </Stack>
       </CardContent>
