@@ -155,7 +155,7 @@ export default function TransferHistoryPage() {
   const hero = (
     <HeroBar
       title="Transfer History"
-      subtitle="Завершённые сделки по сезонам, клубам и игрокам"
+      subtitle="Audit completed transfers across seasons"
       tone="blue"
       kpis={[
         { label: "Records", value: pageMeta.count || "-", icon: <HistoryEduIcon fontSize="small" /> },
@@ -259,3 +259,4 @@ export default function TransferHistoryPage() {
 
   return <PageShell hero={hero} top={topSection} main={mainContent} aside={asideContent} />;
 }
+

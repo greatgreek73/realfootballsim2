@@ -135,7 +135,7 @@ export default function MyClubTransfersPage() {
   const hero = (
     <HeroBar
       title="My Transfers"
-      subtitle="Управляйте объявлениями клуба и входящими предложениями"
+      subtitle="Manage active listings and pending offers"
       tone="purple"
       kpis={[
         {
@@ -301,3 +301,4 @@ export default function MyClubTransfersPage() {
 
   return <PageShell hero={hero} top={topSection} main={mainContent} aside={asideContent} />;
 }
+

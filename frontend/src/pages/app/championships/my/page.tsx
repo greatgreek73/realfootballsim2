@@ -52,7 +52,7 @@ export default function MyChampionshipPage() {
   const hero = (
     <HeroBar
       title={data.championship.name}
-      subtitle={`${data.championship.league.name} · ${data.championship.season.name}`}
+      subtitle={`${data.championship.league.name} · ${data.championship.season.name} progress`}
       tone="purple"
       kpis={[
         { label: "Position", value: data.club_position ?? "-", icon: <LeaderboardIcon fontSize="small" />, hint: "Current standing" },

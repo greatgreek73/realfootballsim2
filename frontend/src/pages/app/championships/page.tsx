@@ -66,7 +66,7 @@ export default function ChampionshipsPage() {
   const hero = (
     <HeroBar
       title="Championship Explorer"
-      subtitle="Отслеживайте активные турниры по сезонам и лигам"
+      subtitle="Browse championships across seasons and leagues"
       tone="teal"
       kpis={[
         { label: "Tournaments", value: data?.length ?? 0, icon: <EmojiEventsIcon fontSize="small" /> },
@@ -159,3 +159,4 @@ export default function ChampionshipsPage() {
 
   return <PageShell hero={hero} top={filters} main={mainContent} />;
 }
+

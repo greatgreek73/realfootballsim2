@@ -213,7 +213,7 @@ export default function TransfersMarketPage() {
   const hero = (
     <HeroBar
       title="Transfer Market"
-      subtitle="Активные объявления клуба и глобальные аукционы"
+      subtitle="Explore active transfer listings and league auctions"
       tone="orange"
       kpis={[
         { label: "Listings", value: pageMeta.count || "-", icon: <TrendingUpIcon fontSize="small" /> },
@@ -330,3 +330,4 @@ export default function TransfersMarketPage() {
 
   return <PageShell hero={hero} top={topSection} main={mainContent} aside={asideContent} />;
 }
+

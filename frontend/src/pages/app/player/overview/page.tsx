@@ -542,10 +542,11 @@ export default function Page() {
 
 
 
-  const hero = (
-    <HeroBar
-      title={title}
-      tone="purple"
+  const hero = (
+    <HeroBar
+      title={title}
+      subtitle="Detailed breakdown of player attributes and training"
+      tone="purple"
       kpis={[
         { label: "Overall", value: data?.overall_rating ?? "-" },
         { label: "Age", value: data?.age ?? "-" },

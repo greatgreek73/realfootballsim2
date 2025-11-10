@@ -160,7 +160,7 @@ export default function CreateTransferListingPage() {
   const hero = (
     <HeroBar
       title="Create Transfer Listing"
-      subtitle="Подберите игрока, задайте цену и длительность аукциона"
+      subtitle="Publish a player listing with custom terms"
       tone="green"
       kpis={[
         { label: "Club", value: club?.name ?? "—", icon: <HomeWorkIcon fontSize="small" /> },
@@ -358,3 +358,4 @@ export default function CreateTransferListingPage() {
 
   return <PageShell hero={hero} top={topSection} main={mainContent} aside={asideContent} />;
 }
+

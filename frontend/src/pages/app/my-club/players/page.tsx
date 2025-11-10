@@ -9,6 +9,7 @@ export default function PlayersPage() {
   const hero = (
     <HeroBar
       title="Squad"
+      subtitle="Manage your roster composition and depth chart"
       tone="green"
       kpis={[
         { label: "Roster size", value: "—" },

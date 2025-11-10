@@ -156,7 +156,7 @@ export default function ChampionshipDetailPage() {
   const hero = (
     <HeroBar
       title={detail.championship.name}
-      subtitle={`${detail.championship.league.name} · ${detail.championship.season.name}`}
+      subtitle={`${detail.championship.league.name} · ${detail.championship.season.name} overview`}
       tone="orange"
       kpis={[
         { label: "Season", value: detail.championship.season.name, icon: <CalendarMonthIcon fontSize="small" /> },

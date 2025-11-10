@@ -159,6 +159,7 @@ export default function MyClubPage() {
   const hero = (
     <HeroBar
       title={club?.name ?? "My Club"}
+      subtitle="Your central hub for club metrics and activity"
       tone="green"
       kpis={[
         { label: "Tokens", value: formatMetric(club?.tokens) },

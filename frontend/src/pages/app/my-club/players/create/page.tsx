@@ -200,7 +200,7 @@ export default function CreatePlayerPage() {
   const hero = (
     <HeroBar
       title="Create Player"
-      subtitle="My Club · Players"
+      subtitle="Generate new prospects for your squad"
       tone="pink"
       kpis={[
         { label: "Position", value: position, icon: <SportsSoccerIcon fontSize="small" /> },

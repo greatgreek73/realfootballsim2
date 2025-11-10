@@ -1,5 +1,20 @@
-import { useEffect, useState } from "react";
-import { Alert, Card, CardContent, CardHeader, Divider, Paper, Skeleton, Stack, Typography } from "@mui/material";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Alert,
+  Card,
+  CardContent,
+  CardHeader,
+  Divider,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Skeleton,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
 
 import { SquadDataGrid, SquadRow } from "@/components/club/squad-table";
 import { getJSON } from "@/lib/apiClient";
@@ -34,6 +49,10 @@ export default function ClubPlayersTable() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<SquadRow[]>([]);
+  const [search, setSearch] = useState("");
+  const [positionFilter, setPositionFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [classFilter, setClassFilter] = useState<string>("all");
 
   useEffect(() => {
     let cancelled = false;
@@ -62,6 +81,51 @@ export default function ClubPlayersTable() {
   }, []);
 
   const empty = !loading && !error && rows.length === 0;
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredRows = useMemo(() => {
+    return rows.filter((row) => {
+      const matchesSearch =
+        !normalizedSearch ||
+        row.name?.toLowerCase().includes(normalizedSearch) ||
+        String(row.id).includes(normalizedSearch) ||
+        row.position?.toLowerCase().includes(normalizedSearch);
+      const matchesPosition =
+        positionFilter === "all" || row.position?.toLowerCase() === positionFilter.toLowerCase();
+      const matchesStatus =
+        statusFilter === "all" || (row.status ?? "active").toLowerCase() === statusFilter.toLowerCase();
+      const matchesClass =
+        classFilter === "all" ||
+        String(row.classLabel ?? "")
+          .toLowerCase()
+          .includes(classFilter.toLowerCase());
+      return matchesSearch && matchesPosition && matchesStatus && matchesClass;
+    });
+  }, [rows, normalizedSearch, positionFilter, statusFilter, classFilter]);
+
+  const positionOptions = useMemo(() => {
+    const unique = new Set<string>();
+    rows.forEach((row) => {
+      if (row.position) unique.add(row.position);
+    });
+    return Array.from(unique).sort((a, b) => a.localeCompare(b));
+  }, [rows]);
+
+  const statusOptions = useMemo(() => {
+    const unique = new Set<string>();
+    rows.forEach((row) => {
+      if (row.status) unique.add(row.status);
+    });
+    return Array.from(unique).sort((a, b) => a.localeCompare(b));
+  }, [rows]);
+  const classOptions = useMemo(() => {
+    const unique = new Set<string>();
+    rows.forEach((row) => {
+      if (row.classLabel !== undefined && row.classLabel !== null) {
+        unique.add(String(row.classLabel));
+      }
+    });
+    return Array.from(unique).sort((a, b) => a.localeCompare(b));
+  }, [rows]);
 
   return (
     <Card>
@@ -75,6 +139,72 @@ export default function ClubPlayersTable() {
       )}
 
       <CardContent sx={{ pt: 0 }}>
+        {!loading && !error && (
+          <>
+            <Stack spacing={2} className="p-3">
+              <TextField
+                size="small"
+                label="Search player"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <FormControl size="small" sx={{ minWidth: 160 }}>
+                  <InputLabel id="position-filter">Position</InputLabel>
+                  <Select
+                    labelId="position-filter"
+                    value={positionFilter}
+                    label="Position"
+                    onChange={(event) => setPositionFilter(event.target.value)}
+                  >
+                    <MenuItem value="all">All positions</MenuItem>
+                    {positionOptions.map((option) => (
+                      <MenuItem key={option} value={option}>
+                        {option}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <FormControl size="small" sx={{ minWidth: 160 }}>
+                  <InputLabel id="status-filter">Status</InputLabel>
+                  <Select
+                    labelId="status-filter"
+                    value={statusFilter}
+                    label="Status"
+                    onChange={(event) => setStatusFilter(event.target.value)}
+                  >
+                    <MenuItem value="all">All statuses</MenuItem>
+                    {statusOptions.map((option) => (
+                      <MenuItem key={option} value={option}>
+                        {option}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <FormControl size="small" sx={{ minWidth: 160 }}>
+                  <InputLabel id="class-filter">Class</InputLabel>
+                  <Select
+                    labelId="class-filter"
+                    value={classFilter}
+                    label="Class"
+                    onChange={(event) => setClassFilter(event.target.value)}
+                  >
+                    <MenuItem value="all">All classes</MenuItem>
+                    {classOptions.map((option) => (
+                      <MenuItem key={option} value={option}>
+                        {option}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Stack>
+            </Stack>
+            <Divider />
+          </>
+        )}
+
         {loading ? (
           <Stack spacing={1} className="p-2">
             <Skeleton height={36} />
@@ -86,7 +216,7 @@ export default function ClubPlayersTable() {
             <Typography variant="body2">No players found in the club.</Typography>
           </Paper>
         ) : (
-          <SquadDataGrid rows={rows} loading={loading} />
+          <SquadDataGrid rows={filteredRows} loading={loading} />
         )}
       </CardContent>
     </Card>
