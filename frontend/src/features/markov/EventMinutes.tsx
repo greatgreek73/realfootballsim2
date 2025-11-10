@@ -1,5 +1,5 @@
 import { Box, Divider, Stack, Typography, List, ListItem, ListItemIcon, ListItemText } from "@mui/material";
-import { useMemo } from "react";
+import { type ReactElement, useMemo } from "react";
 import { alpha, useTheme } from "@mui/material/styles";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import SportsSoccerIcon from "@mui/icons-material/SportsSoccer";
@@ -57,7 +57,7 @@ export function EventMinutes({ events }: { events: MatchEvent[] }) {
               // Ровно та же логика, что в MarkovPanel.tsx (плюс "goal")
               const isGoal = event.type === "markov_goal" || /\bgoal\b(?!\s*(keeper|kick))/i.test(lower) || /\bscore[sd]?\b/i.test(lower);
 
-              let icon: JSX.Element | null = null;
+              let icon: ReactElement | null = null;
               let leftColor: string | undefined;
               let bg: string | undefined;
 
