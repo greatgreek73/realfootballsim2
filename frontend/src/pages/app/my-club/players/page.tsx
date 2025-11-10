@@ -1,4 +1,4 @@
-import { Box, Button, Card, CardContent, Typography } from "@mui/material";
+import { Button, Card, CardContent, Typography } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 
 import ClubPlayersTable from "@/components/club/ClubPlayersTable";
@@ -52,9 +52,5 @@ export default function PlayersPage() {
     </Card>
   );
 
-  return (
-    <Box className="p-2 sm:p-4">
-      <PageShell hero={hero} top={top} main={mainContent} aside={asideContent} bottomSplit="67-33" />
-    </Box>
-  );
+  return <PageShell hero={hero} top={top} main={mainContent} aside={asideContent} bottomSplit="67-33" />;
 }

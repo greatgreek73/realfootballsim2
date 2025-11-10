@@ -21,7 +21,7 @@ export default function ContentWrapper({ children }: PropsWithChildren) {
   return (
     <Paper
       elevation={0}
-      className="flex min-h-[calc(100vh-7.5rem)] w-full min-w-0 rounded-xl bg-transparent px-4 py-5 sm:rounded-4xl sm:py-6 md:py-8 lg:px-12"
+      className="flex min-h-[calc(100vh-7.5rem)] w-full min-w-0 rounded-xl bg-transparent px-4 pt-3 pb-5 sm:rounded-4xl sm:pt-4 sm:pb-6 md:pt-5 md:pb-8 lg:px-12"
     >
       <Box className="flex w-full">
         <Box className="mx-auto w-full transition-all">
