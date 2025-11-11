@@ -558,6 +558,10 @@ mergedAll.sort((a, b) => {
 return mergedAll;
         });
       }
+
+      if (Object.prototype.hasOwnProperty.call(payload, "markov_minute")) {
+        setMarkovSummary(payload.markov_minute ?? null);
+      }
     },
     [mapWebSocketEvent]
   );
@@ -914,6 +918,7 @@ return mergedAll;
                       homeName={match.home.name}
                       awayName={match.away.name}
                       onMinute={setMarkovSummary}
+                      liveSummary={markovSummary ?? undefined}
                     />
                   </Grid>
                 </Grid>

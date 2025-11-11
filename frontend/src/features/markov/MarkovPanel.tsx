@@ -29,11 +29,13 @@ export function MarkovPanel({
   homeName,
   awayName,
   onMinute,
+  liveSummary,
 }: {
   matchId: number;
   homeName: string;
   awayName: string;
   onMinute?: (summary: any) => void;
+  liveSummary?: any;
 }) {
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -46,6 +48,7 @@ export function MarkovPanel({
   const autoPlayRef = useRef(autoPlay);
   const lastFetchAtRef = useRef<number | null>(null);
   const theme = useTheme();
+  const liveMode = typeof liveSummary !== "undefined";
 
   const SPEED_INTERVALS: Record<1 | 2 | 4, number> = {
     1: 60000,
@@ -63,6 +66,9 @@ export function MarkovPanel({
   }, []);
 
   const fetchMinute = useCallback(async () => {
+    if (liveMode) {
+      return;
+    }
     if (!Number.isFinite(matchId) || matchId <= 0) return;
     setLoading(true);
     setError(null);
@@ -98,10 +104,10 @@ export function MarkovPanel({
     } finally {
       setLoading(false);
     }
-  }, [API_BASE, clearAutoTimeout, matchId, homeName, awayName, onMinute]);
+  }, [API_BASE, clearAutoTimeout, matchId, homeName, awayName, onMinute, liveMode]);
 
   const scheduleAutoFetch = useCallback(() => {
-    if (!autoPlayRef.current) return;
+    if (liveMode || !autoPlayRef.current) return;
     const currentMinute =
       typeof summary?.minute === "number" ? summary.minute : 0;
     if (currentMinute >= regMinutes) {
@@ -119,14 +125,18 @@ export function MarkovPanel({
       if (!autoPlayRef.current) return;
       void fetchMinute();
     }, delay);
-  }, [clearAutoTimeout, fetchMinute, intervalMs, regMinutes, summary?.minute]);
+  }, [clearAutoTimeout, fetchMinute, intervalMs, regMinutes, summary?.minute, liveMode]);
   useEffect(() => {
+    if (liveMode) {
+      clearAutoTimeout();
+      return;
+    }
     clearAutoTimeout();
     tokenRef.current = null;
     lastFetchAtRef.current = null;
     onMinute?.(null);
     void fetchMinute();
-  }, [clearAutoTimeout, fetchMinute, matchId, onMinute]);
+  }, [clearAutoTimeout, fetchMinute, liveMode, matchId, onMinute]);
 
   useEffect(
     () => () => {
@@ -146,12 +156,16 @@ export function MarkovPanel({
   }, [autoPlay]);
 
   useEffect(() => {
+    if (liveMode) {
+      clearAutoTimeout();
+      return;
+    }
     if (!autoPlay || !summary) {
       return;
     }
     scheduleAutoFetch();
     return () => clearAutoTimeout();
-  }, [autoPlay, clearAutoTimeout, scheduleAutoFetch, summary]);
+  }, [autoPlay, clearAutoTimeout, scheduleAutoFetch, summary, liveMode]);
 
   useEffect(
     () => () => {
@@ -159,6 +173,18 @@ export function MarkovPanel({
     },
     [clearAutoTimeout],
   );
+
+  useEffect(() => {
+    if (!liveMode) return;
+    setLoading(false);
+    setError(null);
+    clearAutoTimeout();
+    setSummary(liveSummary ?? null);
+    if (liveSummary) {
+      tokenRef.current = liveSummary.token ?? null;
+      lastFetchAtRef.current = Date.now();
+    }
+  }, [liveMode, liveSummary, clearAutoTimeout]);
 
   const p = summary?.possession_pct ?? { home: undefined, away: undefined };
   const ef = summary?.entries_final_third ?? { home: undefined, away: undefined };

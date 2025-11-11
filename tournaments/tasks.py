@@ -2,12 +2,14 @@
 
 import time
 import logging
+from typing import Optional
 from celery import shared_task
 from django.utils import timezone
 from django.db import transaction, OperationalError
 from django.conf import settings
 from django.core.management import call_command
 from matches.models import Match, MatchEvent
+from matches.engines.markov_runtime import simulate_markov_minute
 from players.models import Player # ╨г╨▒╨╡╨┤╨╕╤В╨╡╤Б╤М, ╤З╤В╨╛ ╨╕╨╝╨┐╨╛╤А╤В ╨╡╤Б╤В╤М
 from clubs.models import Club     # ╨г╨▒╨╡╨┤╨╕╤В╨╡╤Б╤М, ╤З╤В╨╛ ╨╕╨╝╨┐╨╛╤А╤В ╨╡╤Б╤В╤М
 from .models import Season, Championship, League
@@ -18,288 +20,257 @@ from django.core.exceptions import ObjectDoesNotExist
 logger = logging.getLogger("match_creation")
 
 
+ZONE_HINT_TO_FIELD = {
+    "DEF": "DEF-C",
+    "MID": "MID-C",
+    "FINAL": "AM-C",
+}
+ZONE_TEXT = {
+    "DEF": "the defensive third",
+    "MID": "midfield",
+    "FINAL": "the final third",
+}
+
+
+def _map_zone_from_markov(zone_hint: Optional[str], fallback: str) -> str:
+    if not zone_hint:
+        return fallback or "MID-C"
+    return ZONE_HINT_TO_FIELD.get(zone_hint.upper(), fallback or "MID-C")
+
+
+def _possession_indicator_from_markov(possession: Optional[str]) -> int:
+    if possession == "home":
+        return 1
+    if possession == "away":
+        return 2
+    return 0
+
+
+def _serialize_event_for_ws(event: MatchEvent) -> dict:
+    return {
+        "minute": event.minute,
+        "event_type": event.event_type,
+        "description": event.description,
+        "personality_reason": event.personality_reason,
+        "player_name": f"{event.player.first_name} {event.player.last_name}" if event.player else "",
+        "related_player_name": f"{event.related_player.first_name} {event.related_player.last_name}" if event.related_player else "",
+    }
+
+
+def _team_display(match: Match, side: Optional[str]) -> str:
+    if side == "home":
+        return match.home_team.name
+    if side == "away":
+        return match.away_team.name
+    return "Unknown team"
+
+
+def _zone_text(zone: Optional[str]) -> str:
+    if not zone:
+        return "midfield"
+    return ZONE_TEXT.get(zone.upper(), zone.lower())
+
+
+def _map_markov_event_to_match_event(match: Match, raw_event: dict) -> Optional[dict]:
+    label = (raw_event.get("label") or "").upper()
+    frm = (raw_event.get("from") or "").upper()
+    turnover = bool(raw_event.get("turnover"))
+    zone_label = _zone_text(raw_event.get("zone"))
+    actor_side = raw_event.get("prev_possession") or raw_event.get("possession")
+    actor = _team_display(match, actor_side)
+
+    if label == "SHOT:GOAL":
+        description = f"Goal! {actor} score from {zone_label}."
+        return {"event_type": "goal", "description": description}
+    if label in {"SHOT:MISS", "SHOT:BLOCK"}:
+        description = f"{actor} take a shot from {zone_label} but miss the target."
+        return {"event_type": "shot_miss", "description": description}
+    if frm == "FOUL":
+        description = f"Foul by {actor} in {zone_label}."
+        return {"event_type": "foul", "description": description}
+    if turnover:
+        winner = _team_display(match, raw_event.get("possession"))
+        description = f"Turnover! {winner} gain possession in {zone_label}."
+        return {"event_type": "interception", "description": description}
+    if frm.startswith("OPEN_PLAY_") and (raw_event.get("to") or "").upper().startswith("OPEN_PLAY_") and not turnover:
+        description = f"{actor} circulate possession through {zone_label}."
+        return {"event_type": "pass", "description": description, "stat": "pass"}
+    return None
+
+
+def _mark_match_error(match_id: int, reason: str) -> None:
+    try:
+        updated = Match.objects.filter(pk=match_id).update(
+            status='error',
+            waiting_for_next_minute=False,
+        )
+        if updated:
+            logger.warning(f"⚠️ Матч ID={match_id} помечен как error: {reason}")
+    except Exception:
+        logger.exception(f"⚠️ Не удалось обновить статус матча ID={match_id} после ошибки: {reason}")
+
+
 @shared_task(name='tournaments.simulate_active_matches', bind=True)
 def simulate_active_matches(self):
     """
-    ╨Я╨╛╤И╨░╨│╨╛╨▓╨░╤П ╤Б╨╕╨╝╤Г╨╗╤П╤Ж╨╕╤П ╨╝╨░╤В╤З╨╡╨╣ - ╤В╨╡╨┐╨╡╤А╤М ╨┐╨╛ ╨Ф╨Х╨Щ╨б╨в╨Т╨Ш╨п╨Ь, ╨░ ╨╜╨╡ ╨┐╨╛ ╨╝╨╕╨╜╤Г╤В╨░╨╝.
-    ╨Ч╨░╨┐╤Г╤Б╨║╨░╨╡╤В╤Б╤П ╨┐╨╡╤А╨╕╨╛╨┤╨╕╤З╨╡╤Б╨║╨╕ (╨╜╨░╨┐╤А╨╕╨╝╨╡╤А, ╨║╨░╨╢╨┤╤Л╨╡ 2 ╤Б╨╡╨║╤Г╨╜╨┤╤Л).
+    Симуляция минут матча на основе марковского движка.
+    Запускается периодически (например, каждые 2 секунды).
     """
     now = timezone.now()
-    logger.info(f"ЁЯФБ [simulate_active_matches] ╨Ч╨░╨┐╤Г╤Б╨║ ╤Б╨╕╨╝╤Г╨╗╤П╤Ж╨╕╨╕ ╨░╨║╤В╨╕╨▓╨╜╤Л╤Е ╨╝╨░╤В╤З╨╡╨╣ ╨▓ {now}")
+    logger.info(f"🔁 [simulate_active_matches] Запуск симуляции активных матчей в {now}")
 
     matches = Match.objects.filter(status='in_progress')
     if not matches.exists():
-        logger.info("ЁЯФН ╨Э╨╡╤В ╨╝╨░╤В╤З╨╡╨╣ ╤Б╨╛ ╤Б╤В╨░╤В╤Г╤Б╨╛╨╝ 'in_progress'.")
+        logger.info("🔍 Нет матчей со статусом 'in_progress'.")
         return "No matches in progress"
 
-    logger.info(f"тЬЕ ╨Э╨░╨╣╨┤╨╡╨╜╨╛ {matches.count()} ╨╝╨░╤В╤З╨╡╨╣ ╨┤╨╗╤П ╤Б╨╕╨╝╤Г╨╗╤П╤Ж╨╕╨╕.")
+    logger.info(f"✅ Найдено {matches.count()} матчей для марковской симуляции.")
 
-    from matches.match_simulation import simulate_one_action, send_update
     from channels.layers import get_channel_layer
     from asgiref.sync import async_to_sync
-    from django.core.cache import cache
-    
+
     channel_layer = get_channel_layer()
+    processed = 0
 
     for match in matches:
         try:
-            logger.info(f"ЁЯФТ ╨Я╨╛╨┐╤Л╤В╨║╨░ ╨▒╨╗╨╛╨║╨╕╤А╨╛╨▓╨║╨╕ ╨╝╨░╤В╤З╨░ ID={match.id} ╨┤╨╗╤П ╤Б╨╕╨╝╤Г╨╗╤П╤Ж╨╕╨╕...")
-
+            logger.info(f"🔒 Блокировка матча ID={match.id} для марковской минуты...")
             with transaction.atomic():
-                match_locked = Match.objects.select_for_update().get(id=match.id)
-
-                # ╨Ш╨╜╨╕╤Ж╨╕╨░╨╗╨╕╨╖╨╕╤А╤Г╨╡╨╝ ╨▓╤А╨╡╨╝╤П ╨╜╨░╤З╨░╨╗╨░ ╨╕ ╨┐╨╛╤Б╨╗╨╡╨┤╨╜╨╡╨│╨╛ ╨╛╨▒╨╜╨╛╨▓╨╗╨╡╨╜╨╕╤П, ╨╡╤Б╨╗╨╕ ╨╜╨╡ ╤Г╤Б╤В╨░╨╜╨╛╨▓╨╗╨╡╨╜╤Л
-                if match_locked.started_at is None:
-                    match_locked.started_at = timezone.now()
-                    match_locked.save(update_fields=['started_at'])
-                    logger.info(f"тЬЕ ╨г╤Б╤В╨░╨╜╨╛╨▓╨╗╨╡╨╜╨╛ ╨▓╤А╨╡╨╝╤П ╨╜╨░╤З╨░╨╗╨░ ╨┤╨╗╤П ╨╝╨░╤В╤З╨░ ID={match_locked.id}")
-
-                if match_locked.last_minute_update is None:
-                    match_locked.last_minute_update = timezone.now()
-                    match_locked.save(update_fields=['last_minute_update'])
-                    logger.info(f"тЬЕ ╨г╤Б╤В╨░╨╜╨╛╨▓╨╗╨╡╨╜╨╛ ╨▓╤А╨╡╨╝╤П ╨┐╨╛╤Б╨╗╨╡╨┤╨╜╨╡╨│╨╛ ╨╛╨▒╨╜╨╛╨▓╨╗╨╡╨╜╨╕╤П ╨┤╨╗╤П ╨╝╨░╤В╤З╨░ ID={match_locked.id}")
-
-                # ╨Х╤Б╨╗╨╕ ╨╛╨╢╨╕╨┤╨░╨╡╨╝ ╨╜╨░╤З╨░╨╗╨░ ╤Б╨╗╨╡╨┤╤Г╤О╤Й╨╡╨╣ ╨╝╨╕╨╜╤Г╤В╤Л, ╨┐╤А╨╛╨┐╤Г╤Б╨║╨░╨╡╨╝ ╨╛╨▒╤А╨░╨▒╨╛╤В╨║╤Г
-                if match_locked.waiting_for_next_minute:
-                    logger.info(
-                        f"тПня╕П ╨Ь╨░╤В╤З ID={match_locked.id} ╨╢╨┤╤С╤В ╤Б╨╗╨╡╨┤╤Г╤О╤Й╤Г╤О ╨╝╨╕╨╜╤Г╤В╤Г, ╨┐╤А╨╛╨┐╤Г╤Б╨║."
-                    )
-                    continue
-                
-                # ╨Я╨╛╨╗╤Г╤З╨░╨╡╨╝ ╤Б╤З╨╡╤В╤З╨╕╨║ ╨┤╨╡╨╣╤Б╤В╨▓╨╕╨╣ ╨╕╨╖ ╨║╨╡╤И╨░
-                cache_key = f"match_{match_locked.id}_actions_in_minute"
-                actions_in_current_minute = cache.get(cache_key, 0)
-                
-                # ╨Я╤А╨╛╨▓╨╡╤А╤П╨╡╨╝, ╨╜╨╡ ╨╖╨░╨║╨╛╨╜╤З╨╕╨╗╤Б╤П ╨╗╨╕ ╨╝╨░╤В╤З
-                if match_locked.current_minute >= 90:
-                    match_locked.status = 'finished'
-                    match_locked.save()
-                    cache.delete(cache_key)  # ╨Ю╤З╨╕╤Й╨░╨╡╨╝ ╨║╨╡╤И
-                    logger.info(f"ЁЯПБ ╨Ь╨░╤В╤З ID={match_locked.id} ╨╖╨░╨▓╨╡╤А╤И╨╡╨╜")
-                    continue
-                
-                # ╨б╨╕╨╝╤Г╨╗╨╕╤А╤Г╨╡╨╝ ╨╛╨┤╨╜╨╛ ╨┤╨╡╨╣╤Б╤В╨▓╨╕╨╡
-                logger.info(
-                    f"тЪЩя╕П ╨б╨╕╨╝╤Г╨╗╤П╤Ж╨╕╤П ╨┤╨╡╨╣╤Б╤В╨▓╨╕╤П ╨┤╨╗╤П ╨╝╨░╤В╤З╨░ ID={match_locked.id}, "
-                    f"╨╝╨╕╨╜╤Г╤В╨░ {match_locked.current_minute}, ╨┤╨╡╨╣╤Б╤В╨▓╨╕╨╡ #{actions_in_current_minute + 1}"
+                match_locked = (
+                    Match.objects.select_for_update()
+                    .select_related('home_team', 'away_team')
+                    .get(id=match.id)
                 )
-                
-                result = simulate_one_action(match_locked)
 
+                if match_locked.status != 'in_progress':
+                    continue
+
+                dirty_fields = []
+                if match_locked.started_at is None:
+                    match_locked.started_at = now
+                    dirty_fields.append('started_at')
+                if match_locked.last_minute_update is None:
+                    match_locked.last_minute_update = now
+                    dirty_fields.append('last_minute_update')
+
+                if match_locked.waiting_for_next_minute:
+                    if dirty_fields:
+                        match_locked.save(update_fields=dirty_fields)
+                    logger.info(f"⏭️ Матч ID={match_locked.id} ждёт завершения текущей минуты, пропуск.")
+                    continue
+
+                seed_value = int(match_locked.markov_seed or match_locked.id)
+                result = simulate_markov_minute(
+                    seed=seed_value,
+                    token=match_locked.markov_token,
+                    home_name=match_locked.home_team.name,
+                    away_name=match_locked.away_team.name,
+                )
+                minute_summary = result["minute_summary"]
+                counts = minute_summary.get("counts", {})
+                totals = minute_summary.get("score_total", {})
+
+                pass_events = 0
+
+                match_locked.markov_seed = seed_value
+                match_locked.markov_token = minute_summary.get("token")
+                match_locked.markov_coefficients = minute_summary.get("coefficients")
+                match_locked.markov_last_summary = minute_summary
+                match_locked.home_score = totals.get("home", match_locked.home_score)
+                match_locked.away_score = totals.get("away", match_locked.away_score)
+                match_locked.st_shoots += counts.get("shot", 0)
+                match_locked.st_fouls += counts.get("foul", 0)
+                match_locked.st_possessions += 1
+                match_locked.possession_indicator = _possession_indicator_from_markov(
+                    minute_summary.get("possession_end")
+                )
+                match_locked.current_zone = _map_zone_from_markov(
+                    minute_summary.get("zone_end"),
+                    match_locked.current_zone,
+                )
+                match_locked.last_minute_update = timezone.now()
+
+                reg_minutes = result.get("regulation_minutes", 90)
+                minute_number = minute_summary.get("minute", match_locked.current_minute)
+                match_locked.waiting_for_next_minute = True
+                if minute_number >= reg_minutes:
+                    match_locked.status = 'finished'
+                    match_locked.waiting_for_next_minute = False
+                    match_locked.current_minute = reg_minutes
+
+                match_locked.st_passes += pass_events
+                match_locked.save()
+
+                created_events = []
+                for raw_event in minute_summary.get("events") or []:
+                    mapped = _map_markov_event_to_match_event(match_locked, raw_event)
+                    if not mapped:
+                        continue
+                    event = MatchEvent.objects.create(
+                        match=match_locked,
+                        minute=minute_number,
+                        event_type=mapped["event_type"],
+                        description=mapped["description"],
+                    )
+                    created_events.append(event)
+                    if mapped.get("stat") == "pass":
+                        pass_events += 1
+
+                for line in minute_summary.get("narrative") or []:
+                    event = MatchEvent.objects.create(
+                        match=match_locked,
+                        minute=minute_number,
+                        event_type="info",
+                        description=line,
+                    )
+                    created_events.append(event)
+
+                processed += 1
                 possessing_team_id = None
                 if match_locked.possession_indicator == 1:
                     possessing_team_id = str(match_locked.home_team_id)
                 elif match_locked.possession_indicator == 2:
                     possessing_team_id = str(match_locked.away_team_id)
 
-                # ╨Х╤Б╨╗╨╕ ╨┤╨╡╨╣╤Б╤В╨▓╨╕╨╡ ╨╖╨░╨▓╨╡╤А╤И╨░╨╡╤В ╨░╤В╨░╨║╤Г, ╨╢╨┤╤С╨╝ ╤Б╨╗╨╡╨┤╤Г╤О╤Й╨╡╨╣ ╨╝╨╕╨╜╤Г╤В╤Л
-                if result.get('continue', True) is False:
-                    match_locked.waiting_for_next_minute = True
-                
-                
-                # ╨б╨╛╨╖╨┤╨░╨╡╨╝ ╤Б╨╛╨▒╤Л╤В╨╕╨╡, ╨╡╤Б╨╗╨╕ ╨╛╨╜╨╛ ╨╡╤Б╤В╤М
-                if result.get('event'):
-                    event = MatchEvent.objects.create(**result['event'])
-                    logger.info(
-                        f"тЬЕ ╨Ф╨╡╨╣╤Б╤В╨▓╨╕╨╡ ╤Б╨╛╨╖╨┤╨░╨╜╨╛: {result['action_type']} "
-                        f"╨┤╨╗╤П ╨╝╨░╤В╤З╨░ ID={match_locked.id}"
+                if channel_layer:
+                    message_payload = {
+                        "type": "match_update",
+                        "data": {
+                            "match_id": match_locked.id,
+                            "minute": minute_number,
+                            "home_score": match_locked.home_score,
+                            "away_score": match_locked.away_score,
+                            "status": match_locked.status,
+                            "st_shoots": match_locked.st_shoots,
+                            "st_passes": match_locked.st_passes,
+                            "st_possessions": match_locked.st_possessions,
+                            "st_fouls": match_locked.st_fouls,
+                            "st_injury": match_locked.st_injury,
+                            "home_momentum": match_locked.home_momentum,
+                            "away_momentum": match_locked.away_momentum,
+                            "current_zone": match_locked.current_zone,
+                            "possessing_team_id": possessing_team_id,
+                            "events": [_serialize_event_for_ws(evt) for evt in created_events],
+                            "partial_update": True,
+                            "markov_minute": minute_summary,
+                        },
+                    }
+                    async_to_sync(channel_layer.group_send)(
+                        f"match_{match_locked.id}",
+                        message_payload,
                     )
-                    
-                    # ╨Ю╤В╨┐╤А╨░╨▓╨╗╤П╨╡╨╝ ╤Б╨╛╨▒╤Л╤В╨╕╨╡ ╨б╨а╨Р╨Ч╨г ╤З╨╡╤А╨╡╨╖ WebSocket
-                    if channel_layer:
-                        event_data = {
-                            "minute": event.minute,
-                            "event_type": event.event_type,
-                            "description": event.description,
-                            "personality_reason": event.personality_reason,
-                            "player_name": f"{event.player.first_name} {event.player.last_name}" if event.player else "",
-                            "related_player_name": f"{event.related_player.first_name} {event.related_player.last_name}" if event.related_player else ""
-                        }
-
-                        
-                        message_payload = {
-                            "type": "match_update",
-                            "data": {
-                                "match_id": match_locked.id,
-                                "minute": match_locked.current_minute,
-                                "home_score": match_locked.home_score,
-                                "away_score": match_locked.away_score,
-                                "status": match_locked.status,
-                                "st_shoots": match_locked.st_shoots,
-                                "st_passes": match_locked.st_passes,
-                                "st_possessions": match_locked.st_possessions,
-                                "st_fouls": match_locked.st_fouls,
-                                "st_injury": match_locked.st_injury,
-                                "home_momentum": match_locked.home_momentum,
-                                "away_momentum": match_locked.away_momentum,
-                                "current_zone": match_locked.current_zone,
-                                "possessing_team_id": possessing_team_id,
-                                "events": [event_data],
-                                "partial_update": True,
-                                "action_based": True  # ╨Э╨╛╨▓╤Л╨╣ ╤Д╨╗╨░╨│ ╨┤╨╗╤П ╨┐╨╛╤И╨░╨│╨╛╨▓╨╛╨╣ ╤Б╨╕╨╝╤Г╨╗╤П╤Ж╨╕╨╕
-                            }
-                        }
-                        
-                        async_to_sync(channel_layer.group_send)(
-                            f"match_{match_locked.id}",
-                            message_payload
-                        )
-                        
-                        logger.info(
-                            f"ЁЯУб ╨б╨╛╨▒╤Л╤В╨╕╨╡ ╨╛╤В╨┐╤А╨░╨▓╨╗╨╡╨╜╨╛ ╤З╨╡╤А╨╡╨╖ WebSocket ╨┤╨╗╤П ╨╝╨░╤В╤З╨░ ID={match_locked.id}"
-                        )
-                
-                # ╨Я╤А╨╛╨▓╨╡╤А╤П╨╡╨╝ ╨┤╨╛╨┐╨╛╨╗╨╜╨╕╤В╨╡╨╗╤М╨╜╨╛╨╡ ╤Б╨╛╨▒╤Л╤В╨╕╨╡ (╨╜╨░╨┐╤А╨╕╨╝╨╡╤А, ╤В╤А╨░╨▓╨╝╨░ ╨┐╨╛╤Б╨╗╨╡ ╤Д╨╛╨╗╨░)
-                if result.get('additional_event'):
-                    add_event = MatchEvent.objects.create(**result['additional_event'])
-                    # ╨Ю╤В╨┐╤А╨░╨▓╨╗╤П╨╡╨╝ ╨╕ ╨╡╨│╨╛ ╤З╨╡╤А╨╡╨╖ WebSocket
-                    if channel_layer:
-                        add_event_data = {
-                            "minute": add_event.minute,
-                            "event_type": add_event.event_type,
-                            "description": add_event.description,
-                            "personality_reason": add_event.personality_reason,
-                            "player_name": f"{add_event.player.first_name} {add_event.player.last_name}" if add_event.player else "",
-                            "related_player_name": ""
-                        }
-                        
-                        add_message_payload = {
-                            "type": "match_update",
-                            "data": {
-                                "match_id": match_locked.id,
-                                "minute": match_locked.current_minute,
-                                "home_score": match_locked.home_score,
-                                "away_score": match_locked.away_score,
-                                "status": match_locked.status,
-                                "st_shoots": match_locked.st_shoots,
-                                "st_passes": match_locked.st_passes,
-                                "st_possessions": match_locked.st_possessions,
-                                "st_fouls": match_locked.st_fouls,
-                                "st_injury": match_locked.st_injury,
-                                "home_momentum": match_locked.home_momentum,
-                                "away_momentum": match_locked.away_momentum,
-                                "current_zone": match_locked.current_zone,
-                                "possessing_team_id": possessing_team_id,
-                                "events": [add_event_data],
-                                "partial_update": True,
-                                "action_based": True
-                            }
-                        }
-                        
-                        async_to_sync(channel_layer.group_send)(
-                            f"match_{match_locked.id}",
-                            add_message_payload
-                        )
-
-                # ╨Ю╨▒╤А╨░╨▒╨░╤В╤Л╨▓╨░╨╡╨╝ ╨▓╤В╨╛╤А╨╛╨╡ ╨┤╨╛╨┐╨╛╨╗╨╜╨╕╤В╨╡╨╗╤М╨╜╨╛╨╡ ╤Б╨╛╨▒╤Л╤В╨╕╨╡ (╨╜╨░╨┐╤А╨╕╨╝╨╡╤А, ╤Г╨┤╨░╤А ╨┐╨╛╤Б╨╗╨╡ ╨┐╨╡╤А╨╡╤Е╨▓╨░╤В╨░)
-                if result.get('second_additional_event'):
-                    add_event2 = MatchEvent.objects.create(**result['second_additional_event'])
-                    if channel_layer:
-                        add_event_data2 = {
-                            "minute": add_event2.minute,
-                            "event_type": add_event2.event_type,
-                            "description": add_event2.description,
-                            "personality_reason": add_event2.personality_reason,
-                            "player_name": f"{add_event2.player.first_name} {add_event2.player.last_name}" if add_event2.player else "",
-                            "related_player_name": ""
-                        }
-
-                        add_message_payload2 = {
-                            "type": "match_update",
-                            "data": {
-                                "match_id": match_locked.id,
-                                "minute": match_locked.current_minute,
-                                "home_score": match_locked.home_score,
-                                "away_score": match_locked.away_score,
-                                "status": match_locked.status,
-                                "st_shoots": match_locked.st_shoots,
-                                "st_passes": match_locked.st_passes,
-                                "st_possessions": match_locked.st_possessions,
-                                "st_fouls": match_locked.st_fouls,
-                                "st_injury": match_locked.st_injury,
-                                "home_momentum": match_locked.home_momentum,
-                                "away_momentum": match_locked.away_momentum,
-                                "current_zone": match_locked.current_zone,
-                                "possessing_team_id": possessing_team_id,
-                                "events": [add_event_data2],
-                                "partial_update": True,
-                                "action_based": True
-                            }
-                        }
-
-                        async_to_sync(channel_layer.group_send)(
-                            f"match_{match_locked.id}",
-                            add_message_payload2
-                        )
-
-                # ╨Ю╨▒╤А╨░╨▒╨░╤В╤Л╨▓╨░╨╡╨╝ ╤В╤А╨╡╤В╤М╨╡ ╨┤╨╛╨┐╨╛╨╗╨╜╨╕╤В╨╡╨╗╤М╨╜╨╛╨╡ ╤Б╨╛╨▒╤Л╤В╨╕╨╡
-                if result.get('third_additional_event'):
-                    add_event3 = MatchEvent.objects.create(**result['third_additional_event'])
-                    if channel_layer:
-                        add_event_data3 = {
-                            "minute": add_event3.minute,
-                            "event_type": add_event3.event_type,
-                            "description": add_event3.description,
-                            "personality_reason": add_event3.personality_reason,
-                            "player_name": f"{add_event3.player.first_name} {add_event3.player.last_name}" if add_event3.player else "",
-                            "related_player_name": ""
-                        }
-
-                        add_message_payload3 = {
-                            "type": "match_update",
-                            "data": {
-                                "match_id": match_locked.id,
-                                "minute": match_locked.current_minute,
-                                "home_score": match_locked.home_score,
-                                "away_score": match_locked.away_score,
-                                "status": match_locked.status,
-                                "st_shoots": match_locked.st_shoots,
-                                "st_passes": match_locked.st_passes,
-                                "st_possessions": match_locked.st_possessions,
-                                "st_fouls": match_locked.st_fouls,
-                                "st_injury": match_locked.st_injury,
-                                "home_momentum": match_locked.home_momentum,
-                                "away_momentum": match_locked.away_momentum,
-                                "current_zone": match_locked.current_zone,
-                                "possessing_team_id": possessing_team_id,
-                                "events": [add_event_data3],
-                                "partial_update": True,
-                                "action_based": True
-                            }
-                        }
-
-                        async_to_sync(channel_layer.group_send)(
-                            f"match_{match_locked.id}",
-                            add_message_payload3
-                        )
-
-                # ╨Х╤Б╨╗╨╕ ╤Б╨╛╨▒╤Л╤В╨╕╨╡ ╨╜╨╡ ╤Б╨╛╨╖╨┤╨░╨╜╨╛, ╨╛╤В╨┐╤А╨░╨▓╨╗╤П╨╡╨╝ ╨╛╨▒╨╜╨╛╨▓╨╗╨╡╨╜╨╕╨╡ ╤Б╨╛╤Б╤В╨╛╤П╨╜╨╕╤П
-                if result.get('event') is None:
-                    possessing_team = None
-                    player_with_ball = match_locked.current_player_with_ball
-                    if player_with_ball:
-                        if player_with_ball.club_id == match_locked.home_team_id:
-                            possessing_team = match_locked.home_team
-                        elif player_with_ball.club_id == match_locked.away_team_id:
-                            possessing_team = match_locked.away_team
-                    send_update(match_locked, possessing_team)
-                
-                # ╨г╨▓╨╡╨╗╨╕╤З╨╕╨▓╨░╨╡╨╝ ╤Б╤З╨╡╤В╤З╨╕╨║ ╨┤╨╡╨╣╤Б╤В╨▓╨╕╨╣
-                actions_in_current_minute += 1
-                cache.set(cache_key, actions_in_current_minute, timeout=300)  # 5 ╨╝╨╕╨╜╤Г╤В ╤В╨░╨╣╨╝╨░╤Г╤В
-                
-                # ╨б╨╛╤Е╤А╨░╨╜╤П╨╡╨╝ ╤Б╨╛╤Б╤В╨╛╤П╨╜╨╕╨╡ ╨╝╨░╤В╤З╨░
-                match_locked.save()
 
         except Match.DoesNotExist:
-            logger.warning(f"тЭМ ╨Ь╨░╤В╤З ID={match.id} ╨╕╤Б╤З╨╡╨╖ ╨╕╨╖ ╨▒╨░╨╖╤Л ╨▓╨╛ ╨▓╤А╨╡╨╝╤П ╤Б╨╕╨╝╤Г╨╗╤П╤Ж╨╕╨╕.")
+            logger.warning(f"❌ Матч ID={match.id} исчез из базы во время симуляции.")
         except OperationalError as e:
-            logger.error(f"ЁЯФТ ╨Ю╤И╨╕╨▒╨║╨░ ╨▒╨╗╨╛╨║╨╕╤А╨╛╨▓╨║╨╕ ╨▒╨░╨╖╤Л ╨┤╨░╨╜╨╜╤Л╤Е ╨┤╨╗╤П ╨╝╨░╤В╤З╨░ {match.id}: {e}")
+            logger.error(f"🔒 Ошибка блокировки базы данных для матча {match.id}: {e}")
         except Exception as e:
-            logger.exception(f"ЁЯФе ╨Ю╤И╨╕╨▒╨║╨░ ╨┐╤А╨╕ ╤Б╨╕╨╝╤Г╨╗╤П╤Ж╨╕╨╕ ╨╝╨░╤В╤З╨░ {match.id}: {e}")
+            logger.exception(f"🔥 Ошибка при симуляции матча {match.id}: {e}")
+            _mark_match_error(match.id, str(e))
 
-    return f"Simulated actions for {matches.count()} matches"
-
+    if processed == 0:
+        return "No eligible matches for Markov minute"
+    return f"Simulated Markov minutes for {processed} matches"
 
 
 @shared_task(name='tournaments.check_season_end', bind=True)
@@ -589,7 +560,12 @@ def start_scheduled_matches():
                     match_locked.started_at = now_ts
                     match_locked.last_minute_update = now_ts
                     match_locked.waiting_for_next_minute = False
-                    match_locked.save()
+                match_locked.save()
+
+                if pass_events:
+                    Match.objects.filter(pk=match_locked.pk).update(
+                        st_passes=models.F("st_passes") + pass_events
+                    )
                     started_count += 1
                 else:
                     # ╨н╤В╨░ ╨▓╨╡╤В╨║╨░ ╨╜╨╡ ╨┤╨╛╨╗╨╢╨╜╨░ ╤Б╤А╨░╨▒╨╛╤В╨░╤В╤М, ╨╡╤Б╨╗╨╕ continue ╨▓╤Л╤И╨╡ ╨╛╤В╤А╨░╨▒╨╛╤В╨░╨╗╨╕ ╨┐╤А╨░╨▓╨╕╨╗╤М╨╜╨╛

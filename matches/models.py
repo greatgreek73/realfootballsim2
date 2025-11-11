@@ -79,7 +79,29 @@ class Match(models.Model):
     # ╨д╨╗╨░╨│ ╨╛╨╢╨╕╨┤╨░╨╜╨╕╤П ╨┐╨╡╤А╨╡╤Е╨╛╨┤╨░ ╨╜╨░ ╤Б╨╗╨╡╨┤╤Г╤О╤Й╤Г╤О ╨╝╨╕╨╜╤Г╤В╤Г
     waiting_for_next_minute = models.BooleanField(default=False)
 
-    # ╨в╨╡╨║╤Г╤Й╨╕╨╣ ╨╕╨│╤А╨╛╨║, ╨▓╨╗╨░╨┤╨╡╤О╤Й╨╕╨╣ ╨╝╤П╤З╨╛╨╝, ╨╕ ╤В╨╡╨║╤Г╤Й╨░╤П ╨╖╨╛╨╜╨░
+    # Хранилище состояния марковской симуляции
+    markov_seed = models.BigIntegerField(
+        null=True,
+        blank=True,
+        help_text="Deterministic seed that ties this match to a Markov stream.",
+    )
+    markov_token = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="Opaque token returned by the Markov runtime for the next minute.",
+    )
+    markov_coefficients = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="Attack/defense coefficients snapshot used by the runtime.",
+    )
+    markov_last_summary = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="Last minute_summary payload with raw events/actions.",
+    )
+
+    # Текущий игрок, владеющий мячом, и текущая зона
     current_player_with_ball = models.ForeignKey(
         Player,
         on_delete=models.SET_NULL,
