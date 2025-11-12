@@ -5,14 +5,14 @@ import { Alert, Box, Button, Card, CardContent, Chip, CircularProgress, Stack, T
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import EventAvailableIcon from "@mui/icons-material/EventAvailable";
-import SportsSoccerIcon from "@mui/icons-material/SportsSoccer";
+import WhatshotIcon from "@mui/icons-material/Whatshot";
 
 import PageShell from "@/components/ui/PageShell";
 import HeroBar from "@/components/ui/HeroBar";
 import { ChampionshipMatchesList } from "@/features/tournaments/components/ChampionshipMatchesList";
 import { ChampionshipStandingsTable } from "@/features/tournaments/components/ChampionshipStandingsTable";
 import { useMyChampionship } from "@/hooks/tournaments/useMyChampionship";
-import type { ChampionshipStanding } from "@/types/tournaments";
+import type { ChampionshipMatchSummary, ChampionshipStanding } from "@/types/tournaments";
 
 export default function MyChampionshipPage() {
   const { data, loading, error } = useMyChampionship();
@@ -26,6 +26,25 @@ export default function MyChampionshipPage() {
       .slice()
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [data]);
+
+  const standings = data?.standings ?? [];
+  const clubPosition = data?.club_position ?? null;
+
+  const userClubRow = useMemo(
+    () => standings.find((row) => clubPosition != null && row.position === clubPosition),
+    [standings, clubPosition],
+  );
+  const userTeamId = userClubRow?.team.id ?? null;
+
+  const clubSchedule = useMemo(() => {
+    if (!userTeamId) {
+      return schedule;
+    }
+    const filtered = schedule.filter(
+      (match) => match.home_team.id === userTeamId || match.away_team.id === userTeamId,
+    );
+    return filtered.length > 0 ? filtered : schedule;
+  }, [schedule, userTeamId]);
 
   if (loading) {
     return (
@@ -44,7 +63,8 @@ export default function MyChampionshipPage() {
   }
 
   const nextMatch =
-    schedule.find((match) => new Date(match.date).getTime() >= Date.now()) ?? (schedule.length > 0 ? schedule[0] : null);
+    clubSchedule.find((match) => new Date(match.date).getTime() >= Date.now()) ??
+    (clubSchedule.length > 0 ? clubSchedule[0] : null);
   const nextMatchLabel = nextMatch ? `${nextMatch.home_team.name} vs ${nextMatch.away_team.name}` : "No fixtures";
   const nextMatchDate = nextMatch ? new Date(nextMatch.date).toLocaleString() : "TBD";
   const playedCount = Array.isArray(data.last_results) ? data.last_results.length : 0;
@@ -55,6 +75,16 @@ export default function MyChampionshipPage() {
     clubPosition: data.club_position,
     leagueLevel: data.championship.league.level,
   });
+
+  const fixtureDifficulty = buildFixtureDifficulty({
+    schedule,
+    standings: data.standings,
+    clubPosition: data.club_position,
+    clubTeamId: userTeamId,
+  });
+  const fixtureLabel = fixtureDifficulty
+    ? `Fixture difficulty · Next ${fixtureDifficulty.matchCount} match${fixtureDifficulty.matchCount === 1 ? "" : "es"}`
+    : "Fixture difficulty";
 
   const hero = (
     <HeroBar
@@ -72,7 +102,14 @@ export default function MyChampionshipPage() {
           tooltip: gapMetric?.tooltip,
         },
         { label: "Next game", value: nextMatchDate, icon: <EventAvailableIcon fontSize="small" />, hint: nextMatchLabel },
-        { label: "Fixtures", value: schedule.length, icon: <SportsSoccerIcon fontSize="small" />, hint: "Season schedule" },
+        {
+          label: fixtureLabel,
+          value: fixtureDifficulty?.value ?? "No data",
+          icon: <WhatshotIcon fontSize="small" />,
+          hint: fixtureDifficulty?.hint,
+          badge: fixtureDifficulty?.badge,
+          tooltip: fixtureDifficulty?.tooltip,
+        },
       ]}
       actions={
         <Button component={RouterLink} to={`/championships/${data.championship.id}`} size="small" variant="outlined">
@@ -130,6 +167,17 @@ export default function MyChampionshipPage() {
   return <PageShell hero={hero} top={topSection} main={mainContent} aside={asideContent} />;
 }
 
+type FixtureDifficultyMetric = {
+  value: string;
+  hint: ReactNode;
+  badge: {
+    label: string;
+    tone: "success" | "caution" | "warning" | "danger";
+  };
+  tooltip: string;
+  matchCount: number;
+};
+
 type GapMetric = {
   value: string;
   hint: ReactNode;
@@ -139,6 +187,135 @@ type GapMetric = {
   };
   tooltip: string;
 };
+
+function buildFixtureDifficulty({
+  schedule,
+  standings,
+  clubPosition,
+  clubTeamId,
+}: {
+  schedule: ChampionshipMatchSummary[];
+  standings: ChampionshipStanding[];
+  clubPosition?: number | null;
+  clubTeamId?: number | null;
+}): FixtureDifficultyMetric | null {
+  if (!Array.isArray(schedule) || schedule.length === 0) {
+    return null;
+  }
+
+  const clubId =
+    clubTeamId ??
+    standings.find((row) => row.position === clubPosition)?.team.id ??
+    null;
+  if (!clubId) {
+    return null;
+  }
+
+  const now = Date.now();
+  const upcoming = schedule
+    .filter((match) => {
+      const matchTime = new Date(match.date).getTime();
+      const involvesClub = match.home_team.id === clubId || match.away_team.id === clubId;
+      return involvesClub && matchTime >= now;
+    })
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(0, 3);
+
+  if (upcoming.length === 0) {
+    return null;
+  }
+
+  const positionMap = new Map(standings.map((row) => [row.team.id, row.position]));
+  const totalTeams =
+    standings.length > 0
+      ? standings.length
+      : Math.max(
+          ...schedule
+            .map((match) => [match.home_team.id, match.away_team.id])
+            .flat()
+            .map((teamId) => positionMap.get(teamId) ?? 0),
+          1,
+        );
+
+  const processed = upcoming.map((match) => {
+    const isHome = match.home_team.id === clubId;
+    const opponentId = isHome ? match.away_team.id : match.home_team.id;
+    const opponentPosition = positionMap.get(opponentId);
+    const baseDifficulty =
+      opponentPosition && totalTeams > 1 ? positionToDifficulty(opponentPosition, totalTeams) : 3;
+    const travelAdjustment = isHome ? -0.2 : 0.3;
+    const adjusted = baseDifficulty + travelAdjustment;
+    const positionLabel = opponentPosition ?? "?";
+    return {
+      adjusted,
+      isHome,
+      positionLabel,
+    };
+  });
+
+  const availableMatches = processed.length;
+  if (availableMatches === 0) {
+    return null;
+  }
+
+  const average = processed.reduce((sum, item) => sum + item.adjusted, 0) / availableMatches;
+  const clamped = Math.min(5, Math.max(1, average));
+  const rounded = Math.round(clamped * 2) / 2;
+  const formattedScore = rounded.toFixed(1);
+
+  let label: "Easy" | "Moderate" | "Hard" | "Very Hard";
+  let tone: "success" | "caution" | "warning" | "danger";
+  if (rounded >= 4.5) {
+    label = "Very Hard";
+    tone = "danger";
+  } else if (rounded >= 3.5) {
+    label = "Hard";
+    tone = "warning";
+  } else if (rounded >= 2.5) {
+    label = "Moderate";
+    tone = "caution";
+  } else {
+    label = "Easy";
+    tone = "success";
+  }
+
+  const matchCountLabel = `Next ${availableMatches} match${availableMatches === 1 ? "" : "es"}`;
+  const chips = processed.map((item, index) => (
+    <span
+      key={`${item.positionLabel}-${index}`}
+      className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[11px]"
+      title={item.isHome ? "Home" : "Away"}
+    >
+      <span>{item.isHome ? "🏟" : "✈"}</span>
+      <span>{item.positionLabel}</span>
+    </span>
+  ));
+  const hint = (
+    <div className="flex flex-wrap items-center gap-2">
+      <span>{matchCountLabel}</span>
+      <span>·</span>
+      <div className="flex flex-wrap gap-1" aria-label="Upcoming opponents (🏟 home / ✈ away)">
+        {chips}
+      </div>
+    </div>
+  );
+
+  return {
+    value: `${formattedScore} / 5 — ${label}`,
+    hint,
+    badge: { label, tone },
+    tooltip: `${matchCountLabel} difficulty (auto, legend: 🏟 home / ✈ away)`,
+    matchCount: availableMatches,
+  };
+}
+
+function positionToDifficulty(position: number, totalTeams: number): number {
+  if (totalTeams <= 1) {
+    return 3;
+  }
+  const normalized = 1 - (position - 1) / (totalTeams - 1);
+  return 1 + normalized * 4;
+}
 
 function buildGapToTarget({
   standings,

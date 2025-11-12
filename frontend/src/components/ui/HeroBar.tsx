@@ -2,7 +2,7 @@ import { Children, type ReactNode } from "react";
 
 type HeroTone = "blue" | "green" | "purple" | "orange" | "teal" | "pink";
 
-type HeroKpiBadgeTone = "success" | "warning" | "danger";
+type HeroKpiBadgeTone = "success" | "caution" | "warning" | "danger";
 
 interface HeroKpi {
   label: string;
@@ -35,7 +35,8 @@ const toneClass: Record<HeroTone, string> = {
 
 const badgeToneClass: Record<HeroKpiBadgeTone, string> = {
   success: "bg-emerald-400/90 text-emerald-950",
-  warning: "bg-amber-300/90 text-amber-900",
+  caution: "bg-amber-300/90 text-amber-900",
+  warning: "bg-orange-400/90 text-white",
   danger: "bg-rose-500/90 text-white",
 };
 
