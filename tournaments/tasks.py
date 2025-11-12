@@ -2,7 +2,7 @@
 
 import time
 import logging
-from typing import Optional
+from typing import Optional, Iterable
 from celery import shared_task
 from django.utils import timezone
 from django.db import transaction, OperationalError
@@ -92,9 +92,6 @@ def _map_markov_event_to_match_event(match: Match, raw_event: dict) -> Optional[
         winner = _team_display(match, raw_event.get("possession"))
         description = f"Turnover! {winner} gain possession in {zone_label}."
         return {"event_type": "interception", "description": description}
-    if frm.startswith("OPEN_PLAY_") and (raw_event.get("to") or "").upper().startswith("OPEN_PLAY_") and not turnover:
-        description = f"{actor} circulate possession through {zone_label}."
-        return {"event_type": "pass", "description": description, "stat": "pass"}
     return None
 
 
@@ -255,10 +252,17 @@ def simulate_active_matches(self):
                             "markov_minute": minute_summary,
                         },
                     }
-                    async_to_sync(channel_layer.group_send)(
-                        f"match_{match_locked.id}",
-                        message_payload,
-                    )
+                    try:
+                        async_to_sync(channel_layer.group_send)(
+                            f"match_{match_locked.id}",
+                            message_payload,
+                        )
+                    except Exception as ws_error:  # pragma: no cover - best effort broadcast
+                        logger.warning(
+                            "⚠️ WebSocket broadcast failed for match %s: %s",
+                            match_locked.id,
+                            ws_error,
+                        )
 
         except Match.DoesNotExist:
             logger.warning(f"❌ Матч ID={match.id} исчез из базы во время симуляции.")
@@ -482,28 +486,24 @@ def complete_lineup(club: Club, current_lineup: dict):
 
 
 @shared_task(name='tournaments.start_scheduled_matches')
-def start_scheduled_matches():
+def start_scheduled_matches(match_ids: Optional[Iterable[int]] = None):
     """
-    ╨Я╨╡╤А╨╡╨▓╨╛╨┤╨╕╤В ╨╝╨░╤В╤З╨╕ ╨╕╨╖ scheduled ╨▓ in_progress ╨╕ ╨║╨╛╨┐╨╕╤А╤Г╨╡╤В/╨┤╨╛╨┐╨╛╨╗╨╜╤П╨╡╤В ╤Б╨╛╤Б╤В╨░╨▓╤Л ╨║╨╛╨╝╨░╨╜╨┤.
+    Переводит матчи из scheduled в in_progress и копирует/дополняет составы команд.
+    Если переданы match_ids, запускает только выбранные матчи.
     """
     now = timezone.now()
 
-    # ╨Ш╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╨╝ transaction.atomic ╨┤╨╗╤П ╨║╨░╨╢╨┤╨╛╨╣ ╨║╨╛╨╝╨░╨╜╨┤╤Л ╨╛╤В╨┤╨╡╨╗╤М╨╜╨╛,
-    # ╤З╤В╨╛╨▒╤Л ╨╛╤И╨╕╨▒╨║╨░ ╨▓ ╨╛╨┤╨╜╨╛╨╣ ╨╜╨╡ ╨╛╤В╨║╨░╤В╤Л╨▓╨░╨╗╨░ ╨┤╤А╤Г╨│╨╕╨╡.
-    matches_to_process = Match.objects.filter(
-        status='scheduled',
-        datetime__lte=now
-    )
+    matches_to_process = Match.objects.filter(status='scheduled', datetime__lte=now)
+    if match_ids:
+        matches_to_process = matches_to_process.filter(id__in=match_ids)
+
     started_count = 0
     skipped_count = 0
 
     for match in matches_to_process:
         try:
             with transaction.atomic():
-                # ╨С╨╗╨╛╨║╨╕╤А╤Г╨╡╨╝ ╨╝╨░╤В╤З ╨╜╨░ ╨▓╤А╨╡╨╝╤П ╨╛╨▒╤А╨░╨▒╨╛╤В╨║╨╕
                 match_locked = Match.objects.select_for_update().get(pk=match.pk)
-
-                # ╨Я╤А╨╛╨▓╨╡╤А╤П╨╡╨╝ ╤Б╤В╨░╤В╤Г╤Б ╨╡╤Й╨╡ ╤А╨░╨╖ ╨▓╨╜╤Г╤В╤А╨╕ ╤В╤А╨░╨╜╨╖╨░╨║╤Ж╨╕╨╕, ╨▓╨┤╤А╤Г╨│ ╨╛╨╜ ╨╕╨╖╨╝╨╡╨╜╨╕╨╗╤Б╤П
                 if match_locked.status != 'scheduled' or match_locked.datetime > timezone.now():
                     skipped_count += 1
                     continue
@@ -513,43 +513,38 @@ def start_scheduled_matches():
                 home_tactic = 'balanced'
                 away_tactic = 'balanced'
 
-                # --- ╨Ю╨▒╤А╨░╨▒╨░╤В╤Л╨▓╨░╨╡╨╝ ╨┤╨╛╨╝╨░╤И╨╜╤О╤О ╨║╨╛╨╝╨░╨╜╨┤╤Г ---
                 home_data_from_club = match_locked.home_team.lineup or {"lineup": {}, "tactic": "balanced"}
                 if not isinstance(home_data_from_club, dict) or 'lineup' not in home_data_from_club:
-                     home_data_from_club = {"lineup": {}, "tactic": "balanced"}
+                    home_data_from_club = {"lineup": {}, "tactic": "balanced"}
 
                 home_lineup_from_club = home_data_from_club.get('lineup', {})
                 home_tactic = home_data_from_club.get('tactic', 'balanced')
 
                 if isinstance(home_lineup_from_club, dict) and len(home_lineup_from_club) >= 11 and all(str(i) in home_lineup_from_club for i in range(11)):
-                     # ╨Х╤Б╨╗╨╕ ╤Б╨╛╤Б╤В╨░╨▓ ╨▓ ╨║╨╗╤Г╨▒╨╡ ╤Г╨╢╨╡ ╨┐╨╛╨╗╨╜╤Л╨╣ (11 ╨╕╨│╤А╨╛╨║╨╛╨▓, ╨║╨╗╤О╤З╨╕ 0-10), ╨┐╤А╨╛╤Б╤В╨╛ ╨▒╨╡╤А╨╡╨╝ ╨╡╨│╨╛
-                     final_home_lineup = home_lineup_from_club
+                    final_home_lineup = home_lineup_from_club
                 else:
-                     # ╨Х╤Б╨╗╨╕ ╤Б╨╛╤Б╤В╨░╨▓ ╨╜╨╡╨┐╨╛╨╗╨╜╤Л╨╣ ╨╕╨╗╨╕ ╨╜╨╡╨║╨╛╤А╤А╨╡╨║╤В╨╜╤Л╨╣, ╨┐╤Л╤В╨░╨╡╨╝╤Б╤П ╨┤╨╛╨┐╨╛╨╗╨╜╨╕╤В╤М
-                     completed_home = complete_lineup(match_locked.home_team, home_lineup_from_club)
-                     if completed_home is None:
-                         skipped_count += 1
-                         continue # ╨Я╤А╨╛╨┐╤Г╤Б╨║╨░╨╡╨╝ ╤Н╤В╨╛╤В ╨╝╨░╤В╤З, ╨╛╤В╨║╨░╤В╤Л╨▓╨░╨╡╨╝ ╤В╤А╨░╨╜╨╖╨░╨║╤Ж╨╕╤О ╨┤╨╗╤П ╨╜╨╡╨│╨╛
-                     final_home_lineup = completed_home
+                    completed_home = complete_lineup(match_locked.home_team, home_lineup_from_club)
+                    if completed_home is None:
+                        skipped_count += 1
+                        continue
+                    final_home_lineup = completed_home
 
-                # --- ╨Ю╨▒╤А╨░╨▒╨░╤В╤Л╨▓╨░╨╡╨╝ ╨│╨╛╤Б╤В╨╡╨▓╤Г╤О ╨║╨╛╨╝╨░╨╜╨┤╤Г (╨░╨╜╨░╨╗╨╛╨│╨╕╤З╨╜╨╛) ---
                 away_data_from_club = match_locked.away_team.lineup or {"lineup": {}, "tactic": "balanced"}
                 if not isinstance(away_data_from_club, dict) or 'lineup' not in away_data_from_club:
-                     away_data_from_club = {"lineup": {}, "tactic": "balanced"}
+                    away_data_from_club = {"lineup": {}, "tactic": "balanced"}
 
                 away_lineup_from_club = away_data_from_club.get('lineup', {})
                 away_tactic = away_data_from_club.get('tactic', 'balanced')
 
                 if isinstance(away_lineup_from_club, dict) and len(away_lineup_from_club) >= 11 and all(str(i) in away_lineup_from_club for i in range(11)):
-                     final_away_lineup = away_lineup_from_club
+                    final_away_lineup = away_lineup_from_club
                 else:
-                     completed_away = complete_lineup(match_locked.away_team, away_lineup_from_club)
-                     if completed_away is None:
-                         skipped_count += 1
-                         continue # ╨Я╤А╨╛╨┐╤Г╤Б╨║╨░╨╡╨╝ ╤Н╤В╨╛╤В ╨╝╨░╤В╤З
-                     final_away_lineup = completed_away
+                    completed_away = complete_lineup(match_locked.away_team, away_lineup_from_club)
+                    if completed_away is None:
+                        skipped_count += 1
+                        continue
+                    final_away_lineup = completed_away
 
-                # --- ╨Х╤Б╨╗╨╕ ╨╛╨▒╨░ ╤Б╨╛╤Б╤В╨░╨▓╨░ ╨│╨╛╤В╨╛╨▓╤Л, ╤Б╨╛╤Е╤А╨░╨╜╤П╨╡╨╝ ╨╕ ╨╝╨╡╨╜╤П╨╡╨╝ ╤Б╤В╨░╤В╤Г╤Б ---
                 if final_home_lineup and final_away_lineup:
                     match_locked.home_lineup = final_home_lineup
                     match_locked.home_tactic = home_tactic
@@ -560,27 +555,20 @@ def start_scheduled_matches():
                     match_locked.started_at = now_ts
                     match_locked.last_minute_update = now_ts
                     match_locked.waiting_for_next_minute = False
-                match_locked.save()
-
-                if pass_events:
-                    Match.objects.filter(pk=match_locked.pk).update(
-                        st_passes=models.F("st_passes") + pass_events
-                    )
+                    match_locked.save()
                     started_count += 1
                 else:
-                    # ╨н╤В╨░ ╨▓╨╡╤В╨║╨░ ╨╜╨╡ ╨┤╨╛╨╗╨╢╨╜╨░ ╤Б╤А╨░╨▒╨╛╤В╨░╤В╤М, ╨╡╤Б╨╗╨╕ continue ╨▓╤Л╤И╨╡ ╨╛╤В╤А╨░╨▒╨╛╤В╨░╨╗╨╕ ╨┐╤А╨░╨▓╨╕╨╗╤М╨╜╨╛
                     skipped_count += 1
                     continue
 
         except Match.DoesNotExist:
-             skipped_count += 1
-        except OperationalError as e_lock:
-             skipped_count += 1
-        except Exception as e_match:
-             skipped_count += 1
+            skipped_count += 1
+        except OperationalError:
+            skipped_count += 1
+        except Exception:
+            skipped_count += 1
 
     return f"{started_count} matches started, {skipped_count} skipped."
-
 
 @shared_task(name='tournaments.advance_match_minutes')
 def advance_match_minutes():

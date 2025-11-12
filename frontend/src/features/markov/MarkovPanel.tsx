@@ -21,8 +21,17 @@ import FlagCircleIcon from "@mui/icons-material/FlagCircle";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import WhatshotIcon from "@mui/icons-material/Whatshot";
 import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
-import PauseIcon from "@mui/icons-material/Pause";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+
+export type MarkovPanelMode = "manual" | "live";
+
+interface MarkovPanelProps {
+  matchId: number;
+  homeName: string;
+  awayName: string;
+  onMinute?: (summary: any) => void;
+  liveSummary?: any;
+  mode?: MarkovPanelMode;
+}
 
 export function MarkovPanel({
   matchId,
@@ -30,13 +39,8 @@ export function MarkovPanel({
   awayName,
   onMinute,
   liveSummary,
-}: {
-  matchId: number;
-  homeName: string;
-  awayName: string;
-  onMinute?: (summary: any) => void;
-  liveSummary?: any;
-}) {
+  mode = "live",
+}: MarkovPanelProps) {
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +52,7 @@ export function MarkovPanel({
   const autoPlayRef = useRef(autoPlay);
   const lastFetchAtRef = useRef<number | null>(null);
   const theme = useTheme();
-  const liveMode = typeof liveSummary !== "undefined";
+  const liveMode = mode === "live" || typeof liveSummary !== "undefined";
 
   const SPEED_INTERVALS: Record<1 | 2 | 4, number> = {
     1: 60000,
@@ -289,65 +293,69 @@ export function MarkovPanel({
       <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems="center">
         <Typography variant="subtitle1">Markov v0 (1-minute stream)</Typography>
 
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => {
-            clearAutoTimeout();
-            void fetchMinute();
-          }}
-          disabled={loading || !Number.isFinite(matchId)}
-        >
-          {loading ? "Loading..." : "Next minute"}
-        </Button>
-
-        <ButtonGroup
-          size="small"
-          variant="outlined"
-          color="primary"
-          sx={{ ml: 1 }}
-        >
-          {[1, 2, 4].map((option) => (
+        {!liveMode && (
+          <>
             <Button
-              key={option}
-              variant={speed === option ? "contained" : "outlined"}
-              onClick={() => setSpeed(option as 1 | 2 | 4)}
-            >
-              {`${option}×`}
-            </Button>
-          ))}
-        </ButtonGroup>
-
-        <Button
-          size="small"
-          variant={autoPlay ? "outlined" : "contained"}
-          color={autoPlay ? "warning" : "success"}
-          startIcon={autoPlay ? <PauseIcon /> : <PlayArrowIcon />}
-          onClick={() => {
-            setAutoPlay((prev) => {
-              const next = !prev;
-              if (next) {
-                if (!summary && !loading) {
-                  void fetchMinute();
-                } else {
-                  scheduleAutoFetch();
-                }
-              } else {
+              variant="outlined"
+              size="small"
+              onClick={() => {
                 clearAutoTimeout();
-              }
-              return next;
-            });
-          }}
-        >
-          {autoPlay ? "Pause" : "Play"}
-        </Button>
+                void fetchMinute();
+              }}
+              disabled={loading || !Number.isFinite(matchId)}
+            >
+              {loading ? "Loading..." : "Next minute"}
+            </Button>
+
+            <ButtonGroup
+              size="small"
+              variant="outlined"
+              color="primary"
+              sx={{ ml: 1 }}
+            >
+              {[1, 2, 4].map((option) => (
+                <Button
+                  key={option}
+                  variant={speed === option ? "contained" : "outlined"}
+                  onClick={() => setSpeed(option as 1 | 2 | 4)}
+                >
+                  {`${option}×`}
+                </Button>
+              ))}
+            </ButtonGroup>
+
+            <Button
+              size="small"
+              variant={autoPlay ? "outlined" : "contained"}
+              color={autoPlay ? "warning" : "success"}
+              startIcon={autoPlay ? <PauseIcon /> : <PlayArrowIcon />}
+              onClick={() => {
+                setAutoPlay((prev) => {
+                  const next = !prev;
+                  if (next) {
+                    if (!summary && !loading) {
+                      void fetchMinute();
+                    } else {
+                      scheduleAutoFetch();
+                    }
+                  } else {
+                    clearAutoTimeout();
+                  }
+                  return next;
+                });
+              }}
+            >
+              {autoPlay ? "Pause" : "Play"}
+            </Button>
+          </>
+        )}
 
         <Typography
           variant="caption"
           color={autoPlay ? "success.main" : "text.secondary"}
           sx={{ ml: 1 }}
         >
-          {autoPlay ? `Auto running ×${speed}` : "Paused"}
+          {liveMode ? "Live feed" : autoPlay ? `Auto running ×${speed}` : "Paused"}
         </Typography>
 
         <Typography variant="caption" color={error ? "error" : "text.secondary"}>
@@ -482,7 +490,7 @@ export function MarkovPanel({
         </>
       ) : (
         <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-          Нет данных для текущей минуты — нажмите «Next minute».
+          Live data will appear here once the simulation publishes the first minute.
         </Typography>
       )}
 

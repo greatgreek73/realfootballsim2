@@ -919,6 +919,7 @@ return mergedAll;
                       awayName={match.away.name}
                       onMinute={setMarkovSummary}
                       liveSummary={markovSummary ?? undefined}
+                      mode="live"
                     />
                   </Grid>
                 </Grid>
