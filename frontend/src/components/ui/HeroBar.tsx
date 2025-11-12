@@ -2,11 +2,18 @@ import { Children, type ReactNode } from "react";
 
 type HeroTone = "blue" | "green" | "purple" | "orange" | "teal" | "pink";
 
+type HeroKpiBadgeTone = "success" | "warning" | "danger";
+
 interface HeroKpi {
   label: string;
   value: string | number;
   icon?: ReactNode;
-  hint?: string;
+  hint?: ReactNode;
+  badge?: {
+    label: string;
+    tone?: HeroKpiBadgeTone;
+  };
+  tooltip?: string;
 }
 
 interface HeroBarProps {
@@ -24,6 +31,12 @@ const toneClass: Record<HeroTone, string> = {
   orange: "from-orange-600 via-amber-500 to-yellow-400",
   teal: "from-cyan-700 via-teal-600 to-sky-500",
   pink: "from-rose-600 via-pink-500 to-fuchsia-500",
+};
+
+const badgeToneClass: Record<HeroKpiBadgeTone, string> = {
+  success: "bg-emerald-400/90 text-emerald-950",
+  warning: "bg-amber-300/90 text-amber-900",
+  danger: "bg-rose-500/90 text-white",
 };
 
 export default function HeroBar({ title, subtitle, kpis, actions, tone = "blue" }: HeroBarProps) {
@@ -49,14 +62,27 @@ export default function HeroBar({ title, subtitle, kpis, actions, tone = "blue" 
       {safeKpis.length > 0 && (
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {safeKpis.map((kpi, index) => (
-            <div key={`${kpi.label}-${index}`} className="bg-white/15 rounded-xl p-4 flex gap-3">
+            <div
+              key={`${kpi.label}-${index}`}
+              className="bg-white/15 rounded-xl p-4 flex gap-3"
+              title={kpi.tooltip}
+            >
               {kpi.icon && (
                 <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
                   {kpi.icon}
                 </div>
               )}
               <div className="flex flex-col justify-center">
-                <div className="text-xs uppercase tracking-wide text-white/70">{kpi.label}</div>
+                <div className="flex items-center gap-2">
+                  <div className="text-xs uppercase tracking-wide text-white/70">{kpi.label}</div>
+                  {kpi.badge && (
+                    <span
+                      className={`text-[10px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 leading-none ${badgeToneClass[kpi.badge.tone ?? "success"]}`}
+                    >
+                      {kpi.badge.label}
+                    </span>
+                  )}
+                </div>
                 <div className="text-lg font-semibold leading-tight">{kpi.value}</div>
                 {kpi.hint && <div className="text-xs text-white/80 mt-0.5">{kpi.hint}</div>}
               </div>
