@@ -1,7 +1,7 @@
 import { useMemo, type ReactNode } from "react";
 
 import { Link as RouterLink } from "react-router-dom";
-import { Alert, Box, Button, Card, CardContent, Chip, CircularProgress, Stack, Typography } from "@mui/material";
+import { Alert, Box, Button, Card, CardContent, CircularProgress, Stack, Typography } from "@mui/material";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import EventAvailableIcon from "@mui/icons-material/EventAvailable";
@@ -18,10 +18,7 @@ export default function MyChampionshipPage() {
   const { data, loading, error } = useMyChampionship();
   const schedule = useMemo(() => {
     if (!data) return [];
-    const base =
-      Array.isArray(data.schedule) && data.schedule.length > 0
-        ? data.schedule
-        : [...(data.last_results ?? []), ...(data.next_matches ?? [])];
+    const base = Array.isArray(data.schedule) ? data.schedule : [];
     return base
       .slice()
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -67,9 +64,6 @@ export default function MyChampionshipPage() {
     (clubSchedule.length > 0 ? clubSchedule[0] : null);
   const nextMatchLabel = nextMatch ? `${nextMatch.home_team.name} vs ${nextMatch.away_team.name}` : "No fixtures";
   const nextMatchDate = nextMatch ? new Date(nextMatch.date).toLocaleString() : "TBD";
-  const playedCount = Array.isArray(data.last_results) ? data.last_results.length : 0;
-  const upcomingCount = Array.isArray(data.next_matches) ? data.next_matches.length : 0;
-
   const gapMetric = buildGapToTarget({
     standings: data.standings,
     clubPosition: data.club_position,
@@ -119,26 +113,6 @@ export default function MyChampionshipPage() {
     />
   );
 
-
-
-  const topSection = (
-    <Card>
-      <CardContent>
-        <Stack spacing={2}>
-          <Typography variant="subtitle1" fontWeight={600}>
-            Match focus
-          </Typography>
-          <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} flexWrap="wrap">
-            <Chip label={`Played: ${playedCount}`} />
-            <Chip label={`Upcoming: ${upcomingCount}`} />
-            <Chip label={`Schedule size: ${schedule.length}`} />
-            <Chip label={`Next: ${nextMatchLabel}`} color="secondary" />
-          </Stack>
-        </Stack>
-      </CardContent>
-    </Card>
-  );
-
   const mainContent = (
     <Card sx={{ minWidth: 0 }}>
       <CardContent>
@@ -164,7 +138,7 @@ export default function MyChampionshipPage() {
       </CardContent>
     </Card>
   );
-  return <PageShell hero={hero} top={topSection} main={mainContent} aside={asideContent} />;
+  return <PageShell hero={hero} main={mainContent} aside={asideContent} />;
 }
 
 type FixtureDifficultyMetric = {

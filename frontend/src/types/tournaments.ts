@@ -80,6 +80,4 @@ export interface MyChampionshipResponse {
   standings: ChampionshipStanding[];
   club_position: number;
   schedule: ChampionshipMatchSummary[];
-  next_matches: ChampionshipMatchSummary[];
-  last_results: ChampionshipMatchSummary[];
 }
