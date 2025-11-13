@@ -1,18 +1,35 @@
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Link as RouterLink } from "react-router-dom";
 import { Alert, Box, Button, Card, CardContent, CircularProgress, Stack, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import EventAvailableIcon from "@mui/icons-material/EventAvailable";
 import WhatshotIcon from "@mui/icons-material/Whatshot";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 import PageShell from "@/components/ui/PageShell";
 import HeroBar from "@/components/ui/HeroBar";
-import { ChampionshipMatchesList } from "@/features/tournaments/components/ChampionshipMatchesList";
 import { ChampionshipStandingsTable } from "@/features/tournaments/components/ChampionshipStandingsTable";
 import { useMyChampionship } from "@/hooks/tournaments/useMyChampionship";
 import type { ChampionshipMatchSummary, ChampionshipStanding } from "@/types/tournaments";
+import {
+  buildFixtureDifficulty,
+  buildGapToTarget,
+  describeMatchStatus,
+  determineCurrentRound,
+  formatDateTime,
+  formatOrdinal,
+  getResultBadge,
+  groupMatchesByRound,
+  type RoundGroup,
+} from "./utils";
+
+type ClubRound = RoundGroup & {
+  clubMatch: ChampionshipMatchSummary;
+};
 
 export default function MyChampionshipPage() {
   const { data, loading, error } = useMyChampionship();
@@ -43,6 +60,68 @@ export default function MyChampionshipPage() {
     return filtered.length > 0 ? filtered : schedule;
   }, [schedule, userTeamId]);
 
+  const positionMap = useMemo(
+    () => new Map(standings.map((row) => [row.team.id, row.position])),
+    [standings],
+  );
+
+  const roundGroups = useMemo(() => groupMatchesByRound(schedule), [schedule]);
+
+  const clubRounds = useMemo<ClubRound[]>(() => {
+    if (roundGroups.length === 0) {
+      return [];
+    }
+
+    const entries = roundGroups
+      .map<ClubRound | null>((round) => {
+        const clubMatch =
+          userTeamId != null
+            ? round.matches.find(
+                (match) => match.home_team.id === userTeamId || match.away_team.id === userTeamId,
+              )
+            : round.matches[0];
+        if (!clubMatch) {
+          return null;
+        }
+        return {
+          ...round,
+          clubMatch,
+        };
+      })
+      .filter((entry): entry is ClubRound => Boolean(entry));
+
+    if (entries.length > 0) {
+      return entries;
+    }
+
+    return roundGroups
+      .map((round) => (round.matches[0] ? { ...round, clubMatch: round.matches[0] } : null))
+      .filter((entry): entry is ClubRound => Boolean(entry));
+  }, [roundGroups, userTeamId]);
+
+  const currentRoundNumber = useMemo(() => determineCurrentRound(schedule, Date.now()), [schedule]);
+  const [expandedRound, setExpandedRound] = useState<number | null>(null);
+  const roundRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const autoScrolledRef = useRef(false);
+
+  useEffect(() => {
+    if (autoScrolledRef.current) {
+      return;
+    }
+    if (!currentRoundNumber) {
+      return;
+    }
+    const node = roundRefs.current[currentRoundNumber];
+    if (node) {
+      node.scrollIntoView({ behavior: "smooth", block: "center" });
+      autoScrolledRef.current = true;
+    }
+  }, [currentRoundNumber, clubRounds.length]);
+
+  const handleRoundToggle = (round: number) => {
+    setExpandedRound((prev) => (prev === round ? null : round));
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
@@ -63,7 +142,7 @@ export default function MyChampionshipPage() {
     clubSchedule.find((match) => new Date(match.date).getTime() >= Date.now()) ??
     (clubSchedule.length > 0 ? clubSchedule[0] : null);
   const nextMatchLabel = nextMatch ? `${nextMatch.home_team.name} vs ${nextMatch.away_team.name}` : "No fixtures";
-  const nextMatchDate = nextMatch ? new Date(nextMatch.date).toLocaleString() : "TBD";
+  const nextMatchDate = nextMatch ? formatDateTime(nextMatch.date) : "TBD";
   const gapMetric = buildGapToTarget({
     standings: data.standings,
     clubPosition: data.club_position,
@@ -126,258 +205,197 @@ export default function MyChampionshipPage() {
 
   const asideContent = (
     <Card sx={{ minWidth: 0 }}>
-      <CardContent>
-        <Typography variant="h6" sx={{ mb: 2, textAlign: { md: "right" } }}>
-          Season schedule
-        </Typography>
-        {schedule.length === 0 ? (
-          <Typography variant="body2">No fixtures available.</Typography>
+      <CardContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <Typography variant="h6">Rounds — My club</Typography>
+        {clubRounds.length === 0 ? (
+          <Typography variant="body2">
+            {userTeamId ? "No fixtures available for your club." : "No fixtures available."}
+          </Typography>
         ) : (
-          <ChampionshipMatchesList matches={schedule} />
+          <Stack spacing={1.5} sx={{ maxHeight: { md: 600 }, overflowY: "auto", pr: 1 }}>
+            {clubRounds.map((roundEntry) => {
+              const { round, dateRange, matches, clubMatch } = roundEntry;
+              const isCurrentRound = currentRoundNumber === round;
+              const badge = getResultBadge(clubMatch, userTeamId);
+              const statusColor = toneToColor(badge.tone);
+              const isFutureMatch =
+                clubMatch.status === "scheduled" || clubMatch.status === "in_progress";
+              const opponentTeam =
+                userTeamId != null
+                  ? clubMatch.home_team.id === userTeamId
+                    ? clubMatch.away_team
+                    : clubMatch.home_team
+                  : null;
+              const opponentPosition = opponentTeam ? positionMap.get(opponentTeam.id) : undefined;
+
+              return (
+                <Stack
+                  key={round}
+                  spacing={expandedRound === round ? 1.25 : 0.75}
+                  ref={(node) => {
+                    roundRefs.current[round] = node;
+                  }}
+                  sx={(theme) => ({
+                    borderRadius: 2,
+                    border: "1px solid",
+                    borderColor: isCurrentRound ? theme.palette.primary.main : "divider",
+                    backgroundColor: isCurrentRound
+                      ? alpha(theme.palette.primary.main, 0.08)
+                      : "transparent",
+                    p: 1.5,
+                  })}
+                >
+                  <Stack
+                    direction="row"
+                    spacing={1.5}
+                    alignItems="center"
+                    justifyContent="space-between"
+                    onClick={() => handleRoundToggle(round)}
+                    sx={{ cursor: "pointer" }}
+                  >
+                    <Stack spacing={0.5} sx={{ flexGrow: 1 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Round {round} · {dateRange}
+                      </Typography>
+                      <Typography variant="body2" fontWeight={600}>
+                        {renderTeamLabel(
+                          clubMatch.home_team,
+                          userTeamId,
+                          opponentTeam,
+                          opponentPosition,
+                        )}{" "}
+                        –{" "}
+                        {renderTeamLabel(
+                          clubMatch.away_team,
+                          userTeamId,
+                          opponentTeam,
+                          opponentPosition,
+                        )}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: statusColor }}>
+                        {badge.label}
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Button
+                        component={RouterLink}
+                        to={`/matches/${clubMatch.match_id}`}
+                        size="small"
+                        variant={isFutureMatch ? "contained" : "outlined"}
+                        color={isFutureMatch ? "primary" : "inherit"}
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        View
+                      </Button>
+                      <ExpandMoreIcon
+                        fontSize="small"
+                        sx={{
+                          transition: "transform 0.2s ease",
+                          transform: expandedRound === round ? "rotate(180deg)" : "rotate(0deg)",
+                        }}
+                      />
+                    </Stack>
+                  </Stack>
+
+                  {expandedRound === round && (
+                    <Stack spacing={1}>
+                      {matches.map((match) => {
+                        const isClubMatch =
+                          userTeamId != null &&
+                          (match.home_team.id === userTeamId || match.away_team.id === userTeamId);
+                        return (
+                          <Stack
+                            key={match.id}
+                            direction="row"
+                            spacing={1}
+                            alignItems="center"
+                            justifyContent="space-between"
+                            sx={(theme) => ({
+                              borderRadius: 1.5,
+                              p: 1,
+                              backgroundColor: isClubMatch
+                                ? alpha(theme.palette.primary.main, 0.08)
+                                : "transparent",
+                            })}
+                          >
+                            <Stack spacing={0.25} sx={{ flexGrow: 1 }}>
+                              <Typography variant="body2" fontWeight={isClubMatch ? 600 : 500}>
+                                {match.home_team.name} – {match.away_team.name}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {describeMatchStatus(match)}
+                              </Typography>
+                            </Stack>
+                            <Button
+                              component={RouterLink}
+                              to={`/matches/${match.match_id}`}
+                              size="small"
+                              variant="text"
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              View
+                            </Button>
+                          </Stack>
+                        );
+                      })}
+                    </Stack>
+                  )}
+                </Stack>
+              );
+            })}
+          </Stack>
         )}
+        <Button
+          component={RouterLink}
+          to="/championships/my/schedule"
+          size="small"
+          variant="text"
+          endIcon={<ArrowForwardIcon fontSize="small" />}
+          sx={{ alignSelf: { md: "flex-end" } }}
+        >
+          Full schedule
+        </Button>
       </CardContent>
     </Card>
   );
   return <PageShell hero={hero} main={mainContent} aside={asideContent} />;
 }
 
-type FixtureDifficultyMetric = {
-  value: string;
-  hint: ReactNode;
-  badge: {
-    label: string;
-    tone: "success" | "caution" | "warning" | "danger";
-  };
-  tooltip: string;
-  matchCount: number;
-};
-
-type GapMetric = {
-  value: string;
-  hint: ReactNode;
-  badge: {
-    label: string;
-    tone: "success" | "warning" | "danger";
-  };
-  tooltip: string;
-};
-
-function buildFixtureDifficulty({
-  schedule,
-  standings,
-  clubPosition,
-  clubTeamId,
-}: {
-  schedule: ChampionshipMatchSummary[];
-  standings: ChampionshipStanding[];
-  clubPosition?: number | null;
-  clubTeamId?: number | null;
-}): FixtureDifficultyMetric | null {
-  if (!Array.isArray(schedule) || schedule.length === 0) {
-    return null;
-  }
-
-  const clubId =
-    clubTeamId ??
-    standings.find((row) => row.position === clubPosition)?.team.id ??
-    null;
-  if (!clubId) {
-    return null;
-  }
-
-  const now = Date.now();
-  const upcoming = schedule
-    .filter((match) => {
-      const matchTime = new Date(match.date).getTime();
-      const involvesClub = match.home_team.id === clubId || match.away_team.id === clubId;
-      return involvesClub && matchTime >= now;
-    })
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(0, 3);
-
-  if (upcoming.length === 0) {
-    return null;
-  }
-
-  const positionMap = new Map(standings.map((row) => [row.team.id, row.position]));
-  const totalTeams =
-    standings.length > 0
-      ? standings.length
-      : Math.max(
-          ...schedule
-            .map((match) => [match.home_team.id, match.away_team.id])
-            .flat()
-            .map((teamId) => positionMap.get(teamId) ?? 0),
-          1,
-        );
-
-  const processed = upcoming.map((match) => {
-    const isHome = match.home_team.id === clubId;
-    const opponentId = isHome ? match.away_team.id : match.home_team.id;
-    const opponentPosition = positionMap.get(opponentId);
-    const baseDifficulty =
-      opponentPosition && totalTeams > 1 ? positionToDifficulty(opponentPosition, totalTeams) : 3;
-    const travelAdjustment = isHome ? -0.2 : 0.3;
-    const adjusted = baseDifficulty + travelAdjustment;
-    const positionLabel = opponentPosition ?? "?";
-    return {
-      adjusted,
-      isHome,
-      positionLabel,
-    };
-  });
-
-  const availableMatches = processed.length;
-  if (availableMatches === 0) {
-    return null;
-  }
-
-  const average = processed.reduce((sum, item) => sum + item.adjusted, 0) / availableMatches;
-  const clamped = Math.min(5, Math.max(1, average));
-  const rounded = Math.round(clamped * 2) / 2;
-  const formattedScore = rounded.toFixed(1);
-
-  let label: "Easy" | "Moderate" | "Hard" | "Very Hard";
-  let tone: "success" | "caution" | "warning" | "danger";
-  if (rounded >= 4.5) {
-    label = "Very Hard";
-    tone = "danger";
-  } else if (rounded >= 3.5) {
-    label = "Hard";
-    tone = "warning";
-  } else if (rounded >= 2.5) {
-    label = "Moderate";
-    tone = "caution";
-  } else {
-    label = "Easy";
-    tone = "success";
-  }
-
-  const matchCountLabel = `Next ${availableMatches} match${availableMatches === 1 ? "" : "es"}`;
-  const chips = processed.map((item, index) => (
-    <span
-      key={`${item.positionLabel}-${index}`}
-      className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[11px]"
-      title={item.isHome ? "Home" : "Away"}
+function renderTeamLabel(
+  team: ChampionshipMatchSummary["home_team"],
+  userTeamId?: number | null,
+  opponentTeam?: ChampionshipMatchSummary["home_team"] | ChampionshipMatchSummary["away_team"] | null,
+  opponentPosition?: number,
+) {
+  const isUserTeam = userTeamId != null && team.id === userTeamId;
+  const isOpponent = opponentTeam && opponentTeam.id === team.id && opponentPosition != null;
+  return (
+    <Box
+      component="span"
+      sx={{
+        fontWeight: isUserTeam ? 700 : 500,
+        color: isUserTeam ? "text.primary" : "text.secondary",
+      }}
     >
-      <span>{item.isHome ? "🏟" : "✈"}</span>
-      <span>{item.positionLabel}</span>
-    </span>
-  ));
-  const hint = (
-    <div className="flex flex-wrap items-center gap-2">
-      <span>{matchCountLabel}</span>
-      <span>·</span>
-      <div className="flex flex-wrap gap-1" aria-label="Upcoming opponents (🏟 home / ✈ away)">
-        {chips}
-      </div>
-    </div>
+      {team.name}
+      {isOpponent ? ` (${formatOrdinal(opponentPosition as number)})` : ""}
+    </Box>
   );
-
-  return {
-    value: `${formattedScore} / 5 — ${label}`,
-    hint,
-    badge: { label, tone },
-    tooltip: `${matchCountLabel} difficulty (auto, legend: 🏟 home / ✈ away)`,
-    matchCount: availableMatches,
-  };
 }
 
-function positionToDifficulty(position: number, totalTeams: number): number {
-  if (totalTeams <= 1) {
-    return 3;
+function toneToColor(tone: "success" | "error" | "warning" | "info" | "default"): string {
+  switch (tone) {
+    case "success":
+      return "success.main";
+    case "error":
+      return "error.main";
+    case "warning":
+      return "warning.main";
+    case "info":
+      return "info.main";
+    default:
+      return "text.secondary";
   }
-  const normalized = 1 - (position - 1) / (totalTeams - 1);
-  return 1 + normalized * 4;
 }
 
-function buildGapToTarget({
-  standings,
-  clubPosition,
-  leagueLevel,
-}: {
-  standings: ChampionshipStanding[];
-  clubPosition?: number | null;
-  leagueLevel: number;
-}): GapMetric | null {
-  if (!Array.isArray(standings) || standings.length === 0 || clubPosition == null) {
-    return null;
-  }
 
-  const clubRow = standings.find((row) => row.position === clubPosition);
-  if (!clubRow) {
-    return null;
-  }
-
-  const totalTeams = standings.length;
-  const relegatedRows = standings.filter((row) => row.is_relegation_zone);
-  const firstRelegatedPos =
-    relegatedRows.length > 0 ? Math.min(...relegatedRows.map((row) => row.position)) : totalTeams + 1;
-  const lastSafePos = Math.min(totalTeams, Math.max(1, firstRelegatedPos - 1));
-  const isBottomContext = clubRow.position >= lastSafePos;
-
-  let targetRow: ChampionshipStanding | undefined;
-  let targetCategory = "";
-
-  if (clubRow.position <= 3) {
-    const leaderRow = standings.find((row) => row.position === 1);
-    const runnerUpRow = standings.find((row) => row.position === Math.min(2, totalTeams));
-    const chasingLeader = clubRow.position !== 1;
-    targetRow = chasingLeader ? leaderRow : runnerUpRow ?? leaderRow;
-    targetCategory = chasingLeader ? "Leader" : "Runner-up";
-  } else if (isBottomContext) {
-    const firstRelegatedRow = standings.find((row) => row.position === firstRelegatedPos);
-    const lastSafeRow = standings.find((row) => row.position === lastSafePos);
-    targetRow = clubRow.position >= firstRelegatedPos ? lastSafeRow ?? firstRelegatedRow : firstRelegatedRow ?? lastSafeRow;
-    targetCategory = "Safety";
-  } else {
-    const playoffCutoff = Math.min(leagueLevel === 1 ? 4 : 6, totalTeams);
-    const cutoffRow = standings.find((row) => row.position === playoffCutoff);
-    const outsideRow = standings.find((row) => row.position === Math.min(playoffCutoff + 1, totalTeams));
-    targetRow = clubRow.position <= playoffCutoff ? outsideRow ?? cutoffRow : cutoffRow ?? outsideRow;
-    targetCategory = `Top-${playoffCutoff}`;
-  }
-
-  if (!targetRow || !targetCategory) {
-    return null;
-  }
-
-  const rawGap = targetRow.points - clubRow.points;
-  const neededGap = Math.max(0, rawGap);
-  const absGap = Math.abs(rawGap);
-  const badge =
-    neededGap <= 2
-      ? { label: "Close", tone: "success" as const }
-      : neededGap <= 5
-      ? { label: "Chase", tone: "warning" as const }
-      : { label: "Tough", tone: "danger" as const };
-
-  const value =
-    rawGap === 0
-      ? `Level with ${targetCategory}`
-      : rawGap > 0
-      ? `${absGap} pts off ${targetCategory}`
-      : `${absGap} pts clear ${targetCategory}`;
-
-  const hint = (
-    <span>
-      You: {clubRow.points} pts (MP {clubRow.matches_played})
-    </span>
-  );
-
-  return {
-    value,
-    hint,
-    badge,
-    tooltip: `Target = ${targetCategory} (auto). Click to change target.`,
-  };
-}
-
-function formatOrdinal(position: number): string {
-  const suffixes: Record<number, string> = { 1: "st", 2: "nd", 3: "rd" };
-  const remainder = position % 100;
-  if (remainder >= 11 && remainder <= 13) {
-    return `${position}th`;
-  }
-  return `${position}${suffixes[position % 10] ?? "th"}`;
-}

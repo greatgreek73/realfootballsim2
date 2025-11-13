@@ -74,6 +74,11 @@ const AppRoutes = () => (
       <Route key="championships" path="/championships" element={lazyLoad("/championships")} />
       <Route key="championships-my" path="/championships/my" element={lazyLoad("/championships/my")} />
       <Route
+        key="championships-my-schedule"
+        path="/championships/my/schedule"
+        element={lazyLoad("/championships/my/schedule")}
+      />
+      <Route
         key="championship-detail"
         path="/championships/:championshipId"
         element={lazyLoad("/championships/[championshipId]")}
