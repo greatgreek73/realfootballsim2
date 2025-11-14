@@ -10,9 +10,7 @@ import {
   Chip,
   CircularProgress,
   Grid,
-  InputAdornment,
   MenuItem,
-  Select,
   Stack,
   Table,
   TableBody,
@@ -28,7 +26,6 @@ import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import PublicIcon from "@mui/icons-material/Public";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
-import SearchIcon from "@mui/icons-material/Search";
 import StarIcon from "@mui/icons-material/Star";
 
 import PageShell from "@/components/ui/PageShell";
@@ -170,52 +167,79 @@ export default function ChampionshipsPage() {
         direction={{ xs: "column", md: "row" }}
         spacing={1}
         alignItems={{ md: "center" }}
+        sx={{ flexWrap: "wrap" }}
       >
-        <Select
+        <TextField
+          select
           size="small"
-          displayEmpty
+          variant="outlined"
+          label="Season"
           value={seasonFilter ?? ""}
           onChange={(event) =>
             setSeasonFilter(event.target.value ? Number(event.target.value) : undefined)
           }
           disabled={seasonsLoading}
-          sx={{ minWidth: { xs: "100%", md: 160 } }}
+          InputLabelProps={{ shrink: true }}
+          SelectProps={{
+            displayEmpty: true,
+            renderValue: (selected) => {
+              if (!selected) {
+                return <Typography color="text.secondary">All seasons</Typography>;
+              }
+              const seasonId = Number(selected);
+              const season = seasonOptions.find((item) => item.id === seasonId);
+              return season?.name ?? seasonId;
+            },
+          }}
+          sx={{ minWidth: { xs: "100%", md: 180 } }}
         >
-          <MenuItem value="">All seasons</MenuItem>
+          <MenuItem value="">
+            <Typography color="text.secondary">All seasons</Typography>
+          </MenuItem>
           {seasonOptions.map((season) => (
             <MenuItem key={season.id} value={season.id}>
               {season.name}
             </MenuItem>
           ))}
-        </Select>
-        <Select
+        </TextField>
+        <TextField
+          select
           size="small"
-          displayEmpty
+          variant="outlined"
+          label="Country"
           value={countryFilter ?? ""}
           onChange={(event) => setCountryFilter(event.target.value || undefined)}
           disabled={leaguesLoading}
-          sx={{ minWidth: { xs: "100%", md: 180 } }}
+          InputLabelProps={{ shrink: true }}
+          SelectProps={{
+            displayEmpty: true,
+            renderValue: (selected) => {
+              if (!selected) {
+                return <Typography color="text.secondary">All countries</Typography>;
+              }
+              return selected;
+            },
+          }}
+          sx={{ minWidth: { xs: "100%", md: 200 } }}
         >
-          <MenuItem value="">All countries</MenuItem>
+          <MenuItem value="">
+            <Typography color="text.secondary">All countries</Typography>
+          </MenuItem>
           {countryOptions.map((country) => (
             <MenuItem key={country} value={country}>
               {country}
             </MenuItem>
           ))}
-        </Select>
+        </TextField>
         <TextField
           size="small"
+          variant="outlined"
+          label="Search"
           placeholder="Search league..."
           value={searchTerm}
           onChange={(event) => setSearchTerm(event.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            ),
-          }}
-          sx={{ flexGrow: 1 }}
+          InputLabelProps={{ shrink: true }}
+          sx={{ flexGrow: 1, minWidth: { xs: "100%", md: 240 }, maxWidth: { md: 360 } }}
         />
       </Stack>
     </Stack>
