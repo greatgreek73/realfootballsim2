@@ -159,90 +159,83 @@ export default function ChampionshipsPage() {
   );
 
   const filtersToolbar = (
-    <Stack spacing={1}>
-      <Typography variant="subtitle2" fontWeight={600}>
-        Filters
-      </Typography>
-      <Stack
-        direction={{ xs: "column", md: "row" }}
-        spacing={1}
-        alignItems={{ md: "center" }}
-        sx={{ flexWrap: "wrap" }}
-      >
-        <TextField
-          select
-          size="small"
-          variant="outlined"
-          label="Season"
-          value={seasonFilter ?? ""}
-          onChange={(event) =>
-            setSeasonFilter(event.target.value ? Number(event.target.value) : undefined)
-          }
-          disabled={seasonsLoading}
-          InputLabelProps={{ shrink: true }}
-          SelectProps={{
-            displayEmpty: true,
-            renderValue: (selected) => {
-              if (!selected) {
-                return <Typography color="text.secondary">All seasons</Typography>;
+    <Card>
+      <CardContent>
+        <Stack spacing={1.5}>
+          <Typography variant="subtitle2" fontWeight={600}>
+            Filters
+          </Typography>
+          <Stack direction={{ xs: "column", md: "row" }} sx={{ gap: { xs: 1, md: 2 } }}>
+            <TextField
+              select
+              size="small"
+              label="Season"
+              value={seasonFilter ?? ""}
+              onChange={(event) =>
+                setSeasonFilter(event.target.value ? Number(event.target.value) : undefined)
               }
-              const seasonId = Number(selected);
-              const season = seasonOptions.find((item) => item.id === seasonId);
-              return season?.name ?? seasonId;
-            },
-          }}
-          sx={{ minWidth: { xs: "100%", md: 180 } }}
-        >
-          <MenuItem value="">
-            <Typography color="text.secondary">All seasons</Typography>
-          </MenuItem>
-          {seasonOptions.map((season) => (
-            <MenuItem key={season.id} value={season.id}>
-              {season.name}
-            </MenuItem>
-          ))}
-        </TextField>
-        <TextField
-          select
-          size="small"
-          variant="outlined"
-          label="Country"
-          value={countryFilter ?? ""}
-          onChange={(event) => setCountryFilter(event.target.value || undefined)}
-          disabled={leaguesLoading}
-          InputLabelProps={{ shrink: true }}
-          SelectProps={{
-            displayEmpty: true,
-            renderValue: (selected) => {
-              if (!selected) {
-                return <Typography color="text.secondary">All countries</Typography>;
-              }
-              return selected;
-            },
-          }}
-          sx={{ minWidth: { xs: "100%", md: 200 } }}
-        >
-          <MenuItem value="">
-            <Typography color="text.secondary">All countries</Typography>
-          </MenuItem>
-          {countryOptions.map((country) => (
-            <MenuItem key={country} value={country}>
-              {country}
-            </MenuItem>
-          ))}
-        </TextField>
-        <TextField
-          size="small"
-          variant="outlined"
-          label="Search"
-          placeholder="Search league..."
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
-          InputLabelProps={{ shrink: true }}
-          sx={{ flexGrow: 1, minWidth: { xs: "100%", md: 240 }, maxWidth: { md: 360 } }}
-        />
-      </Stack>
-    </Stack>
+              disabled={seasonsLoading}
+              InputLabelProps={{ shrink: true }}
+              SelectProps={{
+                displayEmpty: true,
+                renderValue: (selected) => {
+                  if (!selected) {
+                    return "All seasons";
+                  }
+                  const seasonId = Number(selected);
+                  const season = seasonOptions.find((item) => item.id === seasonId);
+                  return season?.name ?? `Season ${seasonId}`;
+                },
+              }}
+              sx={{ minWidth: { xs: "100%", md: 220 } }}
+            >
+              <MenuItem value="">
+                <Typography color="text.secondary">All seasons</Typography>
+              </MenuItem>
+              {seasonOptions.map((season) => (
+                <MenuItem key={season.id} value={season.id}>
+                  {season.name}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              select
+              size="small"
+              label="Country"
+              value={countryFilter ?? ""}
+              onChange={(event) => setCountryFilter(event.target.value || undefined)}
+              disabled={leaguesLoading}
+              InputLabelProps={{ shrink: true }}
+              SelectProps={{
+                displayEmpty: true,
+                renderValue: (selected) => selected || "All countries",
+              }}
+              sx={{ minWidth: { xs: "100%", md: 280 } }}
+            >
+              <MenuItem value="">
+                <Typography color="text.secondary">All countries</Typography>
+              </MenuItem>
+              {countryOptions.map((country) => (
+                <MenuItem key={country} value={country}>
+                  {country}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              size="small"
+              label="Search"
+              placeholder="Search league..."
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              InputLabelProps={{ shrink: true }}
+              sx={{ minWidth: { xs: "100%", md: 280 } }}
+            />
+          </Stack>
+        </Stack>
+      </CardContent>
+    </Card>
   );
 
   let tableContent: React.ReactNode;
@@ -351,6 +344,7 @@ export default function ChampionshipsPage() {
     <Card
       sx={{
         height: "100%",
+        width: "100%",
         position: { lg: "sticky" },
         top: { lg: 96 },
       }}
@@ -417,16 +411,9 @@ export default function ChampionshipsPage() {
       </CardContent>
     </Card>
   );
-  const mainContent = (
-    <Grid container spacing={3}>
-      <Grid item xs={12} lg={8}>
-        <Card>{tableContent}</Card>
-      </Grid>
-      <Grid item xs={12} lg={4}>
-        {detailPanel}
-      </Grid>
-    </Grid>
-  );
+  const mainContent = <Card>{tableContent}</Card>;
+
+  const asideContent = detailPanel;
 
   return (
     <PageShell
@@ -438,6 +425,7 @@ export default function ChampionshipsPage() {
         </Stack>
       }
       main={mainContent}
+      aside={asideContent}
     />
   );
 }
