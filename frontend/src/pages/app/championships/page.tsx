@@ -4,6 +4,7 @@ import { Link as RouterLink } from "react-router-dom";
 import {
   Alert,
   Box,
+  Button,
   Card,
   CardContent,
   Chip,
@@ -22,6 +23,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import PublicIcon from "@mui/icons-material/Public";
@@ -84,9 +86,7 @@ export default function ChampionshipsPage() {
           label: "Filters",
           value: activeFiltersCount === 0 ? "None" : activeFiltersCount,
           icon: <FilterAltIcon fontSize="small" />,
-          hint: `${selectedSeasonLabel} · ${selectedCountryLabel}${
-            searchTerm ? ` · Search: “${searchTerm}”` : ""
-          }`,
+          hint: `${selectedSeasonLabel} · ${selectedCountryLabel}${searchTerm ? ` · Search: “${searchTerm}”` : ""}`,
         },
       ]}
     />
@@ -161,69 +161,64 @@ export default function ChampionshipsPage() {
     </Card>
   );
 
-  const filtersCard = (
-    <Card>
-      <CardContent>
-        <Stack spacing={2}>
-          <Stack spacing={0.5}>
-            <Typography variant="subtitle1" fontWeight={600}>
-              Quick filters
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Focus on a specific season, country or league name.
-            </Typography>
-          </Stack>
-          <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-            <Select
-              size="small"
-              displayEmpty
-              value={seasonFilter ?? ""}
-              onChange={(event) =>
-                setSeasonFilter(event.target.value ? Number(event.target.value) : undefined)
-              }
-              disabled={seasonsLoading}
-              fullWidth
-            >
-              <MenuItem value="">All seasons</MenuItem>
-              {seasonOptions.map((season) => (
-                <MenuItem key={season.id} value={season.id}>
-                  {season.name}
-                </MenuItem>
-              ))}
-            </Select>
-            <Select
-              size="small"
-              displayEmpty
-              value={countryFilter ?? ""}
-              onChange={(event) => setCountryFilter(event.target.value || undefined)}
-              disabled={leaguesLoading}
-              fullWidth
-            >
-              <MenuItem value="">All countries</MenuItem>
-              {countryOptions.map((country) => (
-                <MenuItem key={country} value={country}>
-                  {country}
-                </MenuItem>
-              ))}
-            </Select>
-            <TextField
-              size="small"
-              placeholder="Search league..."
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" />
-                  </InputAdornment>
-                ),
-              }}
-              fullWidth
-            />
-          </Stack>
-        </Stack>
-      </CardContent>
-    </Card>
+  const filtersToolbar = (
+    <Stack spacing={1}>
+      <Typography variant="subtitle2" fontWeight={600}>
+        Filters
+      </Typography>
+      <Stack
+        direction={{ xs: "column", md: "row" }}
+        spacing={1}
+        alignItems={{ md: "center" }}
+      >
+        <Select
+          size="small"
+          displayEmpty
+          value={seasonFilter ?? ""}
+          onChange={(event) =>
+            setSeasonFilter(event.target.value ? Number(event.target.value) : undefined)
+          }
+          disabled={seasonsLoading}
+          sx={{ minWidth: { xs: "100%", md: 160 } }}
+        >
+          <MenuItem value="">All seasons</MenuItem>
+          {seasonOptions.map((season) => (
+            <MenuItem key={season.id} value={season.id}>
+              {season.name}
+            </MenuItem>
+          ))}
+        </Select>
+        <Select
+          size="small"
+          displayEmpty
+          value={countryFilter ?? ""}
+          onChange={(event) => setCountryFilter(event.target.value || undefined)}
+          disabled={leaguesLoading}
+          sx={{ minWidth: { xs: "100%", md: 180 } }}
+        >
+          <MenuItem value="">All countries</MenuItem>
+          {countryOptions.map((country) => (
+            <MenuItem key={country} value={country}>
+              {country}
+            </MenuItem>
+          ))}
+        </Select>
+        <TextField
+          size="small"
+          placeholder="Search league..."
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon fontSize="small" />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ flexGrow: 1 }}
+        />
+      </Stack>
+    </Stack>
   );
 
   let tableContent: React.ReactNode;
@@ -246,7 +241,6 @@ export default function ChampionshipsPage() {
           <TableHead>
             <TableRow>
               <TableCell>League</TableCell>
-              <TableCell>Country</TableCell>
               <TableCell>Season</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Joined</TableCell>
@@ -257,30 +251,47 @@ export default function ChampionshipsPage() {
             {filteredChampionships.map((championship) => {
               const joined = myChampionship?.id === championship.id;
               const statusChip = getStatusChipProps(championship.status);
+              const isSelected = selectedChampionshipId === championship.id;
               return (
                 <TableRow
                   key={championship.id}
                   hover
-                  selected={selectedChampionshipId === championship.id}
+                  selected={isSelected}
                   onClick={() => setSelectedChampionshipId(championship.id)}
-                  sx={{ cursor: "pointer" }}
+                  sx={(theme) => ({
+                    cursor: "pointer",
+                    backgroundColor: joined ? alpha(theme.palette.warning.main, 0.08) : undefined,
+                    "&:hover": {
+                      backgroundColor: joined
+                        ? alpha(theme.palette.warning.main, 0.12)
+                        : alpha(theme.palette.action.hover, 0.25),
+                    },
+                    "&.Mui-selected": {
+                      backgroundColor: alpha(theme.palette.primary.main, 0.12),
+                      "&:hover": {
+                        backgroundColor: alpha(theme.palette.primary.main, 0.18),
+                      },
+                    },
+                  })}
                 >
-                  <TableCell>
+                  <TableCell sx={{ py: 1 }}>
                     <Stack spacing={0.25}>
-                      <Typography variant="body2" fontWeight={600}>
-                        {championship.name}
-                      </Typography>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        {joined && <StarIcon fontSize="small" color="warning" />}
+                        <Typography variant="body2" fontWeight={600}>
+                          {championship.name}
+                        </Typography>
+                      </Stack>
                       <Typography variant="caption" color="text.secondary">
-                        {championship.league.name}
+                        {championship.league.country} · {championship.league.name}
                       </Typography>
                     </Stack>
                   </TableCell>
-                  <TableCell>{championship.league.country}</TableCell>
-                  <TableCell>{championship.season.name}</TableCell>
-                  <TableCell>
+                  <TableCell sx={{ py: 1 }}>{championship.season.name}</TableCell>
+                  <TableCell sx={{ py: 1 }}>
                     <Chip size="small" color={statusChip.color} label={statusChip.label} />
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ py: 1 }}>
                     {joined ? (
                       <Chip
                         size="small"
@@ -292,7 +303,7 @@ export default function ChampionshipsPage() {
                       "-"
                     )}
                   </TableCell>
-                  <TableCell align="right">
+                  <TableCell align="right" sx={{ py: 1 }}>
                     <Chip
                       component={RouterLink}
                       to={`/championships/${championship.id}`}
@@ -313,15 +324,24 @@ export default function ChampionshipsPage() {
   }
 
   const detailPanel = (
-    <Card sx={{ height: "100%" }}>
+    <Card
+      sx={{
+        height: "100%",
+        position: { lg: "sticky" },
+        top: { lg: 96 },
+      }}
+    >
       <CardContent sx={{ height: "100%" }}>
         {selectedChampionship ? (
           <Stack spacing={1.5} sx={{ height: "100%" }}>
-            <Typography variant="h6">{selectedChampionship.name}</Typography>
-            <Typography variant="body2" color="text.secondary">
-              {selectedChampionship.league.country} · {selectedChampionship.league.name}
-            </Typography>
-            <Stack direction="row" spacing={1}>
+            <Stack spacing={0.5}>
+              <Typography variant="h6">{selectedChampionship.name}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {selectedChampionship.league.country} · {selectedChampionship.league.name}
+              </Typography>
+            </Stack>
+
+            <Stack direction="row" spacing={1} alignItems="center">
               <Chip
                 size="small"
                 color={getStatusChipProps(selectedChampionship.status).color}
@@ -331,9 +351,16 @@ export default function ChampionshipsPage() {
                 {selectedChampionship.start_date} – {selectedChampionship.end_date}
               </Typography>
             </Stack>
+
             <Stack spacing={0.5}>
               <Typography variant="subtitle2">Season</Typography>
               <Typography variant="body2">{selectedChampionship.season.name}</Typography>
+            </Stack>
+            <Stack spacing={0.5}>
+              <Typography variant="subtitle2">Teams</Typography>
+              <Typography variant="body2">
+                {selectedChampionship.league.max_teams ?? 16} clubs
+              </Typography>
             </Stack>
             <Stack spacing={0.5}>
               <Typography variant="subtitle2">Kick-off time</Typography>
@@ -343,16 +370,17 @@ export default function ChampionshipsPage() {
             </Stack>
             <Box sx={{ flexGrow: 1 }} />
             <Stack spacing={1}>
-              <Chip
+              <Button
                 component={RouterLink}
                 to={`/championships/${selectedChampionship.id}`}
-                label="Open championship"
-                clickable
-                color="primary"
-              />
+                variant="contained"
+                size="medium"
+              >
+                {myChampionship?.id === selectedChampionship.id ? "Continue" : "Open championship"}
+              </Button>
               {myChampionship?.id === selectedChampionship.id && (
                 <Typography variant="caption" color="text.secondary">
-                  This is your active competition.
+                  You are currently participating in this league.
                 </Typography>
               )}
             </Stack>
@@ -365,7 +393,6 @@ export default function ChampionshipsPage() {
       </CardContent>
     </Card>
   );
-
   const mainContent = (
     <Grid container spacing={3}>
       <Grid item xs={12} lg={8}>
@@ -383,7 +410,7 @@ export default function ChampionshipsPage() {
       top={
         <Stack spacing={3}>
           {myChampionshipSection}
-          {filtersCard}
+          {filtersToolbar}
         </Stack>
       }
       main={mainContent}
@@ -404,3 +431,14 @@ function getStatusChipProps(
       return { label: "Not started", color: "warning" };
   }
 }
+
+
+
+
+
+
+
+
+
+
+
