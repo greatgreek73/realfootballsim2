@@ -8,6 +8,7 @@ import {
   ButtonGroup,
   Card,
   CardContent,
+  Chip,
   CircularProgress,
   Divider,
   FormControl,
@@ -67,17 +68,6 @@ export default function ChampionshipDetailPage() {
     () => (Array.isArray(detail?.standings) ? detail.standings : []),
     [detail],
   );
-  const titleContenders = standings.slice(0, Math.min(3, standings.length));
-  const relegationGroup = standings
-    .filter((row) => row.is_relegation_zone)
-    .slice(0, Math.min(3, standings.length));
-  const firstRelegationPos = Math.min(...relegationGroup.map((row) => row.position));
-  const safetyTargetPos = Number.isFinite(firstRelegationPos) ? firstRelegationPos - 1 : null;
-  const safetyRow =
-    safetyTargetPos && safetyTargetPos > 0
-      ? standings.find((row) => row.position === safetyTargetPos)
-      : null;
-  const safetyPoints = safetyRow?.points ?? null;
   const matchesList = useMemo(
     () =>
       Array.isArray(matches)
@@ -146,7 +136,6 @@ export default function ChampionshipDetailPage() {
       : detail.championship.status === "in_progress"
       ? "In progress"
       : "Finished";
-  const roundSummary = roundFilter === "all" ? "All rounds" : `Round ${roundFilter}`;
   const statusSummary = statusFilter === "all" ? "All statuses" : MATCH_STATUS_LABELS[statusFilter] ?? statusFilter;
 
   const totalRounds = availableRounds.length;
@@ -287,30 +276,8 @@ export default function ChampionshipDetailPage() {
         top: { lg: 96 },
       }}
     >
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            League Details
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Country: {detail.championship.league.country}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Division: {detail.championship.league.level}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Total teams: {detail.championship.league.max_teams ?? standings.length}
-          </Typography>
-          {detail.championship.match_time && (
-            <Typography variant="body2" color="text.secondary">
-              Kick-off (UTC): {detail.championship.match_time}
-            </Typography>
-          )}
-        </CardContent>
-      </Card>
-
       <KeyFixturesCard standings={standings} matches={matchesList} />
-      <LeadersCard standings={standings} />
+      <TopScorersCard />
     </Stack>
   );
 
@@ -321,49 +288,7 @@ export default function ChampionshipDetailPage() {
       main={
         <Card>
           <CardContent>
-            {tab === "standings" && (
-              <Stack spacing={3}>
-                <ChampionshipStandingsTable standings={standings} />
-                {standings.length > 0 && (
-                  <Stack spacing={2}>
-                    <Stack spacing={1}>
-                      <Typography variant="subtitle2">Title race snapshot</Typography>
-                      {titleContenders.length === 0 ? (
-                        <Typography variant="body2" color="text.secondary">
-                          No data available.
-                        </Typography>
-                      ) : (
-                        titleContenders.map((row, index) => {
-                          const leaderPoints = titleContenders[0]?.points ?? row.points;
-                          const diff = leaderPoints - row.points;
-                          return (
-                            <Typography key={row.team.id} variant="body2">
-                              #{row.position} {row.team.name} · {row.points} pts
-                              {index > 0 && diff > 0 && ` (${diff} pts off top)`}
-                            </Typography>
-                          );
-                        })
-                      )}
-                    </Stack>
-                    {relegationGroup.length > 0 && (
-                      <Stack spacing={1}>
-                        <Typography variant="subtitle2">Relegation battle</Typography>
-                        {relegationGroup.map((row) => {
-                          const diff =
-                            safetyPoints != null ? safetyPoints - row.points + 1 : null;
-                          return (
-                            <Typography key={row.team.id} variant="body2">
-                              #{row.position} {row.team.name} · {row.points} pts
-                              {diff != null && diff > 0 && ` (needs ${diff} pts to safety)`}
-                            </Typography>
-                          );
-                        })}
-                      </Stack>
-                    )}
-                  </Stack>
-                )}
-              </Stack>
-            )}
+            {tab === "standings" && <ChampionshipStandingsTable standings={standings} />}
 
             {tab === "fixtures" && <ChampionshipMatchesList matches={filteredMatches} />}
 
@@ -418,17 +343,36 @@ function KeyFixturesCard({
 }) {
   const topTeamIds = new Set(standings.slice(0, 4).map((row) => row.team.id));
   const relegationIds = new Set(
-    standings
-      .filter((row) => row.is_relegation_zone)
-      .slice(0, 4)
-      .map((row) => row.team.id),
+    standings.filter((row) => row.is_relegation_zone).map((row) => row.team.id),
   );
 
   const upcoming = matches
     .filter((match) => match.status !== "finished")
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  if (upcoming.length === 0) {
+  const highlighted = upcoming
+    .map((match) => {
+      const homeTop = topTeamIds.has(match.home_team.id);
+      const awayTop = topTeamIds.has(match.away_team.id);
+      const homeReleg = relegationIds.has(match.home_team.id);
+      const awayReleg = relegationIds.has(match.away_team.id);
+      const isTitleRace = homeTop && awayTop;
+      const isRelegation = homeReleg && awayReleg;
+      if (!isTitleRace && !isRelegation) {
+        return null;
+      }
+      return {
+        match,
+        tag: isTitleRace ? "Title race" : "Relegation",
+        color: isTitleRace ? "primary" : "warning",
+      } as const;
+    })
+    .filter((item): item is { match: ChampionshipMatchSummary; tag: string; color: "primary" | "warning" } =>
+      Boolean(item),
+    )
+    .slice(0, 4);
+
+  if (highlighted.length === 0) {
     return (
       <Card>
         <CardContent>
@@ -436,23 +380,12 @@ function KeyFixturesCard({
             Key fixtures
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            No upcoming fixtures.
+            No highlighted fixtures right now. Check back later in the season.
           </Typography>
         </CardContent>
       </Card>
     );
   }
-
-  const highlighted = upcoming
-    .filter((match) => {
-      const homeTop = topTeamIds.has(match.home_team.id);
-      const awayTop = topTeamIds.has(match.away_team.id);
-      const homeReleg = relegationIds.has(match.home_team.id);
-      const awayReleg = relegationIds.has(match.away_team.id);
-      return (homeTop && awayTop) || homeReleg || awayReleg;
-    })
-    .slice(0, 4);
-  const display = highlighted.length > 0 ? highlighted : upcoming.slice(0, 4);
 
   return (
     <Card>
@@ -460,17 +393,25 @@ function KeyFixturesCard({
         <Typography variant="h6" gutterBottom>
           Key fixtures
         </Typography>
-        <Stack spacing={1}>
-          {display.map((match) => (
-            <Box key={match.id}>
-              <Typography variant="body2">
-                {match.home_team.name} vs {match.away_team.name}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {formatMatchDate(match.date)} ·{" "}
-                {MATCH_STATUS_LABELS[match.status] ?? match.status}
-              </Typography>
-            </Box>
+        <Stack spacing={1.25}>
+          {highlighted.map(({ match, tag, color }) => (
+            <Stack
+              key={match.id}
+              direction="row"
+              spacing={1}
+              alignItems="flex-start"
+              justifyContent="space-between"
+            >
+              <Box flex={1}>
+                <Typography variant="body2" fontWeight={600}>
+                  {formatMatchDay(match.date)} · {match.home_team.name} – {match.away_team.name}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {formatMatchTime(match.date)} · {MATCH_STATUS_LABELS[match.status] ?? match.status}
+                </Typography>
+              </Box>
+              <Chip label={tag} size="small" color={color} />
+            </Stack>
           ))}
         </Stack>
       </CardContent>
@@ -478,40 +419,48 @@ function KeyFixturesCard({
   );
 }
 
-function LeadersCard({ standings }: { standings: ChampionshipStanding[] }) {
-  const leaders = standings.slice(0, 3);
+function TopScorersCard() {
   return (
     <Card>
       <CardContent>
         <Typography variant="h6" gutterBottom>
-          Leaders
+          Top scorers
         </Typography>
-        {leaders.length === 0 ? (
+        <Stack spacing={1}>
           <Typography variant="body2" color="text.secondary">
-            Standings unavailable.
+            Detailed scoring stats are not available yet.
           </Typography>
-        ) : (
+          <Typography variant="caption" color="text.secondary">
+            Mock example:
+          </Typography>
           <Stack spacing={0.5}>
-            {leaders.map((row) => (
-              <Typography key={row.team.id} variant="body2">
-                #{row.position} {row.team.name} · {row.points} pts
-              </Typography>
-            ))}
+            <Typography variant="body2">1. J. Smith — 9 goals</Typography>
+            <Typography variant="body2">2. A. Lopez — 8 goals</Typography>
+            <Typography variant="body2">3. K. Ivanov — 7 goals</Typography>
           </Stack>
-        )}
+        </Stack>
       </CardContent>
     </Card>
   );
 }
 
-function formatMatchDate(dateString: string): string {
+function formatMatchDay(dateString: string): string {
   const value = new Date(dateString);
   if (Number.isNaN(value.getTime())) {
     return dateString;
   }
   return new Intl.DateTimeFormat(undefined, {
-    month: "short",
     day: "2-digit",
+    month: "short",
+  }).format(value);
+}
+
+function formatMatchTime(dateString: string): string {
+  const value = new Date(dateString);
+  if (Number.isNaN(value.getTime())) {
+    return "-";
+  }
+  return new Intl.DateTimeFormat(undefined, {
     hour: "2-digit",
     minute: "2-digit",
   }).format(value);
