@@ -8,7 +8,6 @@ import {
   ButtonGroup,
   Card,
   CardContent,
-  Chip,
   CircularProgress,
   Divider,
   FormControl,
@@ -20,8 +19,8 @@ import {
 } from "@mui/material";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import TimelineIcon from "@mui/icons-material/Timeline";
-import GroupsIcon from "@mui/icons-material/Groups";
-import ScheduleIcon from "@mui/icons-material/Schedule";
+import FlagCircleIcon from "@mui/icons-material/FlagCircle";
+import SportsSoccerIcon from "@mui/icons-material/SportsSoccer";
 
 import {
   ChampionshipMatchesList,
@@ -29,7 +28,7 @@ import {
 } from "@/features/tournaments/components/ChampionshipMatchesList";
 import { ChampionshipStandingsTable } from "@/features/tournaments/components/ChampionshipStandingsTable";
 import { useChampionshipDetail } from "@/hooks/tournaments/useChampionshipDetail";
-import { ChampionshipMatchSummary } from "@/types/tournaments";
+import type { ChampionshipMatchSummary, ChampionshipStanding } from "@/types/tournaments";
 import PageShell from "@/components/ui/PageShell";
 import HeroBar from "@/components/ui/HeroBar";
 
@@ -68,6 +67,17 @@ export default function ChampionshipDetailPage() {
     () => (Array.isArray(detail?.standings) ? detail.standings : []),
     [detail],
   );
+  const titleContenders = standings.slice(0, Math.min(3, standings.length));
+  const relegationGroup = standings
+    .filter((row) => row.is_relegation_zone)
+    .slice(0, Math.min(3, standings.length));
+  const firstRelegationPos = Math.min(...relegationGroup.map((row) => row.position));
+  const safetyTargetPos = Number.isFinite(firstRelegationPos) ? firstRelegationPos - 1 : null;
+  const safetyRow =
+    safetyTargetPos && safetyTargetPos > 0
+      ? standings.find((row) => row.position === safetyTargetPos)
+      : null;
+  const safetyPoints = safetyRow?.points ?? null;
   const matchesList = useMemo(
     () =>
       Array.isArray(matches)
@@ -138,21 +148,41 @@ export default function ChampionshipDetailPage() {
       : "Finished";
   const roundSummary = roundFilter === "all" ? "All rounds" : `Round ${roundFilter}`;
   const statusSummary = statusFilter === "all" ? "All statuses" : MATCH_STATUS_LABELS[statusFilter] ?? statusFilter;
-  const heroFilterSummary = (
-    <Stack direction={{ xs: "column", sm: "row" }} spacing={1} flexWrap="wrap">
-      <Chip
-        label={`Round filter: ${roundSummary}`}
-        size="small"
-        sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
-      />
-      <Chip
-        label={`Status filter: ${statusSummary}`}
-        size="small"
-        sx={{ color: "white", borderColor: "white", bgcolor: "rgba(255,255,255,0.12)" }}
-      />
-    </Stack>
-  );
 
+  const totalRounds = availableRounds.length;
+  const finishedStatuses = new Set(["finished", "expired"]);
+  let lastFinishedRound = 0;
+  let nextRoundCandidate = Number.POSITIVE_INFINITY;
+  let finishedMatches = 0;
+  matchesList.forEach((match) => {
+    if (finishedStatuses.has(match.status)) {
+      finishedMatches += 1;
+      if (match.round > lastFinishedRound) {
+        lastFinishedRound = match.round;
+      }
+    } else if (match.round < nextRoundCandidate) {
+      nextRoundCandidate = match.round;
+    }
+  });
+  const currentRoundValue =
+    lastFinishedRound > 0
+      ? lastFinishedRound
+      : Number.isFinite(nextRoundCandidate)
+      ? nextRoundCandidate
+      : 1;
+  const totalMatches = matchesList.length;
+  const goalStats = matchesList.reduce(
+    (acc, match) => {
+      if (match.score) {
+        acc.gamesWithScore += 1;
+        acc.totalGoals += match.score.home + match.score.away;
+      }
+      return acc;
+    },
+    { totalGoals: 0, gamesWithScore: 0 },
+  );
+  const avgGoals =
+    goalStats.gamesWithScore > 0 ? goalStats.totalGoals / goalStats.gamesWithScore : null;
   const hero = (
     <HeroBar
       title={detail.championship.name}
@@ -167,14 +197,24 @@ export default function ChampionshipDetailPage() {
           hint: detail.championship.status === "in_progress" ? "Live competition" : statusSummary,
         },
         {
-          label: "Window",
-          value: `${detail.championship.start_date} → ${detail.championship.end_date}`,
-          icon: <ScheduleIcon fontSize="small" />,
+          label: "Progress",
+          value: totalRounds
+            ? `Round ${currentRoundValue} / ${totalRounds}`
+            : `Round ${currentRoundValue}`,
+          icon: <FlagCircleIcon fontSize="small" />,
+          hint:
+            totalMatches > 0
+              ? `Played ${finishedMatches} / ${totalMatches} games`
+              : undefined,
         },
         {
-          label: "Teams",
-          value: standings.length || detail.championship.league.max_teams,
-          icon: <GroupsIcon fontSize="small" />,
+          label: "Scoring",
+          value: avgGoals != null ? `${avgGoals.toFixed(1)} goals/gm` : "No data",
+          icon: <SportsSoccerIcon fontSize="small" />,
+          hint:
+            goalStats.totalGoals > 0
+              ? `Total goals: ${goalStats.totalGoals}`
+              : undefined,
         },
       ]}
       actions={heroActions}
@@ -237,35 +277,29 @@ export default function ChampionshipDetailPage() {
       </Card>
     ) : null;
 
-  const topSection = (
-    <Stack spacing={3}>
-      <Card>
-        <CardContent>
-          <Stack spacing={1}>
-            <Typography variant="subtitle2">Current filters</Typography>
-            {heroFilterSummary}
-          </Stack>
-        </CardContent>
-      </Card>
-      {filtersCard}
-    </Stack>
-  );
+  const topSection = filtersCard ? <Stack spacing={3}>{filtersCard}</Stack> : undefined;
 
   const asideContent = (
-    <Stack spacing={2}>
+    <Stack
+      spacing={2}
+      sx={{
+        position: { lg: "sticky" },
+        top: { lg: 96 },
+      }}
+    >
       <Card>
         <CardContent>
           <Typography variant="h6" gutterBottom>
             League Details
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            League: {detail.championship.league.name}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
             Country: {detail.championship.league.country}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Division: {detail.championship.league.level}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Total teams: {detail.championship.league.max_teams ?? standings.length}
           </Typography>
           {detail.championship.match_time && (
             <Typography variant="body2" color="text.secondary">
@@ -275,31 +309,8 @@ export default function ChampionshipDetailPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Upcoming fixtures
-          </Typography>
-          {matchesList.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">
-              No fixtures available.
-            </Typography>
-          ) : (
-            <Stack spacing={1}>
-              {matchesList.slice(0, 4).map((match) => (
-                <Box key={match.id}>
-                  <Typography variant="body2">
-                    {match.home_team.name} vs {match.away_team.name}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {match.date}
-                  </Typography>
-                </Box>
-              ))}
-            </Stack>
-          )}
-        </CardContent>
-      </Card>
+      <KeyFixturesCard standings={standings} matches={matchesList} />
+      <LeadersCard standings={standings} />
     </Stack>
   );
 
@@ -310,7 +321,49 @@ export default function ChampionshipDetailPage() {
       main={
         <Card>
           <CardContent>
-            {tab === "standings" && <ChampionshipStandingsTable standings={standings} />}
+            {tab === "standings" && (
+              <Stack spacing={3}>
+                <ChampionshipStandingsTable standings={standings} />
+                {standings.length > 0 && (
+                  <Stack spacing={2}>
+                    <Stack spacing={1}>
+                      <Typography variant="subtitle2">Title race snapshot</Typography>
+                      {titleContenders.length === 0 ? (
+                        <Typography variant="body2" color="text.secondary">
+                          No data available.
+                        </Typography>
+                      ) : (
+                        titleContenders.map((row, index) => {
+                          const leaderPoints = titleContenders[0]?.points ?? row.points;
+                          const diff = leaderPoints - row.points;
+                          return (
+                            <Typography key={row.team.id} variant="body2">
+                              #{row.position} {row.team.name} · {row.points} pts
+                              {index > 0 && diff > 0 && ` (${diff} pts off top)`}
+                            </Typography>
+                          );
+                        })
+                      )}
+                    </Stack>
+                    {relegationGroup.length > 0 && (
+                      <Stack spacing={1}>
+                        <Typography variant="subtitle2">Relegation battle</Typography>
+                        {relegationGroup.map((row) => {
+                          const diff =
+                            safetyPoints != null ? safetyPoints - row.points + 1 : null;
+                          return (
+                            <Typography key={row.team.id} variant="body2">
+                              #{row.position} {row.team.name} · {row.points} pts
+                              {diff != null && diff > 0 && ` (needs ${diff} pts to safety)`}
+                            </Typography>
+                          );
+                        })}
+                      </Stack>
+                    )}
+                  </Stack>
+                )}
+              </Stack>
+            )}
 
             {tab === "fixtures" && <ChampionshipMatchesList matches={filteredMatches} />}
 
@@ -355,3 +408,113 @@ export default function ChampionshipDetailPage() {
     />
   );
 }
+
+function KeyFixturesCard({
+  standings,
+  matches,
+}: {
+  standings: ChampionshipStanding[];
+  matches: ChampionshipMatchSummary[];
+}) {
+  const topTeamIds = new Set(standings.slice(0, 4).map((row) => row.team.id));
+  const relegationIds = new Set(
+    standings
+      .filter((row) => row.is_relegation_zone)
+      .slice(0, 4)
+      .map((row) => row.team.id),
+  );
+
+  const upcoming = matches
+    .filter((match) => match.status !== "finished")
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  if (upcoming.length === 0) {
+    return (
+      <Card>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Key fixtures
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            No upcoming fixtures.
+          </Typography>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const highlighted = upcoming
+    .filter((match) => {
+      const homeTop = topTeamIds.has(match.home_team.id);
+      const awayTop = topTeamIds.has(match.away_team.id);
+      const homeReleg = relegationIds.has(match.home_team.id);
+      const awayReleg = relegationIds.has(match.away_team.id);
+      return (homeTop && awayTop) || homeReleg || awayReleg;
+    })
+    .slice(0, 4);
+  const display = highlighted.length > 0 ? highlighted : upcoming.slice(0, 4);
+
+  return (
+    <Card>
+      <CardContent>
+        <Typography variant="h6" gutterBottom>
+          Key fixtures
+        </Typography>
+        <Stack spacing={1}>
+          {display.map((match) => (
+            <Box key={match.id}>
+              <Typography variant="body2">
+                {match.home_team.name} vs {match.away_team.name}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {formatMatchDate(match.date)} ·{" "}
+                {MATCH_STATUS_LABELS[match.status] ?? match.status}
+              </Typography>
+            </Box>
+          ))}
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+}
+
+function LeadersCard({ standings }: { standings: ChampionshipStanding[] }) {
+  const leaders = standings.slice(0, 3);
+  return (
+    <Card>
+      <CardContent>
+        <Typography variant="h6" gutterBottom>
+          Leaders
+        </Typography>
+        {leaders.length === 0 ? (
+          <Typography variant="body2" color="text.secondary">
+            Standings unavailable.
+          </Typography>
+        ) : (
+          <Stack spacing={0.5}>
+            {leaders.map((row) => (
+              <Typography key={row.team.id} variant="body2">
+                #{row.position} {row.team.name} · {row.points} pts
+              </Typography>
+            ))}
+          </Stack>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function formatMatchDate(dateString: string): string {
+  const value = new Date(dateString);
+  if (Number.isNaN(value.getTime())) {
+    return dateString;
+  }
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(value);
+}
+
+
