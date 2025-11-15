@@ -6,9 +6,10 @@ export type ClubActionsProps = {
     id: number;
   } | null;
   loading: boolean;
+  nextMatchId?: number | null;
 };
 
-export default function ClubActions({ club, loading }: ClubActionsProps) {
+export default function ClubActions({ club, loading, nextMatchId }: ClubActionsProps) {
   const disabled = loading || !club;
 
   return (
@@ -19,6 +20,20 @@ export default function ClubActions({ club, loading }: ClubActionsProps) {
             <span>
               <Button variant="contained" size="medium" fullWidth disabled={disabled}>
                 Select Team Lineup
+              </Button>
+            </span>
+          </Tooltip>
+          <Tooltip title={nextMatchId ? "Jump to the upcoming match" : "No upcoming match available"} placement="top-start">
+            <span>
+              <Button
+                component={RouterLink}
+                to={nextMatchId ? `/matches/${nextMatchId}` : "#"}
+                variant="outlined"
+                size="medium"
+                fullWidth
+                disabled={!nextMatchId}
+              >
+                Open next match
               </Button>
             </span>
           </Tooltip>

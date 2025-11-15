@@ -1,8 +1,10 @@
 export { default as ClubBanner } from "./club-banner";
 export { default as ClubActions } from "./club-actions";
-export { default as ClubStats } from "./club-stats";
 export { default as ClubActivity } from "./club-activity";
 export { default as ClubSchedule } from "./club-schedule";
-export { default as ClubFinancePlaceholder } from "./club-finance-placeholder";
+export { default as ClubNextMatch } from "./club-next-match";
+export { default as ClubFormStrip } from "./club-form-strip";
+export { default as ClubRecentResults } from "./club-recent-results";
+export { default as ClubSquadStatus } from "./club-squad-status";
+export { default as ClubFinanceCard } from "./club-finance-card";
 export type { ClubActivityItem } from "./club-activity";
-export type { ClubFixture } from "./club-schedule";

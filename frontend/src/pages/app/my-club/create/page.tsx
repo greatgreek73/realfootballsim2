@@ -16,19 +16,7 @@ import {
 } from "@mui/material";
 
 import { postJSON } from "@/lib/apiClient";
-
-const COUNTRIES = [
-  { code: "GB", label: "Great Britain" },
-  { code: "ES", label: "Spain" },
-  { code: "IT", label: "Italy" },
-  { code: "DE", label: "Germany" },
-  { code: "FR", label: "France" },
-  { code: "PT", label: "Portugal" },
-  { code: "GR", label: "Greece" },
-  { code: "RU", label: "Russia" },
-  { code: "AR", label: "Argentina" },
-  { code: "BR", label: "Brazil" },
-];
+import { COUNTRY_OPTIONS } from "@/constants/countries";
 
 const validationSchema = yup.object({
   name: yup.string().required("Club name is required").min(3, "Should be at least 3 characters"),
@@ -43,7 +31,7 @@ export default function CreateClubPage() {
   const formik = useFormik({
     initialValues: {
       name: "",
-      country: COUNTRIES[0].code,
+      country: COUNTRY_OPTIONS[0].code,
     },
     validationSchema,
     onSubmit: async (values) => {
@@ -118,7 +106,7 @@ export default function CreateClubPage() {
               helperText={formik.touched.country && formik.errors.country}
               fullWidth
             >
-              {COUNTRIES.map((option) => (
+              {COUNTRY_OPTIONS.map((option) => (
                 <MenuItem key={option.code} value={option.code}>
                   {option.label}
                 </MenuItem>

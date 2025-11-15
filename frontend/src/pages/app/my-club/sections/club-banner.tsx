@@ -1,5 +1,7 @@
 import { Card, CardContent, Skeleton, Stack, Typography } from "@mui/material";
 
+import { formatLeagueDisplay } from "@/constants/countries";
+
 export type ClubBannerProps = {
   club: {
     name?: string;
@@ -13,7 +15,7 @@ export type ClubBannerProps = {
 export default function ClubBanner({ club, loading }: ClubBannerProps) {
   return (
     <Card className="h-full">
-      <CardContent className="flex h-full flex-col justify-between gap-3 p-6">
+      <CardContent className="flex h-full min-h-[220px] flex-col justify-between gap-3 p-6">
         {loading ? (
           <Stack spacing={2}>
             <Skeleton variant="text" height={32} width="60%" />
@@ -26,7 +28,7 @@ export default function ClubBanner({ club, loading }: ClubBannerProps) {
               {club.name ?? "My Club"}
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              {[club.country, club.league].filter(Boolean).join(" • ") || ""}
+              {formatLeagueDisplay(club.country, club.league)}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {club.status || "Status unknown"}

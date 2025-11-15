@@ -8,13 +8,17 @@ import {
   ClubActions,
   ClubActivity,
   ClubBanner,
-  ClubFinancePlaceholder,
+  ClubFinanceCard,
+  ClubFormStrip,
+  ClubNextMatch,
+  ClubRecentResults,
   ClubSchedule,
-  ClubStats,
+  ClubSquadStatus,
 } from "./sections";
-import type { ClubActivityItem, ClubFixture } from "./sections";
+import type { ClubActivityItem } from "./sections";
 import { Link as RouterLink } from "react-router-dom";
 import { fetchMatches, MatchSummary } from "@/api/matches";
+import { formatLeagueDisplay } from "@/constants/countries";
 
 type ClubSummary = {
   id: number;
@@ -41,7 +45,8 @@ export default function MyClubPage() {
   const [club, setClub] = useState<ClubSummary | null>(null);
   const [matchesLoading, setMatchesLoading] = useState(true);
   const [matchesError, setMatchesError] = useState<string | null>(null);
-  const [upcomingFixtures, setUpcomingFixtures] = useState<ClubFixture[]>([]);
+  const [upcomingMatches, setUpcomingMatches] = useState<MatchSummary[]>([]);
+  const [recentMatches, setRecentMatches] = useState<MatchSummary[]>([]);
   const [recentActivity, setRecentActivity] = useState<ClubActivityItem[]>([]);
 
   const dateFormatter = useMemo(
@@ -69,17 +74,6 @@ export default function MyClubPage() {
     } catch {
       return String(value);
     }
-  };
-
-  const buildFixture = (match: MatchSummary, clubId: number): ClubFixture => {
-    const isHome = match.home.id === clubId;
-    const opponent = isHome ? match.away.name : match.home.name;
-    return {
-      id: match.id,
-      opponent: `${isHome ? "vs" : "@"} ${opponent}`,
-      date: formatDate(match.datetime),
-      venue: isHome ? "Home" : "Away",
-    };
   };
 
   const buildActivityItems = (matches: MatchSummary[], clubId: number): ClubActivityItem[] =>
@@ -119,7 +113,8 @@ export default function MyClubPage() {
             ]);
 
             if (!cancelled) {
-              setUpcomingFixtures(upcoming.results.map((match) => buildFixture(match, summary.id)));
+              setUpcomingMatches(upcoming.results);
+              setRecentMatches(recent.results);
               setRecentActivity(buildActivityItems(recent.results, summary.id));
             }
           } catch (matchesErr: any) {
@@ -156,6 +151,8 @@ export default function MyClubPage() {
     </Stack>
   );
 
+  const leagueLabel = useMemo(() => formatLeagueDisplay(club?.country, club?.league), [club]);
+
   const hero = (
     <HeroBar
       title={club?.name ?? "My Club"}
@@ -165,7 +162,7 @@ export default function MyClubPage() {
         { label: "Tokens", value: formatMetric(club?.tokens) },
         { label: "Funds", value: formatMetric(club?.money) },
         { label: "Status", value: club?.status ?? "—" },
-        { label: "League", value: club?.league ?? "—" },
+        { label: "League", value: leagueLabel },
       ]}
       actions={heroActions}
     />
@@ -173,21 +170,40 @@ export default function MyClubPage() {
 
   const alertSection = error ? <Alert severity="error">{error}</Alert> : undefined;
 
+  const clubId = club?.id;
+  const nextMatch = useMemo(() => upcomingMatches[0] ?? null, [upcomingMatches]);
+  const upcomingSlice = useMemo(() => upcomingMatches.slice(0, 4), [upcomingMatches]);
+  const formMatches = useMemo(() => recentMatches.slice(0, 5), [recentMatches]);
+  const recentResults = useMemo(() => recentMatches.slice(0, 3), [recentMatches]);
+
   const mainContent = (
     <Stack spacing={3}>
       <Grid container spacing={2.5}>
         <Grid size={{ xs: 12 }}>
           <ClubBanner club={club} loading={loading} />
         </Grid>
-      </Grid>
-
-      <Grid container size={12} spacing={2.5}>
-        <ClubStats club={club} loading={loading} />
+        <Grid size={{ xs: 12 }}>
+          <ClubNextMatch match={nextMatch} loading={loading || matchesLoading} clubId={clubId} />
+        </Grid>
+        <Grid size={{ xs: 12 }}>
+          <ClubFormStrip matches={formMatches} loading={loading || matchesLoading} clubId={clubId} />
+        </Grid>
       </Grid>
 
       <Grid container spacing={2.5}>
         <Grid size={{ xs: 12 }}>
-          <ClubSchedule loading={loading || matchesLoading} fixtures={upcomingFixtures} error={matchesError} />
+          <ClubSchedule
+            loading={loading || matchesLoading}
+            matches={upcomingSlice}
+            clubId={clubId}
+            error={matchesError}
+          />
+        </Grid>
+      </Grid>
+
+      <Grid container spacing={2.5}>
+        <Grid size={{ xs: 12 }}>
+          <ClubRecentResults matches={recentResults} loading={loading || matchesLoading} clubId={clubId} />
         </Grid>
       </Grid>
     </Stack>
@@ -195,16 +211,17 @@ export default function MyClubPage() {
 
   const asideContent = (
     <Stack spacing={3}>
-      <ClubActions club={club} loading={loading} />
+      <ClubActions club={club} loading={loading} nextMatchId={nextMatch?.id} />
+      <ClubSquadStatus loading={loading || matchesLoading} />
+      <ClubFinanceCard loading={loading} tokens={club?.tokens} funds={club?.money} />
       <ClubActivity loading={loading || matchesLoading} items={recentActivity} error={matchesError} />
-      <ClubFinancePlaceholder loading={loading} />
     </Stack>
   );
 
   const header = (
     <Stack spacing={0.5}>
       <Typography variant="body2" color="text.secondary">
-        {club ? [club.country, club.league].filter(Boolean).join(" • ") : "Welcome back!"}
+        {club ? formatLeagueDisplay(club.country, club.league) : "Welcome back!"}
       </Typography>
     </Stack>
   );
