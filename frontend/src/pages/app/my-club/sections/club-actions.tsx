@@ -1,4 +1,5 @@
 import { Button, Card, CardContent, Stack, Tooltip } from "@mui/material";
+import type { CardProps } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 
 export type ClubActionsProps = {
@@ -7,14 +8,15 @@ export type ClubActionsProps = {
   } | null;
   loading: boolean;
   nextMatchId?: number | null;
+  cardProps?: CardProps;
 };
 
-export default function ClubActions({ club, loading, nextMatchId }: ClubActionsProps) {
+export default function ClubActions({ club, loading, nextMatchId, cardProps }: ClubActionsProps) {
   const disabled = loading || !club;
 
   return (
-    <Card className="h-full">
-      <CardContent>
+    <Card className="h-full" {...cardProps}>
+      <CardContent sx={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "center" }}>
         <Stack spacing={1.5}>
           <Tooltip title={disabled ? "Not available yet" : "Open lineup selection"} placement="top-start">
             <span>

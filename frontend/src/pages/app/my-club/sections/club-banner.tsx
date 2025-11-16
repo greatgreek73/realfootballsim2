@@ -1,4 +1,5 @@
 import { Box, Card, CardContent, Skeleton, Stack, Typography } from "@mui/material";
+import type { CardProps } from "@mui/material";
 
 import HerefordBadge from "@/assets/hereford-united.svg";
 
@@ -10,16 +11,17 @@ export type ClubBannerProps = {
     status?: string;
   } | null;
   loading: boolean;
+  cardProps?: CardProps;
 };
 
-export default function ClubBanner({ club, loading }: ClubBannerProps) {
+export default function ClubBanner({ club, loading, cardProps }: ClubBannerProps) {
   const nickname = "The Bulls";
   const foundedYear = "Основан в 1924";
   const stadiumInfo = "Стадион Edgar Street, Херефорд";
   const reputation = "Репутация: 78 / 100";
   return (
-    <Card className="h-full">
-      <CardContent className="flex h-full min-h-[220px] flex-col justify-between gap-3 p-6">
+    <Card className="h-full" {...cardProps}>
+      <CardContent className="flex h-full min-h-[220px] flex-col justify-between gap-3 p-6" sx={{ flexGrow: 1 }}>
         {loading ? (
           <Stack spacing={2}>
             <Skeleton variant="text" height={32} width="60%" />

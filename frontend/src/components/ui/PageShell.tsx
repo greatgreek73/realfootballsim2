@@ -34,14 +34,14 @@ export default function PageShell({
     : "grid grid-cols-1 gap-4";
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-h-full flex-1 flex-col gap-4">
       {hero && <div>{hero}</div>}
       {header && <div>{header}</div>}
       {top && <div>{top}</div>}
 
-      <div className={gridClass}>
-        <div>{main}</div>
-        {aside && <div>{aside}</div>}
+      <div className={`${gridClass} flex-1 min-h-0`}>
+        <div className="flex h-full flex-1 flex-col min-h-0">{main}</div>
+        {aside && <div className="flex h-full flex-1 flex-col min-h-0">{aside}</div>}
       </div>
 
       {footer && <div>{footer}</div>}

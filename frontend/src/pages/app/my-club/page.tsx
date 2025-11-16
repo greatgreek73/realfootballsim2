@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { Alert, Button, Grid, Stack, Typography } from "@mui/material";
+import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import PageShell from "@/components/ui/PageShell";
 import HeroBar from "@/components/ui/HeroBar";
 
@@ -101,20 +101,26 @@ export default function MyClubPage() {
 
   const alertSection = error ? <Alert severity="error">{error}</Alert> : undefined;
 
+  const contentMinHeight = { xs: "auto", lg: "calc(100vh - 320px)" };
+
   const mainContent = (
-    <Stack spacing={3}>
-      <Grid container spacing={2.5}>
-        <Grid size={{ xs: 12 }}>
-          <ClubBanner club={club} loading={loading} />
-        </Grid>
-      </Grid>
-    </Stack>
+    <Box sx={{ minHeight: contentMinHeight, display: "flex", alignItems: "stretch", width: "100%" }}>
+      <ClubBanner
+        club={club}
+        loading={loading}
+        cardProps={{ sx: { flex: 1, display: "flex", width: "100%", height: "100%" } }}
+      />
+    </Box>
   );
 
   const asideContent = (
-    <Stack spacing={3}>
-      <ClubActions club={club} loading={loading} />
-    </Stack>
+    <Box sx={{ minHeight: contentMinHeight, display: "flex", alignItems: "stretch", width: "100%" }}>
+      <ClubActions
+        club={club}
+        loading={loading}
+        cardProps={{ sx: { flex: 1, display: "flex", width: "100%", height: "100%" } }}
+      />
+    </Box>
   );
 
   const header = (

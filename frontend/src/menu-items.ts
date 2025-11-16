@@ -61,6 +61,13 @@ export const leftMenuItems: MenuItem[] = [
     color: "text-primary",
     href: "/finance",
   },
+  {
+    id: "sample",
+    icon: "NiCode",
+    label: "Sample",
+    color: "text-primary",
+    href: "/sample",
+  },
 ];
 
 export const leftMenuBottomItems: MenuItem[] = [
