@@ -1,0 +1,53 @@
+<svg width="300" height="360" viewBox="0 0 300 360" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#3c0a66" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#080017" stop-opacity="1" />
+    </radialGradient>
+    <linearGradient id="shield" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#34c759" />
+      <stop offset="100%" stop-color="#2da84a" />
+    </linearGradient>
+  </defs>
+  <rect width="300" height="360" fill="url(#glow)" rx="40" />
+  <path
+    d="M150 20 C60 20 40 70 40 120 v110 c0 70 40 100 110 130 70-30 110-60 110-130V120C260 70 240 20 150 20z"
+    fill="#4e1c83"
+  />
+  <path
+    d="M150 35 C75 35 60 82 60 120v105c0 58 32 82 90 108 58-26 90-50 90-108V120c0-38-15-85-90-85z"
+    fill="url(#shield)"
+  />
+  <path
+    d="M65 160l170-70v35l-170 70z"
+    fill="#4e1c83"
+  />
+  <circle cx="170" cy="210" r="65" fill="#4e1c83" />
+  <circle cx="170" cy="210" r="48" fill="#2da84a" />
+  <polygon points="170,160 182,185 158,185" fill="#4e1c83" />
+  <polygon points="170,260 182,235 158,235" fill="#4e1c83" />
+  <polygon points="120,210 145,198 145,222" fill="#4e1c83" />
+  <polygon points="220,210 195,198 195,222" fill="#4e1c83" />
+  <text
+    x="150"
+    y="95"
+    text-anchor="middle"
+    fill="#4e1c83"
+    font-size="34"
+    font-weight="700"
+    font-family="Montserrat, 'Segoe UI', Arial, sans-serif"
+  >
+    HEREFORD
+  </text>
+  <text
+    x="150"
+    y="130"
+    text-anchor="middle"
+    fill="#4e1c83"
+    font-size="34"
+    font-weight="700"
+    font-family="Montserrat, 'Segoe UI', Arial, sans-serif"
+  >
+    UNITED
+  </text>
+</svg>
