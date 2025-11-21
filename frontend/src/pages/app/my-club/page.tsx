@@ -16,6 +16,7 @@ type ClubSummary = {
   status: string;
   tokens: number;
   money: number;
+  crest_url?: string | null;
 };
 
 async function getJSON<T>(url: string): Promise<T> {
@@ -31,9 +32,10 @@ export default function MyClubPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [club, setClub] = useState<ClubSummary | null>(null);
+  const [customBadge, setCustomBadge] = useState<string | null>(null);
 
   const formatMetric = (value?: number) => {
-    if (typeof value !== "number" || Number.isNaN(value)) return "—";
+    if (typeof value !== "number" || Number.isNaN(value)) return "-";
     try {
       return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(value);
     } catch {
@@ -70,6 +72,43 @@ export default function MyClubPage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!club?.id) {
+      setCustomBadge(null);
+      return;
+    }
+
+    const stored = localStorage.getItem(`club-badge:${club.id}`);
+    setCustomBadge(stored ?? null);
+  }, [club?.id]);
+
+  const readFileAsDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handleBadgeUpload = async (file: File) => {
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      setCustomBadge(dataUrl);
+      if (club?.id) {
+        localStorage.setItem(`club-badge:${club.id}`, dataUrl);
+      }
+    } catch (err) {
+      console.error("Failed to read badge file", err);
+    }
+  };
+
+  const handleBadgeClear = () => {
+    setCustomBadge(null);
+    if (club?.id) {
+      localStorage.removeItem(`club-badge:${club.id}`);
+    }
+  };
 
   const heroActions = (
     <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
@@ -108,6 +147,9 @@ export default function MyClubPage() {
       <ClubBanner
         club={club}
         loading={loading}
+        badgeUrl={customBadge ?? club?.crest_url ?? null}
+        onBadgeUpload={handleBadgeUpload}
+        onBadgeClear={handleBadgeClear}
         cardProps={{ sx: { flex: 1, display: "flex", width: "100%", height: "100%" } }}
       />
     </Box>
