@@ -35,9 +35,9 @@ export default function ClubBanner({ club, loading, badgeUrl, onBadgeUpload, onB
   const crestDescription = previewUrl ? "Custom crest" : "Upload your crest";
 
   const nickname = "The Bulls";
-  const foundedYear = "�᭮��� � 1924";
-  const stadiumInfo = "�⠤��� Edgar Street, �����";
-  const reputation = "�������: 78 / 100";
+  const foundedYear = "Founded in 1924";
+  const stadiumInfo = "Stadium: Edgar Street, Hereford";
+  const reputation = "Reputation: 78 / 100";
 
   return (
     <Card className="h-full" {...cardProps}>
