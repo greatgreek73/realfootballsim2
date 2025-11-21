@@ -114,7 +114,15 @@ export default function MyClubPage() {
   );
 
   const asideContent = (
-    <Box sx={{ minHeight: contentMinHeight, display: "flex", alignItems: "stretch", width: "100%" }}>
+    <Box
+      sx={{
+        minHeight: contentMinHeight,
+        display: "flex",
+        alignItems: "stretch",
+        justifyContent: "stretch",
+        width: "100%",
+      }}
+    >
       <ClubActions
         club={club}
         loading={loading}

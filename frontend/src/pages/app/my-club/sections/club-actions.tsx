@@ -1,4 +1,4 @@
-import { Button, Card, CardContent, Stack, Tooltip } from "@mui/material";
+import { Box, Button, Card, CardContent, Stack, Tooltip } from "@mui/material";
 import type { CardProps } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 
@@ -16,17 +16,27 @@ export default function ClubActions({ club, loading, nextMatchId, cardProps }: C
 
   return (
     <Card className="h-full" {...cardProps}>
-      <CardContent sx={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-        <Stack spacing={1.5}>
+      <CardContent
+        sx={{
+          height: "100%",
+          width: "100%",
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 380, mx: "auto" }} alignItems="stretch">
           <Tooltip title={disabled ? "Not available yet" : "Open lineup selection"} placement="top-start">
-            <span>
+            <Box component="span" sx={{ display: "block", width: "100%" }}>
               <Button variant="contained" size="medium" fullWidth disabled={disabled}>
                 Select Team Lineup
               </Button>
-            </span>
+            </Box>
           </Tooltip>
           <Tooltip title={nextMatchId ? "Jump to the upcoming match" : "No upcoming match available"} placement="top-start">
-            <span>
+            <Box component="span" sx={{ display: "block", width: "100%" }}>
               <Button
                 component={RouterLink}
                 to={nextMatchId ? `/matches/${nextMatchId}` : "#"}
@@ -37,14 +47,14 @@ export default function ClubActions({ club, loading, nextMatchId, cardProps }: C
               >
                 Open next match
               </Button>
-            </span>
+            </Box>
           </Tooltip>
           <Tooltip title="Feature in development" placement="top-start">
-            <span>
+            <Box component="span" sx={{ display: "block", width: "100%" }}>
               <Button variant="outlined" size="medium" fullWidth disabled>
                 Training (soon)
               </Button>
-            </span>
+            </Box>
           </Tooltip>
           <Button component={RouterLink} to="/transfers" variant="outlined" size="medium" fullWidth disabled={disabled}>
             Transfer Market
