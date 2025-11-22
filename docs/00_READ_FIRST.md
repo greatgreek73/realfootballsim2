@@ -1,23 +1,60 @@
-# READ FIRST — вход в сессию ИИ
-
-## Что читать в начале каждой сессии
-1) docs/CODEBASE_MAP.md — карта проекта (коротко).
-2) docs/CURRENT_TASK_template_integration.md — текущая задача.
-3) docs/AI_RULES.md — правила для ИИ.
-4) docs/VITE_NOTES.md — заметки по Vite/proxy.
-
-## Что сделать после прочтения
-- Кратко перескажи структуру проекта и риски интеграции фронт↔бэк.
-- Дай пошаговый план по текущей задаче.
-- Выдай **только DIFF-патчи** для перечисленных в задаче файлов.
-- Приложи минимальные тест-шаги из docs/TEST_CHECKLIST.md.
-
-## Запреты (обязательные)
-- Нельзя обновлять зависимости, менять settings/infra без явного разрешения.
-- Нельзя вносить правки вне перечня файлов из текущей задачи.
-- Никаких «скрытых» изменений.
-
-## Справочные документы (не читать на старте)
-- docs/_archive/legacy_design_system.html — исторический UI
-- docs/personality_engine.md — концепция Personality Engine
-- docs/PROJECT_LOG.md — отчёт по Narrative/Personality
+{
+  "log": {
+    "access": "/var/log/xray/access.log",
+    "error": "/var/log/xray/error.log",
+    "loglevel": "warning"
+  },
+  "inbounds": [
+    {
+      "port": 443,
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "29316f5f-b50d-4486-909c-d5ee58ff8ae6",
+            "email": "hiddify"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "show": false,
+          "dest": "www.cloudflare.com:443",
+          "xver": 0,
+          "serverNames": [
+            "www.cloudflare.com"
+          ],
+          "privateKey": "SHysHBsiIwc-wYhHfbqQZ5OFeMUnJSTZTWVFGfxCIEQ",
+          "shortIds": [
+            "f95065985956f78c"
+          ]
+        }
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "tag": "blocked",
+      "settings": {}
+    }
+  ],
+  "routing": {
+    "rules": [
+      {
+        "type": "field",
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "blocked"
+      }
+    ]
+  }
+}

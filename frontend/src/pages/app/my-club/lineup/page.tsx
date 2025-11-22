@@ -78,32 +78,32 @@ const normalizeLineup = (value: any): LineupPayload => {
 // 4-4-2 formation layout on a 7-column grid (row top to bottom: GK, DEF, MID, ATT)
 // Pitch grid (7 columns, 8 rows) inspired by reference layout; more slots than 11, but only GK + 10 outfield allowed.
 const SLOT_DEFINITIONS: SlotDefinition[] = [
-  // Forwards (row 3)
-  { id: "f1", label: "LF", slotType: "forward", row: 3, col: 3 },
-  { id: "f2", label: "CF", slotType: "forward", row: 3, col: 4 },
-  { id: "f3", label: "RF", slotType: "forward", row: 3, col: 5 },
-  // Attacking mids (row 4)
-  { id: "am1", label: "LAM", slotType: "midfielder", row: 4, col: 2 },
-  { id: "am2", label: "AM", slotType: "midfielder", row: 4, col: 4 },
-  { id: "am3", label: "RAM", slotType: "midfielder", row: 4, col: 6 },
-  // Central mids (row 5)
-  { id: "cm1", label: "LCM", slotType: "midfielder", row: 5, col: 2 },
-  { id: "cm2", label: "CM", slotType: "midfielder", row: 5, col: 3 },
-  { id: "cm3", label: "CM", slotType: "midfielder", row: 5, col: 4 },
-  { id: "cm4", label: "CM", slotType: "midfielder", row: 5, col: 5 },
-  { id: "cm5", label: "RCM", slotType: "midfielder", row: 5, col: 6 },
-  // Defensive mids (row 6)
-  { id: "dm1", label: "LDM", slotType: "midfielder", row: 6, col: 2 },
-  { id: "dm2", label: "DM", slotType: "midfielder", row: 6, col: 4 },
-  { id: "dm3", label: "RDM", slotType: "midfielder", row: 6, col: 6 },
-  // Defenders (row 7)
-  { id: "d1", label: "LB", slotType: "defender", row: 7, col: 2 },
-  { id: "d2", label: "LCB", slotType: "defender", row: 7, col: 3 },
-  { id: "d3", label: "CB", slotType: "defender", row: 7, col: 4 },
-  { id: "d4", label: "RCB", slotType: "defender", row: 7, col: 5 },
-  { id: "d5", label: "RB", slotType: "defender", row: 7, col: 6 },
-  // Goalkeeper (row 8)
-  { id: "0", label: "GK", slotType: "goalkeeper", row: 8, col: 4 },
+  // Forwards (row 1)
+  { id: "f1", label: "LF", slotType: "forward", row: 1, col: 3 },
+  { id: "f2", label: "CF", slotType: "forward", row: 1, col: 4 },
+  { id: "f3", label: "RF", slotType: "forward", row: 1, col: 5 },
+  // Attacking mids (row 2)
+  { id: "am1", label: "LAM", slotType: "midfielder", row: 2, col: 2 },
+  { id: "am2", label: "AM", slotType: "midfielder", row: 2, col: 4 },
+  { id: "am3", label: "RAM", slotType: "midfielder", row: 2, col: 6 },
+  // Central mids (row 3)
+  { id: "cm1", label: "LCM", slotType: "midfielder", row: 3, col: 2 },
+  { id: "cm2", label: "CM", slotType: "midfielder", row: 3, col: 3 },
+  { id: "cm3", label: "CM", slotType: "midfielder", row: 3, col: 4 },
+  { id: "cm4", label: "CM", slotType: "midfielder", row: 3, col: 5 },
+  { id: "cm5", label: "RCM", slotType: "midfielder", row: 3, col: 6 },
+  // Defensive mids (row 4)
+  { id: "dm1", label: "LDM", slotType: "midfielder", row: 4, col: 2 },
+  { id: "dm2", label: "DM", slotType: "midfielder", row: 4, col: 4 },
+  { id: "dm3", label: "RDM", slotType: "midfielder", row: 4, col: 6 },
+  // Defenders (row 5)
+  { id: "d1", label: "LB", slotType: "defender", row: 5, col: 2 },
+  { id: "d2", label: "LCB", slotType: "defender", row: 5, col: 3 },
+  { id: "d3", label: "CB", slotType: "defender", row: 5, col: 4 },
+  { id: "d4", label: "RCB", slotType: "defender", row: 5, col: 5 },
+  { id: "d5", label: "RB", slotType: "defender", row: 5, col: 6 },
+  // Goalkeeper (row 6)
+  { id: "0", label: "GK", slotType: "goalkeeper", row: 6, col: 4 },
 ];
 
 async function fetchJSON<T>(url: string): Promise<T> {
@@ -399,28 +399,38 @@ export default function LineupPage() {
           />
         </Stack>
 
-        <Box
-          sx={{
-            borderRadius: 3,
-            border: "1px solid",
-            borderColor: "divider",
-            p: 2,
-            background: "linear-gradient(180deg, #e8f5e9 0%, #ffffff 100%)",
-          }}
-        >
+        <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
           <Box
             sx={{
-              display: "grid",
-              gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
-              gridTemplateRows: "repeat(8, minmax(0, 110px))",
-              gap: 1.25,
+              borderRadius: 3,
+              border: "1px solid",
+              borderColor: "divider",
+              p: { xs: 1.5, md: 2 },
+              background: "linear-gradient(180deg, #f0fff4 0%, #ffffff 100%)",
+              minHeight: 520,
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "center",
             }}
           >
-            {SLOT_DEFINITIONS.map((slot) => {
-              const assignment = assignments[slot.id];
-              const assignedPlayer = assignment ? players.find((p) => p.id === assignment.playerId) : undefined;
-              const draggingAllowed = dragging ? isSlotCompatible(dragging.slotType, slot.slotType) : false;
-              return (
+            <Box
+              sx={{
+                width: "100%",
+                maxWidth: "100%",
+                display: "grid",
+                gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+                gridTemplateRows: "repeat(6, minmax(90px, 1fr))",
+                gap: { xs: 1.75, md: 2.25 },
+                alignItems: "start",
+                justifyItems: "center",
+                minHeight: 480,
+              }}
+            >
+              {SLOT_DEFINITIONS.map((slot) => {
+                const assignment = assignments[slot.id];
+                const assignedPlayer = assignment ? players.find((p) => p.id === assignment.playerId) : undefined;
+                const draggingAllowed = dragging ? isSlotCompatible(dragging.slotType, slot.slotType) : false;
+                return (
                 <Box
                   key={slot.id}
                   sx={{
@@ -430,93 +440,97 @@ export default function LineupPage() {
                     alignItems: "stretch",
                   }}
                 >
-                  <Card
-                    variant="outlined"
-                    sx={{
-                      flex: 1,
-                      borderStyle: draggingAllowed ? "dashed" : "solid",
-                      borderColor: draggingAllowed ? "primary.main" : "divider",
-                      transition: "border-color 0.2s ease, background-color 0.2s ease",
-                      backgroundColor: draggingAllowed ? "primary.main/12" : "background.paper",
-                      minHeight: 0,
-                    }}
-                    onDragOver={(e) => {
-                      if (!draggingAllowed) return;
-                      e.preventDefault();
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      try {
-                        const raw = e.dataTransfer.getData("application/json");
-                        const parsed = raw ? JSON.parse(raw) : null;
-                        const playerId = parsed?.playerId ? Number(parsed.playerId) : NaN;
-                        if (Number.isFinite(playerId)) {
-                          handleDropToSlot(slot, playerId);
+                    <Card
+                      variant="outlined"
+                      sx={{
+                        flex: 1,
+                        minWidth: 88,
+                        maxWidth: 120,
+                        borderStyle: draggingAllowed ? "dashed" : "solid",
+                        borderColor: draggingAllowed ? "primary.main" : "divider",
+                        transition: "border-color 0.2s ease, background-color 0.2s ease",
+                        backgroundColor: draggingAllowed ? "primary.main/12" : "background.paper",
+                        minHeight: 0,
+                      }}
+                      onDragOver={(e) => {
+                        if (!draggingAllowed) return;
+                        e.preventDefault();
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        try {
+                          const raw = e.dataTransfer.getData("application/json");
+                          const parsed = raw ? JSON.parse(raw) : null;
+                          const playerId = parsed?.playerId ? Number(parsed.playerId) : NaN;
+                          if (Number.isFinite(playerId)) {
+                            handleDropToSlot(slot, playerId);
+                          }
+                        } catch {
+                          /* ignore */
+                        } finally {
+                          handleDragEnd();
                         }
-                      } catch {
-                        /* ignore */
-                      } finally {
-                        handleDragEnd();
-                      }
-                    }}
-                  >
-                    <CardContent>
-                      <Stack spacing={1.25}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center">
-                          <Typography variant="subtitle1">{slot.label}</Typography>
-                          <Chip size="small" label={slot.slotType} color="default" />
-                        </Stack>
-                        <Box
-                          sx={{
-                            borderRadius: 2,
-                            border: "1px dashed",
-                            borderColor: draggingAllowed ? "primary.main" : "divider",
-                            minHeight: 68,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            backgroundColor: "grey.50",
-                            px: 1,
-                            py: 1,
-                          }}
-                        >
-                          {assignedPlayer ? (
-                            <Stack
-                              spacing={0.5}
-                              sx={{ width: "100%", cursor: "grab" }}
-                              draggable
-                              onDragStart={(e) => {
-                                handleDragStart(assignedPlayer);
-                                e.dataTransfer.setData(
-                                  "application/json",
-                                  JSON.stringify({ playerId: assignedPlayer.id, from: "slot", slotId: slot.id })
-                                );
-                              }}
-                              onDragEnd={handleDragEnd}
-                            >
-                              <Typography variant="body2" fontWeight={600}>
-                                {assignedPlayer.name}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                {assignedPlayer.position}
-                              </Typography>
-                              <Stack direction="row" spacing={1}>
-                                <Chip size="small" label={`ATT ${assignedPlayer.attributes?.attack ?? "-"}`} />
-                                <Chip size="small" label={`DEF ${assignedPlayer.attributes?.defense ?? "-"}`} />
+                      }}
+                    >
+                      <CardContent sx={{ p: 0.5 }}>
+                        <Stack spacing={0.25} alignItems="center">
+                          <Typography
+                            variant="body2"
+                            fontWeight={700}
+                            textAlign="center"
+                            sx={{ lineHeight: 1, fontSize: 12 }}
+                          >
+                            {slot.label}
+                          </Typography>
+                          <Box
+                            sx={{
+                              borderRadius: 1,
+                              border: "1px dashed",
+                              borderColor: draggingAllowed ? "primary.main" : "divider",
+                              minHeight: 28,
+                              width: "100%",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              backgroundColor: "grey.50",
+                              px: 0.5,
+                              py: 0.25,
+                            }}
+                          >
+                            {assignedPlayer ? (
+                              <Stack
+                                spacing={0.15}
+                                sx={{ width: "100%", cursor: "grab" }}
+                                draggable
+                                onDragStart={(e) => {
+                                  handleDragStart(assignedPlayer);
+                                  e.dataTransfer.setData(
+                                    "application/json",
+                                    JSON.stringify({ playerId: assignedPlayer.id, from: "slot", slotId: slot.id })
+                                  );
+                                }}
+                                onDragEnd={handleDragEnd}
+                              >
+                                <Typography variant="caption" fontWeight={600} noWrap sx={{ lineHeight: 1.1 }}>
+                                  {assignedPlayer.name}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary" noWrap sx={{ lineHeight: 1.1 }}>
+                                  {assignedPlayer.position}
+                                </Typography>
                               </Stack>
-                            </Stack>
-                          ) : (
-                            <Typography variant="body2" color="text.secondary">
-                              Drag player here
-                            </Typography>
-                          )}
-                        </Box>
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                </Box>
-              );
-            })}
+                            ) : (
+                              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.1 }}>
+                                Drag player
+                              </Typography>
+                            )}
+                          </Box>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </Box>
+                );
+              })}
+            </Box>
           </Box>
         </Box>
       </CardContent>
