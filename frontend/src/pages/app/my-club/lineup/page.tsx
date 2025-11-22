@@ -417,16 +417,13 @@ export default function LineupPage() {
               <Box
                 sx={{
                   width: "100%",
-                  maxWidth: 820,
                   display: "grid",
                   gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
                   gridTemplateRows: "repeat(6, minmax(90px, 1fr))",
                   gap: { xs: 1.25, md: 1.75 },
                   alignItems: "start",
-                  justifyItems: "center",
+                  justifyItems: "stretch",
                   minHeight: 480,
-                  transform: { xs: "scale(0.8)", md: "scale(0.75)" },
-                  transformOrigin: "top center",
                   position: "relative",
                 }}
               >
