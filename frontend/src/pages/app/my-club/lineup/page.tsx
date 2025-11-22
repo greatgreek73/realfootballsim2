@@ -27,6 +27,8 @@ type SlotDefinition = {
   id: string;
   label: string;
   slotType: SlotType;
+  row: number;
+  col: number;
 };
 
 type PlayerOption = {
@@ -73,18 +75,19 @@ const normalizeLineup = (value: any): LineupPayload => {
   return result;
 };
 
+// 4-4-2 formation layout on a 7-column grid (row top to bottom: GK, DEF, MID, ATT)
 const SLOT_DEFINITIONS: SlotDefinition[] = [
-  { id: "0", label: "GK", slotType: "goalkeeper" },
-  { id: "1", label: "LB", slotType: "defender" },
-  { id: "2", label: "CB", slotType: "defender" },
-  { id: "3", label: "CB", slotType: "defender" },
-  { id: "4", label: "RB", slotType: "defender" },
-  { id: "5", label: "LM", slotType: "midfielder" },
-  { id: "6", label: "CM", slotType: "midfielder" },
-  { id: "7", label: "RM", slotType: "midfielder" },
-  { id: "8", label: "LF", slotType: "forward" },
-  { id: "9", label: "ST", slotType: "forward" },
-  { id: "10", label: "RF", slotType: "forward" },
+  { id: "0", label: "GK", slotType: "goalkeeper", row: 1, col: 4 },
+  { id: "1", label: "LB", slotType: "defender", row: 2, col: 2 },
+  { id: "2", label: "CB", slotType: "defender", row: 2, col: 3 },
+  { id: "3", label: "CB", slotType: "defender", row: 2, col: 5 },
+  { id: "4", label: "RB", slotType: "defender", row: 2, col: 6 },
+  { id: "5", label: "LM", slotType: "midfielder", row: 3, col: 2 },
+  { id: "6", label: "CM", slotType: "midfielder", row: 3, col: 3 },
+  { id: "7", label: "CM", slotType: "midfielder", row: 3, col: 5 },
+  { id: "8", label: "RM", slotType: "midfielder", row: 3, col: 6 },
+  { id: "9", label: "ST", slotType: "forward", row: 4, col: 3 },
+  { id: "10", label: "ST", slotType: "forward", row: 4, col: 5 },
 ];
 
 async function fetchJSON<T>(url: string): Promise<T> {
@@ -152,6 +155,8 @@ export default function LineupPage() {
   }, []);
 
   const assignedPlayerIds = useMemo(() => new Set(Object.values(assignments).map((a) => a.playerId)), [assignments]);
+  const hasGoalkeeper = Boolean(assignments["0"]);
+  const isLineupValid = hasGoalkeeper;
 
   const isSlotCompatible = (playerType: SlotType | null, slotType: SlotType) => {
     if (!playerType) return true;
@@ -201,7 +206,7 @@ export default function LineupPage() {
       if (!club?.id) return;
       if (!options?.silent) setSaving(true);
       if (options?.silent) setAutoSaving(true);
-      setError(null);
+      if (!options?.silent) setError(null);
       if (!options?.silent) setSuccess(null);
       try {
         const payload = {
@@ -239,7 +244,7 @@ export default function LineupPage() {
   };
 
   useEffect(() => {
-    if (!initialized || !club?.id || loading) return;
+    if (!initialized || !club?.id || loading || !isLineupValid) return;
     if (autoSaveTimer.current) {
       clearTimeout(autoSaveTimer.current);
     }
@@ -325,7 +330,7 @@ export default function LineupPage() {
       kpis={[
         { label: "Slots", value: `${Object.keys(assignments).length}/11` },
         { label: "Tactic", value: tactic || "balanced" },
-        { label: "GK required", value: assignments["0"] ? "Yes" : "Missing" },
+        { label: "GK required", value: hasGoalkeeper ? "Yes" : "Missing" },
         { label: "Players", value: players.length || "-" },
       ]}
       actions={
@@ -333,26 +338,13 @@ export default function LineupPage() {
           <Button variant="outlined" onClick={handleReset} disabled={loading || saving}>
             Reset
           </Button>
-          <Button variant="contained" onClick={handleSave} disabled={loading || saving}>
+          <Button variant="contained" onClick={() => handleSave()} disabled={loading || saving || !isLineupValid}>
             {saving ? "Saving..." : "Save lineup"}
           </Button>
         </Stack>
       }
     />
   );
-
-  if (loading) {
-    return (
-      <PageShell
-        hero={hero}
-        main={
-          <Stack alignItems="center" justifyContent="center" sx={{ minHeight: 320 }}>
-            <CircularProgress />
-          </Stack>
-        }
-      />
-    );
-  }
 
   const mainContent = (
     <Card sx={{ height: "100%" }}>
@@ -378,110 +370,126 @@ export default function LineupPage() {
           />
         </Stack>
 
-        <Grid container spacing={2}>
-          {SLOT_DEFINITIONS.map((slot) => {
-            const assignment = assignments[slot.id];
-            const assignedPlayer = assignment ? players.find((p) => p.id === assignment.playerId) : undefined;
-            const draggingAllowed = dragging ? isSlotCompatible(dragging.slotType, slot.slotType) : false;
-            const eligible = getEligiblePlayers(slot);
-            return (
-              <Grid item xs={12} sm={6} md={4} key={slot.id}>
-                <Card
-                  variant="outlined"
+        <Box
+          sx={{
+            borderRadius: 3,
+            border: "1px solid",
+            borderColor: "divider",
+            p: 2,
+            background: "linear-gradient(180deg, #e8f5e9 0%, #ffffff 100%)",
+          }}
+        >
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+              gridAutoRows: "120px",
+              gap: 1.5,
+            }}
+          >
+            {SLOT_DEFINITIONS.map((slot) => {
+              const assignment = assignments[slot.id];
+              const assignedPlayer = assignment ? players.find((p) => p.id === assignment.playerId) : undefined;
+              const draggingAllowed = dragging ? isSlotCompatible(dragging.slotType, slot.slotType) : false;
+              return (
+                <Box
+                  key={slot.id}
                   sx={{
-                    borderStyle: draggingAllowed ? "dashed" : "solid",
-                    borderColor: draggingAllowed ? "primary.main" : "divider",
-                    transition: "border-color 0.2s ease, background-color 0.2s ease",
-                    backgroundColor: draggingAllowed ? "primary.main/8" : "background.paper",
-                  }}
-                  onDragOver={(e) => {
-                    if (!draggingAllowed) return;
-                    e.preventDefault();
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    try {
-                      const raw = e.dataTransfer.getData("application/json");
-                      const parsed = raw ? JSON.parse(raw) : null;
-                      const playerId = parsed?.playerId ? Number(parsed.playerId) : NaN;
-                      if (Number.isFinite(playerId)) {
-                        handleDropToSlot(slot, playerId);
-                      }
-                    } catch {
-                      /* ignore */
-                    } finally {
-                      handleDragEnd();
-                    }
-                  }}
-                  onDragLeave={() => {
-                    /* noop, style handled by state */
+                    gridColumn: slot.col,
+                    gridRow: slot.row,
+                    display: "flex",
+                    alignItems: "stretch",
                   }}
                 >
-                  <CardContent>
-                    <Stack spacing={1.25}>
-                      <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Typography variant="subtitle1">{slot.label}</Typography>
-                        <Chip size="small" label={slot.slotType} color="default" />
-                      </Stack>
-                      <FormControl fullWidth size="small">
-                        <InputLabel id={`slot-${slot.id}-label`}>Select player</InputLabel>
-                        <Select
-                          labelId={`slot-${slot.id}-label`}
-                          label="Select player"
-                          value={assignment?.playerId ?? ""}
-                          onChange={(e) => handleAssign(slot, e.target.value as number | "")}
-                        >
-                          <MenuItem value="">
-                            <em>Empty</em>
-                          </MenuItem>
-                          {eligible.map((p) => (
-                            <MenuItem key={p.id} value={p.id}>
-                              <Stack direction="row" spacing={1} alignItems="center">
-                                <span>{p.name}</span>
-                                <Chip size="small" label={p.position} />
-                                <Chip size="small" variant="outlined" label={`ATT ${p.attributes?.attack ?? "-"}`} />
-                                <Chip size="small" variant="outlined" label={`DEF ${p.attributes?.defense ?? "-"}`} />
-                              </Stack>
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                      {assignedPlayer && (
+                  <Card
+                    variant="outlined"
+                    sx={{
+                      flex: 1,
+                      borderStyle: draggingAllowed ? "dashed" : "solid",
+                      borderColor: draggingAllowed ? "primary.main" : "divider",
+                      transition: "border-color 0.2s ease, background-color 0.2s ease",
+                      backgroundColor: draggingAllowed ? "primary.main/12" : "background.paper",
+                      minHeight: 0,
+                    }}
+                    onDragOver={(e) => {
+                      if (!draggingAllowed) return;
+                      e.preventDefault();
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      try {
+                        const raw = e.dataTransfer.getData("application/json");
+                        const parsed = raw ? JSON.parse(raw) : null;
+                        const playerId = parsed?.playerId ? Number(parsed.playerId) : NaN;
+                        if (Number.isFinite(playerId)) {
+                          handleDropToSlot(slot, playerId);
+                        }
+                      } catch {
+                        /* ignore */
+                      } finally {
+                        handleDragEnd();
+                      }
+                    }}
+                  >
+                    <CardContent>
+                      <Stack spacing={1.25}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                          <Typography variant="subtitle1">{slot.label}</Typography>
+                          <Chip size="small" label={slot.slotType} color="default" />
+                        </Stack>
                         <Box
                           sx={{
                             borderRadius: 2,
-                            border: "1px solid",
-                            borderColor: "divider",
-                            px: 1.25,
-                            py: 0.75,
+                            border: "1px dashed",
+                            borderColor: draggingAllowed ? "primary.main" : "divider",
+                            minHeight: 68,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
                             backgroundColor: "grey.50",
-                            cursor: "grab",
+                            px: 1,
+                            py: 1,
                           }}
-                          draggable
-                          onDragStart={(e) => {
-                            handleDragStart(assignedPlayer);
-                            e.dataTransfer.setData(
-                              "application/json",
-                              JSON.stringify({ playerId: assignedPlayer.id, from: "slot", slotId: slot.id })
-                            );
-                          }}
-                          onDragEnd={handleDragEnd}
                         >
-                          <Typography variant="body2" fontWeight={600}>
-                            {assignedPlayer.name}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {assignedPlayer.position}
-                          </Typography>
+                          {assignedPlayer ? (
+                            <Stack
+                              spacing={0.5}
+                              sx={{ width: "100%", cursor: "grab" }}
+                              draggable
+                              onDragStart={(e) => {
+                                handleDragStart(assignedPlayer);
+                                e.dataTransfer.setData(
+                                  "application/json",
+                                  JSON.stringify({ playerId: assignedPlayer.id, from: "slot", slotId: slot.id })
+                                );
+                              }}
+                              onDragEnd={handleDragEnd}
+                            >
+                              <Typography variant="body2" fontWeight={600}>
+                                {assignedPlayer.name}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {assignedPlayer.position}
+                              </Typography>
+                              <Stack direction="row" spacing={1}>
+                                <Chip size="small" label={`ATT ${assignedPlayer.attributes?.attack ?? "-"}`} />
+                                <Chip size="small" label={`DEF ${assignedPlayer.attributes?.defense ?? "-"}`} />
+                              </Stack>
+                            </Stack>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              Drag player here
+                            </Typography>
+                          )}
                         </Box>
-                      )}
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Grid>
-            );
-          })}
-        </Grid>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                </Box>
+              );
+            })}
+          </Box>
+        </Box>
       </CardContent>
     </Card>
   );
@@ -531,11 +539,27 @@ export default function LineupPage() {
       {success && <Alert severity="success">{success}</Alert>}
       {!error && !success && (
         <Typography variant="body2" color="text.secondary">
-          Drag players onto slots (or use selectors). Changes auto-save; you still must set exactly one goalkeeper.
+          Drag players onto slots. Changes auto-save when a goalkeeper is set; you still must set exactly one goalkeeper.
         </Typography>
       )}
     </Stack>
   );
 
-  return <PageShell hero={hero} top={top} main={mainContent} aside={asideContent} bottomSplit="67-33" />;
+  return (
+    <PageShell
+      hero={hero}
+      top={top}
+      main={
+        loading ? (
+          <Stack alignItems="center" justifyContent="center" sx={{ minHeight: 320 }}>
+            <CircularProgress />
+          </Stack>
+        ) : (
+          mainContent
+        )
+      }
+      aside={loading ? undefined : asideContent}
+      bottomSplit="67-33"
+    />
+  );
 }
