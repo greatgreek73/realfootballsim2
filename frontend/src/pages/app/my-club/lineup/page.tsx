@@ -413,24 +413,28 @@ export default function LineupPage() {
               justifyContent: "center",
             }}
           >
-            <Box
-              sx={{
-                width: "100%",
-                maxWidth: "100%",
-                display: "grid",
-                gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
-                gridTemplateRows: "repeat(6, minmax(90px, 1fr))",
-                gap: { xs: 1.75, md: 2.25 },
-                alignItems: "start",
-                justifyItems: "center",
-                minHeight: 480,
-              }}
-            >
-              {SLOT_DEFINITIONS.map((slot) => {
-                const assignment = assignments[slot.id];
-                const assignedPlayer = assignment ? players.find((p) => p.id === assignment.playerId) : undefined;
-                const draggingAllowed = dragging ? isSlotCompatible(dragging.slotType, slot.slotType) : false;
-                return (
+            <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
+              <Box
+                sx={{
+                  width: "100%",
+                  maxWidth: 820,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+                  gridTemplateRows: "repeat(6, minmax(90px, 1fr))",
+                  gap: { xs: 1.25, md: 1.75 },
+                  alignItems: "start",
+                  justifyItems: "center",
+                  minHeight: 480,
+                  transform: { xs: "scale(0.8)", md: "scale(0.75)" },
+                  transformOrigin: "top center",
+                  position: "relative",
+                }}
+              >
+                {SLOT_DEFINITIONS.map((slot) => {
+                  const assignment = assignments[slot.id];
+                  const assignedPlayer = assignment ? players.find((p) => p.id === assignment.playerId) : undefined;
+                  const draggingAllowed = dragging ? isSlotCompatible(dragging.slotType, slot.slotType) : false;
+                  return (
                 <Box
                   key={slot.id}
                   sx={{
@@ -444,8 +448,8 @@ export default function LineupPage() {
                       variant="outlined"
                       sx={{
                         flex: 1,
-                        minWidth: 88,
-                        maxWidth: 120,
+                        minWidth: 72,
+                        maxWidth: 96,
                         borderStyle: draggingAllowed ? "dashed" : "solid",
                         borderColor: draggingAllowed ? "primary.main" : "divider",
                         transition: "border-color 0.2s ease, background-color 0.2s ease",
@@ -472,13 +476,13 @@ export default function LineupPage() {
                         }
                       }}
                     >
-                      <CardContent sx={{ p: 0.5 }}>
-                        <Stack spacing={0.25} alignItems="center">
+                      <CardContent sx={{ p: 0.4 }}>
+                        <Stack spacing={0.2} alignItems="center">
                           <Typography
                             variant="body2"
                             fontWeight={700}
                             textAlign="center"
-                            sx={{ lineHeight: 1, fontSize: 12 }}
+                            sx={{ lineHeight: 1, fontSize: 11 }}
                           >
                             {slot.label}
                           </Typography>
@@ -487,14 +491,14 @@ export default function LineupPage() {
                               borderRadius: 1,
                               border: "1px dashed",
                               borderColor: draggingAllowed ? "primary.main" : "divider",
-                              minHeight: 28,
+                              minHeight: 24,
                               width: "100%",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
                               backgroundColor: "grey.50",
-                              px: 0.5,
-                              py: 0.25,
+                              px: 0.4,
+                              py: 0.2,
                             }}
                           >
                             {assignedPlayer ? (
@@ -528,8 +532,9 @@ export default function LineupPage() {
                       </CardContent>
                     </Card>
                   </Box>
-                );
-              })}
+                  );
+                })}
+              </Box>
             </Box>
           </Box>
         </Box>
