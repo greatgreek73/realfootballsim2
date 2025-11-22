@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   Alert,
@@ -117,8 +117,12 @@ export default function LineupPage() {
   const [tactic, setTactic] = useState("balanced");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [dragging, setDragging] = useState<{ playerId: number; slotType: SlotType | null } | null>(null);
+  const [initialized, setInitialized] = useState(false);
+  const autoSaveTimer = useRef<number | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -137,6 +141,7 @@ export default function LineupPage() {
         setPlayers(playersData ?? []);
         setTactic(lineupData?.tactic || "balanced");
         setAssignments(normalizeLineup(lineupData?.lineup));
+        setInitialized(true);
       } catch (e: any) {
         setError(e?.message || "Failed to load lineup data");
       } finally {
@@ -148,12 +153,17 @@ export default function LineupPage() {
 
   const assignedPlayerIds = useMemo(() => new Set(Object.values(assignments).map((a) => a.playerId)), [assignments]);
 
+  const isSlotCompatible = (playerType: SlotType | null, slotType: SlotType) => {
+    if (!playerType) return true;
+    return playerType === slotType;
+  };
+
   const getEligiblePlayers = (slot: SlotDefinition): PlayerOption[] => {
     const current = assignments[slot.id]?.playerId;
     const eligibleType = slot.slotType;
     return players.filter((p) => {
       const mapped = positionToSlotType(p.position);
-      const allowed = mapped === eligibleType || mapped === null;
+      const allowed = isSlotCompatible(mapped, eligibleType);
       const available = !assignedPlayerIds.has(p.id) || p.id === current;
       return allowed && available;
     });
@@ -162,6 +172,13 @@ export default function LineupPage() {
   const handleAssign = (slot: SlotDefinition, playerId: number | "") => {
     setAssignments((prev) => {
       const next = { ...prev };
+      if (playerId !== "") {
+        Object.entries(next).forEach(([slotId, data]) => {
+          if (slotId !== slot.id && data.playerId === playerId) {
+            delete next[slotId];
+          }
+        });
+      }
       if (playerId === "") {
         delete next[slot.id];
         return next;
@@ -179,42 +196,126 @@ export default function LineupPage() {
     setSuccess(null);
   };
 
-  const handleSave = async () => {
-    if (!club?.id) return;
-    setSaving(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      const payload = {
-        lineup: assignments,
-        tactic,
-      };
-      const csrftoken = await getCsrfToken();
-      const res = await fetch(`/clubs/detail/${club.id}/save-team-lineup/`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": csrftoken,
-        },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Failed to save lineup");
+  const handleSave = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (!club?.id) return;
+      if (!options?.silent) setSaving(true);
+      if (options?.silent) setAutoSaving(true);
+      setError(null);
+      if (!options?.silent) setSuccess(null);
+      try {
+        const payload = {
+          lineup: assignments,
+          tactic,
+        };
+        const csrftoken = await getCsrfToken();
+        const res = await fetch(`/clubs/detail/${club.id}/save-team-lineup/`, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrftoken,
+          },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || "Failed to save lineup");
+        }
+        if (!options?.silent) setSuccess("Lineup saved");
+      } catch (e: any) {
+        setError(e?.message || "Failed to save lineup");
+      } finally {
+        if (!options?.silent) setSaving(false);
+        setAutoSaving(false);
       }
-      setSuccess("Lineup saved");
-    } catch (e: any) {
-      setError(e?.message || "Failed to save lineup");
-    } finally {
-      setSaving(false);
-    }
-  };
+    },
+    [club?.id, assignments, tactic]
+  );
 
   const handleReset = () => {
     setAssignments({});
     setSuccess(null);
   };
+
+  useEffect(() => {
+    if (!initialized || !club?.id || loading) return;
+    if (autoSaveTimer.current) {
+      clearTimeout(autoSaveTimer.current);
+    }
+    autoSaveTimer.current = window.setTimeout(() => {
+      handleSave({ silent: true }).catch((e) => setError(e?.message || "Failed to save lineup"));
+    }, 500);
+    return () => {
+      if (autoSaveTimer.current) {
+        clearTimeout(autoSaveTimer.current);
+      }
+    };
+  }, [assignments, tactic, club?.id, loading, initialized, handleSave]);
+
+  const handleDragStart = (player: PlayerOption) => {
+    setDragging({ playerId: player.id, slotType: positionToSlotType(player.position) });
+  };
+
+  const handleDragEnd = () => setDragging(null);
+
+  const handleDropToSlot = (slot: SlotDefinition, playerId: number) => {
+    const player = players.find((p) => p.id === playerId);
+    if (!player) return;
+    const mapped = positionToSlotType(player.position);
+    if (!isSlotCompatible(mapped, slot.slotType)) return;
+    handleAssign(slot, playerId);
+  };
+
+  const handleDropToBench = (playerId: number) => {
+    setAssignments((prev) => {
+      const next = { ...prev };
+      Object.entries(next).forEach(([slotId, data]) => {
+        if (data.playerId === playerId) delete next[slotId];
+      });
+      return next;
+    });
+    setSuccess(null);
+  };
+
+  const renderPlayerBadge = (p: PlayerOption, assigned?: boolean) => (
+    <Stack
+      key={p.id}
+      direction="row"
+      spacing={1}
+      alignItems="center"
+      justifyContent="space-between"
+      sx={{
+        border: "1px solid",
+        borderColor: assigned ? "divider" : "grey.200",
+        borderRadius: 2,
+        px: 1.5,
+        py: 1,
+        opacity: assigned ? 0.6 : 1,
+        backgroundColor: "background.paper",
+      }}
+      draggable
+      onDragStart={(e) => {
+        handleDragStart(p);
+        e.dataTransfer.setData("application/json", JSON.stringify({ playerId: p.id, from: "bench" }));
+      }}
+      onDragEnd={handleDragEnd}
+    >
+      <Box>
+        <Typography variant="body2" fontWeight={600}>
+          {p.name}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {p.position}
+        </Typography>
+      </Box>
+      <Stack direction="row" spacing={1} alignItems="center">
+        <Chip size="small" label={`ATT ${p.attributes?.attack ?? "-"}`} variant="outlined" />
+        <Chip size="small" label={`DEF ${p.attributes?.defense ?? "-"}`} variant="outlined" />
+        {assigned && <Chip size="small" color="info" label="In lineup" />}
+      </Stack>
+    </Stack>
+  );
 
   const hero = (
     <HeroBar
@@ -280,10 +381,42 @@ export default function LineupPage() {
         <Grid container spacing={2}>
           {SLOT_DEFINITIONS.map((slot) => {
             const assignment = assignments[slot.id];
+            const assignedPlayer = assignment ? players.find((p) => p.id === assignment.playerId) : undefined;
+            const draggingAllowed = dragging ? isSlotCompatible(dragging.slotType, slot.slotType) : false;
             const eligible = getEligiblePlayers(slot);
             return (
               <Grid item xs={12} sm={6} md={4} key={slot.id}>
-                <Card variant="outlined">
+                <Card
+                  variant="outlined"
+                  sx={{
+                    borderStyle: draggingAllowed ? "dashed" : "solid",
+                    borderColor: draggingAllowed ? "primary.main" : "divider",
+                    transition: "border-color 0.2s ease, background-color 0.2s ease",
+                    backgroundColor: draggingAllowed ? "primary.main/8" : "background.paper",
+                  }}
+                  onDragOver={(e) => {
+                    if (!draggingAllowed) return;
+                    e.preventDefault();
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    try {
+                      const raw = e.dataTransfer.getData("application/json");
+                      const parsed = raw ? JSON.parse(raw) : null;
+                      const playerId = parsed?.playerId ? Number(parsed.playerId) : NaN;
+                      if (Number.isFinite(playerId)) {
+                        handleDropToSlot(slot, playerId);
+                      }
+                    } catch {
+                      /* ignore */
+                    } finally {
+                      handleDragEnd();
+                    }
+                  }}
+                  onDragLeave={() => {
+                    /* noop, style handled by state */
+                  }}
+                >
                   <CardContent>
                     <Stack spacing={1.25}>
                       <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -313,10 +446,34 @@ export default function LineupPage() {
                           ))}
                         </Select>
                       </FormControl>
-                      {assignment && (
-                        <Typography variant="body2" color="text.secondary">
-                          Assigned: {assignment.playerPosition}
-                        </Typography>
+                      {assignedPlayer && (
+                        <Box
+                          sx={{
+                            borderRadius: 2,
+                            border: "1px solid",
+                            borderColor: "divider",
+                            px: 1.25,
+                            py: 0.75,
+                            backgroundColor: "grey.50",
+                            cursor: "grab",
+                          }}
+                          draggable
+                          onDragStart={(e) => {
+                            handleDragStart(assignedPlayer);
+                            e.dataTransfer.setData(
+                              "application/json",
+                              JSON.stringify({ playerId: assignedPlayer.id, from: "slot", slotId: slot.id })
+                            );
+                          }}
+                          onDragEnd={handleDragEnd}
+                        >
+                          <Typography variant="body2" fontWeight={600}>
+                            {assignedPlayer.name}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {assignedPlayer.position}
+                          </Typography>
+                        </Box>
                       )}
                     </Stack>
                   </CardContent>
@@ -334,47 +491,35 @@ export default function LineupPage() {
       <CardContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         <Typography variant="h6">Available players</Typography>
         <Divider />
-        <Stack spacing={1.5} sx={{ maxHeight: 520, overflowY: "auto" }}>
+        <Stack
+          spacing={1.5}
+          sx={{ maxHeight: 520, overflowY: "auto" }}
+          onDragOver={(e) => {
+            const raw = e.dataTransfer.getData("application/json");
+            if (raw) e.preventDefault();
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            try {
+              const raw = e.dataTransfer.getData("application/json");
+              const parsed = raw ? JSON.parse(raw) : null;
+              const playerId = parsed?.playerId ? Number(parsed.playerId) : NaN;
+              if (Number.isFinite(playerId)) {
+                handleDropToBench(playerId);
+              }
+            } catch {
+              /* ignore */
+            } finally {
+              handleDragEnd();
+            }
+          }}
+        >
           {players.length === 0 && (
             <Typography variant="body2" color="text.secondary">
               No players found.
             </Typography>
           )}
-          {players.map((p) => {
-            const assigned = assignedPlayerIds.has(p.id);
-            return (
-              <Stack
-                key={p.id}
-                direction="row"
-                spacing={1}
-                alignItems="center"
-                justifyContent="space-between"
-                sx={{
-                  border: "1px solid",
-                  borderColor: assigned ? "divider" : "grey.200",
-                  borderRadius: 2,
-                  px: 1.5,
-                  py: 1,
-                  opacity: assigned ? 0.6 : 1,
-                  backgroundColor: "background.paper",
-                }}
-              >
-                <Box>
-                  <Typography variant="body2" fontWeight={600}>
-                    {p.name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {p.position}
-                  </Typography>
-                </Box>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Chip size="small" label={`ATT ${p.attributes?.attack ?? "-"}`} variant="outlined" />
-                  <Chip size="small" label={`DEF ${p.attributes?.defense ?? "-"}`} variant="outlined" />
-                  {assigned && <Chip size="small" color="info" label="In lineup" />}
-                </Stack>
-              </Stack>
-            );
-          })}
+          {players.map((p) => renderPlayerBadge(p, assignedPlayerIds.has(p.id)))}
         </Stack>
       </CardContent>
     </Card>
@@ -386,7 +531,7 @@ export default function LineupPage() {
       {success && <Alert severity="success">{success}</Alert>}
       {!error && !success && (
         <Typography variant="body2" color="text.secondary">
-          Use the selectors to assign players to each role. You must set exactly one goalkeeper.
+          Drag players onto slots (or use selectors). Changes auto-save; you still must set exactly one goalkeeper.
         </Typography>
       )}
     </Stack>
