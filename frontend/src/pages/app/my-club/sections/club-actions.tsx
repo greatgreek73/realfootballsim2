@@ -30,7 +30,14 @@ export default function ClubActions({ club, loading, nextMatchId, cardProps }: C
         <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 380, mx: "auto" }} alignItems="stretch">
           <Tooltip title={disabled ? "Not available yet" : "Open lineup selection"} placement="top-start">
             <Box component="span" sx={{ display: "block", width: "100%" }}>
-              <Button variant="contained" size="medium" fullWidth disabled={disabled}>
+              <Button
+                component={RouterLink}
+                to="/my-club/lineup"
+                variant="contained"
+                size="medium"
+                fullWidth
+                disabled={disabled}
+              >
                 Select Team Lineup
               </Button>
             </Box>

@@ -241,6 +241,7 @@ def get_players(request, pk):
     players = Player.objects.filter(club=club)
     data = []
     for p in players:
+        avatar_url = getattr(p, "avatar_url", None)
         # Attack = finishing + dribbling + accuracy + long_range + heading
         total_attack = (
             (p.finishing or 0) +
@@ -266,7 +267,7 @@ def get_players(request, pk):
                 'attack': total_attack,
                 'defense': total_defense
             },
-            'avatar_url': avatar_url,  # <-- ДОБАВЛЕНО ПОЛЕ
+            'avatar_url': getattr(p, 'avatar_url', None),  # <-- ДОБАВЛЕНО ПОЛЕ
         })
 
     return JsonResponse(data, safe=False)
