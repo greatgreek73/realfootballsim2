@@ -76,18 +76,34 @@ const normalizeLineup = (value: any): LineupPayload => {
 };
 
 // 4-4-2 formation layout on a 7-column grid (row top to bottom: GK, DEF, MID, ATT)
+// Pitch grid (7 columns, 8 rows) inspired by reference layout; more slots than 11, but only GK + 10 outfield allowed.
 const SLOT_DEFINITIONS: SlotDefinition[] = [
-  { id: "0", label: "GK", slotType: "goalkeeper", row: 1, col: 4 },
-  { id: "1", label: "LB", slotType: "defender", row: 2, col: 2 },
-  { id: "2", label: "CB", slotType: "defender", row: 2, col: 3 },
-  { id: "3", label: "CB", slotType: "defender", row: 2, col: 5 },
-  { id: "4", label: "RB", slotType: "defender", row: 2, col: 6 },
-  { id: "5", label: "LM", slotType: "midfielder", row: 3, col: 2 },
-  { id: "6", label: "CM", slotType: "midfielder", row: 3, col: 3 },
-  { id: "7", label: "CM", slotType: "midfielder", row: 3, col: 5 },
-  { id: "8", label: "RM", slotType: "midfielder", row: 3, col: 6 },
-  { id: "9", label: "ST", slotType: "forward", row: 4, col: 3 },
-  { id: "10", label: "ST", slotType: "forward", row: 4, col: 5 },
+  // Forwards (row 3)
+  { id: "f1", label: "LF", slotType: "forward", row: 3, col: 3 },
+  { id: "f2", label: "CF", slotType: "forward", row: 3, col: 4 },
+  { id: "f3", label: "RF", slotType: "forward", row: 3, col: 5 },
+  // Attacking mids (row 4)
+  { id: "am1", label: "LAM", slotType: "midfielder", row: 4, col: 2 },
+  { id: "am2", label: "AM", slotType: "midfielder", row: 4, col: 4 },
+  { id: "am3", label: "RAM", slotType: "midfielder", row: 4, col: 6 },
+  // Central mids (row 5)
+  { id: "cm1", label: "LCM", slotType: "midfielder", row: 5, col: 2 },
+  { id: "cm2", label: "CM", slotType: "midfielder", row: 5, col: 3 },
+  { id: "cm3", label: "CM", slotType: "midfielder", row: 5, col: 4 },
+  { id: "cm4", label: "CM", slotType: "midfielder", row: 5, col: 5 },
+  { id: "cm5", label: "RCM", slotType: "midfielder", row: 5, col: 6 },
+  // Defensive mids (row 6)
+  { id: "dm1", label: "LDM", slotType: "midfielder", row: 6, col: 2 },
+  { id: "dm2", label: "DM", slotType: "midfielder", row: 6, col: 4 },
+  { id: "dm3", label: "RDM", slotType: "midfielder", row: 6, col: 6 },
+  // Defenders (row 7)
+  { id: "d1", label: "LB", slotType: "defender", row: 7, col: 2 },
+  { id: "d2", label: "LCB", slotType: "defender", row: 7, col: 3 },
+  { id: "d3", label: "CB", slotType: "defender", row: 7, col: 4 },
+  { id: "d4", label: "RCB", slotType: "defender", row: 7, col: 5 },
+  { id: "d5", label: "RB", slotType: "defender", row: 7, col: 6 },
+  // Goalkeeper (row 8)
+  { id: "0", label: "GK", slotType: "goalkeeper", row: 8, col: 4 },
 ];
 
 async function fetchJSON<T>(url: string): Promise<T> {
@@ -123,6 +139,7 @@ export default function LineupPage() {
   const [autoSaving, setAutoSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [limitWarning, setLimitWarning] = useState<string | null>(null);
   const [dragging, setDragging] = useState<{ playerId: number; slotType: SlotType | null } | null>(null);
   const [initialized, setInitialized] = useState(false);
   const autoSaveTimer = useRef<number | null>(null);
@@ -156,7 +173,12 @@ export default function LineupPage() {
 
   const assignedPlayerIds = useMemo(() => new Set(Object.values(assignments).map((a) => a.playerId)), [assignments]);
   const hasGoalkeeper = Boolean(assignments["0"]);
-  const isLineupValid = hasGoalkeeper;
+  const fieldCount = useMemo(
+    () => Object.entries(assignments).filter(([slotId]) => slotId !== "0").length,
+    [assignments]
+  );
+  const totalSelected = fieldCount + (hasGoalkeeper ? 1 : 0);
+  const isLineupValid = hasGoalkeeper && fieldCount <= 10;
 
   const isSlotCompatible = (playerType: SlotType | null, slotType: SlotType) => {
     if (!playerType) return true;
@@ -186,6 +208,7 @@ export default function LineupPage() {
       }
       if (playerId === "") {
         delete next[slot.id];
+        setLimitWarning(null);
         return next;
       }
       const player = players.find((p) => p.id === playerId);
@@ -196,6 +219,12 @@ export default function LineupPage() {
         slotType: slot.slotType,
         slotLabel: slot.label,
       };
+      const nextFieldCount = Object.entries(next).filter(([id]) => id !== "0").length;
+      if (nextFieldCount > 10) {
+        setLimitWarning("You can assign only 10 outfield players (plus 1 goalkeeper).");
+        return prev;
+      }
+      setLimitWarning(null);
       return next;
     });
     setSuccess(null);
@@ -328,7 +357,7 @@ export default function LineupPage() {
       subtitle={club ? `Set your starting XI for ${club.name}` : "Set your starting XI"}
       tone="green"
       kpis={[
-        { label: "Slots", value: `${Object.keys(assignments).length}/11` },
+        { label: "Slots", value: `${Math.min(totalSelected, 11)}/11` },
         { label: "Tactic", value: tactic || "balanced" },
         { label: "GK required", value: hasGoalkeeper ? "Yes" : "Missing" },
         { label: "Players", value: players.length || "-" },
@@ -383,8 +412,8 @@ export default function LineupPage() {
             sx={{
               display: "grid",
               gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
-              gridAutoRows: "120px",
-              gap: 1.5,
+              gridTemplateRows: "repeat(8, minmax(0, 110px))",
+              gap: 1.25,
             }}
           >
             {SLOT_DEFINITIONS.map((slot) => {
@@ -537,6 +566,7 @@ export default function LineupPage() {
     <Stack spacing={1}>
       {error && <Alert severity="error">{error}</Alert>}
       {success && <Alert severity="success">{success}</Alert>}
+      {limitWarning && <Alert severity="warning">{limitWarning}</Alert>}
       {!error && !success && (
         <Typography variant="body2" color="text.secondary">
           Drag players onto slots. Changes auto-save when a goalkeeper is set; you still must set exactly one goalkeeper.
