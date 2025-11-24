@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link as RouterLink, useParams } from "react-router-dom";
 
 import {
@@ -52,6 +52,39 @@ function formatDate(value: string | null) {
   if (Number.isNaN(date.getTime())) return value;
   return DATE_FORMATTER.format(date);
 }
+
+type LineupEntry = {
+  slot: string;
+  slotLabel: string;
+  playerName: string;
+  position?: string;
+};
+
+const normalizeMatchLineup = (raw: unknown): LineupEntry[] => {
+  if (!raw || typeof raw !== "object") return [];
+  const source = "lineup" in (raw as any) ? (raw as any).lineup : raw;
+  if (!source || typeof source !== "object") return [];
+
+  return Object.entries(source).map(([slot, value]) => {
+    const data = value as any;
+    const slotLabel = data?.slotLabel || data?.label || `Slot ${slot}`;
+    const playerId = data?.playerId ?? data?.player ?? data;
+    const playerName =
+      data?.playerName ||
+      data?.name ||
+      data?.player_name ||
+      data?.full_name ||
+      data?.displayName ||
+      (playerId !== undefined && playerId !== null ? String(playerId) : "No player");
+    const position = data?.playerPosition || data?.position;
+    return {
+      slot: String(slot),
+      slotLabel: String(slotLabel),
+      playerName: String(playerName),
+      position: position ? String(position) : undefined,
+    };
+  });
+};
 
 export default function MatchDetailPage() {
   const { matchId: matchIdParam } = useParams<{ matchId: string }>();
@@ -113,6 +146,9 @@ export default function MatchDetailPage() {
       cancelled = true;
     };
   }, [matchId]);
+
+  const homeLineup = useMemo(() => normalizeMatchLineup(match?.home?.lineup), [match?.home?.lineup]);
+  const awayLineup = useMemo(() => normalizeMatchLineup(match?.away?.lineup), [match?.away?.lineup]);
 
   return (
     <Box sx={{ p: { xs: 2, sm: 4 } }}>
@@ -201,31 +237,29 @@ export default function MatchDetailPage() {
                 <Card>
                   <CardContent>
                     <Typography variant="h6" className="mb-2">
-                      Statistics
+                      Home lineup
                     </Typography>
-                    <List dense>
-                      <ListItem>
-                        <ListItemText primary="Shots" secondary={`${match.stats.shoots}`} />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText primary="Passes" secondary={`${match.stats.passes}`} />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText primary="Possession" secondary={`${match.stats.possessions}%`} />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText primary="Fouls" secondary={`${match.stats.fouls}`} />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText primary="Injuries" secondary={`${match.stats.injuries}`} />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText primary="Momentum (home)" secondary={`${match.stats.home_momentum}`} />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText primary="Momentum (away)" secondary={`${match.stats.away_momentum}`} />
-                      </ListItem>
-                    </List>
+                    <Typography variant="body2" color="text.secondary" className="mb-2">
+                      {match.home.name} — tactic: {match.home.tactic ?? "-"}
+                    </Typography>
+                    {homeLineup.length === 0 ? (
+                      <Typography variant="body2" color="text.secondary">
+                        Нет данных о составе.
+                      </Typography>
+                    ) : (
+                      <List dense>
+                        {homeLineup.map((item) => (
+                          <ListItem key={`${item.slot}-${item.playerName}`}>
+                            <ListItemText
+                              primary={item.slotLabel}
+                              secondary={
+                                item.position ? `${item.playerName} (${item.position})` : item.playerName
+                              }
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
+                    )}
                   </CardContent>
                 </Card>
               </Grid>
@@ -234,28 +268,29 @@ export default function MatchDetailPage() {
                 <Card>
                   <CardContent>
                     <Typography variant="h6" className="mb-2">
-                      Timing
+                      Away lineup
                     </Typography>
-                    <List dense>
-                      <ListItem>
-                        <ListItemText primary="Match start" secondary={formatDate(match.started_at)} />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText primary="Last update" secondary={formatDate(match.last_minute_update)} />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText
-                          primary="Waiting for next minute"
-                          secondary={match.waiting_for_next_minute ? "Yes" : "No"}
-                        />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText
-                          primary="Result processed"
-                          secondary={match.processed ? "Completed" : "Pending"}
-                        />
-                      </ListItem>
-                    </List>
+                    <Typography variant="body2" color="text.secondary" className="mb-2">
+                      {match.away.name} — tactic: {match.away.tactic ?? "-"}
+                    </Typography>
+                    {awayLineup.length === 0 ? (
+                      <Typography variant="body2" color="text.secondary">
+                        Нет данных о составе.
+                      </Typography>
+                    ) : (
+                      <List dense>
+                        {awayLineup.map((item) => (
+                          <ListItem key={`${item.slot}-${item.playerName}`}>
+                            <ListItemText
+                              primary={item.slotLabel}
+                              secondary={
+                                item.position ? `${item.playerName} (${item.position})` : item.playerName
+                              }
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
+                    )}
                   </CardContent>
                 </Card>
               </Grid>
