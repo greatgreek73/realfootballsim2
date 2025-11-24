@@ -142,6 +142,7 @@ export default function LineupPage() {
   const [limitWarning, setLimitWarning] = useState<string | null>(null);
   const [dragging, setDragging] = useState<{ playerId: number; slotType: SlotType | null } | null>(null);
   const [initialized, setInitialized] = useState(false);
+  const [benchFilter, setBenchFilter] = useState<SlotType | "all">("all");
   const autoSaveTimer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -539,11 +540,33 @@ export default function LineupPage() {
     </Card>
   );
 
+  const filteredPlayers = useMemo(() => {
+    if (benchFilter === "all") return players;
+    return players.filter((p) => positionToSlotType(p.position) === benchFilter);
+  }, [players, benchFilter]);
+
   const asideContent = (
     <Card sx={{ height: "100%" }}>
       <CardContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         <Typography variant="h6">Available players</Typography>
         <Divider />
+        <Stack direction="row" spacing={1} flexWrap="wrap">
+          {[
+            { label: "GK", value: "goalkeeper" as SlotType },
+            { label: "DEF", value: "defender" as SlotType },
+            { label: "MC", value: "midfielder" as SlotType },
+            { label: "Forwards", value: "forward" as SlotType },
+          ].map((item) => (
+            <Button
+              key={item.value}
+              size="small"
+              variant={benchFilter === item.value ? "contained" : "outlined"}
+              onClick={() => setBenchFilter((prev) => (prev === item.value ? "all" : item.value))}
+            >
+              {item.label}
+            </Button>
+          ))}
+        </Stack>
         <Stack
           spacing={1.5}
           sx={{ maxHeight: 520, overflowY: "auto" }}
@@ -603,7 +626,7 @@ export default function LineupPage() {
               No players found.
             </Typography>
           )}
-          {players.map((p) => renderPlayerBadge(p, assignedPlayerIds.has(p.id)))}
+          {filteredPlayers.map((p) => renderPlayerBadge(p, assignedPlayerIds.has(p.id)))}
         </Stack>
       </CardContent>
     </Card>
