@@ -430,7 +430,7 @@ export default function Page() {
 
         severity: "error",
 
-        message: "Нет доступных групп атрибутов для дополнительной тренировки.",
+        message: "No attribute groups available for training.",
 
       });
 
@@ -504,7 +504,7 @@ export default function Page() {
 
         const message =
 
-          json?.message ?? `Не удалось выполнить тренировку (${res.status} ${res.statusText}).`;
+          json?.message ?? `Could not apply training (${res.status} ${res.statusText}).`;
 
         setTrainingAlert({ severity: "error", message });
 
@@ -518,7 +518,7 @@ export default function Page() {
       setLastTrainingChanges((json.changes ?? {}) as Record<string, number>);
       setTrainingAlert({
         severity: "success",
-        message: `Дополнительная тренировка (${formatGroupName(json.group ?? selectedGroup)}) выполнена. Осталось токенов: ${json.tokens_left ?? "?"}.`,
+        message: `Training applied for ${formatGroupName(json.group ?? selectedGroup)}. Tokens left: ${json.tokens_left ?? "?"}.`,
       });
       setTrainingDialogOpen(false);
 
@@ -528,7 +528,7 @@ export default function Page() {
 
         severity: "error",
 
-        message: err?.message ?? "Не удалось выполнить тренировку.",
+        message: err?.message ?? "Could not apply training.",
 
       });
 
@@ -547,356 +547,708 @@ export default function Page() {
       title={title}
       subtitle="Detailed breakdown of player attributes and training"
       tone="purple"
-      kpis={[
-        { label: "Overall", value: data?.overall_rating ?? "-" },
-        { label: "Age", value: data?.age ?? "-" },
-        { label: "Position", value: data?.position ?? "-" },
-        { label: "Club", value: data?.club?.name ?? "Free Agent" },
-      ]}
-      actions={
-        <Button component={Link} to="/my-club/players" size="small" variant="outlined">
-          All players
-        </Button>
-      }
-    />
-  );
-
-  const alerts: React.ReactNode[] = [];
-  if (!id) {
-    alerts.push(
-      <Alert key="missing-id" severity="info">
-        ������� ��ࠬ��� <code>?id=&lt;ID&gt;</code> � URL (���ਬ��, <code>/player/overview?id=8017</code>).
-      </Alert>
-    );
-  }
-  if (error) {
-    alerts.push(
-      <Alert key="error" severity="error">�訡�� ����㧪�: {error}</Alert>
-    );
-  }
-  if (trainingAlert) {
-    alerts.push(
-      <Alert key="training" severity={trainingAlert.severity} onClose={() => setTrainingAlert(null)}>
-        {trainingAlert.message}
-      </Alert>
-    );
-  }
-  const alertsSection = alerts.length ? <Stack spacing={2}>{alerts}</Stack> : undefined;
-
-  const statCardsSection = (
-    <Grid container spacing={2.5}>
-      {loading ? (
-        <>
-          <Grid size={{ lg: 3, xs: 12 }}>
-            <Skeleton variant="rounded" height={96} />
-          </Grid>
-          <Grid size={{ lg: 3, xs: 12 }}>
-            <Skeleton variant="rounded" height={96} />
-          </Grid>
-          <Grid size={{ lg: 3, xs: 12 }}>
-            <Skeleton variant="rounded" height={96} />
-          </Grid>
-          <Grid size={{ lg: 3, xs: 12 }}>
-            <Skeleton variant="rounded" height={96} />
-          </Grid>
-        </>
-      ) : (
-        <>
-          <Grid size={{ lg: 3, xs: 12 }}>
-            <StatCard
-              icon={<NiScreen className="text-primary" size={"large"} />}
-              label="Overall Rating"
-              value={attributeCount > 0 ? attributeSum : "-"}
-            />
-          </Grid>
-          <Grid size={{ lg: 3, xs: 12 }}>
-            <StatCard icon={<NiFloppyDisk className="text-secondary" size={"large"} />} label="Experience" value={data?.experience ?? "-"} />
-          </Grid>
-          <Grid size={{ lg: 3, xs: 12 }}>
-            <StatCard icon={<NiUsers className="text-accent-1" size={"large"} />} label="Player Class" value={data?.player_class ?? "-"} />
-          </Grid>
-          <Grid size={{ lg: 3, xs: 12 }}>
-            <StatCard icon={<NiHearts className="text-accent-2" size={"large"} />} label="Age" value={data?.age ?? "-"} />
-          </Grid>
-        </>
-      )}
-    </Grid>
-  );
-
-  const attributesSection =
-    !!data && (
-      <Grid container spacing={2.5}>
-        <Grid size={{ "3xl": 8, lg: 8, xs: 12 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h5" component="h5" className="card-title">
-                Attributes
-              </Typography>
-
-              {Object.keys(attributes).length === 0 ? (
-                <Typography variant="body2" className="text-text-secondary">No attributes</Typography>
-              ) : (
-                <Box
-                  sx={(theme) => ({
-                    mt: 2,
-                    borderRadius: 3,
-                    border: "1px solid",
-                    borderColor: theme.palette.divider,
-                    overflow: "hidden",
-                  })}
-                >
-                  {attributeRows.map((row) => {
-                    if (row.type === "group") {
-                      return (
-                        <Box
-                          key={row.id}
-                          sx={(theme) => ({
-                            px: 2,
-                            py: 1.25,
-                            backgroundColor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.08),
-                            color: theme.palette.primary.main,
-                            textTransform: "capitalize",
-                            fontWeight: 600,
-                            fontSize: theme.typography.pxToRem(13),
-                          })}
-                        >
-                          {row.label}
-                        </Box>
-                      );
-                    }
-
-                    return (
-                      <Box
-                        key={row.id}
-                        sx={(theme) => ({
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: 1.25,
-                          px: 2,
-                          py: 1.1,
-                          borderTop: "1px solid",
-                          borderColor: theme.palette.divider,
-                          backgroundColor: row.zebra
-                            ? alpha(row.color, theme.palette.mode === "dark" ? 0.24 : 0.08)
-                            : "transparent",
-                          transition: "background-color 0.15s ease-in-out",
-                        })}
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            textTransform: "capitalize",
-                            color: "text.secondary",
-                            flex: 1,
-                          }}
-                        >
-                          <PrettyAttrName name={row.label} />
-                        </Typography>
-                        <Box
-                          sx={{
-                            minWidth: 36,
-                            textAlign: "right",
-                            fontWeight: 700,
-                            color:
-                              row.change && row.change > 0
-                                ? "success.main"
-                                : row.change && row.change < 0
-                                ? "error.main"
-                                : "inherit",
-                          }}
-                        >
-                          {typeof row.change === "number" && row.change !== 0
-                            ? row.change > 0
-                              ? `+${row.change}`
-                              : row.change
-                            : ""}
-                        </Box>
-                        <Box
-                          component="span"
-                          sx={(theme) => ({
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            minWidth: 36,
-                            px: 1.25,
-                            py: 0.25,
-                            borderRadius: 999,
-                            fontWeight: 600,
-                            fontVariantNumeric: "tabular-nums",
-                            backgroundColor: alpha(row.color, theme.palette.mode === "dark" ? 0.32 : 0.14),
-                            color: row.color,
-                          })}
-                        >
-                          {row.value}
-                        </Box>
-                      </Box>
-                    );
-                  })}
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid size={{ "3xl": 4, lg: 4, xs: 12 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h5" component="h5" className="card-title">
-                Attribute Radar (avg by group)
-              </Typography>
-              {radar.labels.length === 0 ? (
-                <Typography variant="body2" className="text-text-secondary">No data</Typography>
-              ) : (
-                <RadarChart
-                  height={360}
-                  series={[{ data: radar.values, area: true }]}
-                  radar={{
-                    metrics: radar.labels,
-                    max: 100,
-                    labelGap: 22,
-                  }}
-                  axis={{
-                    angle: { disableTicks: true, disableLine: true },
-                    radius: { disableTicks: true, disableLine: true },
-                  }}
-                  grid={{ radial: { angle: 0 } }}
-                />
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-    );
-
-  const asideContent = (
-    <PlayerProfileMenu
-      selected="overview"
-      playerId={id}
-      playerName={data?.full_name}
-      avatarUrl={avatarUrl}
-      onTraining={handleTrainingOpen}
-      trainingDisabled={loading || !attributeGroups.length}
-      trainingLoading={trainingLoading}
-    />
-  );
-
-  const mainContent = (
-    <Stack spacing={3}>
-      {statCardsSection}
-      {attributesSection}
-    </Stack>
-  );
-
-  const breadcrumbs = (
-    <Breadcrumbs>
-      <Link to="/my-club">My Club</Link>
-      <Link to="/my-club/players">Players</Link>
-      <Typography variant="body2">{title}</Typography>
-    </Breadcrumbs>
-  );
-
-  return (
-
-    <>
-
-      <PageShell
-        hero={hero}
-        header={breadcrumbs}
-        top={alertsSection}
-        main={mainContent}
-        aside={asideContent}
-        bottomSplit="67-33"
-      />
-
-      <Dialog
-
-        open={trainingDialogOpen}
-
-        onClose={handleTrainingDialogClose}
-
-        fullWidth
-
-        maxWidth="xs"
-
-      >
-
-        <DialogTitle>�������⥫쭠� �७�஢��</DialogTitle>
-
-        <DialogContent>
-
-          {typeof data?.next_boost_cost === "number" && (
-
-            <Typography variant="body2" className="mb-3 text-text-secondary">
-
-              �⮨����� �७�஢��: {data.next_boost_cost} ⮪����
-
-            </Typography>
-
-          )}
-
-          <FormControl component="fieldset" fullWidth>
-
-            <FormLabel component="legend">�롥�� ��㯯� ��ਡ�⮢</FormLabel>
-
-            <RadioGroup
-
-              value={selectedGroup ?? ""}
-
-              onChange={(event) => setSelectedGroup(event.target.value)}
-
-            >
-
-              {attributeGroups.map((group) => (
-
-                <FormControlLabel
-
-                  key={group}
-
-                  value={group}
-
-                  control={<Radio />}
-
-                  label={formatGroupName(group)}
-
-                />
-
-              ))}
-
-            </RadioGroup>
-
-          </FormControl>
-
-        </DialogContent>
-
-        <DialogActions>
-
-          <Button onClick={handleTrainingDialogClose} disabled={trainingLoading}>
-
-            �⬥��
-
-          </Button>
-
-          <Button
-
-            onClick={handleTrainingConfirm}
-
-            variant="contained"
-
-            disabled={!selectedGroup || trainingLoading}
-
-          >
-
-            {trainingLoading ? "�믮��塞..." : "��������"}
-
-          </Button>
-
-        </DialogActions>
-
-      </Dialog>
-
-    </>
-
-  );
-
-}
+      kpis={[
+
+        { label: "Overall", value: data?.overall_rating ?? "-" },
+
+        { label: "Age", value: data?.age ?? "-" },
+
+        { label: "Position", value: data?.position ?? "-" },
+
+        { label: "Club", value: data?.club?.name ?? "Free Agent" },
+
+      ]}
+
+      actions={
+
+        <Button component={Link} to="/my-club/players" size="small" variant="outlined">
+
+          All players
+
+        </Button>
+
+      }
+
+    />
+
+  );
+
+
+
+  const alerts: React.ReactNode[] = [];
+
+  if (!id) {
+
+    alerts.push(
+
+      <Alert key="missing-id" severity="info">
+
+        Provide player id via <code>?id=&lt;ID&gt;</code> in URL (e.g. <code>/player/overview?id=8017</code>.)
+
+      </Alert>
+
+    );
+
+  }
+
+  if (error) {
+
+    alerts.push(
+
+      <Alert key="error" severity="error">Error: {error}</Alert>
+
+    );
+
+  }
+
+  if (trainingAlert) {
+
+    alerts.push(
+
+      <Alert key="training" severity={trainingAlert.severity} onClose={() => setTrainingAlert(null)}>
+
+        {trainingAlert.message}
+
+      </Alert>
+
+    );
+
+  }
+
+  const alertsSection = alerts.length ? <Stack spacing={2}>{alerts}</Stack> : undefined;
+
+
+
+  const statCardsSection = (
+
+    <Grid container spacing={2.5}>
+
+      {loading ? (
+
+        <>
+
+          <Grid size={{ lg: 3, xs: 12 }}>
+
+            <Skeleton variant="rounded" height={96} />
+
+          </Grid>
+
+          <Grid size={{ lg: 3, xs: 12 }}>
+
+            <Skeleton variant="rounded" height={96} />
+
+          </Grid>
+
+          <Grid size={{ lg: 3, xs: 12 }}>
+
+            <Skeleton variant="rounded" height={96} />
+
+          </Grid>
+
+          <Grid size={{ lg: 3, xs: 12 }}>
+
+            <Skeleton variant="rounded" height={96} />
+
+          </Grid>
+
+        </>
+
+      ) : (
+
+        <>
+
+          <Grid size={{ lg: 3, xs: 12 }}>
+
+            <StatCard
+
+              icon={<NiScreen className="text-primary" size={"large"} />}
+
+              label="Overall Rating"
+
+              value={attributeCount > 0 ? attributeSum : "-"}
+
+            />
+
+          </Grid>
+
+          <Grid size={{ lg: 3, xs: 12 }}>
+
+            <StatCard icon={<NiFloppyDisk className="text-secondary" size={"large"} />} label="Experience" value={data?.experience ?? "-"} />
+
+          </Grid>
+
+          <Grid size={{ lg: 3, xs: 12 }}>
+
+            <StatCard icon={<NiUsers className="text-accent-1" size={"large"} />} label="Player Class" value={data?.player_class ?? "-"} />
+
+          </Grid>
+
+          <Grid size={{ lg: 3, xs: 12 }}>
+
+            <StatCard icon={<NiHearts className="text-accent-2" size={"large"} />} label="Age" value={data?.age ?? "-"} />
+
+          </Grid>
+
+        </>
+
+      )}
+
+    </Grid>
+
+  );
+
+
+
+  const attributesSection =
+
+    !!data && (
+
+      <Grid container spacing={2.5}>
+
+        <Grid size={{ "3xl": 8, lg: 8, xs: 12 }}>
+
+          <Card>
+
+            <CardContent>
+
+              <Typography variant="h5" component="h5" className="card-title">
+
+                Attributes
+
+              </Typography>
+
+
+
+              {Object.keys(attributes).length === 0 ? (
+
+                <Typography variant="body2" className="text-text-secondary">No attributes</Typography>
+
+              ) : (
+
+                <Box
+
+                  sx={(theme) => ({
+
+                    mt: 2,
+
+                    borderRadius: 3,
+
+                    border: "1px solid",
+
+                    borderColor: theme.palette.divider,
+
+                    overflow: "hidden",
+
+                  })}
+
+                >
+
+                  {attributeRows.map((row) => {
+
+                    if (row.type === "group") {
+
+                      return (
+
+                        <Box
+
+                          key={row.id}
+
+                          sx={(theme) => ({
+
+                            px: 2,
+
+                            py: 1.25,
+
+                            backgroundColor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.08),
+
+                            color: theme.palette.primary.main,
+
+                            textTransform: "capitalize",
+
+                            fontWeight: 600,
+
+                            fontSize: theme.typography.pxToRem(13),
+
+                          })}
+
+                        >
+
+                          {row.label}
+
+                        </Box>
+
+                      );
+
+                    }
+
+
+
+                    return (
+
+                      <Box
+
+                        key={row.id}
+
+                        sx={(theme) => ({
+
+                          display: "flex",
+
+                          alignItems: "center",
+
+                          justifyContent: "space-between",
+
+                          gap: 1.25,
+
+                          px: 2,
+
+                          py: 1.1,
+
+                          borderTop: "1px solid",
+
+                          borderColor: theme.palette.divider,
+
+                          backgroundColor: row.zebra
+
+                            ? alpha(row.color, theme.palette.mode === "dark" ? 0.24 : 0.08)
+
+                            : "transparent",
+
+                          transition: "background-color 0.15s ease-in-out",
+
+                        })}
+
+                      >
+
+                        <Typography
+
+                          variant="body2"
+
+                          sx={{
+
+                            textTransform: "capitalize",
+
+                            color: "text.secondary",
+
+                            flex: 1,
+
+                          }}
+
+                        >
+
+                          <PrettyAttrName name={row.label} />
+
+                        </Typography>
+
+                        <Box
+
+                          sx={{
+
+                            minWidth: 36,
+
+                            textAlign: "right",
+
+                            fontWeight: 700,
+
+                            color:
+
+                              row.change && row.change > 0
+
+                                ? "success.main"
+
+                                : row.change && row.change < 0
+
+                                ? "error.main"
+
+                                : "inherit",
+
+                          }}
+
+                        >
+
+                          {typeof row.change === "number" && row.change !== 0
+
+                            ? row.change > 0
+
+                              ? `+${row.change}`
+
+                              : row.change
+
+                            : ""}
+
+                        </Box>
+
+                        <Box
+
+                          component="span"
+
+                          sx={(theme) => ({
+
+                            display: "inline-flex",
+
+                            alignItems: "center",
+
+                            justifyContent: "center",
+
+                            minWidth: 36,
+
+                            px: 1.25,
+
+                            py: 0.25,
+
+                            borderRadius: 999,
+
+                            fontWeight: 600,
+
+                            fontVariantNumeric: "tabular-nums",
+
+                            backgroundColor: alpha(row.color, theme.palette.mode === "dark" ? 0.32 : 0.14),
+
+                            color: row.color,
+
+                          })}
+
+                        >
+
+                          {row.value}
+
+                        </Box>
+
+                      </Box>
+
+                    );
+
+                  })}
+
+                </Box>
+
+              )}
+
+            </CardContent>
+
+          </Card>
+
+        </Grid>
+
+
+
+        <Grid size={{ "3xl": 4, lg: 4, xs: 12 }}>
+
+          <Card>
+
+            <CardContent>
+
+              <Typography variant="h5" component="h5" className="card-title">
+
+                Attribute Radar (avg by group)
+
+              </Typography>
+
+              {radar.labels.length === 0 ? (
+
+                <Typography variant="body2" className="text-text-secondary">No data</Typography>
+
+              ) : (
+
+                <RadarChart
+
+                  height={360}
+
+                  series={[{ data: radar.values, area: true }]}
+
+                  radar={{
+
+                    metrics: radar.labels,
+
+                    max: 100,
+
+                    labelGap: 22,
+
+                  }}
+
+                  axis={{
+
+                    angle: { disableTicks: true, disableLine: true },
+
+                    radius: { disableTicks: true, disableLine: true },
+
+                  }}
+
+                  grid={{ radial: { angle: 0 } }}
+
+                />
+
+              )}
+
+            </CardContent>
+
+          </Card>
+
+        </Grid>
+
+      </Grid>
+
+    );
+
+
+
+  const asideContent = (
+
+    <PlayerProfileMenu
+
+      selected="overview"
+
+      playerId={id}
+
+      playerName={data?.full_name}
+
+      avatarUrl={avatarUrl}
+
+      onTraining={handleTrainingOpen}
+
+      trainingDisabled={loading || !attributeGroups.length}
+
+      trainingLoading={trainingLoading}
+
+    />
+
+  );
+
+
+
+  const mainContent = (
+
+    <Stack spacing={3}>
+
+      {statCardsSection}
+
+      {attributesSection}
+
+    </Stack>
+
+  );
+
+
+
+  const breadcrumbs = (
+
+    <Breadcrumbs>
+
+      <Link to="/my-club">My Club</Link>
+
+      <Link to="/my-club/players">Players</Link>
+
+      <Typography variant="body2">{title}</Typography>
+
+    </Breadcrumbs>
+
+  );
+
+
+
+  return (
+
+
+
+    <>
+
+
+
+      <PageShell
+
+        hero={hero}
+
+        header={breadcrumbs}
+
+        top={alertsSection}
+
+        main={mainContent}
+
+        aside={asideContent}
+
+        bottomSplit="67-33"
+
+      />
+
+
+
+      <Dialog
+
+
+
+        open={trainingDialogOpen}
+
+
+
+        onClose={handleTrainingDialogClose}
+
+
+
+        fullWidth
+
+
+
+        maxWidth="xs"
+
+
+
+      >
+
+
+
+        <DialogTitle>Assign training</DialogTitle>
+
+
+
+        <DialogContent>
+
+
+
+          {typeof data?.next_boost_cost === "number" && (
+
+
+
+            <Typography variant="body2" className="mb-3 text-text-secondary">
+
+
+
+              Training cost: {data.next_boost_cost} tokens
+
+
+
+            </Typography>
+
+
+
+          )}
+
+
+
+          <FormControl component="fieldset" fullWidth>
+
+
+
+            <FormLabel component="legend">Choose attribute group</FormLabel>
+
+
+
+            <RadioGroup
+
+
+
+              value={selectedGroup ?? ""}
+
+
+
+              onChange={(event) => setSelectedGroup(event.target.value)}
+
+
+
+            >
+
+
+
+              {attributeGroups.map((group) => (
+
+
+
+                <FormControlLabel
+
+
+
+                  key={group}
+
+
+
+                  value={group}
+
+
+
+                  control={<Radio />}
+
+
+
+                  label={formatGroupName(group)}
+
+
+
+                />
+
+
+
+              ))}
+
+
+
+            </RadioGroup>
+
+
+
+          </FormControl>
+
+
+
+        </DialogContent>
+
+
+
+        <DialogActions>
+
+
+
+          <Button onClick={handleTrainingDialogClose} disabled={trainingLoading}>
+
+
+
+            Cancel
+
+
+
+          </Button>
+
+
+
+          <Button
+
+
+
+            onClick={handleTrainingConfirm}
+
+
+
+            variant="contained"
+
+
+
+            disabled={!selectedGroup || trainingLoading}
+
+
+
+          >
+
+
+
+            {trainingLoading ? "Applying..." : "Apply"}
+
+
+
+          </Button>
+
+
+
+        </DialogActions>
+
+
+
+      </Dialog>
+
+
+
+    </>
+
+
+
+  );
+
+
+
+}

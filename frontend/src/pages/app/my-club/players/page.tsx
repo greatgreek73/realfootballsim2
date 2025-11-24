@@ -1,22 +1,116 @@
-import { Button, Card, CardContent, Typography } from "@mui/material";
+import { useEffect, useMemo, useState } from "react";
+
+import { Alert, Button, Card, CardContent, Typography } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 
 import ClubPlayersTable from "@/components/club/ClubPlayersTable";
 import HeroBar from "@/components/ui/HeroBar";
 import PageShell from "@/components/ui/PageShell";
 
+type ClubSummary = {
+  id: number;
+  name: string;
+};
+
+type PlayerSummary = {
+  id: number;
+  position?: string | null;
+  player_class?: number | null;
+  overall_rating?: number | null;
+  on_loan?: boolean;
+  attributes?: { attack?: number; defense?: number };
+};
+
+type ClubMetrics = {
+  rosterSize: number;
+  avgOverall: string;
+  onLoan: number;
+  foreignCount: number;
+};
+
+async function getJSON<T>(url: string): Promise<T> {
+  const res = await fetch(url, { credentials: "include" });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`${res.status} ${res.statusText}: ${text.slice(0, 140)}`);
+  }
+  return (await res.json()) as T;
+}
+
 export default function PlayersPage() {
+  const [club, setClub] = useState<ClubSummary | null>(null);
+  const [metrics, setMetrics] = useState<ClubMetrics>({ rosterSize: 0, avgOverall: "-", onLoan: 0, foreignCount: 0 });
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        setError(null);
+        setLoading(true);
+
+        const me = await getJSON<{ id: number }>("/api/my/club/");
+        const clubData = await getJSON<ClubSummary>(`/api/clubs/${me.id}/summary/`);
+        const players = await getJSON<PlayerSummary[]>(`/clubs/detail/${me.id}/get-players/`);
+
+        if (cancelled) return;
+
+        setClub(clubData);
+
+        const rosterSize = players.length;
+        const calcOverall = (p: PlayerSummary) => {
+          if (typeof p.overall_rating === "number" && Number.isFinite(p.overall_rating)) return p.overall_rating;
+          const atk = p.attributes?.attack ?? null;
+          const def = p.attributes?.defense ?? null;
+          if (Number.isFinite(atk) && Number.isFinite(def)) return (Number(atk) + Number(def)) / 2;
+          if (Number.isFinite(atk)) return Number(atk);
+          if (Number.isFinite(def)) return Number(def);
+          return null;
+        };
+        const ratings = players
+          .map((p) => calcOverall(p))
+          .filter((v): v is number => v !== null && Number.isFinite(v));
+        const avgOverallValue =
+          ratings.length === 0 ? "-" : (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1);
+        const onLoan = players.filter((p) => Boolean(p.on_loan)).length;
+
+        setMetrics({
+          rosterSize,
+          avgOverall: avgOverallValue,
+          onLoan,
+          foreignCount: 0, // no country info available here
+        });
+      } catch (e: any) {
+        if (!cancelled) setError(e?.message ?? "Failed to load squad data");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const heroKpis = useMemo(
+    () => [
+      { label: "Roster size", value: metrics.rosterSize ? String(metrics.rosterSize) : loading ? "…" : "-" },
+      { label: "Average OVR", value: loading ? "…" : metrics.avgOverall },
+      { label: "Players on loan", value: loading ? "…" : String(metrics.onLoan) },
+      { label: "Foreign quota", value: loading ? "…" : String(metrics.foreignCount) },
+    ],
+    [metrics, loading]
+  );
+
   const hero = (
     <HeroBar
       title="Squad"
       subtitle="Manage your roster composition and depth chart"
       tone="green"
-      kpis={[
-        { label: "Roster size", value: "—" },
-        { label: "Average OVR", value: "—" },
-        { label: "Players on loan", value: "—" },
-        { label: "Foreign quota", value: "—" },
-      ]}
+      kpis={heroKpis}
       actions={
         <Button component={RouterLink} to="/transfers" size="small" variant="outlined">
           Go to transfers
@@ -26,9 +120,12 @@ export default function PlayersPage() {
   );
 
   const top = (
-    <Typography variant="body2" color="text.secondary">
-      Use filters in the table to manage positions, contracts and depth. Click a player name to open the detailed profile.
-    </Typography>
+    <>
+      {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
+      <Typography variant="body2" color="text.secondary">
+        Use filters in the table to manage positions, contracts and depth. Click a player name to open the detailed profile.
+      </Typography>
+    </>
   );
 
   const mainContent = (
