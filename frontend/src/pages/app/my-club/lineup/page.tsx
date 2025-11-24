@@ -548,8 +548,7 @@ export default function LineupPage() {
           spacing={1.5}
           sx={{ maxHeight: 520, overflowY: "auto" }}
           onDragOver={(e) => {
-            const raw = e.dataTransfer.getData("application/json");
-            if (raw) e.preventDefault();
+            if (dragging) e.preventDefault();
           }}
           onDrop={(e) => {
             e.preventDefault();
@@ -574,18 +573,17 @@ export default function LineupPage() {
               borderRadius: 2,
               px: 1.5,
               py: 1,
-              textAlign: "center",
-              color: "text.secondary",
-              fontSize: 12,
-            }}
-            onDragOver={(e) => {
+            textAlign: "center",
+            color: "text.secondary",
+            fontSize: 12,
+          }}
+          onDragOver={(e) => {
+            if (dragging) e.preventDefault();
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            try {
               const raw = e.dataTransfer.getData("application/json");
-              if (raw) e.preventDefault();
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              try {
-                const raw = e.dataTransfer.getData("application/json");
                 const parsed = raw ? JSON.parse(raw) : null;
                 const playerId = parsed?.playerId ? Number(parsed.playerId) : NaN;
                 if (Number.isFinite(playerId)) {
