@@ -567,6 +567,39 @@ export default function LineupPage() {
             }
           }}
         >
+          <Box
+            sx={{
+              border: "1px dashed",
+              borderColor: "divider",
+              borderRadius: 2,
+              px: 1.5,
+              py: 1,
+              textAlign: "center",
+              color: "text.secondary",
+              fontSize: 12,
+            }}
+            onDragOver={(e) => {
+              const raw = e.dataTransfer.getData("application/json");
+              if (raw) e.preventDefault();
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              try {
+                const raw = e.dataTransfer.getData("application/json");
+                const parsed = raw ? JSON.parse(raw) : null;
+                const playerId = parsed?.playerId ? Number(parsed.playerId) : NaN;
+                if (Number.isFinite(playerId)) {
+                  handleDropToBench(playerId);
+                }
+              } catch {
+                /* ignore */
+              } finally {
+                handleDragEnd();
+              }
+            }}
+          >
+            Drop here to bench
+          </Box>
           {players.length === 0 && (
             <Typography variant="body2" color="text.secondary">
               No players found.
