@@ -47,7 +47,11 @@ function toSquadRow(player: ApiPlayer): SquadRow {
   };
 }
 
-export default function ClubPlayersTable() {
+type ClubPlayersTableProps = {
+  refreshKey?: number;
+};
+
+export default function ClubPlayersTable({ refreshKey = 0 }: ClubPlayersTableProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<SquadRow[]>([]);
@@ -80,7 +84,7 @@ export default function ClubPlayersTable() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refreshKey]);
 
   const empty = !loading && !error && rows.length === 0;
   const normalizedSearch = search.trim().toLowerCase();
