@@ -142,6 +142,12 @@ class Player(models.Model):
     )
 
     last_trained_at = models.DateTimeField(null=True, blank=True, verbose_name="Last regular training at")
+    last_training_summary = JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Last training changes",
+        help_text="Изменения атрибутов после последней обычной тренировки (3 раза в неделю)"
+    )
 
     # === Поля системы расцвета ===
     BLOOM_TYPES = [

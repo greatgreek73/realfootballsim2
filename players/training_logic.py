@@ -143,11 +143,18 @@ def conduct_player_training(player: Player) -> Dict:
     
     # Применяем изменения
     changes = apply_training_to_player(player, distribution)
+
+    # Сохраняем результаты тренировки
     try:
         player.last_trained_at = timezone.now()
-        player.save(update_fields=["last_trained_at"])
-    except Exception:
-        logger.warning(f"[training] Failed to update last_trained_at for player {player.id}")
+        # Преобразуем changes в формат {attr: delta} для JSON
+        player.last_training_summary = {
+            attr: new_val - old_val
+            for attr, (old_val, new_val) in changes.items()
+        }
+        player.save(update_fields=["last_trained_at", "last_training_summary"])
+    except Exception as e:
+        logger.warning(f"[training] Failed to update training summary for player {player.id}: {e}")
     
     return {
         'player_id': player.id,
