@@ -88,6 +88,10 @@ type ApiPlayer = {
 
   is_goalkeeper?: boolean;
 
+  last_trained_at?: string | null;
+
+  last_training_changes?: Record<string, number>;
+
 };
 
 
@@ -188,6 +192,7 @@ export default function Page() {
   const [trainingLoading, setTrainingLoading] = useState(false);
   const [trainingAlert, setTrainingAlert] = useState<{ severity: "success" | "error"; message: string } | null>(null);
   const [lastTrainingChanges, setLastTrainingChanges] = useState<Record<string, number>>({});
+  const [lastTrainingDate, setLastTrainingDate] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -228,7 +233,8 @@ export default function Page() {
 
               if (!cancelled) {
                 setData(json);
-                setLastTrainingChanges({});
+                setLastTrainingChanges(json.last_training_changes ?? {});
+                setLastTrainingDate(json.last_trained_at ?? null);
               }
               lastErr = null;
 
@@ -438,11 +444,11 @@ export default function Page() {
 
     }
 
-    setTrainingAlert(null);
+      setTrainingAlert(null);
 
-    setTrainingDialogOpen(true);
+      setTrainingDialogOpen(true);
 
-  };
+    };
 
 
 
@@ -516,6 +522,7 @@ export default function Page() {
 
       setData(json.player as ApiPlayer);
       setLastTrainingChanges((json.changes ?? {}) as Record<string, number>);
+      setLastTrainingDate(json.player?.last_trained_at ?? json.last_trained_at ?? lastTrainingDate ?? null);
       setTrainingAlert({
         severity: "success",
         message: `Training applied for ${formatGroupName(json.group ?? selectedGroup)}. Tokens left: ${json.tokens_left ?? "?"}.`,
@@ -556,6 +563,14 @@ export default function Page() {
         { label: "Position", value: data?.position ?? "-" },
 
         { label: "Club", value: data?.club?.name ?? "Free Agent" },
+
+        {
+          label: "Last training",
+          value:
+            lastTrainingDate && !Number.isNaN(new Date(lastTrainingDate).getTime())
+              ? new Date(lastTrainingDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+              : "-",
+        },
 
       ]}
 

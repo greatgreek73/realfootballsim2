@@ -27,3 +27,18 @@ def test_is_training_day(monkeypatch, weekday, expected):
     monkeypatch.setattr(timezone, "now", lambda: aware_dt)
 
     assert is_training_day() is expected
+
+
+def test_is_training_day_respects_env(monkeypatch, settings):
+    """Ensures custom env-driven days/timezone are applied."""
+    settings.TRAINING_DAY_LIST = [1]  # only Tuesday
+    settings.TRAINING_TIMEZONE = "UTC"
+
+    tuesday = datetime.datetime(2025, 1, 7, 9, 0, tzinfo=pytz.UTC)  # Tuesday
+    monday = datetime.datetime(2025, 1, 6, 9, 0, tzinfo=pytz.UTC)  # Monday
+
+    monkeypatch.setattr(timezone, "now", lambda: tuesday)
+    assert is_training_day() is True
+
+    monkeypatch.setattr(timezone, "now", lambda: monday)
+    assert is_training_day() is False

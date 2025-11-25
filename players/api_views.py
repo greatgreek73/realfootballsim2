@@ -66,6 +66,8 @@ def player_detail_api(request, pk: int):
         "next_boost_cost": p.get_boost_cost(),
         "in_bloom": p.is_in_bloom,
         "avatar_url": avatar_url,
+        "last_trained_at": p.last_trained_at.isoformat() if p.last_trained_at else None,
+        "last_training_changes": getattr(p, "last_training_summary", None),
         "attributes": _grouped_attributes(p),
     }
     return JsonResponse(data, json_dumps_params={"ensure_ascii": False})

@@ -20,6 +20,13 @@ IS_PRODUCTION = os.getenv('IS_PRODUCTION')  # '1' ╨┤╨╗╤П ╨┐╤А�
 MATCH_MINUTE_REAL_SECONDS = int(
     os.getenv('MATCH_MINUTE_REAL_SECONDS', os.getenv('MATCH_TICK_SECONDS', 20))
 )
+TRAINING_CRON_DAYSOFWEEK = os.getenv("TRAINING_CRON_DAYSOFWEEK", "1,3,5")
+TRAINING_CRON_HOUR = int(os.getenv("TRAINING_CRON_HOUR", 11))
+TRAINING_CRON_MINUTE = int(os.getenv("TRAINING_CRON_MINUTE", 0))
+TRAINING_TIMEZONE = os.getenv("TRAINING_TZ", "CET")
+TRAINING_DAY_LIST = [
+    int(x) for x in TRAINING_CRON_DAYSOFWEEK.split(",") if x.strip().isdigit()
+]
 
 # Player Personality & Narrative AI Engine
 USE_PERSONALITY_ENGINE = os.getenv('USE_PERSONALITY_ENGINE', 'True').lower() == 'true'
@@ -210,7 +217,11 @@ CELERY_BEAT_SCHEDULE = {
     },
     'check-training-schedule': {
         'task': 'players.check_training_schedule',
-        'schedule': crontab(hour=11, minute=0, day_of_week='1,3,5'),  # ╨Я╨╜, ╨б╤А, ╨Я╤В ╨▓ 12:00 CET (11:00 UTC)
+        'schedule': crontab(
+            hour=TRAINING_CRON_HOUR,
+            minute=TRAINING_CRON_MINUTE,
+            day_of_week=TRAINING_CRON_DAYSOFWEEK,
+        ),  # ╨Я╨╜, ╨б╤А, ╨Я╤В ╨▓ 12:00 CET (11:00 UTC)
     },
     'advance-player-seasons': {
         'task': 'players.advance_player_seasons',

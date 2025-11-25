@@ -23,6 +23,7 @@ export type SquadRow = {
   morale?: number;
   status?: string;
   updatedAt?: string;
+  lastTrainedAt?: string | null;
 };
 
 type ChipColor = "default" | "primary" | "secondary" | "success" | "warning" | "info" | "error";
@@ -58,6 +59,12 @@ const getRowSpacing = (params: GridRowSpacingParams) => {
 
 const formatNumber = (value?: number | null) => (value !== undefined && value !== null ? String(value) : "-");
 const formatNumberCell = (params?: GridValueFormatterParams<number | null>) => formatNumber(params?.value ?? null);
+const formatDateTime = (value?: string | null) => {
+  if (!value) return "-";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+};
 
 function initials(name: string): string {
   const parts = name.split(" ").filter(Boolean);
@@ -193,6 +200,12 @@ const columns: GridColDef<SquadRow>[] = [
       const label = params.value ?? "Active";
       return <Chip size="small" label={label} color={color} variant={color === "default" ? "outlined" : "filled"} />;
     },
+  },
+  {
+    field: "lastTrainedAt",
+    headerName: "Last training",
+    width: 160,
+    valueFormatter: (params) => formatDateTime(params?.value as string | null),
   },
   {
     field: "actions",

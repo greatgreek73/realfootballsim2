@@ -141,6 +141,8 @@ class Player(models.Model):
         help_text="How many times this player was boosted via tokens."
     )
 
+    last_trained_at = models.DateTimeField(null=True, blank=True, verbose_name="Last regular training at")
+
     # === Поля системы расцвета ===
     BLOOM_TYPES = [
         ('early', 'Early Bloom'),    # Ранний расцвет (17 лет)

@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.db import transaction
 from datetime import datetime
 import pytz
+from django.conf import settings
 
 from .training_logic import conduct_all_teams_training
 
@@ -127,10 +128,15 @@ def is_training_day():
     Проверяет, является ли сегодняшний день тренировочным.
     Тренировки проходят в понедельник (0), среду (2) и пятницу (4).
     """
-    cet = pytz.timezone('CET')
-    now_cet = timezone.now().astimezone(cet)
-    weekday = now_cet.weekday()
-    return weekday in [0, 2, 4]  # Понедельник, среда, пятница
+    tz_name = getattr(settings, "TRAINING_TIMEZONE", "CET")
+    try:
+        tz = pytz.timezone(tz_name)
+    except Exception:
+        tz = pytz.timezone("CET")
+    now_local = timezone.now().astimezone(tz)
+    weekday = now_local.weekday()
+    days = getattr(settings, "TRAINING_DAY_LIST", None) or [0, 2, 4]
+    return weekday in days  # Monday, Wednesday, Friday by default
 
 
 @shared_task(name='players.check_training_schedule', bind=True)

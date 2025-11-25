@@ -152,5 +152,6 @@ def club_players(request, club_id: int):
             "position": _as_text(getattr(p, "position", None)),
             "cls": _as_text(cls_val),
             "base_value": _as_number(p.get_purchase_cost()),
+            "last_trained_at": p.last_trained_at.isoformat() if getattr(p, "last_trained_at", None) else None,
         })
     return JsonResponse({"count": len(rows), "results": rows})

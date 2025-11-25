@@ -1,7 +1,11 @@
 import random
+import logging
 from typing import Dict, List, Tuple
+from django.utils import timezone
 from .models import Player
 from .training import TrainingSettings
+
+logger = logging.getLogger("player_training")
 
 
 def get_or_create_training_settings(player: Player) -> TrainingSettings:
@@ -139,6 +143,11 @@ def conduct_player_training(player: Player) -> Dict:
     
     # Применяем изменения
     changes = apply_training_to_player(player, distribution)
+    try:
+        player.last_trained_at = timezone.now()
+        player.save(update_fields=["last_trained_at"])
+    except Exception:
+        logger.warning(f"[training] Failed to update last_trained_at for player {player.id}")
     
     return {
         'player_id': player.id,
@@ -158,22 +167,24 @@ def conduct_team_training(club) -> List[Dict]:
     Возвращает список результатов тренировок.
     """
     results = []
-    
-    # Получаем всех игроков клуба
     players = Player.objects.filter(club=club)
-    
+    logger.info(f"[training] Club {getattr(club, 'name', club.id)} - start training for {players.count()} players")
     for player in players:
         try:
             result = conduct_player_training(player)
+            logger.debug(
+                f"[training] Player {player.id} {player.full_name} "
+                f"points={result.get('total_points')} changes={len(result.get('changes', {}))} "
+                f"bloom={result.get('is_in_bloom')}"
+            )
             results.append(result)
         except Exception as e:
-            # Логируем ошибку, но продолжаем тренировки других игроков
             results.append({
                 'player_id': player.id,
                 'player_name': player.full_name,
                 'error': str(e)
             })
-    
+            logger.error(f"[training] Error training player {player.id} ({player.full_name}): {e}")
     return results
 
 
@@ -209,7 +220,13 @@ def conduct_all_teams_training() -> Dict:
                         stats['players_in_bloom'] += 1
                         
         except Exception as e:
-            print(f"Ошибка при тренировке команды {club.name}: {e}")
+            logger.error(f"[training] Error running training for club {club.name}: {e}")
             stats['errors'] += 1
+
+    logger.info(
+        "[training] Summary teams=%s players=%s improvements=%s bloom=%s errors=%s",
+        stats['teams_trained'], stats['players_trained'], stats['total_improvements'], stats['players_in_bloom'], stats['errors'],
+    )
+
     
     return stats

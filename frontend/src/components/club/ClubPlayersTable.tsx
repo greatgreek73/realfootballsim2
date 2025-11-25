@@ -29,6 +29,7 @@ type ApiPlayer = {
   status?: string;
   updated_at?: string;
   avatar_url?: string | null;
+  last_trained_at?: string | null;
 };
 
 function toSquadRow(player: ApiPlayer): SquadRow {
@@ -42,6 +43,7 @@ function toSquadRow(player: ApiPlayer): SquadRow {
     morale: player.morale,
     status: player.status ?? "Active",
     updatedAt: player.updated_at,
+    lastTrainedAt: player.last_trained_at,
   };
 }
 

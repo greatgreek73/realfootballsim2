@@ -19,6 +19,7 @@ type PlayerSummary = {
   overall_rating?: number | null;
   on_loan?: boolean;
   attributes?: { attack?: number; defense?: number };
+  last_trained_at?: string | null;
 };
 
 type ClubMetrics = {
@@ -26,6 +27,7 @@ type ClubMetrics = {
   avgOverall: string;
   onLoan: number;
   foreignCount: number;
+  lastTraining: string | null;
 };
 
 async function getJSON<T>(url: string): Promise<T> {
@@ -39,7 +41,13 @@ async function getJSON<T>(url: string): Promise<T> {
 
 export default function PlayersPage() {
   const [club, setClub] = useState<ClubSummary | null>(null);
-  const [metrics, setMetrics] = useState<ClubMetrics>({ rosterSize: 0, avgOverall: "-", onLoan: 0, foreignCount: 0 });
+  const [metrics, setMetrics] = useState<ClubMetrics>({
+    rosterSize: 0,
+    avgOverall: "-",
+    onLoan: 0,
+    foreignCount: 0,
+    lastTraining: null,
+  });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -75,12 +83,23 @@ export default function PlayersPage() {
         const avgOverallValue =
           ratings.length === 0 ? "-" : (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1);
         const onLoan = players.filter((p) => Boolean(p.on_loan)).length;
+        const lastTrainingIso = (() => {
+          const dates = players
+            .map((p) => p.last_trained_at)
+            .filter((d): d is string => Boolean(d))
+            .map((d) => new Date(d))
+            .filter((d) => Number.isFinite(d.getTime()));
+          if (dates.length === 0) return null;
+          const maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
+          return maxDate.toISOString();
+        })();
 
         setMetrics({
           rosterSize,
           avgOverall: avgOverallValue,
           onLoan,
           foreignCount: 0, // no country info available here
+          lastTraining: lastTrainingIso,
         });
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? "Failed to load squad data");
@@ -101,6 +120,15 @@ export default function PlayersPage() {
       { label: "Average OVR", value: loading ? "…" : metrics.avgOverall },
       { label: "Players on loan", value: loading ? "…" : String(metrics.onLoan) },
       { label: "Foreign quota", value: loading ? "…" : String(metrics.foreignCount) },
+      {
+        label: "Last training",
+        value:
+          loading || !metrics.lastTraining
+            ? loading
+              ? "…"
+              : "-"
+            : new Date(metrics.lastTraining).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+      },
     ],
     [metrics, loading]
   );
