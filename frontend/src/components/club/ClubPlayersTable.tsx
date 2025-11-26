@@ -76,6 +76,14 @@ export default function ClubPlayersTable({ refreshKey = 0 }: ClubPlayersTablePro
 
         if (!cancelled) {
           const transformed = (players.results ?? []).map(toSquadRow);
+          if (transformed.length > 0) {
+            // Debug: увидеть, что доходит до состояния
+            console.log("[ClubPlayersTable] first row", {
+              id: transformed[0]?.id,
+              last_trained_at: players.results?.[0]?.last_trained_at,
+              lastTrainedAt: transformed[0]?.lastTrainedAt,
+            });
+          }
           setRows(transformed);
         }
       } catch (e: any) {

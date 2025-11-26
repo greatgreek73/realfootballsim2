@@ -58,12 +58,23 @@ const getRowSpacing = (params: GridRowSpacingParams) => {
 };
 
 const formatNumber = (value?: number | null) => (value !== undefined && value !== null ? String(value) : "-");
-const formatNumberCell = (params?: GridValueFormatterParams<number | null>) => formatNumber(params?.value ?? null);
+const formatNumberCell = (value: number | null | undefined) => formatNumber(value);
+const normalizeIsoDate = (value: string) => {
+  // Ограничиваем микросекунды до миллисекунд и нормализуем таймзону для парсинга
+  let v = value.trim();
+  v = v.replace(/\.(\d{3})\d+/, ".$1"); // обрезать до 3 знаков
+  v = v.replace(/\+00:00$/, "Z"); // унифицировать UTC-окончание
+  return v;
+};
 const formatDateTime = (value?: string | null) => {
   if (!value) return "-";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "-";
-  return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  const normalized = normalizeIsoDate(value);
+  const d = new Date(normalized);
+  if (!Number.isNaN(d.getTime())) {
+    return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  }
+  // Фолбэк: если браузер не распарсил дату, показываем нормализованную строку
+  return normalized;
 };
 
 function initials(name: string): string {
@@ -122,6 +133,8 @@ function PlayerActionsMenu({ playerId }: { playerId: number }) {
 }
 
 /** Колонки грида */
+let loggedMissingDate = false;
+
 const columns: GridColDef<SquadRow>[] = [
   {
     field: "id",
@@ -205,7 +218,13 @@ const columns: GridColDef<SquadRow>[] = [
     field: "lastTrainedAt",
     headerName: "Last training",
     width: 160,
-    valueFormatter: (params) => formatDateTime(params?.value as string | null),
+    valueFormatter: (value: string | null | undefined, row: SquadRow) => {
+      if (!value && !loggedMissingDate) {
+        console.log("[SquadDataGrid] missing lastTrainedAt value", value, "row", row?.id);
+        loggedMissingDate = true;
+      }
+      return formatDateTime(value);
+    },
   },
   {
     field: "actions",
