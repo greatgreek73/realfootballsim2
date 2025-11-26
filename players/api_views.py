@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_GET, require_POST
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
+from django.utils import timezone
 
 from .models import Player
 from .services.avatar import generate_and_save_avatar
@@ -197,6 +198,7 @@ def player_extra_training_api(request, pk: int):
         setattr(player, attr, current + 1)
 
     player.boost_count += 1
+    player.last_trained_at = timezone.now()
     player.save()
 
     new_values = {attr: getattr(player, attr, 0) for attr in all_attrs}
