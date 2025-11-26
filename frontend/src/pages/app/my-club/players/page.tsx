@@ -173,8 +173,6 @@ export default function PlayersPage() {
     () => [
       { label: "Roster size", value: metrics.rosterSize ? String(metrics.rosterSize) : loading ? "…" : "-" },
       { label: "Average OVR", value: loading ? "…" : metrics.avgOverall },
-      { label: "Players on loan", value: loading ? "…" : String(metrics.onLoan) },
-      { label: "Foreign quota", value: loading ? "…" : String(metrics.foreignCount) },
       {
         label: "Last training",
         value:
@@ -182,8 +180,14 @@ export default function PlayersPage() {
             ? loading
               ? "…"
               : "-"
-            : new Date(metrics.lastTraining).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+            : new Date(metrics.lastTraining).toLocaleString(undefined, {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+              }),
       },
+      { label: "Foreign quota", value: loading ? "…" : String(metrics.foreignCount) },
     ],
     [metrics, loading]
   );
