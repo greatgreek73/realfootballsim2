@@ -68,7 +68,11 @@ export default function ClubPlayersTable({ refreshKey = 0 }: ClubPlayersTablePro
         setLoading(true);
 
         const my = await getJSON<{ id: number }>("/api/my/club/");
-        const players = await getJSON<{ count: number; results: ApiPlayer[] }>(`/api/clubs/${my.id}/players/`);
+        // Отключаем кэш браузера, чтобы получать актуальные данные после тренировок
+        const url = `/api/clubs/${my.id}/players/?_=${Date.now()}`;
+        const res = await fetch(url, { credentials: "include", cache: "no-store" });
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        const players = await res.json() as { count: number; results: ApiPlayer[] };
 
         if (!cancelled) {
           const transformed = (players.results ?? []).map(toSquadRow);
