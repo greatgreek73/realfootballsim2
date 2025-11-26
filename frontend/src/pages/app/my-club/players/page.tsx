@@ -180,7 +180,7 @@ export default function PlayersPage() {
             ? loading
               ? "…"
               : "-"
-            : new Date(metrics.lastTraining).toLocaleString(undefined, {
+            : new Date(metrics.lastTraining).toLocaleString("en-US", {
                 month: "short",
                 day: "numeric",
                 hour: "2-digit",
