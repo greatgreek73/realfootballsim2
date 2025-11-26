@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { Alert, Button, Card, CardContent, Typography } from "@mui/material";
+import { Alert, Button, Card, CardContent, Typography, Stack, CircularProgress } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 
 import ClubPlayersTable from "@/components/club/ClubPlayersTable";
 import HeroBar from "@/components/ui/HeroBar";
 import PageShell from "@/components/ui/PageShell";
+import { getCsrfToken } from "@/lib/apiClient";
 
 type ClubSummary = {
   id: number;
@@ -50,6 +51,60 @@ export default function PlayersPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [trainingLoading, setTrainingLoading] = useState(false);
+  const [trainingAlert, setTrainingAlert] = useState<{ severity: "success" | "error" | "info"; message: string } | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleRunTraining = async () => {
+    if (!club?.id) return;
+
+    try {
+      setTrainingLoading(true);
+      setTrainingAlert(null);
+
+      const csrfToken = await getCsrfToken();
+      const res = await fetch(`/api/clubs/${club.id}/run-training/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrfToken,
+        },
+        credentials: "include",
+      });
+
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        setTrainingAlert({
+          severity: "error",
+          message: json.message || `Training failed (${res.status})`,
+        });
+        return;
+      }
+
+      setTrainingAlert({
+        severity: "success",
+        message: json.message,
+      });
+
+      // Обновляем метрики
+      setMetrics((prev) => ({
+        ...prev,
+        lastTraining: new Date().toISOString(),
+      }));
+
+      // Trigger table refresh
+      setRefreshKey((k) => k + 1);
+
+    } catch (e: any) {
+      setTrainingAlert({
+        severity: "error",
+        message: e?.message || "Failed to run training",
+      });
+    } finally {
+      setTrainingLoading(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -140,26 +195,43 @@ export default function PlayersPage() {
       tone="green"
       kpis={heroKpis}
       actions={
-        <Button component={RouterLink} to="/transfers" size="small" variant="outlined">
-          Go to transfers
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button
+            size="small"
+            variant="contained"
+            color="primary"
+            onClick={handleRunTraining}
+            disabled={trainingLoading || loading || !club}
+            startIcon={trainingLoading ? <CircularProgress size={16} color="inherit" /> : null}
+          >
+            {trainingLoading ? "Training..." : "Run Training"}
+          </Button>
+          <Button component={RouterLink} to="/transfers" size="small" variant="outlined">
+            Go to transfers
+          </Button>
+        </Stack>
       }
     />
   );
 
   const top = (
-    <>
-      {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
+    <Stack spacing={1}>
+      {error && <Alert severity="error">{error}</Alert>}
+      {trainingAlert && (
+        <Alert severity={trainingAlert.severity} onClose={() => setTrainingAlert(null)}>
+          {trainingAlert.message}
+        </Alert>
+      )}
       <Typography variant="body2" color="text.secondary">
         Use filters in the table to manage positions, contracts and depth. Click a player name to open the detailed profile.
       </Typography>
-    </>
+    </Stack>
   );
 
   const mainContent = (
     <Card>
       <CardContent sx={{ p: 0 }}>
-        <ClubPlayersTable />
+        <ClubPlayersTable refreshKey={refreshKey} />
       </CardContent>
     </Card>
   );

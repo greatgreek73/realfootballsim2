@@ -155,3 +155,63 @@ def club_players(request, club_id: int):
             "last_trained_at": p.last_trained_at.isoformat() if getattr(p, "last_trained_at", None) else None,
         })
     return JsonResponse({"count": len(rows), "results": rows})
+
+
+@require_POST
+@login_required
+def club_run_training(request, club_id: int):
+    """
+    POST /api/clubs/<id>/run-training/ - запуск обычных тренировок для всех игроков клуба.
+    Доступно только владельцу клуба.
+    """
+    try:
+        club = Club.objects.get(id=club_id)
+    except Club.DoesNotExist:
+        return JsonResponse({"success": False, "message": "Club not found"}, status=404)
+
+    # Проверяем право управлять клубом
+    is_owner = False
+    for field in ("owner", "manager", "user"):
+        owner_id = getattr(club, f"{field}_id", None)
+        if owner_id == request.user.id:
+            is_owner = True
+            break
+
+    if not is_owner and not request.user.is_superuser:
+        return JsonResponse(
+            {"success": False, "message": "У вас нет прав запускать тренировки для этого клуба."},
+            status=403
+        )
+
+    # Запускаем тренировки
+    from players.training_logic import conduct_team_training
+
+    results = conduct_team_training(club)
+
+    # Подготавливаем summary для ответа
+    trained_count = sum(1 for r in results if "error" not in r)
+    error_count = sum(1 for r in results if "error" in r)
+    total_improvements = sum(r.get("attributes_improved", 0) for r in results if "error" not in r)
+
+    # Детализация по игрокам
+    player_summaries = []
+    for r in results:
+        if "error" not in r:
+            player_summaries.append({
+                "player_id": r.get("player_id"),
+                "player_name": r.get("player_name"),
+                "total_points": r.get("total_points"),
+                "changes": r.get("changes", {}),
+                "is_in_bloom": r.get("is_in_bloom", False),
+            })
+
+    return JsonResponse({
+        "success": True,
+        "message": f"Тренировка завершена. Игроков: {trained_count}, улучшений: {total_improvements}",
+        "stats": {
+            "players_trained": trained_count,
+            "total_improvements": total_improvements,
+            "errors": error_count,
+        },
+        "players": player_summaries,
+    }, json_dumps_params={"ensure_ascii": False})
