@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.db import models
+from django.utils import timezone
 from decimal import Decimal
 from django.templatetags.static import static
 
@@ -190,6 +191,7 @@ def boost_player_ajax(request, player_id):
         all_changed_attrs.add(rand_attr)
 
     player.boost_count += 1
+    player.last_trained_at = timezone.now()
     player.save()
 
     new_values = {a: getattr(player, a, 0) for a in all_attrs}
