@@ -268,6 +268,7 @@ def get_players(request, pk):
                 'defense': total_defense
             },
             'avatar_url': getattr(p, 'avatar_url', None),  # <-- ДОБАВЛЕНО ПОЛЕ
+            'last_trained_at': p.last_trained_at.isoformat() if p.last_trained_at else None,
         })
 
     return JsonResponse(data, safe=False)
