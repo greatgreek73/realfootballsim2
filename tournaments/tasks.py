@@ -48,6 +48,7 @@ def _possession_indicator_from_markov(possession: Optional[str]) -> int:
 
 def _serialize_event_for_ws(event: MatchEvent) -> dict:
     return {
+        "id": event.id,
         "minute": event.minute,
         "event_type": event.event_type,
         "description": event.description,
