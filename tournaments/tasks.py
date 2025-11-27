@@ -610,22 +610,9 @@ def advance_match_minutes():
 
         if match.current_minute < 90:
             match.current_minute += 1
-            info_event = MatchEvent.objects.create(
-                match=match,
-                minute=match.current_minute,
-                event_type="info",
-                description=f"Minute {match.current_minute}: Play continues...",
-            )
+            # info_event removed to reduce clutter
 
             if channel_layer:
-                info_event_data = {
-                    "minute": info_event.minute,
-                    "event_type": info_event.event_type,
-                    "description": info_event.description,
-                    "player_name": "",
-                    "related_player_name": "",
-                }
-
                 possessing_team_id = None
                 if match.possession_indicator == 1:
                     possessing_team_id = str(match.home_team_id)
@@ -649,7 +636,7 @@ def advance_match_minutes():
                         "away_momentum": match.away_momentum,
                         "current_zone": match.current_zone,
                         "possessing_team_id": possessing_team_id,
-                        "events": [info_event_data],
+                        "events": [],  # No event for minute transition
                         "partial_update": True,
                         "action_based": True,
                     },
