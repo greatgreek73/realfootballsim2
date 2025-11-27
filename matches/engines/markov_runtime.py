@@ -35,6 +35,7 @@ class MarkovMinuteEvent(TypedDict, total=False):
     label: Optional[str]
     subtype: Optional[str]
     turnover: bool
+    narrative: Optional[str]
 
 
 class MarkovToken(TypedDict, total=False):
@@ -61,6 +62,7 @@ class MarkovMinuteSummary(TypedDict, total=False):
     swings: int
     events: List[MarkovMinuteEvent]
     narrative: List[str]
+    pure_narrative: List[str]
     token: MarkovToken
     coefficients: Dict[str, Dict[str, float]]
 
@@ -533,22 +535,26 @@ def simulate_markov_minute(
     }
 
     narrative: List[str] = []
+    pure_narrative: List[str] = []
 
     if state.minute == 1 and state.state == "KICKOFF":
-        narrative.append(f"Kick-off by {_side_name(state.possession, home_name, away_name)}")
+        pure_narrative.append(f"Kick-off by {_side_name(state.possession, home_name, away_name)}")
     elif state.minute == 46 and state.state == "KICKOFF":
-        narrative.append(f"Second-half kick-off by {_side_name(state.possession, home_name, away_name)}")
+        pure_narrative.append(f"Second-half kick-off by {_side_name(state.possession, home_name, away_name)}")
 
     for event in minute_summary.get("events", []):
         text = _event_phrase(event, home_name, away_name)
         if text:
+            event["narrative"] = text
             narrative.append(text)
-    if not narrative:
-        narrative.append("Quiet minute: no notable events.")
+
+    if not pure_narrative and not narrative:
+        pure_narrative.append("Quiet minute: no notable events.")
 
     minute_summary["minute"] = state.minute
     minute_summary["score_total"] = new_total
-    minute_summary["narrative"] = narrative
+    minute_summary["pure_narrative"] = pure_narrative
+    minute_summary["narrative"] = pure_narrative + narrative
     minute_summary["coefficients"] = state.coefficients
     minute_summary["token"] = {
         "state": minute_summary["end_state"],

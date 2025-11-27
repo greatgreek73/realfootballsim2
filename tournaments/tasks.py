@@ -199,21 +199,9 @@ def simulate_active_matches(self):
                 match_locked.save()
 
                 created_events = []
-                for raw_event in minute_summary.get("events") or []:
-                    mapped = _map_markov_event_to_match_event(match_locked, raw_event)
-                    if not mapped:
-                        continue
-                    event = MatchEvent.objects.create(
-                        match=match_locked,
-                        minute=minute_number,
-                        event_type=mapped["event_type"],
-                        description=mapped["description"],
-                    )
-                    created_events.append(event)
-                    if mapped.get("stat") == "pass":
-                        pass_events += 1
 
-                for line in minute_summary.get("narrative") or []:
+                # 1. Global narrative (e.g. Kick-off)
+                for line in minute_summary.get("pure_narrative") or []:
                     event = MatchEvent.objects.create(
                         match=match_locked,
                         minute=minute_number,
@@ -221,6 +209,28 @@ def simulate_active_matches(self):
                         description=line,
                     )
                     created_events.append(event)
+
+                # 2. Tick events (one per tick max)
+                for raw_event in minute_summary.get("events") or []:
+                    mapped = _map_markov_event_to_match_event(match_locked, raw_event)
+                    if mapped:
+                        event = MatchEvent.objects.create(
+                            match=match_locked,
+                            minute=minute_number,
+                            event_type=mapped["event_type"],
+                            description=mapped["description"],
+                        )
+                        created_events.append(event)
+                        if mapped.get("stat") == "pass":
+                            pass_events += 1
+                    elif raw_event.get("narrative"):
+                        event = MatchEvent.objects.create(
+                            match=match_locked,
+                            minute=minute_number,
+                            event_type="info",
+                            description=raw_event["narrative"],
+                        )
+                        created_events.append(event)
 
                 processed += 1
                 possessing_team_id = None

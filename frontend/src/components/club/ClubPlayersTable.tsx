@@ -82,6 +82,9 @@ export default function ClubPlayersTable({ refreshKey = 0 }: ClubPlayersTablePro
               id: transformed[0]?.id,
               last_trained_at: players.results?.[0]?.last_trained_at,
               lastTrainedAt: transformed[0]?.lastTrainedAt,
+              ageSrc: players.results?.[0]?.age,
+              ageDst: transformed[0]?.age,
+              moraleSrc: players.results?.[0]?.morale,
             });
           }
           setRows(transformed);

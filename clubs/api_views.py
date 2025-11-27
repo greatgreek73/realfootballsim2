@@ -151,8 +151,11 @@ def club_players(request, club_id: int):
             "name": _as_text(getattr(p, "name", None) or p),
             "position": _as_text(getattr(p, "position", None)),
             "cls": _as_text(cls_val),
+            "age": _as_number(getattr(p, "age", 0)),
+            "morale": _as_number(getattr(p, "morale", 0)),
             "base_value": _as_number(p.get_purchase_cost()),
             "last_trained_at": p.last_trained_at.isoformat() if getattr(p, "last_trained_at", None) else None,
+            "avatar_url": p.avatar.url if getattr(p, "avatar", None) else None,
         })
     return JsonResponse({"count": len(rows), "results": rows})
 

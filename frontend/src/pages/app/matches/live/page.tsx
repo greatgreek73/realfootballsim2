@@ -124,6 +124,7 @@ export default function MatchLivePage() {
   const markovEventQueueRef = useRef<MatchEvent[]>([]);
   const markovPlaybackTimerRef = useRef<number | null>(null);
   const markovTickMsRef = useRef<number>(10000);
+  const lastMinuteDbEventsRef = useRef<MatchEvent[]>([]);
 
   const clearMarkovPlayback = useCallback(() => {
     if (markovPlaybackTimerRef.current !== null) {
@@ -158,16 +159,17 @@ export default function MatchLivePage() {
         if (type === "markov_summary") return 3;
         return 4;
       };
-      const diff = priority(a.type) - priority(b.type);
+      // Reverse order: Newest (Higher ID/Priority) first
+      const diff = priority(b.type) - priority(a.type);
       if (diff !== 0) {
         return diff;
       }
       const numericIdDiff =
-        typeof a.id === "number" && typeof b.id === "number" ? a.id - b.id : Number(a.id) - Number(b.id);
+        typeof a.id === "number" && typeof b.id === "number" ? b.id - a.id : Number(b.id) - Number(a.id);
       if (!Number.isNaN(numericIdDiff) && numericIdDiff !== 0) {
         return numericIdDiff;
       }
-      return String(a.id).localeCompare(String(b.id));
+      return String(b.id).localeCompare(String(a.id));
     });
     return copy;
   }, []);
@@ -251,6 +253,9 @@ export default function MatchLivePage() {
         type_label: "Markov Minute",
         description: "", // placeholder, will replace below
         timestamp: new Date().toISOString(),
+        personality_reason: null,
+        player: null,
+        related_player: null,
       }),
     ];
 
@@ -316,6 +321,8 @@ export default function MatchLivePage() {
       description: summaryLine,
     };
 
+    /* 
+    // Disabled detailed narrative events generation on frontend to avoid duplication with DB events
     const pushGoalEvent = (teamName: string, count: number) => {
       if (!count || count <= 0) return;
       const label = count > 1 ? `GOAL x${count}` : "GOAL";
@@ -339,12 +346,12 @@ export default function MatchLivePage() {
     narrativeLines.forEach((line) => {
       const lower = line.toLowerCase();
       const isGoal = /\bgoal\b(?!\s*(keeper|kick))/i.test(line) || /\bscore[sd]?\b/i.test(line);
-const type = isGoal
-  ? "markov_goal"
-  : lower.includes("turnover")
-  ? "markov_turnover"
-  : "markov_narrative";
-const typeLabel = isGoal ? "Markov Goal" : "Markov";
+      const type = isGoal
+        ? "markov_goal"
+        : lower.includes("turnover")
+        ? "markov_turnover"
+        : "markov_narrative";
+      const typeLabel = isGoal ? "Markov Goal" : "Markov";
       markovEvents.push(
         makeEvent({
           minute,
@@ -358,6 +365,13 @@ const typeLabel = isGoal ? "Markov Goal" : "Markov";
         }),
       );
     });
+    */
+
+    // Add DB events for this minute to the playback queue
+    if (lastMinuteDbEventsRef.current.length > 0) {
+        const dbEvents = lastMinuteDbEventsRef.current.filter(e => e.minute === minute);
+        markovEvents.push(...dbEvents);
+    }
 
     clearMarkovPlayback();
     setEvents((prev) =>
@@ -509,54 +523,76 @@ const typeLabel = isGoal ? "Markov Goal" : "Markov";
       });
 
       if (Array.isArray(payload.events)) {
-        setEvents((prevEvents) => {
-          const mapped = payload.events.map(mapWebSocketEvent);
-          const eventKey = (evt: MatchEvent) =>
-            `${evt.minute}|${evt.type}|${evt.description}|${evt.player?.name ?? ""}|${
-              evt.related_player?.name ?? ""
-            }`;
+        const mapped: MatchEvent[] = payload.events.map(mapWebSocketEvent);
+        const liveMinute = Number(payload.minute);
+        
+        let liveEvents: MatchEvent[] = [];
+        let historyEvents: MatchEvent[] = mapped;
 
-          if (payload.partial_update) {
-            const existing = new Set(prevEvents.map(eventKey));
-            const unique = mapped.filter((evt) => !existing.has(eventKey(evt)));
-            if (unique.length === 0) {
-              return prevEvents;
-            }
-            const mergedEvents = [...prevEvents, ...unique];
-            mergedEvents.sort((a, b) => {
-              if (a.minute !== b.minute) {
-                return a.minute - b.minute;
+        if (Number.isFinite(liveMinute) && liveMinute > 0) {
+          liveEvents = mapped.filter((e) => e.minute === liveMinute);
+          historyEvents = mapped.filter((e) => e.minute !== liveMinute);
+        }
+
+        if (!Object.prototype.hasOwnProperty.call(payload, "markov_minute")) {
+           // No summary update, append live events to queue immediately
+           if (liveEvents.length > 0) {
+             markovEventQueueRef.current.push(...liveEvents);
+             if (!markovPlaybackTimerRef.current) {
+               playNextMarkovEvent();
+             }
+           }
+        } else {
+           // Summary update will trigger useEffect, store events for it
+           lastMinuteDbEventsRef.current = liveEvents;
+        }
+
+        if (historyEvents.length > 0) {
+          setEvents((prevEvents) => {
+            const eventKey = (evt: MatchEvent) =>
+              `${evt.minute}|${evt.type}|${evt.description}|${evt.player?.name ?? ""}|${
+                evt.related_player?.name ?? ""
+              }`;
+
+            if (payload.partial_update) {
+              const existing = new Set(prevEvents.map(eventKey));
+              const unique = historyEvents.filter((evt: MatchEvent) => !existing.has(eventKey(evt)));
+              if (unique.length === 0) {
+                return prevEvents;
               }
+              const mergedEvents = [...prevEvents, ...unique];
+              mergedEvents.sort((a: MatchEvent, b: MatchEvent) => {
+                if (a.minute !== b.minute) {
+                  return a.minute - b.minute;
+                }
+                return (a.description ?? "").localeCompare(b.description ?? "");
+              });
+              return mergedEvents;
+            }
+
+            const mergedByKey = new Map(prevEvents.map((e) => [
+              eventKey(e),
+              e,
+            ]));
+            for (const e of historyEvents) {
+              mergedByKey.set(eventKey(e), e);
+            }
+            const mergedAll = Array.from(mergedByKey.values());
+            mergedAll.sort((a, b) => {
+              if (a.minute !== b.minute) return a.minute - b.minute;
+              const priority = (t: string) => {
+                if (t === "markov_summary") return 0;
+                if (t === "markov_goal") return 1;
+                if (t.startsWith("markov_")) return 2;
+                return 3;
+              };
+              const diff = priority(a.type) - priority(b.type);
+              if (diff !== 0) return diff;
               return (a.description ?? "").localeCompare(b.description ?? "");
             });
-            return mergedEvents;
-          }
-
-          const mergedByKey = new Map(prevEvents.map((e) => [
-  `${e.minute}|${e.type}|${e.description}|${e.player?.name ?? ""}|${e.related_player?.name ?? ""}`,
-  e,
-]));
-for (const e of mapped) {
-  mergedByKey.set(
-    `${e.minute}|${e.type}|${e.description}|${e.player?.name ?? ""}|${e.related_player?.name ?? ""}`,
-    e
-  );
-}
-const mergedAll = Array.from(mergedByKey.values());
-mergedAll.sort((a, b) => {
-  if (a.minute !== b.minute) return a.minute - b.minute;
-  const priority = (t: string) => {
-    if (t === "markov_summary") return 0;
-    if (t === "markov_goal") return 1;
-    if (t.startsWith("markov_")) return 2;
-    return 3;
-  };
-  const diff = priority(a.type) - priority(b.type);
-  if (diff !== 0) return diff;
-  return (a.description ?? "").localeCompare(b.description ?? "");
-});
-return mergedAll;
-        });
+            return mergedAll;
+          });
+        }
       }
 
       if (Object.prototype.hasOwnProperty.call(payload, "markov_minute")) {
@@ -587,18 +623,18 @@ return mergedAll;
         const [detail, eventsResponse] = await Promise.all([fetchMatchDetail(matchId), fetchMatchEvents(matchId)]);
         setMatch(detail);
         setEvents((prev) => {
-  const mapped = eventsResponse.events;
-  const eventKey = (evt: MatchEvent) =>
-    `${evt.minute}|${evt.type}|${evt.description}|${evt.player?.name ?? ""}|${evt.related_player?.name ?? ""}`;
-  const map = new Map(prev.map((e) => [eventKey(e), e]));
-  for (const e of mapped) map.set(eventKey(e), e);
-  const merged = Array.from(map.values());
-  merged.sort((a, b) => {
-    if (a.minute !== b.minute) return a.minute - b.minute;
-    return (a.description ?? "").localeCompare(b.description ?? "");
-  });
-  return merged;
-});
+          const mapped = eventsResponse.events;
+          const eventKey = (evt: MatchEvent) =>
+            `${evt.minute}|${evt.type}|${evt.description}|${evt.player?.name ?? ""}|${evt.related_player?.name ?? ""}`;
+          const map = new Map(prev.map((e) => [eventKey(e), e]));
+          for (const e of mapped) map.set(eventKey(e), e);
+          const merged = Array.from(map.values());
+          merged.sort((a, b) => {
+            if (a.minute !== b.minute) return a.minute - b.minute;
+            return (a.description ?? "").localeCompare(b.description ?? "");
+          });
+          return merged;
+        });
         setError(null);
       } catch (e: any) {
         setError(e?.message ?? "Failed to load live data");
@@ -744,9 +780,6 @@ return mergedAll;
       setSubstituting(false);
     }
   };
-
-  // --------- ИЗМЕНЕНО: группируем события по минутам и рисуем 1 карточку на минуту ----------
-    // --------- КОНЕЦ ИЗМЕНЕНИЙ ---------------------------------------------------
 
   return (
     <Box sx={{ p: { xs: 2, sm: 4 } }}>
@@ -987,14 +1020,3 @@ return mergedAll;
     </Box>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
