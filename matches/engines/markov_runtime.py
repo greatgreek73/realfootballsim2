@@ -65,6 +65,7 @@ class MarkovMinuteSummary(TypedDict, total=False):
     pure_narrative: List[str]
     token: MarkovToken
     coefficients: Dict[str, Dict[str, float]]
+    actor_names: Dict[int, str]  # tick -> actor name
 
 
 class MarkovMinuteResult(TypedDict):
@@ -118,6 +119,8 @@ def _adjust_advancing_transitions(
     possession: str,
     attack_coeffs: Dict[str, float],
     defense_coeffs: Dict[str, float],
+    dynamic_attack: float | None = None,
+    dynamic_defense: float | None = None,
 ) -> List[dict]:
     if state not in ("OPEN_PLAY_MID", "OPEN_PLAY_FINAL"):
         return transitions
@@ -147,8 +150,11 @@ def _adjust_advancing_transitions(
         if advancing and possession in ("home", "away"):
             team = possession
             opponent = "away" if team == "home" else "home"
-            attack = attack_coeffs.get(team, 1.0)
-            defense = defense_coeffs.get(opponent, 1.0)
+            
+            # Use dynamic per-tick coeffs if provided, otherwise fall back to global coeffs
+            attack = dynamic_attack if dynamic_attack is not None else attack_coeffs.get(team, 1.0)
+            defense = dynamic_defense if dynamic_defense is not None else defense_coeffs.get(opponent, 1.0)
+            
             multiplier *= max(attack, 0.01)
             multiplier /= max(defense, 0.01)
 
@@ -187,7 +193,11 @@ def _event_phrase(e: dict, home_name: str, away_name: str) -> str | None:
     subtype = e.get("subtype")
     pos = e.get("possession")
     zone = e.get("zone")
-    who = _side_name(pos, home_name, away_name)
+    
+    # Use specific actor name if available, otherwise team name
+    actor = e.get("actor_name")
+    who = actor if actor else _side_name(pos, home_name, away_name)
+    
     z = _zone_label(zone)
     turnover = bool(e.get("turnover"))
 
@@ -251,6 +261,8 @@ def _push_event(
     label: Optional[str] = None,
     subtype: Optional[str] = None,
     p: Optional[float] = None,
+    actor_name: Optional[str] = None,
+    actor_id: Optional[str | int] = None,
 ) -> None:
     ev = {
         "tick": tick,
@@ -267,7 +279,88 @@ def _push_event(
         ev["subtype"] = subtype
     if p is not None:
         ev["p"] = p
+    if actor_name:
+        ev["actor_name"] = actor_name
+    if actor_id:
+        ev["actor_id"] = actor_id
     events.append(ev)
+
+
+# Helper to select players based on zone
+def _select_interaction_pair(
+    rng: random.Random,
+    rosters: Dict[str, Dict[str, List[Dict[str, Any]]]],
+    attacker_side: str,
+    zone: str
+) -> tuple[Optional[Dict], Optional[Dict]]:
+    """Selects (attacker, defender) pair based on zone."""
+    if not rosters or attacker_side not in rosters:
+        return None, None
+
+    defender_side = "away" if attacker_side == "home" else "home"
+    
+    # Map zone to likely player lines
+    # DEF: Attacker is DEF, Defender is FWD (pressing)
+    # MID: Attacker is MID, Defender is MID
+    # FINAL: Attacker is FWD, Defender is DEF
+    if zone == "DEF":
+        att_line, def_line = "DEF", "FWD"
+    elif zone == "FINAL":
+        att_line, def_line = "FWD", "DEF"
+    else: # MID
+        att_line, def_line = "MID", "MID"
+
+    # Helper to pick random player from line
+    def pick(side, line):
+        pool = rosters.get(side, {}).get(line, [])
+        # Fallback to MID if preferred line empty (e.g. no FWDs in formation)
+        if not pool:
+             pool = rosters.get(side, {}).get("MID", [])
+        # Fallback to DEF
+        if not pool:
+             pool = rosters.get(side, {}).get("DEF", [])
+        if not pool:
+            return None
+        return rng.choice(pool)
+
+    attacker = pick(attacker_side, att_line)
+    defender = pick(defender_side, def_line)
+    return attacker, defender
+
+
+def _calculate_player_coeffs(attacker: Dict, defender: Dict) -> tuple[float, float]:
+    """Calculates dynamic attack/defense coeffs relative to 1.0 base."""
+    if not attacker or not defender:
+        return 1.0, 1.0
+
+    # Simple logic: compare overall ratings
+    # If att > def, attack_coeff > 1.0, def_coeff < 1.0
+    # We want a subtle effect. Max swing +/- 20%?
+    
+    att_rating = attacker.get("stats", {}).get("overall", 70)
+    def_rating = defender.get("stats", {}).get("overall", 70)
+
+    # Ensure non-zero
+    att_rating = max(10, att_rating)
+    def_rating = max(10, def_rating)
+
+    # Ratio
+    ratio = att_rating / def_rating
+    
+    # Dampen the ratio so it's not too extreme
+    # e.g. 90 vs 70 -> 1.28 ratio. 
+    # We might want to return (1.14, 0.86) roughly
+    if ratio > 1:
+        # Attacker stronger
+        # attack=1.1, defense=0.9 for ratio=1.2
+        boost = (ratio - 1.0) * 0.5 # dampen by half
+        return 1.0 + boost, 1.0 / (1.0 + boost)
+    else:
+        # Defender stronger (ratio < 1)
+        # ratio=0.8 -> def stronger
+        # boost is negative
+        boost = (1.0 - ratio) * 0.5
+        return 1.0 - boost, 1.0 + boost
 
 
 def _simulate_minute(
@@ -279,6 +372,7 @@ def _simulate_minute(
     start_zone: str | None = None,
     attack_coeffs: Dict[str, float] | None = None,
     defense_coeffs: Dict[str, float] | None = None,
+    rosters: Dict[str, Dict[str, List[Dict[str, Any]]]] | None = None,
 ) -> Dict[str, Any]:
     if attack_coeffs is None:
         attack_coeffs = {"home": 1.0, "away": 1.0}
@@ -298,6 +392,22 @@ def _simulate_minute(
 
     for tick in range(1, TICKS_PER_MINUTE + 1):
         possession_ticks[possession] += 1
+        
+        # Select Actors for this tick
+        # We check zone to decide who is likely involved
+        tick_zone = zone # current zone
+        if state == "SHOT": tick_zone = "FINAL" # shots happen in final
+        
+        protag, antag = None, None
+        dyn_att, dyn_def = None, None
+
+        if rosters:
+            protag, antag = _select_interaction_pair(rng, rosters, possession, tick_zone)
+            if protag and antag:
+                dyn_att, dyn_def = _calculate_player_coeffs(protag, antag)
+        
+        actor_name = protag.get("name") if protag else None
+        actor_id = protag.get("id") if protag else None
 
         if state == "SHOT":
             oc = _choose_weighted(rng, states["SHOT"]["outcomes"])
@@ -318,6 +428,8 @@ def _simulate_minute(
                 new_zone=new_zone,
                 prev_pos=possession,
                 label=f"SHOT:{result}",
+                actor_name=actor_name,
+                actor_id=actor_id,
             )
             if new_state == "OPEN_PLAY_FINAL" and state != "OPEN_PLAY_FINAL":
                 entries_final[new_pos] += 1
@@ -341,6 +453,8 @@ def _simulate_minute(
                 new_zone=new_zone,
                 prev_pos=possession,
                 subtype=choice.get("subtype"),
+                actor_name=actor_name,
+                actor_id=actor_id,
             )
             if new_state == "OPEN_PLAY_FINAL" and state != "OPEN_PLAY_FINAL":
                 entries_final[new_pos] += 1
@@ -362,6 +476,8 @@ def _simulate_minute(
                 new_pos=new_pos,
                 new_zone=new_zone,
                 prev_pos=possession,
+                actor_name=actor_name,
+                actor_id=actor_id,
             )
             if new_state == "OPEN_PLAY_FINAL" and state != "OPEN_PLAY_FINAL":
                 entries_final[new_pos] += 1
@@ -382,6 +498,8 @@ def _simulate_minute(
                 new_pos=new_pos,
                 new_zone=new_zone,
                 prev_pos=possession,
+                actor_name=actor_name,
+                actor_id=actor_id,
             )
             if new_state == "OPEN_PLAY_FINAL" and state != "OPEN_PLAY_FINAL":
                 entries_final[new_pos] += 1
@@ -395,6 +513,8 @@ def _simulate_minute(
             possession=possession,
             attack_coeffs=attack_coeffs,
             defense_coeffs=defense_coeffs,
+            dynamic_attack=dyn_att,
+            dynamic_defense=dyn_def,
         )
         choice = _choose_weighted(rng, transitions)
         new_state = choice.get("to")
@@ -409,6 +529,8 @@ def _simulate_minute(
             new_zone=new_zone,
             prev_pos=possession,
             p=choice.get("p"),
+            actor_name=actor_name,
+            actor_id=actor_id,
         )
         if new_state == "OPEN_PLAY_FINAL" and state != "OPEN_PLAY_FINAL":
             entries_final[new_pos] += 1
@@ -428,6 +550,7 @@ def _simulate_minute(
         "possession_seconds": possession_seconds,
         "events": events,
         "swings": swings,
+        "rosters_snapshot": rosters is not None,
     }
 
 
@@ -500,6 +623,7 @@ def simulate_markov_minute(
     away_name: str = "Away",
     attack_override: Optional[Dict[str, Any]] = None,
     defense_override: Optional[Dict[str, Any]] = None,
+    rosters: Optional[Dict[str, Dict[str, List[Dict[str, Any]]]]] = None,
 ) -> MarkovMinuteResult:
     """Simulate a single Markov minute and return a structured summary."""
 
@@ -527,6 +651,7 @@ def simulate_markov_minute(
         start_zone=state.zone,
         attack_coeffs=state.coefficients["attack"],
         defense_coeffs=state.coefficients["defense"],
+        rosters=rosters,
     )
 
     new_total = {

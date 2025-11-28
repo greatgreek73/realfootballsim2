@@ -10,10 +10,10 @@ from django.conf import settings
 from django.core.management import call_command
 from matches.models import Match, MatchEvent
 from matches.engines.markov_runtime import simulate_markov_minute
-from players.models import Player # ╨г╨▒╨╡╨┤╨╕╤В╨╡╤Б╤М, ╤З╤В╨╛ ╨╕╨╝╨┐╨╛╤А╤В ╨╡╤Б╤В╤М
-from clubs.models import Club     # ╨г╨▒╨╡╨┤╨╕╤В╨╡╤Б╤М, ╤З╤В╨╛ ╨╕╨╝╨┐╨╛╤А╤В ╨╡╤Б╤В╤М
+from players.models import Player, get_player_line
+from clubs.models import Club
 from .models import Season, Championship, League
-import random # ╨г╨▒╨╡╨┤╨╕╤В╨╡╤Б╤М, ╤З╤В╨╛ ╨╕╨╝╨┐╨╛╤А╤В ╨╡╤Б╤В╤М
+import random
 from datetime import timedelta
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -77,22 +77,46 @@ def _map_markov_event_to_match_event(match: Match, raw_event: dict) -> Optional[
     frm = (raw_event.get("from") or "").upper()
     turnover = bool(raw_event.get("turnover"))
     zone_label = _zone_text(raw_event.get("zone"))
-    actor_side = raw_event.get("prev_possession") or raw_event.get("possession")
-    actor = _team_display(match, actor_side)
+    
+    # If an individual player (actor) is part of the event, we use them
+    raw_actor_name = raw_event.get("actor_name")
+    raw_actor_id = raw_event.get("actor_id")
+    
+    # Fallback to team name if no player
+    team_actor = _team_display(match, raw_event.get("prev_possession") or raw_event.get("possession"))
+    actor_display = raw_actor_name if raw_actor_name else team_actor
+
+    result = {}
+    if raw_actor_id:
+        try:
+            result["player"] = Player.objects.get(pk=raw_actor_id)
+        except Player.DoesNotExist:
+            pass
 
     if label == "SHOT:GOAL":
-        description = f"Goal! {actor} score from {zone_label}."
-        return {"event_type": "goal", "description": description}
+        if raw_actor_name:
+            description = f"Goal! {raw_actor_name} scores for {team_actor} from {zone_label}!"
+        else:
+            description = f"Goal! {team_actor} score from {zone_label}."
+        result.update({"event_type": "goal", "description": description})
+        return result
+
     if label in {"SHOT:MISS", "SHOT:BLOCK"}:
-        description = f"{actor} take a shot from {zone_label} but miss the target."
-        return {"event_type": "shot_miss", "description": description}
+        description = f"{actor_display} takes a shot from {zone_label} but misses the target."
+        result.update({"event_type": "shot_miss", "description": description})
+        return result
+
     if frm == "FOUL":
-        description = f"Foul by {actor} in {zone_label}."
-        return {"event_type": "foul", "description": description}
+        description = f"Foul by {actor_display} in {zone_label}."
+        result.update({"event_type": "foul", "description": description})
+        return result
+        
     if turnover:
-        winner = _team_display(match, raw_event.get("possession"))
-        description = f"Turnover! {winner} gain possession in {zone_label}."
-        return {"event_type": "interception", "description": description}
+        winner_side = raw_event.get("possession")
+        winner_team = _team_display(match, winner_side)
+        description = f"Turnover! {winner_team} gain possession in {zone_label}."
+        result.update({"event_type": "interception", "description": description})
+        return result
     return None
 
 
@@ -157,12 +181,68 @@ def simulate_active_matches(self):
                     logger.info(f"⏭️ Матч ID={match_locked.id} ждёт завершения текущей минуты, пропуск.")
                     continue
 
+                # --- Prepare Rosters for Runtime ---
+                # We need to transform the match lineup (dict of slot -> player info)
+                # into the format expected by markov_runtime:
+                # rosters = {
+                #   "home": {"GK": [...], "DEF": [...], "MID": [...], "FWD": [...]},
+                #   "away": {"GK": [...], ...}
+                # }
+
+                rosters_map = {"home": {}, "away": {}}
+                
+                def _build_team_roster(team_side, lineup_data):
+                    # lineup_data: {'1': {'playerId': '101', ...}, ...} OR {'1': 101, ...}
+                    if not lineup_data: 
+                        return
+                    
+                    pids = []
+                    for slot, p_info in lineup_data.items():
+                        if isinstance(p_info, dict):
+                            pid = p_info.get('playerId')
+                        else:
+                            # Assume it's an ID directly (int or str) if not a dict
+                            pid = p_info
+                            
+                        if pid: 
+                            pids.append(pid)
+                    
+                    if not pids: 
+                        return
+
+                    # Bulk fetch players with optimized stats
+                    players_qs = Player.objects.filter(id__in=pids)
+                    
+                    for p in players_qs:
+                        # Get line (GK, DEF, MID, FWD)
+                        line = get_player_line(p)
+                        
+                        # Build minimal stats dict for the engine
+                        # We sum attributes or take overall for simple comparison
+                        stats = {
+                            "overall": p.overall_rating
+                        }
+                        
+                        player_entry = {
+                            "id": p.id,
+                            "name": p.last_name,  # or full_name
+                            "stats": stats,
+                        }
+                        
+                        if line not in rosters_map[team_side]:
+                            rosters_map[team_side][line] = []
+                        rosters_map[team_side][line].append(player_entry)
+
+                _build_team_roster("home", match_locked.home_lineup)
+                _build_team_roster("away", match_locked.away_lineup)
+
                 seed_value = int(match_locked.markov_seed or match_locked.id)
                 result = simulate_markov_minute(
                     seed=seed_value,
                     token=match_locked.markov_token,
                     home_name=match_locked.home_team.name,
                     away_name=match_locked.away_team.name,
+                    rosters=rosters_map,
                 )
                 minute_summary = result["minute_summary"]
                 counts = minute_summary.get("counts", {})
@@ -215,12 +295,17 @@ def simulate_active_matches(self):
                 for raw_event in minute_summary.get("events") or []:
                     mapped = _map_markov_event_to_match_event(match_locked, raw_event)
                     if mapped:
-                        event = MatchEvent.objects.create(
-                            match=match_locked,
-                            minute=minute_number,
-                            event_type=mapped["event_type"],
-                            description=mapped["description"],
-                        )
+                        event_kwargs = {
+                            "match": match_locked,
+                            "minute": minute_number,
+                            "event_type": mapped.get("event_type", "info"),
+                            "description": mapped.get("description", ""),
+                        }
+                        if mapped.get("player"):
+                           event_kwargs["player"] = mapped["player"]
+                        
+                        event = MatchEvent.objects.create(**event_kwargs)
+                        
                         created_events.append(event)
                         if mapped.get("stat") == "pass":
                             pass_events += 1

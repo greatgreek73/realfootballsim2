@@ -235,8 +235,9 @@ def get_players(request, pk):
     + Добавляем поля "attack" и "defense" для подсчёта на фронте.
     """
     club = get_object_or_404(Club, pk=pk)
-    if club.owner != request.user:
-        return JsonResponse({"error": "Access denied"}, status=403)
+    # Allow reading players for authenticated users (e.g. for scouting or lineups)
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Authentication required"}, status=401)
 
     players = Player.objects.filter(club=club)
     data = []

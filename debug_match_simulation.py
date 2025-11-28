@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 """
-Диагностический скрипт для проверки проблемы с застреванием симуляции матча
+Diagnostic script for verifying Markov-based match simulation.
 """
 import os
 import sys
 import django
+import time
 
 # Setup Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'realfootballsim.settings')
@@ -13,151 +14,115 @@ django.setup()
 from django.utils import timezone
 from matches.models import Match, MatchEvent
 from tournaments.tasks import simulate_active_matches, advance_match_minutes
-from django.core.cache import cache
-import time
+from matches.engines.markov_runtime import simulate_markov_minute # Import to inspect directly
+from players.models import Player
 
-def analyze_stuck_matches():
-    print("=== АНАЛИЗ ЗАСТРЯВШИХ МАТЧЕЙ ===\n")
+def debug_markov_match():
+    print("=== DEBUGGING MARKOV MATCH SIMULATION ===\n")
     
-    # Проверяем все матчи со статусом in_progress
-    in_progress_matches = Match.objects.filter(status='in_progress')
-    print(f"Найдено матчей в процессе: {in_progress_matches.count()}")
+    # 1. Find or create a test match
+    # TARGET SPECIFIC MATCH IF NEEDED
+    target_id = 4831
+    match = Match.objects.filter(id=target_id).first()
     
-    for match in in_progress_matches:
-        print(f"\nМатч ID: {match.id}")
-        print(f"  Текущая минута: {match.current_minute}")
-        print(f"  Счет: {match.home_score} - {match.away_score}")
-        print(f"  Ожидание следующей минуты: {match.waiting_for_next_minute}")
-        print(f"  Последнее обновление минуты: {match.last_minute_update}")
-        print(f"  Начало матча: {match.started_at}")
+    if not match:
+        print(f"Match {target_id} not found, falling back to first active match.")
+        matches = Match.objects.filter(status='in_progress')
+        if not matches.exists():
+            print("No matches in progress.")
+            return
+        match = matches.first()
         
-        # Проверяем кеш действий
-        cache_key = f"match_{match.id}_actions_in_minute"
-        actions_count = cache.get(cache_key, 0)
-        print(f"  Количество действий в текущей минуте (из кеша): {actions_count}")
-        
-        # Проверяем последние события
-        last_events = MatchEvent.objects.filter(match=match).order_by('-minute', '-id')[:5]
-        print(f"  Последние события:")
-        for event in last_events:
-            print(f"    Минута {event.minute}: {event.event_type} - {event.description[:50]}...")
-        
-        # Проверяем временную разницу
-        if match.last_minute_update:
-            elapsed = (timezone.now() - match.last_minute_update).total_seconds()
-            print(f"  Прошло секунд с последнего обновления: {elapsed:.1f}")
-            print(f"  Требуется секунд для перехода: {20}")  # MATCH_MINUTE_REAL_SECONDS
+    print(f"Using Match ID: {match.id}")
+    print(f"  Home: {match.home_team.name}")
+    print(f"  Away: {match.away_team.name}")
+    print(f"  Status: {match.status}")
+    print(f"  Current Minute: {match.current_minute}")
 
-def test_minute_advance():
-    """Тестируем переход на следующую минуту"""
-    print("\n\n=== ТЕСТ ПЕРЕХОДА НА СЛЕДУЮЩУЮ МИНУТУ ===\n")
+    # 2. Inspect Rosters extraction (simulating what happens in tasks.py)
+    print("\n--- Roster Extraction Test ---")
+    from players.models import get_player_line
     
-    in_progress_matches = Match.objects.filter(status='in_progress')
-    if not in_progress_matches.exists():
-        print("Нет активных матчей для тестирования")
-        return
-    
-    match = in_progress_matches.first()
-    print(f"Тестируем матч ID: {match.id}")
-    print(f"Текущая минута: {match.current_minute}")
-    print(f"waiting_for_next_minute: {match.waiting_for_next_minute}")
-    
-    # Принудительно устанавливаем флаг ожидания
-    print("\nУстанавливаем waiting_for_next_minute = True...")
-    match.waiting_for_next_minute = True
-    match.save()
-    
-    # Вызываем функцию перехода минут
-    print("\nВызываем advance_match_minutes()...")
-    result = advance_match_minutes()
-    print(f"Результат: {result}")
-    
-    # Проверяем результат
-    match.refresh_from_db()
-    print(f"\nПосле вызова:")
-    print(f"  Текущая минута: {match.current_minute}")
-    print(f"  waiting_for_next_minute: {match.waiting_for_next_minute}")
+    rosters_map = {"home": {}, "away": {}}
 
-def simulate_one_action_test():
-    """Тестируем симуляцию одного действия"""
-    print("\n\n=== ТЕСТ СИМУЛЯЦИИ ОДНОГО ДЕЙСТВИЯ ===\n")
-    
-    print("Вызываем simulate_active_matches()...")
-    result = simulate_active_matches.apply()
-    print(f"Результат: {result.result}")
-    
-    # Проверяем состояние после симуляции
-    in_progress_matches = Match.objects.filter(status='in_progress')
-    for match in in_progress_matches:
-        print(f"\nМатч ID: {match.id} после симуляции:")
-        print(f"  waiting_for_next_minute: {match.waiting_for_next_minute}")
-        print(f"  current_minute: {match.current_minute}")
-
-def check_celery_beat():
-    """Проверяем настройки Celery Beat"""
-    print("\n\n=== ПРОВЕРКА CELERY BEAT ===\n")
-    
-    from django_celery_beat.models import PeriodicTask, IntervalSchedule
-    
-    # Проверяем периодические задачи
-    tasks = PeriodicTask.objects.all()
-    print(f"Всего периодических задач: {tasks.count()}")
-    
-    for task in tasks:
-        print(f"\nЗадача: {task.name}")
-        print(f"  Активна: {task.enabled}")
-        print(f"  Task: {task.task}")
-        if hasattr(task, 'interval') and task.interval:
-            print(f"  Интервал: каждые {task.interval.every} {task.interval.period}")
-        print(f"  Последний запуск: {task.last_run_at}")
-
-def fix_stuck_match():
-    """Попытка исправить застрявший матч"""
-    print("\n\n=== ПОПЫТКА ИСПРАВИТЬ ЗАСТРЯВШИЙ МАТЧ ===\n")
-    
-    in_progress_matches = Match.objects.filter(status='in_progress')
-    if not in_progress_matches.exists():
-        print("Нет активных матчей для исправления")
-        return
-    
-    match = in_progress_matches.first()
-    print(f"Исправляем матч ID: {match.id}")
-    
-    # Сброс флагов
-    match.waiting_for_next_minute = False
-    match.last_minute_update = timezone.now()
-    match.save()
-    
-    # Очистка кеша
-    cache_key = f"match_{match.id}_actions_in_minute"
-    cache.delete(cache_key)
-    
-    print("Флаги сброшены, кеш очищен")
-    
-    # Пробуем симулировать несколько действий
-    print("\nЗапускаем симуляцию...")
-    for i in range(3):
-        print(f"\nИтерация {i+1}:")
-        result = simulate_active_matches.apply()
-        print(f"Результат: {result.result}")
-        time.sleep(1)
-        
-        match.refresh_from_db()
-        print(f"Минута: {match.current_minute}, waiting_for_next_minute: {match.waiting_for_next_minute}")
-
-if __name__ == '__main__':
-    try:
-        analyze_stuck_matches()
-        test_minute_advance()
-        simulate_one_action_test()
-        check_celery_beat()
-        
-        # Спрашиваем, нужно ли исправить
-        response = input("\n\nПопытаться исправить застрявший матч? (y/n): ")
-        if response.lower() == 'y':
-            fix_stuck_match()
+    def _build_team_roster(team_side, lineup_data):
+        if not lineup_data: 
+            print(f"  Warning: No lineup data for {team_side}")
+            return
+        pids = []
+        for slot, p_info in lineup_data.items():
+            if isinstance(p_info, dict):
+                pid = p_info.get('playerId')
+            else:
+                pid = p_info
             
+            if pid: pids.append(pid)
+        
+        if not pids: 
+            print(f"  No players found for {team_side} in lineup structure")
+            return
+
+        players_qs = Player.objects.filter(id__in=pids)
+        print(f"  Found {players_qs.count()} players for {team_side} (IDs: {pids})")
+        
+        for p in players_qs:
+            line = get_player_line(p)
+            stats = {"overall": p.overall_rating}
+            player_entry = {
+                "id": p.id,
+                "name": p.last_name,
+                "stats": stats,
+            }
+            if line not in rosters_map[team_side]:
+                rosters_map[team_side][line] = []
+            rosters_map[team_side][line].append(player_entry)
+            
+            # Print first player of each line as sample
+            # if len(rosters_map[team_side][line]) == 1:
+            #    print(f"    Added {p.last_name} to {team_side} {line}")
+
+    _build_team_roster("home", match.home_lineup)
+    _build_team_roster("away", match.away_lineup)
+
+    if not rosters_map["home"] and not rosters_map["away"]:
+        print("WARNING: Rosters are empty! Check if line-ups are set correctly on the match object.")
+        print(f"Home Lineup Raw: {match.home_lineup}")
+        print(f"Away Lineup Raw: {match.away_lineup}")
+    
+    # 3. Run a direct simulation step
+    print("\n--- Direct Simulation Step (simulate_markov_minute) ---")
+    try:
+        seed_value = int(match.markov_seed or match.id) + int(time.time()) # mix in time for entropy in test
+        print(f"  Running with seed: {seed_value}")
+        result = simulate_markov_minute(
+            seed=seed_value,
+            token=match.markov_token,
+            home_name=match.home_team.name,
+            away_name=match.away_team.name,
+            rosters=rosters_map,
+        )
+        
+        summary = result['minute_summary']
+        print(f"  Simulated Minute: {summary['minute']}")
+        print(f"  Events Count: {len(summary['events'])}")
+        
+        actors_involved = set()
+        for event in summary['events']:
+            actor = event.get('actor_name')
+            if actor:
+                actors_involved.add(actor)
+            
+            # Print structured log
+            desc = event.get('narrative') or "No narrative"
+            print(f"    Tick {event.get('tick')}: {desc} [Actor: {actor}]")
+
+        print(f"\n  Unique Actors involved this minute: {actors_involved}")
+        print("SUCCESS: Simulation step completed without error.")
+        
     except Exception as e:
-        print(f"\nОшибка: {e}")
+        print(f"ERROR during simulation: {e}")
         import traceback
         traceback.print_exc()
+
+if __name__ == '__main__':
+    debug_markov_match()

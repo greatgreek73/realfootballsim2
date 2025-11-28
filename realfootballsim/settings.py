@@ -205,7 +205,8 @@ CELERY_BEAT_SCHEDULE = {
     },
     'advance-match-minutes': {
         'task': 'tournaments.advance_match_minutes',
-        'schedule': MATCH_MINUTE_REAL_SECONDS,
+        # Check more frequently than the threshold to avoid missing the window
+        'schedule': 5.0, 
     },
     'check-season-end': {
         'task': 'tournaments.check_season_end',
