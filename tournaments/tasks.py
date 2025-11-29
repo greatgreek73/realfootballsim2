@@ -190,6 +190,69 @@ def simulate_active_matches(self):
                 # }
 
                 rosters_map = {"home": {}, "away": {}}
+                # Minimal stat set we pass to the runtime so ticks can use real attributes.
+                # Neutral defaults stay in engine; adding keys here is backward safe.
+                ROSTER_STAT_FIELDS = [
+                    "overall_rating",
+                    "passing",
+                    "vision",
+                    "dribbling",
+                    "finishing",
+                    "long_range",
+                    "accuracy",
+                    "work_rate",
+                    "ball_control",  # optional
+                    "balance",       # optional
+                    "aggression",    # optional
+                    "tackling",
+                    "marking",
+                    "positioning",
+                    "strength",
+                    "reflexes",
+                    "handling",
+                    "aerial",
+                    "command",
+                    "distribution",
+                    "pace",
+                    "crossing",
+                    "heading",
+                    "one_on_one",
+                    "rebound_control",
+                    "shot_reading",
+                    "morale",
+                ]
+                # Fields that actually exist on Player and are needed to avoid extra DB hits.
+                _FETCH_FIELDS = [
+                    "id",
+                    "last_name",
+                    "position",
+                    "experience",
+                    "strength",
+                    "stamina",
+                    "pace",
+                    "positioning",
+                    "reflexes",
+                    "handling",
+                    "aerial",
+                    "command",
+                    "distribution",
+                    "one_on_one",
+                    "rebound_control",
+                    "shot_reading",
+                    "marking",
+                    "tackling",
+                    "work_rate",
+                    "passing",
+                    "crossing",
+                    "dribbling",
+                    "flair",
+                    "heading",
+                    "finishing",
+                    "long_range",
+                    "vision",
+                    "accuracy",
+                    "morale",
+                ]
                 
                 def _build_team_roster(team_side, lineup_data):
                     # lineup_data: {'1': {'playerId': '101', ...}, ...} OR {'1': 101, ...}
@@ -211,17 +274,19 @@ def simulate_active_matches(self):
                         return
 
                     # Bulk fetch players with optimized stats
-                    players_qs = Player.objects.filter(id__in=pids)
+                    players_qs = Player.objects.only(*_FETCH_FIELDS).filter(id__in=pids)
                     
                     for p in players_qs:
                         # Get line (GK, DEF, MID, FWD)
                         line = get_player_line(p)
                         
                         # Build minimal stats dict for the engine
-                        # We sum attributes or take overall for simple comparison
-                        stats = {
-                            "overall": p.overall_rating
-                        }
+                        stats = {"overall": p.overall_rating}
+                        for field in ROSTER_STAT_FIELDS:
+                            # Avoid reusing property name twice
+                            if field == "overall_rating":
+                                continue
+                            stats[field] = getattr(p, field, None)
                         
                         player_entry = {
                             "id": p.id,

@@ -22,6 +22,44 @@ import yaml
 TICKS_PER_MINUTE = 6
 SPEC_PATH = Path(__file__).resolve().parent / "markov_spec_v0.yaml"
 
+COEFF_CONFIG = {
+    "progress_mid": {
+        "att": ["passing", "vision", "dribbling", "work_rate"],
+        "def": ["tackling", "marking", "positioning", "strength"],
+        "dampen": 0.5,
+        "cap_low": 0.7,
+        "cap_high": 1.3,
+    },
+    "progress_final": {
+        "att": ["dribbling", "finishing", "flair", "work_rate"],
+        "def": ["marking", "tackling", "positioning", "strength"],
+        "dampen": 0.5,
+        "cap_low": 0.7,
+        "cap_high": 1.3,
+    },
+    "shot": {
+        "att": ["finishing", "long_range", "accuracy", "composure"],
+        "def": ["reflexes", "handling", "positioning", "aerial", "command"],
+        "dampen": 0.4,
+        "cap_low": 0.7,
+        "cap_high": 1.3,
+    },
+    "retain": {
+        "att": ["ball_control", "balance", "vision", "work_rate"],
+        "def": ["tackling", "aggression", "work_rate", "marking"],
+        "dampen": 0.4,
+        "cap_low": 0.7,
+        "cap_high": 1.3,
+    },
+    "foul": {
+        "commit": ["aggression", "strength", "tackling"],
+        "draw": ["dribbling", "balance", "ball_control"],
+        "dampen": 0.3,
+        "cap_low": 0.7,
+        "cap_high": 1.4,
+    },
+}
+
 
 class MarkovMinuteEvent(TypedDict, total=False):
     tick: int
@@ -45,6 +83,7 @@ class MarkovToken(TypedDict, total=False):
     minute: int
     total_score: Dict[str, int]
     coefficients: Dict[str, Dict[str, float]]
+    dyn_context: Dict[str, float]
 
 
 class MarkovMinuteSummary(TypedDict, total=False):
@@ -65,6 +104,7 @@ class MarkovMinuteSummary(TypedDict, total=False):
     pure_narrative: List[str]
     token: MarkovToken
     coefficients: Dict[str, Dict[str, float]]
+    dyn_context: Dict[str, float]
     actor_names: Dict[int, str]  # tick -> actor name
 
 
@@ -172,6 +212,182 @@ def _adjust_advancing_transitions(
         tr_copy["p"] = new_p / total
         normalized.append(tr_copy)
     return normalized
+
+
+def _clamp(value: float, low: float, high: float) -> float:
+    return max(low, min(high, value))
+
+
+def _safe_stat(stats: Optional[Dict[str, Any]], key: str, default: float = 70.0) -> float:
+    if not stats:
+        return default
+    raw = stats.get(key)
+    try:
+        val = float(raw)
+        # reject nan/inf
+        if val != val or val in (float("inf"), float("-inf")):  # pragma: no cover - safety
+            return default
+        return val
+    except (TypeError, ValueError):
+        return default
+
+
+def _avg_stats(stats: Optional[Dict[str, Any]], keys: List[str], default: float = 70.0) -> float:
+    vals = [_safe_stat(stats, k, default) for k in keys if k]
+    return sum(vals) / len(vals) if vals else default
+
+
+def _ratio_to_coeff(
+    att_value: float,
+    def_value: float,
+    *,
+    dampen: float = 0.5,
+    cap_low: float = 0.7,
+    cap_high: float = 1.3,
+) -> tuple[float, float]:
+    """
+    Convert attacker vs defender values into (attack_coeff, defense_coeff),
+    symmetric around 1.0, mildly dampened and clamped.
+    """
+    att_value = max(att_value, 1e-3)
+    def_value = max(def_value, 1e-3)
+    ratio = att_value / def_value
+    delta = (ratio - 1.0) * dampen
+    att_coeff = _clamp(1.0 + delta, cap_low, cap_high)
+    def_coeff = _clamp(1.0 - delta, cap_low, cap_high)
+    return att_coeff, def_coeff
+
+
+def compute_coeff_pack(
+    attacker: Optional[Dict[str, Any]],
+    defender: Optional[Dict[str, Any]],
+) -> Dict[str, float]:
+    """
+    Build a set of per-context coefficients from rich player stats.
+    This is NOT wired into transitions yet (used in later steps).
+    Keys are symmetric multipliers around 1.0 with caps.
+    """
+    att_stats = attacker.get("stats") if attacker else {}
+    def_stats = defender.get("stats") if defender else {}
+
+    # Progressing through midfield
+    cfg_mid = COEFF_CONFIG["progress_mid"]
+    mid_att = _avg_stats(att_stats, cfg_mid["att"])
+    mid_def = _avg_stats(def_stats, cfg_mid["def"])
+    mid_attack, mid_defense = _ratio_to_coeff(
+        mid_att,
+        mid_def,
+        dampen=cfg_mid["dampen"],
+        cap_low=cfg_mid["cap_low"],
+        cap_high=cfg_mid["cap_high"],
+    )
+
+    # Progressing in final third
+    cfg_final = COEFF_CONFIG["progress_final"]
+    final_att = _avg_stats(att_stats, cfg_final["att"])
+    final_def = _avg_stats(def_stats, cfg_final["def"])
+    final_attack, final_defense = _ratio_to_coeff(
+        final_att,
+        final_def,
+        dampen=cfg_final["dampen"],
+        cap_low=cfg_final["cap_low"],
+        cap_high=cfg_final["cap_high"],
+    )
+
+    # Shot vs keeper
+    cfg_shot = COEFF_CONFIG["shot"]
+    shot_att = _avg_stats(att_stats, cfg_shot["att"])
+    gk_def = _avg_stats(def_stats, cfg_shot["def"])
+    shot_attack, gk_save = _ratio_to_coeff(
+        shot_att,
+        gk_def,
+        dampen=cfg_shot["dampen"],
+        cap_low=cfg_shot["cap_low"],
+        cap_high=cfg_shot["cap_high"],
+    )
+
+    # Retention vs press (stay in same state)
+    cfg_retain = COEFF_CONFIG["retain"]
+    retain_att = _avg_stats(att_stats, cfg_retain["att"])
+    press_def = _avg_stats(def_stats, cfg_retain["def"])
+    retain, press = _ratio_to_coeff(
+        retain_att,
+        press_def,
+        dampen=cfg_retain["dampen"],
+        cap_low=cfg_retain["cap_low"],
+        cap_high=cfg_retain["cap_high"],
+    )
+
+    # Foul tendencies
+    cfg_foul = COEFF_CONFIG["foul"]
+    foul_commit_raw = _avg_stats(att_stats, cfg_foul["commit"])
+    foul_draw_raw = _avg_stats(def_stats, cfg_foul["draw"])
+    foul_commit, _ = _ratio_to_coeff(
+        foul_commit_raw,
+        foul_draw_raw,
+        dampen=cfg_foul["dampen"],
+        cap_low=cfg_foul["cap_low"],
+        cap_high=cfg_foul["cap_high"],
+    )
+    # Foul_draw here is inverse: higher means attacker more likely to draw a foul
+    foul_draw, _ = _ratio_to_coeff(
+        foul_draw_raw,
+        foul_commit_raw,
+        dampen=cfg_foul["dampen"],
+        cap_low=cfg_foul["cap_low"],
+        cap_high=cfg_foul["cap_high"],
+    )
+
+    return {
+        "progress_mid_attack": mid_attack,
+        "progress_mid_defense": mid_defense,
+        "progress_final_attack": final_attack,
+        "progress_final_defense": final_defense,
+        "shot_attack": shot_attack,
+        "gk_save": gk_save,
+        "retain": retain,
+        "press": press,
+        "foul_commit": foul_commit,
+        "foul_draw": foul_draw,
+    }
+
+
+def _adjust_shot_outcomes(
+    outcomes: List[dict],
+    *,
+    shot_attack: float = 1.0,
+    gk_save: float = 1.0,
+) -> List[dict]:
+    """
+    Re-weights SHOT outcomes so stronger attackers raise goal chance while
+    stronger keepers lower it. Keeps shape by normalizing.
+    """
+    if not outcomes:
+        return outcomes
+    adjusted = []
+    total = 0.0
+    for oc in outcomes:
+        base_p = float(oc.get("p", 0.0))
+        if base_p <= 0.0:
+            continue
+        label = str(oc.get("result") or oc.get("label") or "").lower()
+        mult = 1.0
+        if "goal" in label:
+            mult = shot_attack / max(gk_save, 0.01)
+        elif "block" in label:
+            mult = gk_save / max(shot_attack, 0.01)
+        elif "miss" in label:
+            mult = 1.0  # neutral
+        new_p = base_p * mult
+        copy = dict(oc)
+        copy["p"] = new_p
+        adjusted.append(copy)
+        total += new_p
+    if total <= 0.0:
+        return outcomes
+    for oc in adjusted:
+        oc["p"] = oc["p"] / total
+    return adjusted
 
 
 def _side_name(side: str | None, home_name: str, away_name: str) -> str:
@@ -291,7 +507,9 @@ def _select_interaction_pair(
     rng: random.Random,
     rosters: Dict[str, Dict[str, List[Dict[str, Any]]]],
     attacker_side: str,
-    zone: str
+    zone: str,
+    *,
+    force_goalkeeper: bool = False,
 ) -> tuple[Optional[Dict], Optional[Dict]]:
     """Selects (attacker, defender) pair based on zone."""
     if not rosters or attacker_side not in rosters:
@@ -303,16 +521,20 @@ def _select_interaction_pair(
     # DEF: Attacker is DEF, Defender is FWD (pressing)
     # MID: Attacker is MID, Defender is MID
     # FINAL: Attacker is FWD, Defender is DEF
-    if zone == "DEF":
+    if force_goalkeeper:
+        att_line, def_line = "FWD", "GK"
+    elif zone == "DEF":
         att_line, def_line = "DEF", "FWD"
     elif zone == "FINAL":
         att_line, def_line = "FWD", "DEF"
-    else: # MID
+    else:  # MID
         att_line, def_line = "MID", "MID"
 
     # Helper to pick random player from line
-    def pick(side, line):
+    def pick(side, line, *, allow_gk=False):
         pool = rosters.get(side, {}).get(line, [])
+        if not pool and allow_gk:
+            pool = rosters.get(side, {}).get("GK", [])
         # Fallback to MID if preferred line empty (e.g. no FWDs in formation)
         if not pool:
              pool = rosters.get(side, {}).get("MID", [])
@@ -324,7 +546,7 @@ def _select_interaction_pair(
         return rng.choice(pool)
 
     attacker = pick(attacker_side, att_line)
-    defender = pick(defender_side, def_line)
+    defender = pick(defender_side, def_line, allow_gk=force_goalkeeper)
     return attacker, defender
 
 
@@ -389,6 +611,8 @@ def _simulate_minute(
     possession_ticks = {"home": 0, "away": 0}
     entries_final = {"home": 0, "away": 0}
     events: List[Dict[str, Any]] = []
+    dyn_context: Dict[int, Dict[str, float]] = {}
+    actor_names: Dict[int, str] = {}
 
     for tick in range(1, TICKS_PER_MINUTE + 1):
         possession_ticks[possession] += 1
@@ -400,17 +624,37 @@ def _simulate_minute(
         
         protag, antag = None, None
         dyn_att, dyn_def = None, None
+        dyn_pack = None
 
         if rosters:
-            protag, antag = _select_interaction_pair(rng, rosters, possession, tick_zone)
+            # In SHOT, force defender as GK to reflect finish vs keeper duel
+            force_gk = state == "SHOT"
+            protag, antag = _select_interaction_pair(
+                rng, rosters, possession, tick_zone, force_goalkeeper=force_gk
+            )
             if protag and antag:
                 dyn_att, dyn_def = _calculate_player_coeffs(protag, antag)
-        
+                dyn_pack = compute_coeff_pack(protag, antag)
+            elif protag:
+                dyn_pack = compute_coeff_pack(protag, None)
+
+        if dyn_pack:
+            dyn_context[tick] = dyn_pack
+
         actor_name = protag.get("name") if protag else None
         actor_id = protag.get("id") if protag else None
+        if actor_name:
+            actor_names[tick] = actor_name
 
         if state == "SHOT":
-            oc = _choose_weighted(rng, states["SHOT"]["outcomes"])
+            shot_outcomes = states["SHOT"]["outcomes"]
+            if dyn_pack:
+                shot_outcomes = _adjust_shot_outcomes(
+                    shot_outcomes,
+                    shot_attack=dyn_pack.get("shot_attack", 1.0),
+                    gk_save=dyn_pack.get("gk_save", 1.0),
+                )
+            oc = _choose_weighted(rng, shot_outcomes)
             result = oc.get("result")
             nxt = oc.get("next") or {}
             counts["shot"] += 1
@@ -466,7 +710,20 @@ def _simulate_minute(
             nxt = by_zone.get(zone) or by_zone["MID"]
             counts["foul"] += 1
             new_state = nxt.get("to")
-            new_pos = _apply_possession(possession, nxt.get("possession", "same"))
+            base_dir = nxt.get("possession", "same")
+            new_pos = _apply_possession(possession, base_dir)
+            if dyn_pack:
+                # Bias possession after foul: attacker with high foul_draw keeps ball more often,
+                # aggressive tackler flips it more often. Keep bounded to avoid large swings.
+                keep_bias = dyn_pack.get("foul_draw", 1.0)
+                commit_bias = dyn_pack.get("foul_commit", 1.0)
+                # baseline 0.5, skewed by ratio; clamp to [0.25, 0.75] to stay mild
+                keep_prob = _clamp(0.5 * keep_bias / max(commit_bias, 0.01), 0.25, 0.75)
+                if rng.random() > keep_prob:
+                    if new_pos == "home":
+                        new_pos = "away"
+                    elif new_pos == "away":
+                        new_pos = "home"
             new_zone = _zone_from_state(new_state)
             _push_event(
                 events,
@@ -507,14 +764,24 @@ def _simulate_minute(
             continue
 
         transitions = states[state]["transitions"]
+        # Prefer contextual coeffs when available; fallback to coarse overall ratio
+        dyn_attack = dyn_att
+        dyn_defense = dyn_def
+        if dyn_pack and state == "OPEN_PLAY_MID":
+            dyn_attack = dyn_pack.get("progress_mid_attack", dyn_attack)
+            dyn_defense = dyn_pack.get("progress_mid_defense", dyn_defense)
+        elif dyn_pack and state == "OPEN_PLAY_FINAL":
+            dyn_attack = dyn_pack.get("progress_final_attack", dyn_attack)
+            dyn_defense = dyn_pack.get("progress_final_defense", dyn_defense)
+
         transitions = _adjust_advancing_transitions(
             transitions,
             state=state,
             possession=possession,
             attack_coeffs=attack_coeffs,
             defense_coeffs=defense_coeffs,
-            dynamic_attack=dyn_att,
-            dynamic_defense=dyn_def,
+            dynamic_attack=dyn_attack,
+            dynamic_defense=dyn_defense,
         )
         choice = _choose_weighted(rng, transitions)
         new_state = choice.get("to")
@@ -540,6 +807,9 @@ def _simulate_minute(
     possession_seconds = {
         team: int(ticks * (spec["time"]["tick_seconds"] / 1.0)) for team, ticks in possession_ticks.items()
     }
+    dyn_context_str = {str(k): v for k, v in dyn_context.items()}
+    actor_names_str = {str(k): v for k, v in actor_names.items()}
+
     return {
         "end_state": state,
         "possession_end": possession,
@@ -551,6 +821,8 @@ def _simulate_minute(
         "events": events,
         "swings": swings,
         "rosters_snapshot": rosters is not None,
+        "dyn_context": dyn_context_str,
+        "actor_names": actor_names_str,
     }
 
 
@@ -681,6 +953,7 @@ def simulate_markov_minute(
     minute_summary["pure_narrative"] = pure_narrative
     minute_summary["narrative"] = pure_narrative + narrative
     minute_summary["coefficients"] = state.coefficients
+    minute_summary["dyn_context"] = minute_summary.get("dyn_context", {})
     minute_summary["token"] = {
         "state": minute_summary["end_state"],
         "possession": minute_summary["possession_end"],
@@ -688,7 +961,22 @@ def simulate_markov_minute(
         "minute": state.minute + 1,
         "total_score": new_total,
         "coefficients": state.coefficients,
+        "dyn_context": minute_summary["dyn_context"],
     }
+
+    # Optional debug logging for observability; controlled via env var MARKOV_DEBUG_LOG
+    import os
+    if os.environ.get("MARKOV_DEBUG_LOG"):
+        import logging
+        dbg = logging.getLogger(__name__)
+        dbg.info(
+            "[markov_minute] seed=%s minute=%s end_state=%s score=%s dyn=%s",
+            seed,
+            state.minute,
+            minute_summary["end_state"],
+            new_total,
+            minute_summary["dyn_context"],
+        )
 
     return {
         "spec_version": spec.get("version"),
