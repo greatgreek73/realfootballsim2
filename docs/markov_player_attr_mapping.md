@@ -39,7 +39,8 @@ Purpose: declare which player stats should influence which parts of the Markov t
 
 ## Debug / observability
 - Minute summaries carry `actor_names` per tick and `dyn_context` (per-tick coefficient packs).
-- Set `MARKOV_DEBUG_LOG=1` to emit a short log line per simulated minute with seed, minute, end state, score, and `dyn_context`.
+- Markov events now keep `label`/`subtype` in the payload (`PASS`, `RETAIN`, `TURNOVER`, `SHOT:goal/miss/block`, etc.) for richer logs and WS consumers.
+- Set `MARKOV_DEBUG_LOG=1` to emit a short log line per simulated minute with seed, minute, end state, score, and dyn_context keys (not values).
 
 ## Data needed per player in roster payload
 Recommended minimal fields to pass into `rosters`:

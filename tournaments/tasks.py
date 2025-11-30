@@ -117,6 +117,13 @@ def _map_markov_event_to_match_event(match: Match, raw_event: dict) -> Optional[
         description = f"Turnover! {winner_team} gain possession in {zone_label}."
         result.update({"event_type": "interception", "description": description})
         return result
+
+    # Generic open-play labels for observability (PASS/RETAIN/RECYCLE)
+    if label.startswith("PASS:") or label in {"RETAIN", "RECYCLE", "TURNOVER"}:
+        verb = "recycle possession" if label in {"RETAIN", "RECYCLE"} else "move the ball"
+        description = f"{actor_display} {verb} in {zone_label}."
+        result.update({"event_type": "info", "description": description})
+        return result
     return None
 
 
@@ -193,33 +200,42 @@ def simulate_active_matches(self):
                 # Minimal stat set we pass to the runtime so ticks can use real attributes.
                 # Neutral defaults stay in engine; adding keys here is backward safe.
                 ROSTER_STAT_FIELDS = [
+                    # Core
                     "overall_rating",
+                    "pace",
+                    "stamina",
+                    "morale",
+                    # Build-up and passing
                     "passing",
                     "vision",
                     "dribbling",
+                    "work_rate",
+                    "flair",
+                    # Final third / finishing
                     "finishing",
                     "long_range",
                     "accuracy",
-                    "work_rate",
-                    "ball_control",  # optional
-                    "balance",       # optional
-                    "aggression",    # optional
+                    "heading",
+                    # Defense / press
                     "tackling",
                     "marking",
                     "positioning",
                     "strength",
+                    # Keeper
                     "reflexes",
                     "handling",
                     "aerial",
                     "command",
                     "distribution",
-                    "pace",
-                    "crossing",
-                    "heading",
                     "one_on_one",
                     "rebound_control",
                     "shot_reading",
-                    "morale",
+                    # Crossing/width
+                    "crossing",
+                    # Optional/soft fields (may be None -> neutral defaults in engine)
+                    "ball_control",
+                    "balance",
+                    "aggression",
                 ]
                 # Fields that actually exist on Player and are needed to avoid extra DB hits.
                 _FETCH_FIELDS = [

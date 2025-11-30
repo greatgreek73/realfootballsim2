@@ -37,9 +37,37 @@ COEFF_CONFIG = {
         "cap_low": 0.7,
         "cap_high": 1.3,
     },
+    "pass_success": {
+        "att": ["passing", "vision", "work_rate", "composure", "dribbling"],
+        "def": ["marking", "positioning", "tackling", "work_rate"],
+        "dampen": 0.5,
+        "cap_low": 0.7,
+        "cap_high": 1.3,
+    },
+    "press_loss": {
+        "att": ["ball_control", "balance", "composure", "vision"],
+        "def": ["aggression", "tackling", "work_rate", "positioning"],
+        "dampen": 0.5,
+        "cap_low": 0.7,
+        "cap_high": 1.3,
+    },
     "shot": {
         "att": ["finishing", "long_range", "accuracy", "composure"],
         "def": ["reflexes", "handling", "positioning", "aerial", "command"],
+        "dampen": 0.4,
+        "cap_low": 0.7,
+        "cap_high": 1.3,
+    },
+    "header": {
+        "att": ["heading", "strength", "aerial", "balance"],
+        "def": ["aerial", "positioning", "strength", "marking"],
+        "dampen": 0.4,
+        "cap_low": 0.7,
+        "cap_high": 1.3,
+    },
+    "long_shot": {
+        "att": ["long_range", "accuracy", "finishing"],
+        "def": ["positioning", "handling", "reflexes"],
         "dampen": 0.4,
         "cap_low": 0.7,
         "cap_high": 1.3,
@@ -57,6 +85,20 @@ COEFF_CONFIG = {
         "dampen": 0.3,
         "cap_low": 0.7,
         "cap_high": 1.4,
+    },
+    "gk_distribution": {
+        "att": ["distribution", "command", "vision"],
+        "def": ["aggression", "work_rate", "positioning"],
+        "dampen": 0.4,
+        "cap_low": 0.7,
+        "cap_high": 1.3,
+    },
+    "press": {
+        "att": ["aggression", "tackling", "work_rate", "positioning"],
+        "def": ["ball_control", "balance", "vision", "composure"],
+        "dampen": 0.5,
+        "cap_low": 0.7,
+        "cap_high": 1.3,
     },
 }
 
@@ -84,6 +126,27 @@ class MarkovToken(TypedDict, total=False):
     total_score: Dict[str, int]
     coefficients: Dict[str, Dict[str, float]]
     dyn_context: Dict[str, float]
+
+
+def _classify_open_play_transition(
+    state: str,
+    new_state: str,
+    possession: str,
+    new_possession: str,
+) -> tuple[Optional[str], Optional[str]]:
+    """
+    Lightweight label/subtype for open-play transitions.
+    Used for observability; does not alter probabilities.
+    """
+    if new_possession != possession:
+        return "TURNOVER", "press"
+    if state == new_state:
+        return "RETAIN", "recycle"
+    if new_state == "OPEN_PLAY_FINAL" and possession == new_possession:
+        return "PASS:SUCCESS", "advance"
+    if state == "OPEN_PLAY_FINAL" and new_state == "OPEN_PLAY_MID":
+        return "RECYCLE", "reset"
+    return "PASS:SUCCESS", None
 
 
 class MarkovMinuteSummary(TypedDict, total=False):
@@ -161,6 +224,8 @@ def _adjust_advancing_transitions(
     defense_coeffs: Dict[str, float],
     dynamic_attack: float | None = None,
     dynamic_defense: float | None = None,
+    pass_coeff: float | None = None,
+    press_coeff: float | None = None,
 ) -> List[dict]:
     if state not in ("OPEN_PLAY_MID", "OPEN_PLAY_FINAL"):
         return transitions
@@ -197,6 +262,12 @@ def _adjust_advancing_transitions(
             
             multiplier *= max(attack, 0.01)
             multiplier /= max(defense, 0.01)
+
+        # Passing/press influence: same-possession gets buff from pass success; turnover-weighted by press
+        if possession_directive == "same" and pass_coeff is not None:
+            multiplier *= max(pass_coeff, 0.01)
+        elif possession_directive != "same" and press_coeff is not None:
+            multiplier *= max(press_coeff, 0.01)
 
         new_p = base_p * multiplier
         adjusted.append(tr)
@@ -318,6 +389,76 @@ def compute_coeff_pack(
         cap_high=cfg_retain["cap_high"],
     )
 
+    # Pass success vs press loss (explicit pass-oriented coeffs)
+    cfg_pass = COEFF_CONFIG["pass_success"]
+    pass_att = _avg_stats(att_stats, cfg_pass["att"])
+    pass_def = _avg_stats(def_stats, cfg_pass["def"])
+    pass_success, pass_block = _ratio_to_coeff(
+        pass_att,
+        pass_def,
+        dampen=cfg_pass["dampen"],
+        cap_low=cfg_pass["cap_low"],
+        cap_high=cfg_pass["cap_high"],
+    )
+
+    cfg_press = COEFF_CONFIG["press_loss"]
+    press_att = _avg_stats(att_stats, cfg_press["att"])
+    press_def = _avg_stats(def_stats, cfg_press["def"])
+    press_force, press_resist = _ratio_to_coeff(
+        press_def,  # defender pressing
+        press_att,  # attacker control
+        dampen=cfg_press["dampen"],
+        cap_low=cfg_press["cap_low"],
+        cap_high=cfg_press["cap_high"],
+    )
+
+    # Shot variants
+    cfg_header = COEFF_CONFIG["header"]
+    header_att = _avg_stats(att_stats, cfg_header["att"])
+    header_def = _avg_stats(def_stats, cfg_header["def"])
+    header_attack, header_save = _ratio_to_coeff(
+        header_att,
+        header_def,
+        dampen=cfg_header["dampen"],
+        cap_low=cfg_header["cap_low"],
+        cap_high=cfg_header["cap_high"],
+    )
+
+    cfg_long = COEFF_CONFIG["long_shot"]
+    long_att = _avg_stats(att_stats, cfg_long["att"])
+    long_def = _avg_stats(def_stats, cfg_long["def"])
+    long_attack, long_save = _ratio_to_coeff(
+        long_att,
+        long_def,
+        dampen=cfg_long["dampen"],
+        cap_low=cfg_long["cap_low"],
+        cap_high=cfg_long["cap_high"],
+    )
+
+    # GK distribution
+    cfg_gk = COEFF_CONFIG["gk_distribution"]
+    gk_att = _avg_stats(att_stats, cfg_gk["att"])
+    gk_def = _avg_stats(def_stats, cfg_gk["def"])
+    gk_dist_attack, gk_dist_def = _ratio_to_coeff(
+        gk_att,
+        gk_def,
+        dampen=cfg_gk["dampen"],
+        cap_low=cfg_gk["cap_low"],
+        cap_high=cfg_gk["cap_high"],
+    )
+
+    # Press and retention explicit
+    cfg_press_exp = COEFF_CONFIG["press"]
+    press_exp_att = _avg_stats(att_stats, cfg_press_exp["att"])
+    press_exp_def = _avg_stats(def_stats, cfg_press_exp["def"])
+    press_exp_coeff, press_resist_coeff = _ratio_to_coeff(
+        press_exp_att,
+        press_exp_def,
+        dampen=cfg_press_exp["dampen"],
+        cap_low=cfg_press_exp["cap_low"],
+        cap_high=cfg_press_exp["cap_high"],
+    )
+
     # Foul tendencies
     cfg_foul = COEFF_CONFIG["foul"]
     foul_commit_raw = _avg_stats(att_stats, cfg_foul["commit"])
@@ -345,8 +486,20 @@ def compute_coeff_pack(
         "progress_final_defense": final_defense,
         "shot_attack": shot_attack,
         "gk_save": gk_save,
+        "header_attack": header_attack,
+        "header_save": header_save,
+        "long_attack": long_attack,
+        "long_save": long_save,
         "retain": retain,
         "press": press,
+        "pass_success": pass_success,
+        "pass_block": pass_block,
+        "press_force": press_force,
+        "press_resist": press_resist,
+        "gk_distribution_attack": gk_dist_attack,
+        "gk_distribution_defense": gk_dist_def,
+        "press_exp": press_exp_coeff,
+        "press_resist_exp": press_resist_coeff,
         "foul_commit": foul_commit,
         "foul_draw": foul_draw,
     }
@@ -499,6 +652,11 @@ def _push_event(
         ev["actor_name"] = actor_name
     if actor_id:
         ev["actor_id"] = actor_id
+    # For debug/observability: include label/subtype if provided
+    if label is not None:
+        ev["label"] = label
+    if subtype is not None:
+        ev["subtype"] = subtype
     events.append(ev)
 
 
@@ -620,7 +778,8 @@ def _simulate_minute(
         # Select Actors for this tick
         # We check zone to decide who is likely involved
         tick_zone = zone # current zone
-        if state == "SHOT": tick_zone = "FINAL" # shots happen in final
+        if state == "SHOT": 
+            tick_zone = "FINAL" # shots happen in final
         
         protag, antag = None, None
         dyn_att, dyn_def = None, None
@@ -767,12 +926,18 @@ def _simulate_minute(
         # Prefer contextual coeffs when available; fallback to coarse overall ratio
         dyn_attack = dyn_att
         dyn_defense = dyn_def
+        pass_coeff = None
+        press_coeff = None
         if dyn_pack and state == "OPEN_PLAY_MID":
             dyn_attack = dyn_pack.get("progress_mid_attack", dyn_attack)
             dyn_defense = dyn_pack.get("progress_mid_defense", dyn_defense)
+            pass_coeff = dyn_pack.get("pass_success")
+            press_coeff = dyn_pack.get("press_force")
         elif dyn_pack and state == "OPEN_PLAY_FINAL":
             dyn_attack = dyn_pack.get("progress_final_attack", dyn_attack)
             dyn_defense = dyn_pack.get("progress_final_defense", dyn_defense)
+            pass_coeff = dyn_pack.get("pass_success")
+            press_coeff = dyn_pack.get("press_force")
 
         transitions = _adjust_advancing_transitions(
             transitions,
@@ -782,11 +947,14 @@ def _simulate_minute(
             defense_coeffs=defense_coeffs,
             dynamic_attack=dyn_attack,
             dynamic_defense=dyn_defense,
+            pass_coeff=pass_coeff,
+            press_coeff=press_coeff,
         )
         choice = _choose_weighted(rng, transitions)
         new_state = choice.get("to")
         new_pos = _apply_possession(possession, choice.get("possession", "same"))
         new_zone = choice.get("zone", _zone_from_state(new_state))
+        lbl, subtype = _classify_open_play_transition(state, new_state, possession, new_pos)
         _push_event(
             events,
             tick=tick,
@@ -796,6 +964,8 @@ def _simulate_minute(
             new_zone=new_zone,
             prev_pos=possession,
             p=choice.get("p"),
+            label=lbl,
+            subtype=subtype,
             actor_name=actor_name,
             actor_id=actor_id,
         )
@@ -970,12 +1140,12 @@ def simulate_markov_minute(
         import logging
         dbg = logging.getLogger(__name__)
         dbg.info(
-            "[markov_minute] seed=%s minute=%s end_state=%s score=%s dyn=%s",
+            "[markov_minute] seed=%s minute=%s end_state=%s score=%s dyn_keys=%s",
             seed,
             state.minute,
             minute_summary["end_state"],
             new_total,
-            minute_summary["dyn_context"],
+            list((minute_summary["dyn_context"] or {}).keys()),
         )
 
     return {
