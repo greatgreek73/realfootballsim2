@@ -1,6 +1,7 @@
 import random
 import logging
-from typing import Dict, List, Tuple
+from datetime import datetime
+from typing import Dict, List, Tuple, Optional
 from django.utils import timezone
 from .models import Player
 from .training import TrainingSettings
@@ -126,11 +127,13 @@ def apply_training_to_player(player: Player, distribution: Dict[str, int]) -> Di
     return changes
 
 
-def conduct_player_training(player: Player) -> Dict:
+def conduct_player_training(player: Player, when: Optional[datetime] = None) -> Dict:
     """
     Проводит тренировку для одного игрока.
     Возвращает информацию о результатах тренировки.
     """
+    timestamp = when or timezone.now()
+
     # Проверяем, нужно ли активировать расцвет
     if player.should_start_bloom():
         player.start_bloom()
@@ -146,7 +149,7 @@ def conduct_player_training(player: Player) -> Dict:
 
     # Сохраняем результаты тренировки
     try:
-        player.last_trained_at = timezone.now()
+        player.last_trained_at = timestamp
         # Преобразуем changes в формат {attr: delta} для JSON
         player.last_training_summary = {
             attr: new_val - old_val
@@ -168,7 +171,7 @@ def conduct_player_training(player: Player) -> Dict:
     }
 
 
-def conduct_team_training(club) -> List[Dict]:
+def conduct_team_training(club, when: Optional[datetime] = None) -> List[Dict]:
     """
     Проводит тренировки для всех игроков клуба.
     Возвращает список результатов тренировок.
@@ -178,7 +181,7 @@ def conduct_team_training(club) -> List[Dict]:
     logger.info(f"[training] Club {getattr(club, 'name', club.id)} - start training for {players.count()} players")
     for player in players:
         try:
-            result = conduct_player_training(player)
+            result = conduct_player_training(player, when=when)
             logger.debug(
                 f"[training] Player {player.id} {player.full_name} "
                 f"points={result.get('total_points')} changes={len(result.get('changes', {}))} "
@@ -195,7 +198,7 @@ def conduct_team_training(club) -> List[Dict]:
     return results
 
 
-def conduct_all_teams_training() -> Dict:
+def conduct_all_teams_training(when: Optional[datetime] = None) -> Dict:
     """
     Проводит тренировки для всех команд в системе.
     Возвращает общую статистику.
@@ -214,7 +217,7 @@ def conduct_all_teams_training() -> Dict:
     
     for club in clubs:
         try:
-            team_results = conduct_team_training(club)
+            team_results = conduct_team_training(club, when=when)
             stats['teams_trained'] += 1
             
             for result in team_results:

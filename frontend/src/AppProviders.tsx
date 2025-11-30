@@ -22,6 +22,8 @@ const theme = createTheme({
         variantMapping: {
           body1: "span",
           body2: "span",
+          subtitle1: "span",
+          subtitle2: "span",
         },
       },
     },

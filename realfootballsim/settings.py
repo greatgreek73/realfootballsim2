@@ -24,8 +24,21 @@ TRAINING_CRON_DAYSOFWEEK = os.getenv("TRAINING_CRON_DAYSOFWEEK", "1,3,5")
 TRAINING_CRON_HOUR = int(os.getenv("TRAINING_CRON_HOUR", 11))
 TRAINING_CRON_MINUTE = int(os.getenv("TRAINING_CRON_MINUTE", 0))
 TRAINING_TIMEZONE = os.getenv("TRAINING_TZ", "CET")
+TRAINING_CHECK_INTERVAL_SECONDS = int(os.getenv("TRAINING_CHECK_INTERVAL_SECONDS", 1800))  # default: every 30 min
+_CRON_TO_PY_WEEKDAY = {
+    0: 6,  # Sunday (crontab) -> 6 (Python weekday)
+    1: 0,  # Monday
+    2: 1,  # Tuesday
+    3: 2,  # Wednesday
+    4: 3,  # Thursday
+    5: 4,  # Friday
+    6: 5,  # Saturday
+    7: 6,  # Sunday (crontab allows 0 or 7)
+}
 TRAINING_DAY_LIST = [
-    int(x) for x in TRAINING_CRON_DAYSOFWEEK.split(",") if x.strip().isdigit()
+    _CRON_TO_PY_WEEKDAY[int(x)]
+    for x in TRAINING_CRON_DAYSOFWEEK.split(",")
+    if x.strip().isdigit()
 ]
 
 # Player Personality & Narrative AI Engine
@@ -218,11 +231,12 @@ CELERY_BEAT_SCHEDULE = {
     },
     'check-training-schedule': {
         'task': 'players.check_training_schedule',
-        'schedule': crontab(
+        # run frequently to catch up missed runs after restarts; guarded by TRAINING_DAY_LIST inside
+        'schedule': TRAINING_CHECK_INTERVAL_SECONDS or crontab(
             hour=TRAINING_CRON_HOUR,
             minute=TRAINING_CRON_MINUTE,
             day_of_week=TRAINING_CRON_DAYSOFWEEK,
-        ),  # ╨Я╨╜, ╨б╤А, ╨Я╤В ╨▓ 12:00 CET (11:00 UTC)
+        ),
     },
     'advance-player-seasons': {
         'task': 'players.advance_player_seasons',
