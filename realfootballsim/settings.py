@@ -49,24 +49,29 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_ENABLE_AVATAR_GENERATION = str(os.getenv("OPENAI_ENABLE_AVATAR_GENERATION", "true")).lower() in ("1", "true", "yes")
 
 # ╨С╨░╨╖╨╛╨▓╤Л╨╡ Django-╨╜╨░╤Б╤В╤А╨╛╨╣╨║╨╕
-SECRET_KEY = 'django-insecure-0p3aqax2r2xolyvtfda6q_aa@q1l6n!w4$8sjo1ed&*)h*2l37'
-DEBUG = True
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
-
-CSRF_TRUSTED_ORIGINS = [
-    "http://127.0.0.1:5173",
-    "http://localhost:5173",
-]
-
-# ╨Х╤Б╨╗╨╕ ╨▓╨║╨╗╤О╤З╤С╨╜ ╨┐╤А╨╛╨┤╨░╨║╤И╨╡╨╜-╤А╨╡╨╢╨╕╨╝
-if IS_PRODUCTION == '1':
-    DEBUG = False
-    ALLOWED_HOSTS = ['128.199.49.228', 'www.realfootballsim.com', 'realfootballsim.com']
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable must be set")
+debug_default = "0" if IS_PRODUCTION == "1" else "1"
+DEBUG = str(os.getenv("DEBUG", os.getenv("DJANGO_DEBUG", debug_default))).lower() in ("1", "true", "yes")
+allowed_hosts_env = os.getenv("ALLOWED_HOSTS")
+if allowed_hosts_env:
+    ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(",") if host.strip()]
+else:
+    ALLOWED_HOSTS = ['128.199.49.228', 'www.realfootballsim.com', 'realfootballsim.com'] if IS_PRODUCTION == '1' else ['127.0.0.1', 'localhost']
+csrf_origins_env = os.getenv("CSRF_TRUSTED_ORIGINS")
+if csrf_origins_env:
+    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins_env.split(",") if origin.strip()]
+else:
     CSRF_TRUSTED_ORIGINS = [
         'https://realfootballsim.com',
         'https://www.realfootballsim.com'
+    ] if IS_PRODUCTION == '1' else [
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
     ]
 
+# ╨Х╤Б╨╗╨╕ ╨▓╨║╨╗╤О╤З╤С╨╜ ╨┐╤А╨╛╨┤╨░╨║╤И╨╡╨╜-╤А╨╡╨╢╨╕╨╝
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -126,33 +131,29 @@ WSGI_APPLICATION = 'realfootballsim.wsgi.application'
 # Channels
 ASGI_APPLICATION = 'realfootballsim.asgi.application'
 
-# ╨С╨░╨╖╨░ ╨┤╨░╨╜╨╜╤Л╤Е (╨╗╨╛╨║╨░╨╗╤М╨╜╨╛ PostgreSQL)
+# База данных (локально PostgreSQL)
+DB_NAME = os.getenv("DB_NAME", "rfsimdb")
+DB_USER = os.getenv("DB_USER", "nikos")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = os.getenv("DB_PORT", "5432")
+
+if IS_PRODUCTION == '1' and not DB_PASSWORD:
+    raise ValueError("DB_PASSWORD must be set when IS_PRODUCTION=1")
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'rfsimdb',
-        'USER': 'nikos',
-        'PASSWORD': '5x9t8zy5',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': DB_NAME,
+        'USER': DB_USER,
+        'PASSWORD': DB_PASSWORD,
+        'HOST': DB_HOST,
+        'PORT': DB_PORT,
         'ATOMIC_REQUESTS': False,
     }
 }
 
 # ╨Я╤А╨╛╨┤╨░╨║╤И╨╡╨╜: ╨┐╤А╨╕ ╨╜╨╡╨╛╨▒╤Е╨╛╨┤╨╕╨╝╨╛╤Б╤В╨╕ ╨┐╨╡╤А╨╡╨╛╨┐╤А╨╡╨┤╨╡╨╗╤П╨╡╨╝ (╨╛╤Б╤В╨░╨▓╨╗╨╡╨╜╨╛ ╨║╨░╨║ ╤Г ╨▓╨░╤Б)
-if IS_PRODUCTION == '1':
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'rfsimdb',
-            'USER': 'nikos',
-            'PASSWORD': '5x9t8zy5',
-            'HOST': 'localhost',
-            'PORT': '5432',
-            'ATOMIC_REQUESTS': False,
-        }
-    }
-
 # Allow tests to opt-in to SQLite (avoids Postgres test DB conflicts)
 if os.getenv("USE_SQLITE_FOR_TESTS") == "1":
     DATABASES = {
@@ -194,8 +195,8 @@ LOGIN_URL = 'login'
 LOGOUT_REDIRECT_URL = 'core:home'
 
 # Celery
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'

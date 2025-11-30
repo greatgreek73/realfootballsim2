@@ -8,7 +8,7 @@ IS_PRODUCTION = os.environ.get('IS_PRODUCTION')  # If not set, will be None
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Default dev settings
-SECRET_KEY = 'django-insecure-0p3aqax2r2xolyvtfda6q_aa@q1l6n!w4$8sjo1ed&*)h*2l37'
+SECRET_KEY = os.getenv('SECRET_KEY', 'change-me')
 DEBUG = True
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
@@ -89,7 +89,7 @@ DATABASES = {
                         'ENGINE': 'django.db.backends.postgresql',
                         'NAME': 'rfsim',
                         'USER': 'nikos',
-                        'PASSWORD': '5x9t8zy5',
+                        'PASSWORD': os.getenv('DB_PASSWORD', ''),
                         'HOST': 'localhost',
                         'PORT': '5432',
                         'ATOMIC_REQUESTS': False,
